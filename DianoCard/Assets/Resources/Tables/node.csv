@@ -1,0 +1,10 @@
+id,node_type,weight,min_floor,max_floor,description
+N001,NORMAL_BATTLE,40,1,13,일반 전투 노드.
+N002,ELITE_BATTLE,15,4,13,엘리트 전투 노드.
+N003,SHOP,10,2,13,상인 노드.
+N004,TOWN,10,2,13,마을 노드 (휴식/보급/제거 택1).
+N005,EVENT,15,1,13,이벤트 노드.
+N006,TREASURE,5,1,13,보물 노드 (유물).
+N007,UNKNOWN,5,1,13,미지의 노드 (랜덤).
+N008,BOSS,100,15,15,챕터 보스.
+N009,START,100,0,0,챕터 시작 노드.

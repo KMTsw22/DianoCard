@@ -1,0 +1,11 @@
+id,name_kr,name_en,chapter,description,choice1_text,choice1_effect,choice1_value,choice2_text,choice2_effect,choice2_value,choice3_text,choice3_effect,choice3_value
+EV001,떠도는 상인,Wandering Merchant,1,이상한 상인이 거래를 제안한다.,유물과 골드 교환 (-50G),GAIN_RELIC_LOSE_GOLD,50,그냥 지나간다,NONE,0,,,
+EV002,버려진 제단,Abandoned Altar,1,제단에 피를 바칠 수 있다.,HP -5 / 카드 업그레이드,LOSE_HP_UPGRADE_CARD,5,무시한다,NONE,0,,,
+EV003,부서진 알,Broken Egg,1,부서진 공룡 알을 발견했다.,공룡 카드 1장 획득,GAIN_RANDOM_DINO,1,골드 +30 획득,GAIN_GOLD,30,,,
+EV004,신비한 샘,Mystic Spring,1,신비한 기운이 감도는 샘이다.,HP +20 회복,HEAL_HP,20,최대 HP +5,GAIN_MAX_HP,5,,,
+EV005,고대 도서관,Ancient Library,2,오래된 책들이 가득하다.,카드 1장 강화,UPGRADE_CARD,1,카드 1장 제거,REMOVE_CARD,1,,,
+EV006,악령의 속삭임,Evil Whisper,2,악령이 속삭인다.,골드 +100 / 저주 카드 +1,GAIN_GOLD_CURSE,100,거절,NONE,0,,,
+EV007,수상한 이방인,Suspicious Stranger,2,이방인이 거래를 제안한다.,물약 1개 획득,GAIN_POTION,1,골드 +50,GAIN_GOLD,50,유물 1개 획득 (HP -10),GAIN_RELIC_LOSE_HP,10
+EV008,용암 구덩이,Lava Pit,3,뜨거운 용암이 끓고 있다.,HP -15 / 유물 획득,LOSE_HP_GAIN_RELIC,15,피해간다,NONE,0,,,
+EV009,화산 사제,Volcano Priest,3,사제가 축복을 건넨다.,모든 카드 +1 강화 (HP -20),UPGRADE_ALL_LOSE_HP,20,축복 거절 (골드 +50),GAIN_GOLD,50,,,
+EV010,봉인된 상자,Sealed Chest,4,신비한 기운의 상자다.,열어본다 (유물 또는 저주),RANDOM_RELIC_OR_CURSE,0,열지 않는다,NONE,0,,,

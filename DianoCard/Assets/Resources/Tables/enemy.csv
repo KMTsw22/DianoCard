@@ -1,0 +1,20 @@
+id,name_kr,name_en,enemy_type,chapter,hp,attack,defense,ai_pattern,gold_min,gold_max,description
+E001,고블린 사냥꾼,Goblin Hunter,NORMAL,1,20,7,0,ATTACK,10,15,평범한 사냥꾼.
+E002,야만 전사,Barbarian,NORMAL,1,25,8,0,ATTACK,12,18,거친 전사.
+E003,도굴꾼,Tomb Raider,NORMAL,1,22,6,3,DEFEND_ATTACK,15,20,방어와 공격을 번갈아 한다.
+E004,저주받은 미라,Cursed Mummy,NORMAL,1,30,7,0,DEBUFF_ATTACK,10,15,약화 디버프를 건다.
+E005,날개 정령,Wind Spirit,NORMAL,1,18,9,0,ATTACK,8,14,빠르고 약하다.
+E101,거대 골렘,Stone Golem,ELITE,1,60,10,5,DEFEND_ATTACK,30,40,튼튼한 엘리트.
+E102,쌍둥이 도굴꾼,Twin Raiders,ELITE,1,40,8,0,ATTACK,30,40,2체로 등장.
+E103,어둠의 사제,Dark Priest,ELITE,1,50,7,0,SUMMON_ATTACK,30,40,적을 소환한다.
+E901,고대 거상,Ancient Colossus,BOSS,1,150,12,5,PHASE_ATTACK,100,100,1챕터 보스. 페이즈 변화.
+E201,사막 도적,Desert Bandit,NORMAL,2,35,10,0,ATTACK,15,22,사막의 도적.
+E202,모래 전갈,Sand Scorpion,NORMAL,2,28,11,0,POISON_ATTACK,12,18,독을 건다.
+E203,망령 검사,Wraith Swordsman,NORMAL,2,40,9,3,DEFEND_ATTACK,18,25,유령 검사.
+E902,피라미드의 왕,Pyramid King,BOSS,2,220,14,8,PHASE_ATTACK,150,150,2챕터 보스.
+E301,용암 정령,Lava Elemental,NORMAL,3,50,13,0,BURN_ATTACK,20,28,화상을 건다.
+E302,화산 트롤,Volcanic Troll,NORMAL,3,60,12,5,DEFEND_ATTACK,22,30,재생 능력.
+E903,화산의 군주,Volcano Lord,BOSS,3,300,16,10,PHASE_ATTACK,200,200,3챕터 보스.
+E401,심연의 사도,Abyss Cultist,NORMAL,4,70,15,5,SUMMON_ATTACK,28,38,수하를 소환.
+E402,그림자 용,Shadow Drake,NORMAL,4,80,16,8,FLY_ATTACK,30,40,비행형.
+E904,태초의 공룡왕,Primal Dino King,BOSS,4,500,20,15,PHASE_ATTACK,300,300,최종 보스.

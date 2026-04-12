@@ -1,0 +1,117 @@
+# =========================================================
+# Unity
+# =========================================================
+# 자동 생성 폴더 (어느 깊이에서든 매칭되도록 unrooted 패턴 사용)
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+[Mm]emory[Cc]aptures/
+[Rr]ecordings/
+
+# Asset Store Tools
+[Aa]ssets/AssetStoreTools*
+
+# Addressables: 빌드 결과물
+[Aa]ssets/[Aa]ddressable[Aa]ssets[Dd]ata/*/*.bin*
+
+# Addressables content packed streaming assets
+[Aa]ssets/[Ss]treamingAssets/aa.meta
+[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# Asset meta는 에셋과 함께 추적되어야 함 → 위 ignore 경로 하위의 .meta는 자동으로 같이 ignore됨.
+# 따로 예외 처리 필요 없음.
+
+# Unity가 매번 생성/갱신하는 솔루션/프로젝트 파일
+*.csproj
+*.unityproj
+*.sln
+*.slnx
+*.suo
+*.tmp
+*.user
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# 빌드 산출물
+*.apk
+*.aab
+*.unitypackage
+*.app
+
+# Crashlytics
+crashlytics-build.properties
+
+# =========================================================
+# IDE - JetBrains Rider
+# =========================================================
+.idea/
+*.sln.iml
+
+# =========================================================
+# IDE - Visual Studio / VS Code
+# =========================================================
+.vs/
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Local History (VS Code)
+.history/
+
+# Built VS Code Extensions
+*.vsix
+
+# =========================================================
+# OS - Windows
+# =========================================================
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.lnk
+*.stackdump
+
+# =========================================================
+# OS - macOS
+# =========================================================
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# =========================================================
+# OS - Linux
+# =========================================================
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# =========================================================
+# 임시/백업 파일
+# =========================================================
+*.bak
+*.swp
+*.orig
+*.rej
+
+# =========================================================
+# Claude Code 작업 폴더 (커밋 제외)
+# =========================================================
+.claude/

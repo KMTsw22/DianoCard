@@ -1,0 +1,10 @@
+id,name_kr,name_en,potion_type,rarity,target,value,price,description,buyable
+P001,공격 물약,Attack Potion,ATTACK,COMMON,ENEMY,20,50,적에게 데미지 20.,TRUE
+P002,상급 공격 물약,Greater Attack Potion,ATTACK,UNCOMMON,ALL_ENEMY,30,60,모든 적에게 데미지 30 (광역).,FALSE
+P003,최상급 공격 물약,Supreme Attack Potion,ATTACK,RARE,ENEMY,50,70,적에게 데미지 50.,FALSE
+P004,방어 물약,Defense Potion,DEFENSE,COMMON,SELF,10,50,방어도 10 획득.,TRUE
+P005,상급 방어 물약,Greater Defense Potion,DEFENSE,UNCOMMON,SELF,20,60,방어도 20 획득.,FALSE
+P006,최상급 방어 물약,Supreme Defense Potion,DEFENSE,RARE,SELF,30,70,방어도 30 획득.,FALSE
+P007,드로우 물약,Draw Potion,UTILITY,COMMON,SELF,3,50,카드 3장 드로우.,TRUE
+P008,마나 물약,Mana Potion,UTILITY,UNCOMMON,SELF,2,60,이번 턴 마나 +2.,FALSE
+P009,축복 물약,Blessing Potion,UTILITY,RARE,ALL_ALLY,0,70,모든 아군 공격력 +2 / 체력 +5.,FALSE
