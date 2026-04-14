@@ -17,6 +17,7 @@ namespace DianoCard.Data
         public int goldMin;
         public int goldMax;
         public string description;
+        public string image;
 
         public static EnemyData FromRow(Dictionary<string, string> row)
         {
@@ -34,6 +35,7 @@ namespace DianoCard.Data
                 goldMin = CSVUtil.GetInt(row, "gold_min"),
                 goldMax = CSVUtil.GetInt(row, "gold_max"),
                 description = CSVUtil.GetString(row, "description"),
+                image = CSVUtil.GetString(row, "image"),
             };
         }
     }

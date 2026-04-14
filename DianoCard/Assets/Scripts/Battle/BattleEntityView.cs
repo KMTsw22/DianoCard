@@ -1,0 +1,207 @@
+using System.Collections;
+using UnityEngine;
+
+namespace DianoCard.Battle
+{
+    /// <summary>
+    /// World-space animated view for a battle entity (player, enemy, summon).
+    /// SpriteRenderer + coroutine tweens. Idle bob, 4-frame attack sequence, hit shake/flash.
+    /// Position is driven externally via <see cref="SetBasePosition"/>, animations offset from that base.
+    /// </summary>
+    [RequireComponent(typeof(SpriteRenderer))]
+    public class BattleEntityView : MonoBehaviour
+    {
+        private SpriteRenderer _sr;
+        private Vector3 _basePosition;
+        private Coroutine _currentAnim;
+        private Color _baseColor = Color.white;
+        private float _idleBobAmplitude = 0.03f;
+        private float _idleBobFreq = 1.3f;
+
+        // 공격 시퀀스 프레임들 (모두 선택적 — 없으면 해당 단계 스킵)
+        private Sprite _idleSprite;
+        private Sprite _windupSprite;
+        private Sprite _strikeSprite;
+        private Sprite _strikeExtendedSprite;
+
+        // 스케일 기준이 되는 스프라이트 높이 (바뀌지 않는 고정값). 프레임 스왑 중에도 이 값으로 scale 계산.
+        private float _scaleReferenceHeight = -1f;
+
+        // 현재 애니메이션 페이즈의 스케일 배율 (StrikeExtended에서 캐릭터 비율 보정용). 기본 1.0
+        private float _activeScaleMultiplier = 1f;
+        // StrikeExtended 스프라이트 표시 중 적용할 크기 부스트 (프레임 내 캐릭터가 작게 그려진 경우 보정). 기본 1.0
+        private float _strikeExtendedScaleBoost = 1.0f;
+
+        private void Awake()
+        {
+            _sr = GetComponent<SpriteRenderer>();
+            _sr.sortingOrder = 50;
+        }
+
+        public void SetSprite(Sprite s)
+        {
+            _sr.sprite = s;
+            if (_idleSprite == null) _idleSprite = s;
+            if (_scaleReferenceHeight <= 0f && s != null && s.bounds.size.y > 0f)
+                _scaleReferenceHeight = s.bounds.size.y;
+        }
+
+        /// <summary>공격용 4프레임 세트 지정. 일부만 지정해도 됨 (null은 해당 단계 스킵).</summary>
+        public void SetAttackFrames(Sprite idle, Sprite windup, Sprite strike, Sprite strikeExtended)
+        {
+            if (idle           != null) _idleSprite           = idle;
+            if (windup         != null) _windupSprite         = windup;
+            if (strike         != null) _strikeSprite         = strike;
+            if (strikeExtended != null) _strikeExtendedSprite = strikeExtended;
+            if (_sr.sprite == null && _idleSprite != null) _sr.sprite = _idleSprite;
+        }
+
+        public void SetBasePosition(Vector3 pos)
+        {
+            _basePosition = pos;
+        }
+
+        /// <summary>Rescales transform to target world-space height. 기준 스프라이트 높이 고정으로 프레임 스왑 시 크기 점프 방지.</summary>
+        public void SetWorldHeight(float worldHeight)
+        {
+            // 기준 높이가 아직 없으면 현재 스프라이트로 한 번 잡기
+            if (_scaleReferenceHeight <= 0f && _sr.sprite != null && _sr.sprite.bounds.size.y > 0f)
+                _scaleReferenceHeight = _sr.sprite.bounds.size.y;
+            if (_scaleReferenceHeight <= 0f) return;
+            float s = (worldHeight / _scaleReferenceHeight) * _activeScaleMultiplier;
+            transform.localScale = new Vector3(s, s, 1f);
+        }
+
+        public void SetStrikeExtendedScaleBoost(float boost) => _strikeExtendedScaleBoost = boost;
+
+        public void SetSortingOrder(int order)
+        {
+            _sr.sortingOrder = order;
+        }
+
+        public void PlayAttack(Vector3 dir, float distance = 0.7f, float duration = 0.75f)
+        {
+            StartAnim(AttackRoutine(dir.normalized, distance, duration));
+        }
+
+        public void PlayHit(float duration = 0.35f)
+        {
+            StartAnim(HitRoutine(duration));
+        }
+
+        private void StartAnim(IEnumerator routine)
+        {
+            if (_currentAnim != null) StopCoroutine(_currentAnim);
+            _currentAnim = StartCoroutine(routine);
+        }
+
+        private void LateUpdate()
+        {
+            // 애니메이션 진행 중이 아니면 idle bob 적용
+            if (_currentAnim == null && _sr.sprite != null)
+            {
+                float bob = Mathf.Sin(Time.time * _idleBobFreq) * _idleBobAmplitude;
+                transform.position = _basePosition + new Vector3(0f, bob, 0f);
+            }
+        }
+
+        private IEnumerator AttackRoutine(Vector3 dir, float distance, float duration)
+        {
+            // 4-프레임 페이즈 분할:
+            //   0~30% windup    — 뒤로 빼며 채찍 당김
+            //   30~45% strike   — 스냅 순간 (짧게, 크랙 치는 찰나)
+            //   45~80% extended — 채찍 최대로 뻗은 상태 유지 (길게, 시각적 임팩트)
+            //   80~100% return  — idle 복귀
+            float windupEnd   = duration * 0.30f;
+            float strikeEnd   = duration * 0.45f;
+            float extendedEnd = duration * 0.80f;
+
+            Sprite originalSprite = _sr.sprite;
+
+            float t = 0f;
+            int phase = -1; // 0=windup, 1=strike, 2=extended, 3=return
+            while (t < duration)
+            {
+                t += Time.deltaTime;
+
+                int newPhase;
+                if      (t < windupEnd)   newPhase = 0;
+                else if (t < strikeEnd)   newPhase = 1;
+                else if (t < extendedEnd) newPhase = 2;
+                else                      newPhase = 3;
+
+                if (newPhase != phase)
+                {
+                    phase = newPhase;
+                    Sprite next = phase switch
+                    {
+                        0 => _windupSprite,
+                        1 => _strikeSprite,
+                        2 => _strikeExtendedSprite ?? _strikeSprite, // extended 없으면 strike 유지
+                        _ => _idleSprite,
+                    };
+                    if (next != null) _sr.sprite = next;
+
+                    // StrikeExtended는 프레임 내 캐릭터 비율이 다른 경우가 많아 보정 배율 적용
+                    _activeScaleMultiplier = (phase == 2 && _strikeExtendedSprite != null)
+                        ? _strikeExtendedScaleBoost
+                        : 1f;
+                }
+
+                // 위치 트윈
+                float offset;
+                if (t < windupEnd)
+                {
+                    float wp = t / windupEnd;
+                    offset = Mathf.Lerp(0f, -distance * 0.20f, wp);
+                }
+                else if (t < strikeEnd)
+                {
+                    float sp = (t - windupEnd) / (strikeEnd - windupEnd);
+                    // strike: 짧고 빠르게 앞으로 튕김
+                    offset = Mathf.Lerp(-distance * 0.20f, distance * 0.80f, sp);
+                }
+                else if (t < extendedEnd)
+                {
+                    float ep = (t - strikeEnd) / (extendedEnd - strikeEnd);
+                    // extended: strike에서 살짝 더 앞으로 밀었다가 유지
+                    offset = Mathf.Lerp(distance * 0.80f, distance, Mathf.Pow(ep, 0.4f));
+                }
+                else
+                {
+                    float rp = (t - extendedEnd) / (duration - extendedEnd);
+                    offset = Mathf.Lerp(distance, 0f, rp);
+                }
+                transform.position = _basePosition + dir * offset;
+                yield return null;
+            }
+            transform.position = _basePosition;
+            if (_idleSprite != null) _sr.sprite = _idleSprite;
+            else if (originalSprite != null) _sr.sprite = originalSprite;
+            _activeScaleMultiplier = 1f;
+            _currentAnim = null;
+        }
+
+        private IEnumerator HitRoutine(float duration)
+        {
+            float t = 0f;
+            while (t < duration)
+            {
+                t += Time.deltaTime;
+                float p = Mathf.Clamp01(t / duration);
+                float falloff = 1f - p;
+                Vector3 shake = new Vector3(
+                    Mathf.Sin(t * 90f) * 0.08f * falloff,
+                    Mathf.Cos(t * 75f) * 0.03f * falloff,
+                    0f);
+                transform.position = _basePosition + shake;
+                float flash = Mathf.Max(0f, 1f - p * 2.2f);
+                _sr.color = Color.Lerp(_baseColor, new Color(1.3f, 0.8f, 0.8f, 1f), flash);
+                yield return null;
+            }
+            transform.position = _basePosition;
+            _sr.color = _baseColor;
+            _currentAnim = null;
+        }
+    }
+}

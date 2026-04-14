@@ -1,26 +1,26 @@
 id,name_kr,name_en,card_type,sub_type,rarity,cost,attack,hp,value,target,description,image,chapter
-C001,트리케라톱스,Triceratops,SUMMON,HERBIVORE,COMMON,1,4,20,0,FIELD,초식 공룡. 바로 소환 가능. 높은 체력.,Triceratops.png,1
-C002,스테고사우루스,Stegosaurus,SUMMON,HERBIVORE,COMMON,1,5,17,0,FIELD,초식 공룡. 바로 소환 가능. 균형형.,Stegosaurus.png,1
-C003,안킬로사우루스,Ankylosaurus,SUMMON,HERBIVORE,UNCOMMON,2,3,25,0,FIELD,초식 공룡. 매우 높은 체력. 탱커.,Ankylosaurus.png,1
-C004,랩터,Raptor,SUMMON,CARNIVORE,COMMON,1,7,13,0,FIELD,육식 공룡. 제물 1 필요. 빠른 공격.,Raptor.png,1
-C005,카르노타우루스,Carnotaurus,SUMMON,CARNIVORE,COMMON,1,8,10,0,FIELD,육식 공룡. 제물 1 필요. 강한 공격.,Carnotaurus.png,1
-C006,딜로포사우루스,Dilophosaurus,SUMMON,CARNIVORE,UNCOMMON,2,6,12,0,FIELD,육식 공룡. 제물 1 필요. 독 부여.,Dilophosaurus.png,2
-C007,스피노사우루스,Spinosaurus,SUMMON,CARNIVORE,RARE,3,12,18,0,FIELD,강력한 육식 공룡. 제물 2 필요.,Spinosaurus.png,3
-C008,티렉스,T-Rex,SUMMON,CARNIVORE,RARE,3,15,22,0,FIELD,최강 육식 공룡. 제물 2 필요. 광역 공포.,T-Rex.png,3
-C009,프테라노돈,Pteranodon,SUMMON,CARNIVORE,UNCOMMON,2,5,8,0,FIELD,비행 공룡. 적 후열 직접 공격 가능.,Pteranodon.png,2
-C010,콤프소그나투스,Compsognathus,SUMMON,CARNIVORE,COMMON,0,2,5,0,FIELD,제물용 소형 공룡. 마나 0.,Compsognathus.png,1
-C101,공격 마법,Attack Spell,MAGIC,ATTACK,COMMON,1,5,0,5,ENEMY,적에게 직접 데미지 5.,,1
-C102,방어 마법,Defense Spell,MAGIC,DEFENSE,COMMON,1,0,0,5,SELF,소환사에게 방어도 5 부여.,,1
-C103,화염구,Fireball,MAGIC,ATTACK,UNCOMMON,2,0,0,12,ENEMY,적에게 데미지 12.,,1
-C104,수호 결계,Ward,MAGIC,DEFENSE,UNCOMMON,2,0,0,10,SELF,방어도 10 + 다음 턴 +5.,,1
-C105,번개,Lightning,MAGIC,ATTACK,RARE,1,0,0,8,RANDOM,랜덤한 적에게 데미지 8.,,2
-C106,전체 공격,Meteor,MAGIC,ATTACK,RARE,3,0,0,10,ALL_ENEMY,모든 적에게 데미지 10.,,3
-C201,공격 강화,Power Up,BUFF,ATTACK_BUFF,COMMON,1,0,0,3,ALLY,한 턴 동안 초식 공룡 공격력 +3.,,1
-C202,전체 힐,Heal All,BUFF,HEAL,COMMON,1,0,0,2,ALL_ALLY,자신 포함 모든 아군 HP +2.,,1
-C203,광폭화,Berserk,BUFF,ATTACK_BUFF,UNCOMMON,1,0,0,5,ALLY,한 턴 동안 공격력 +5. 소환사 HP -1.,,1
-C204,광역 공격,Cleave,BUFF,SPECIAL,UNCOMMON,2,0,0,0,ALLY,선택 공룡의 공격이 광역화.,,2
-C205,재생,Regenerate,BUFF,HEAL,UNCOMMON,1,0,0,3,ALLY,선택 아군 HP +3 / 매 턴 +1 (3턴).,,2
-C206,분노의 함성,Roar,BUFF,SPECIAL,RARE,2,0,0,0,ALL_ALLY,모든 아군 공격력 +2 영구.,,3
-C301,제물 의식,Sacrifice,RITUAL,SACRIFICE,COMMON,0,0,0,0,ALLY,아군 1체 처치. 마나 +2 획득.,,1
-C302,카드 드로우,Draw,UTILITY,DRAW,COMMON,1,0,0,2,SELF,카드 2장 드로우.,,1
-C303,발굴,Excavate,UTILITY,DRAW,UNCOMMON,1,0,0,3,SELF,카드 3장 드로우. 패 1장 버리기.,,2
+C001,트리케라톱스,Triceratops,SUMMON,HERBIVORE,COMMON,1,4,20,0,FIELD,Herbivore. Summon directly. High HP.,Triceratops.png,1
+C002,스테고사우루스,Stegosaurus,SUMMON,HERBIVORE,COMMON,1,5,17,0,FIELD,Herbivore. Summon directly. Balanced.,Stegosaurus.png,1
+C003,안킬로사우루스,Ankylosaurus,SUMMON,HERBIVORE,UNCOMMON,2,3,25,0,FIELD,Herbivore tank. Very high HP.,Ankylosaurus.png,1
+C004,랩터,Raptor,SUMMON,CARNIVORE,COMMON,1,7,13,0,FIELD,Carnivore. Costs 1 sacrifice. Fast strike.,Raptor.png,1
+C005,카르노타우루스,Carnotaurus,SUMMON,CARNIVORE,COMMON,1,8,10,0,FIELD,Carnivore. Costs 1 sacrifice. Heavy hitter.,Carnotaurus.png,1
+C006,딜로포사우루스,Dilophosaurus,SUMMON,CARNIVORE,UNCOMMON,2,6,12,0,FIELD,Carnivore. Costs 1 sacrifice. Applies poison.,Dilophosaurus.png,2
+C007,스피노사우루스,Spinosaurus,SUMMON,CARNIVORE,RARE,3,12,18,0,FIELD,Mighty carnivore. Costs 2 sacrifices.,Spinosaurus.png,3
+C008,티렉스,T-Rex,SUMMON,CARNIVORE,RARE,3,15,22,0,FIELD,Apex carnivore. 2 sacrifices. AoE fear.,T-Rex.png,3
+C009,프테라노돈,Pteranodon,SUMMON,CARNIVORE,UNCOMMON,2,5,8,0,FIELD,Flying. Can strike enemy back row.,Pteranodon.png,2
+C010,콤프소그나투스,Compsognathus,SUMMON,CARNIVORE,COMMON,0,2,5,0,FIELD,Tiny sacrifice fodder. Costs 0 mana.,Compsognathus.png,1
+C101,공격 마법,Attack Spell,MAGIC,ATTACK,COMMON,1,5,0,5,ENEMY,Deal 5 damage to an enemy.,AttackSpell.png,1
+C102,방어 마법,Defense Spell,MAGIC,DEFENSE,COMMON,1,0,0,5,SELF,Gain 5 block.,DefenseSpell.png,1
+C103,화염구,Fireball,MAGIC,ATTACK,UNCOMMON,2,0,0,12,ENEMY,Deal 12 damage to an enemy.,Fireball.png,1
+C104,수호 결계,Ward,MAGIC,DEFENSE,UNCOMMON,2,0,0,10,SELF,Gain 10 block. Next turn +5.,Ward.png,1
+C105,번개,Lightning,MAGIC,ATTACK,RARE,1,0,0,8,RANDOM,Deal 8 damage to a random enemy.,Lightning.png,2
+C106,전체 공격,Meteor,MAGIC,ATTACK,RARE,3,0,0,10,ALL_ENEMY,Deal 10 damage to ALL enemies.,Meteor.png,3
+C201,공격 강화,Power Up,BUFF,ATTACK_BUFF,COMMON,1,0,0,3,ALLY,+3 ATK to a herbivore this turn.,PowerUp.png,1
+C202,전체 힐,Heal All,BUFF,HEAL,COMMON,1,0,0,2,ALL_ALLY,Heal +2 HP to all allies and you.,HealAll.png,1
+C203,광폭화,Berserk,BUFF,ATTACK_BUFF,UNCOMMON,1,0,0,5,ALLY,+5 ATK this turn. Lose 1 HP.,Berserk.png,1
+C204,광역 공격,Cleave,BUFF,SPECIAL,UNCOMMON,2,0,0,0,ALLY,Target's attacks become AoE.,Cleave.png,2
+C205,재생,Regenerate,BUFF,HEAL,UNCOMMON,1,0,0,3,ALLY,Ally +3 HP / +1 each turn (3T).,Regenerate.png,2
+C206,분노의 함성,Roar,BUFF,SPECIAL,RARE,2,0,0,0,ALL_ALLY,All allies +2 ATK permanently.,Roar.png,3
+C301,제물 의식,Sacrifice,RITUAL,SACRIFICE,COMMON,0,0,0,0,ALLY,Kill an ally. Gain +2 mana.,Sacrifice.png,1
+C302,카드 드로우,Draw,UTILITY,DRAW,COMMON,1,0,0,2,SELF,Draw 2 cards.,Draw.png,1
+C303,발굴,Excavate,UTILITY,DRAW,UNCOMMON,1,0,0,3,SELF,Draw 3 cards. Discard 1.,Excavate.png,2

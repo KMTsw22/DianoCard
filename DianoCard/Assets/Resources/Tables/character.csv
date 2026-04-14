@@ -1,0 +1,2 @@
+id,name_kr,name_en,max_hp,start_gold,description,passive_name,passive_description,card_portrait,field_portrait,unlocked
+CH001,고고학자,THE ARCHAEOLOGIST,70,99,The last guardian of ancient knowledge.\nCommands dinosaurs through the power of magical relics.,Relic Bond,"At the start of each combat, gain 1 Artifact charge.",Char_Archaeologist_Card,Char_Archaeologist_Field,TRUE

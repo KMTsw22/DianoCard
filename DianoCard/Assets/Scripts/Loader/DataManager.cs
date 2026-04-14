@@ -21,6 +21,7 @@ namespace DianoCard.Data
         public IReadOnlyDictionary<string, ChapterData> Chapters => _chapters;
         public IReadOnlyDictionary<string, EventData> Events => _events;
         public IReadOnlyDictionary<string, NodeData> Nodes => _nodes;
+        public IReadOnlyDictionary<string, CharacterData> Characters => _characters;
 
         private Dictionary<string, CardData> _cards = new();
         private Dictionary<string, EnemyData> _enemies = new();
@@ -29,6 +30,7 @@ namespace DianoCard.Data
         private Dictionary<string, ChapterData> _chapters = new();
         private Dictionary<string, EventData> _events = new();
         private Dictionary<string, NodeData> _nodes = new();
+        private Dictionary<string, CharacterData> _characters = new();
 
         public bool IsLoaded { get; private set; }
 
@@ -43,12 +45,13 @@ namespace DianoCard.Data
             _chapters = LoadTable("chapter", ChapterData.FromRow, d => d.id);
             _events = LoadTable("event", EventData.FromRow, d => d.id);
             _nodes = LoadTable("node", NodeData.FromRow, d => d.id);
+            _characters = LoadTable("character", CharacterData.FromRow, d => d.id);
 
             IsLoaded = true;
 
             Debug.Log($"[DataManager] Loaded — cards:{_cards.Count} enemies:{_enemies.Count} " +
                       $"potions:{_potions.Count} relics:{_relics.Count} chapters:{_chapters.Count} " +
-                      $"events:{_events.Count} nodes:{_nodes.Count}");
+                      $"events:{_events.Count} nodes:{_nodes.Count} characters:{_characters.Count}");
         }
 
         private Dictionary<string, T> LoadTable<T>(
@@ -88,5 +91,6 @@ namespace DianoCard.Data
         public ChapterData GetChapter(string id) => _chapters.TryGetValue(id, out var d) ? d : null;
         public EventData GetEvent(string id) => _events.TryGetValue(id, out var d) ? d : null;
         public NodeData GetNode(string id) => _nodes.TryGetValue(id, out var d) ? d : null;
+        public CharacterData GetCharacter(string id) => _characters.TryGetValue(id, out var d) ? d : null;
     }
 }

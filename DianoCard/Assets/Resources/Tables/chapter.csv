@@ -1,5 +1,5 @@
 id,name_kr,name_en,mana,node_count,normal_count,elite_count,shop_count,town_count,event_count,boss_id,normal_enemy_pool,elite_enemy_pool,description
-CH01,잃어버린 유적,Lost Ruins,3,15,9,2,2,2,2,E901,"E001,E002,E003,E004,E005","E101,E102,E103",1챕터. 성장 방향성 결정.
+CH01,잃어버린 유적,Lost Ruins,3,15,9,2,2,2,2,E901,"E001,E002,E003","E101,E102,E103",1챕터. 성장 방향성 결정.
 CH02,황금 사막,Golden Desert,4,15,9,2,2,2,2,E902,"E201,E202,E203","E101,E102,E103",2챕터. 중반 전략 확장.
 CH03,불타는 화산,Burning Volcano,5,15,9,2,2,2,2,E903,"E301,E302","E101,E102,E103",3챕터. 고난도.
 CH04,태초의 숲,Primeval Forest,6,15,9,2,2,2,2,E904,"E401,E402","E101,E102,E103",4챕터. 최종.

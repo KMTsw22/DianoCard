@@ -76,8 +76,9 @@ namespace DianoCard.Battle
         // 카드 사용
         // =========================================================
 
+        /// <param name="targetEnemyIndex">단일 적 타겟 카드의 적 인덱스. -1이면 자동(첫 적).</param>
         /// <returns>성공적으로 사용했으면 true</returns>
-        public bool PlayCard(int handIndex)
+        public bool PlayCard(int handIndex, int targetEnemyIndex = -1)
         {
             if (handIndex < 0 || handIndex >= state.hand.Count) return false;
 
@@ -103,18 +104,26 @@ namespace DianoCard.Battle
                 Log($"  >> Sacrificed {sac.data.nameKr}");
             }
 
+            // 명시된 타겟이 있으면 EnemyInstance로 변환
+            EnemyInstance explicitTarget = null;
+            if (targetEnemyIndex >= 0 && targetEnemyIndex < state.enemies.Count)
+            {
+                var candidate = state.enemies[targetEnemyIndex];
+                if (!candidate.IsDead) explicitTarget = candidate;
+            }
+
             // 비용 지불 & 손에서 제거
             state.player.mana -= card.cost;
             state.hand.RemoveAt(handIndex);
             state.discard.Add(inst);
 
             Log($"  [Play] {card.nameKr} (cost {card.cost})");
-            ResolveCard(card);
+            ResolveCard(card, explicitTarget);
 
             return true;
         }
 
-        private void ResolveCard(CardData c)
+        private void ResolveCard(CardData c, EnemyInstance explicitTarget)
         {
             switch (c.cardType)
             {
@@ -125,7 +134,7 @@ namespace DianoCard.Battle
                     break;
 
                 case CardType.MAGIC:
-                    ResolveMagic(c);
+                    ResolveMagic(c, explicitTarget);
                     break;
 
                 case CardType.BUFF:
@@ -147,7 +156,7 @@ namespace DianoCard.Battle
             }
         }
 
-        private void ResolveMagic(CardData c)
+        private void ResolveMagic(CardData c, EnemyInstance explicitTarget)
         {
             if (c.subType == CardSubType.ATTACK)
             {
@@ -170,8 +179,9 @@ namespace DianoCard.Battle
                         }
                         break;
                     default:
-                        var t = FirstAliveEnemy();
-                        if (t != null)
+                        // ENEMY 또는 미지정 — 명시 타겟 우선, 없으면 첫 적
+                        var t = explicitTarget ?? FirstAliveEnemy();
+                        if (t != null && !t.IsDead)
                         {
                             t.TakeDamage(c.value);
                             Log($"    -> {t.data.nameKr} takes {c.value} (HP {t.hp})");
@@ -215,39 +225,68 @@ namespace DianoCard.Battle
         // 턴 종료 → 소환수 공격 → 적 턴 → 다음 턴
         // =========================================================
 
+        /// <summary>
+        /// 한 번에 모든 단계를 실행하는 동기 EndTurn (BattleTest 등 헤드리스용).
+        /// UI에서는 애니메이션을 위해 아래 granular 메서드들을 직접 호출하는 것을 권장.
+        /// </summary>
         public void EndTurn()
         {
             Log($"  [End Turn {state.turn}]");
 
-            // 1. 소환수 자동 공격
+            // 1. 소환수 공격 (한 번에)
             foreach (var s in state.field)
             {
                 if (s.IsDead) continue;
-                var target = FirstAliveEnemy();
-                if (target == null) break;
-                target.TakeDamage(s.TotalAttack);
-                Log($"  {s.data.nameKr} attacks {target.data.nameKr} for {s.TotalAttack} (HP {target.hp})");
-                if (target.IsDead) Log($"    x {target.data.nameKr} defeated");
+                DoSummonAttack(s);
             }
 
             if (state.PlayerWon) { Log("=== VICTORY ==="); return; }
 
-            // 2. 적 턴
+            // 2. 적 턴 (한 번에)
             foreach (var e in state.enemies)
             {
                 if (e.IsDead) continue;
-                ExecuteIntent(e);
+                DoEnemyAction(e);
                 if (state.PlayerLost) { Log("=== DEFEAT ==="); return; }
             }
 
-            // 3. 필드/적 사망 정리
-            state.field.RemoveAll(s => s.IsDead);
+            EndTurnCleanup();
+            StartNextTurnIfAlive();
+        }
 
-            // 4. 패 버리기 (남은 카드는 모두 버림더미로)
+        // =========================================================
+        // 애니메이션용 granular 단계 메서드 (BattleUI 코루틴이 사용)
+        // =========================================================
+
+        /// <summary>한 마리 소환수의 자동 공격을 실행. 죽었거나 타겟 없으면 no-op.</summary>
+        public void DoSummonAttack(SummonInstance summon)
+        {
+            if (summon == null || summon.IsDead) return;
+            var target = FirstAliveEnemy();
+            if (target == null) return;
+            target.TakeDamage(summon.TotalAttack);
+            Log($"  {summon.data.nameKr} attacks {target.data.nameKr} for {summon.TotalAttack} (HP {target.hp})");
+            if (target.IsDead) Log($"    x {target.data.nameKr} defeated");
+        }
+
+        /// <summary>한 마리 적의 인텐트 실행 (공격/방어 등).</summary>
+        public void DoEnemyAction(EnemyInstance enemy)
+        {
+            if (enemy == null || enemy.IsDead) return;
+            ExecuteIntent(enemy);
+        }
+
+        /// <summary>턴 종료 정리: 죽은 소환수 제거, 패 버림더미로.</summary>
+        public void EndTurnCleanup()
+        {
+            state.field.RemoveAll(s => s.IsDead);
             foreach (var c in state.hand) state.discard.Add(c);
             state.hand.Clear();
+        }
 
-            // 5. 다음 턴 시작
+        /// <summary>다음 턴 시작 (전투가 끝나지 않았을 때만).</summary>
+        public void StartNextTurnIfAlive()
+        {
             if (!state.IsOver) StartTurn();
         }
 
