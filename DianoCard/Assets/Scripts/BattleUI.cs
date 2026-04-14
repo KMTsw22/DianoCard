@@ -1008,6 +1008,14 @@ public class BattleUI : MonoBehaviour
             && c.target == TargetType.ENEMY;
     }
 
+    // 플레이어가 공격 모션(채찍 lunge)을 취해야 하는 카드인지 여부.
+    // 단일 적(ENEMY) / 광역(ALL_ENEMY) 공격 주문 모두 포함.
+    private static bool IsAttackSpell(CardData c)
+    {
+        return c.cardType == CardType.MAGIC
+            && c.subType == CardSubType.ATTACK;
+    }
+
     // =========================================================
     // Battle field rendering
     // =========================================================

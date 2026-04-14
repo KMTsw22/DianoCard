@@ -30,7 +30,7 @@ namespace DianoCard.Battle
         // 현재 애니메이션 페이즈의 스케일 배율 (StrikeExtended에서 캐릭터 비율 보정용). 기본 1.0
         private float _activeScaleMultiplier = 1f;
         // StrikeExtended 스프라이트 표시 중 적용할 크기 부스트 (프레임 내 캐릭터가 작게 그려진 경우 보정). 기본 1.0
-        private float _strikeExtendedScaleBoost = 1.0f;
+        private float _strikeExtendedScaleBoost = 1.2f;
 
         private void Awake()
         {
