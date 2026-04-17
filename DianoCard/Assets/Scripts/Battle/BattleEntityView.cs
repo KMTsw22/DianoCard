@@ -15,14 +15,17 @@ namespace DianoCard.Battle
         private Vector3 _basePosition;
         private Coroutine _currentAnim;
         private Color _baseColor = Color.white;
-        private float _idleBobAmplitude = 0.03f;
-        private float _idleBobFreq = 1.3f;
+        // 월드 단위 고정 대신 캐릭터 높이에 비례해서 둥실둥실 느낌이 카메라 스케일과 무관하게 유지되도록.
+        private readonly float _idleBobFraction = 0.028f;
+        private readonly float _idleBobFreq = 1.6f;
+        private float _idleBobPhase;
 
         // 공격 시퀀스 프레임들 (모두 선택적 — 없으면 해당 단계 스킵)
         private Sprite _idleSprite;
         private Sprite _windupSprite;
         private Sprite _strikeSprite;
         private Sprite _strikeExtendedSprite;
+        private Sprite _summonCastSprite;
 
         // 스케일 기준이 되는 스프라이트 높이 (바뀌지 않는 고정값). 프레임 스왑 중에도 이 값으로 scale 계산.
         private float _scaleReferenceHeight = -1f;
@@ -36,6 +39,8 @@ namespace DianoCard.Battle
         {
             _sr = GetComponent<SpriteRenderer>();
             _sr.sortingOrder = 50;
+            // 개체별 위상 오프셋 — 여러 적/플레이어가 같은 박자로 움직여 기계적으로 보이지 않게.
+            _idleBobPhase = Random.value * Mathf.PI * 2f;
         }
 
         public void SetSprite(Sprite s)
@@ -46,6 +51,16 @@ namespace DianoCard.Battle
                 _scaleReferenceHeight = s.bounds.size.y;
         }
 
+        /// <summary>
+        /// 베이스 틴트 색상 변경. hit flash 코루틴이 종료 시 이 색으로 복구됨.
+        /// Reward 화면 등에서 뒷배경 통일 dimming 용도.
+        /// </summary>
+        public void SetBaseColor(Color c)
+        {
+            _baseColor = c;
+            if (_sr != null) _sr.color = c;
+        }
+
         /// <summary>공격용 4프레임 세트 지정. 일부만 지정해도 됨 (null은 해당 단계 스킵).</summary>
         public void SetAttackFrames(Sprite idle, Sprite windup, Sprite strike, Sprite strikeExtended)
         {
@@ -54,6 +69,12 @@ namespace DianoCard.Battle
             if (strike         != null) _strikeSprite         = strike;
             if (strikeExtended != null) _strikeExtendedSprite = strikeExtended;
             if (_sr.sprite == null && _idleSprite != null) _sr.sprite = _idleSprite;
+        }
+
+        /// <summary>소환 모션용 프레임 지정. null이면 PlaySummon 호출해도 프레임 스왑 없이 위치 트윈만 적용.</summary>
+        public void SetSummonFrame(Sprite summonCast)
+        {
+            if (summonCast != null) _summonCastSprite = summonCast;
         }
 
         public void SetBasePosition(Vector3 pos)
@@ -84,6 +105,11 @@ namespace DianoCard.Battle
             StartAnim(AttackRoutine(dir.normalized, distance, duration));
         }
 
+        public void PlaySummon(Vector3 dir, float distance = 0.18f, float duration = 0.7f)
+        {
+            StartAnim(SummonRoutine(dir.normalized, distance, duration));
+        }
+
         public void PlayHit(float duration = 0.35f)
         {
             StartAnim(HitRoutine(duration));
@@ -97,10 +123,13 @@ namespace DianoCard.Battle
 
         private void LateUpdate()
         {
-            // 애니메이션 진행 중이 아니면 idle bob 적용
+            // 애니메이션 진행 중이 아니면 idle bob 적용 — 캐릭터의 실제 월드 높이에 비례
             if (_currentAnim == null && _sr.sprite != null)
             {
-                float bob = Mathf.Sin(Time.time * _idleBobFreq) * _idleBobAmplitude;
+                float worldH = _scaleReferenceHeight > 0f
+                    ? _scaleReferenceHeight * transform.localScale.y
+                    : 1f;
+                float bob = Mathf.Sin(Time.time * _idleBobFreq + _idleBobPhase) * worldH * _idleBobFraction;
                 transform.position = _basePosition + new Vector3(0f, bob, 0f);
             }
         }
@@ -179,6 +208,59 @@ namespace DianoCard.Battle
             if (_idleSprite != null) _sr.sprite = _idleSprite;
             else if (originalSprite != null) _sr.sprite = originalSprite;
             _activeScaleMultiplier = 1f;
+            _currentAnim = null;
+        }
+
+        private IEnumerator SummonRoutine(Vector3 dir, float distance, float duration)
+        {
+            // 3-페이즈 분할:
+            //   0~20% push    — idle에서 summonCast로 프레임 스왑, 앞으로 밀어냄
+            //   20~80% hold   — 뻗은 자세 유지 (소환 순간의 임팩트)
+            //   80~100% return — 복귀하며 idle 프레임으로
+            float pushEnd = duration * 0.20f;
+            float holdEnd = duration * 0.80f;
+
+            Sprite originalSprite = _sr.sprite;
+            if (_summonCastSprite != null) _sr.sprite = _summonCastSprite;
+
+            float t = 0f;
+            int phase = -1; // 0=push, 1=hold, 2=return
+            while (t < duration)
+            {
+                t += Time.deltaTime;
+
+                int newPhase;
+                if      (t < pushEnd) newPhase = 0;
+                else if (t < holdEnd) newPhase = 1;
+                else                  newPhase = 2;
+
+                if (newPhase != phase)
+                {
+                    phase = newPhase;
+                    if (phase == 2 && _idleSprite != null) _sr.sprite = _idleSprite;
+                }
+
+                float offset;
+                if (t < pushEnd)
+                {
+                    float p = t / pushEnd;
+                    offset = Mathf.Lerp(0f, distance, Mathf.Pow(p, 0.5f));
+                }
+                else if (t < holdEnd)
+                {
+                    offset = distance;
+                }
+                else
+                {
+                    float p = (t - holdEnd) / (duration - holdEnd);
+                    offset = Mathf.Lerp(distance, 0f, p);
+                }
+                transform.position = _basePosition + dir * offset;
+                yield return null;
+            }
+            transform.position = _basePosition;
+            if (_idleSprite != null) _sr.sprite = _idleSprite;
+            else if (originalSprite != null) _sr.sprite = originalSprite;
             _currentAnim = null;
         }
 

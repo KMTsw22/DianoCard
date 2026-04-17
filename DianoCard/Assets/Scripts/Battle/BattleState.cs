@@ -15,6 +15,8 @@ namespace DianoCard.Battle
         public List<CardInstance> hand = new();
         public List<CardInstance> discard = new();
         public int turn;
+        // 플레이어 필드(소환수) 동시 수용 가능 수. 챕터별로 다름 — 1챕터 2체, 후반으로 갈수록 증가.
+        public int maxFieldSize = 5;
 
         public bool AllEnemiesDead
         {

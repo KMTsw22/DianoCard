@@ -22,9 +22,10 @@ namespace DianoCard.Battle
         // 전투 시작 / 턴 시작
         // =========================================================
 
-        public void StartBattle(List<CardData> startingDeck, List<EnemyData> enemyPool, int maxMana = 3, int playerHp = 70)
+        public void StartBattle(List<CardData> startingDeck, List<EnemyData> enemyPool, int maxMana = 3, int playerHp = 70, int maxFieldSize = 5)
         {
             state = new BattleState();
+            state.maxFieldSize = maxFieldSize;
             state.player = new Player
             {
                 maxHp = playerHp,
@@ -88,6 +89,15 @@ namespace DianoCard.Battle
             if (state.player.mana < card.cost)
             {
                 Log($"  ! Cannot play {card.nameKr}: need {card.cost} mana (have {state.player.mana})");
+                return false;
+            }
+
+            // 필드 슬롯 제한 — 챕터별 (1챕터=2체). 육식공룡은 제물로 슬롯을 교체하므로 예외.
+            if (card.cardType == CardType.SUMMON
+                && card.subType != CardSubType.CARNIVORE
+                && state.field.Count >= state.maxFieldSize)
+            {
+                Log($"  ! Cannot play {card.nameKr}: field full ({state.field.Count}/{state.maxFieldSize})");
                 return false;
             }
 

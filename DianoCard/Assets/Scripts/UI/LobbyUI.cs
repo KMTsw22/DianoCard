@@ -19,6 +19,31 @@ public class LobbyUI : MonoBehaviour
     private const float RefW = 1280f;
     private const float RefH = 720f;
 
+    // ── Inspector 노출 글로우 위치 (1280x720 가상 좌표계) ─────────────
+    [Header("Center Beam Glow")]
+    [SerializeField] private Rect _centerBeamOuterRect = new Rect(540f, 5f, 200f, 545f);
+    [SerializeField] private Rect _centerBeamCoreRect = new Rect(614f, 25f, 52f, 510f);
+    [SerializeField] private Rect _centerHaloRect = new Rect(490f, 320f, 300f, 240f);
+
+    [Header("Left Gem Glow (Orange Crystal)")]
+    [SerializeField] private Rect _leftGemOuterRect = new Rect(60f, 300f, 230f, 230f);
+    [SerializeField] private Rect _leftGemHotspotRect = new Rect(135f, 365f, 90f, 90f);
+
+    [Header("Right Gem Glow (Blue Runestone)")]
+    [SerializeField] private Rect _rightGemOuterRect = new Rect(940f, 140f, 220f, 220f);
+    [SerializeField] private Rect _rightGemHotspotRect = new Rect(1010f, 205f, 80f, 80f);
+
+    [Header("Button Glow Padding")]
+    [SerializeField] private Vector2 _buttonGlowPadding = new Vector2(32f, 22f);
+
+    [Header("Left Sparkles (Rising Glints)")]
+    [SerializeField] private Rect _leftSparkleArea = new Rect(40f, 200f, 280f, 380f);
+    [SerializeField, Range(0, 60)] private int _leftSparkleCount = 22;
+    [SerializeField] private Color _leftSparkleColor = new Color(1f, 0.78f, 0.38f, 1f);
+    [SerializeField] private Color _leftSparkleCoreColor = new Color(1f, 0.96f, 0.7f, 1f);
+    [SerializeField, Range(0.2f, 4f)] private float _leftSparkleSpeed = 0.9f;
+    [SerializeField] private Vector2 _leftSparkleSizeRange = new Vector2(6f, 18f);
+
     private readonly List<Action> _pending = new();
 
     // 로비 에셋
@@ -29,6 +54,11 @@ public class LobbyUI : MonoBehaviour
     private Texture2D _settingsTexture;
     private Texture2D _quitTexture;
     private Texture2D _glowTexture;
+
+    // 배경 오버레이용 절차적 텍스처 (보석/빛기둥 펄스)
+    private Texture2D _radialGlowTex;
+    private Texture2D _verticalBeamTex;
+    private Texture2D _sparkleTex;
 
     // 투명 버튼용 빈 스타일 (배경 없음)
     private GUIStyle _invisibleStyle;
@@ -105,9 +135,220 @@ public class LobbyUI : MonoBehaviour
         float scale = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
         GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1));
 
+        DrawAmbientGlow();
         DrawTitle();
         DrawButtons(gsm);
         DrawVersion();
+    }
+
+    // ---------------------------------------------------------
+    // 배경의 보석/빛기둥 위에 펄스하는 오버레이를 깔아 생동감 부여.
+    // 위치는 1280x720 기준. 16:9가 아닐 경우 약간 어긋날 수 있음.
+    private void DrawAmbientGlow()
+    {
+        EnsureGlowTextures();
+        if (_radialGlowTex == null || _verticalBeamTex == null) return;
+
+        float t = Time.unscaledTime;
+        var prev = GUI.color;
+
+        // ── 가운데 빛기둥 ────────────────────────────────────────
+        // 느리게 숨쉬는 황금빛. 외곽 + 더 밝은 코어 두 겹.
+        float beamPulse = 0.55f + 0.35f * Mathf.Sin(t * 1.25f);
+        GUI.color = new Color(1f, 0.86f, 0.45f, 0.55f * beamPulse);
+        GUI.DrawTexture(_centerBeamOuterRect, _verticalBeamTex, ScaleMode.StretchToFill, alphaBlend: true);
+        GUI.color = new Color(1f, 0.96f, 0.72f, 0.5f * beamPulse);
+        GUI.DrawTexture(_centerBeamCoreRect, _verticalBeamTex, ScaleMode.StretchToFill, alphaBlend: true);
+
+        // 흐릿한 헤일로 (빛기둥 베이스에서 살짝 부풀어 오름)
+        float halo = 0.5f + 0.5f * Mathf.Sin(t * 1.6f + 0.4f);
+        GUI.color = new Color(1f, 0.88f, 0.5f, 0.35f * halo);
+        GUI.DrawTexture(_centerHaloRect, _radialGlowTex, ScaleMode.StretchToFill, alphaBlend: true);
+
+        // ── 왼쪽 보석 (주황 크리스탈) ───────────────────────────
+        float leftPulse = 0.6f + 0.4f * Mathf.Sin(t * 2.7f + 0.7f);
+        GUI.color = new Color(1f, 0.62f, 0.22f, 0.85f * leftPulse);
+        GUI.DrawTexture(_leftGemOuterRect, _radialGlowTex, ScaleMode.StretchToFill, alphaBlend: true);
+        // 안쪽 핫스팟
+        GUI.color = new Color(1f, 0.92f, 0.55f, 0.75f * leftPulse);
+        GUI.DrawTexture(_leftGemHotspotRect, _radialGlowTex, ScaleMode.StretchToFill, alphaBlend: true);
+
+        // ── 오른쪽 보석 (푸른 룬스톤) ────────────────────────────
+        float rightPulse = 0.6f + 0.4f * Mathf.Sin(t * 2.05f + 1.9f);
+        GUI.color = new Color(0.45f, 0.85f, 1f, 0.8f * rightPulse);
+        GUI.DrawTexture(_rightGemOuterRect, _radialGlowTex, ScaleMode.StretchToFill, alphaBlend: true);
+        GUI.color = new Color(0.78f, 0.96f, 1f, 0.7f * rightPulse);
+        GUI.DrawTexture(_rightGemHotspotRect, _radialGlowTex, ScaleMode.StretchToFill, alphaBlend: true);
+
+        GUI.color = prev;
+
+        DrawLeftSparkles(t);
+    }
+
+    private void EnsureGlowTextures()
+    {
+        if (_radialGlowTex == null) _radialGlowTex = MakeRadialGlow(128);
+        if (_verticalBeamTex == null) _verticalBeamTex = MakeVerticalBeam(32, 256);
+        if (_sparkleTex == null) _sparkleTex = MakeSparkle(64);
+    }
+
+    // 왼쪽 보석 주변에서 위로 떠오르는 주황톤 반짝이.
+    // 상태 없이 시간 기반 결정 함수로 각 파티클의 진행도를 계산한다.
+    private void DrawLeftSparkles(float t)
+    {
+        if (_sparkleTex == null || _leftSparkleCount <= 0) return;
+        if (_leftSparkleArea.width <= 0f || _leftSparkleArea.height <= 0f) return;
+
+        var prev = GUI.color;
+        for (int i = 0; i < _leftSparkleCount; i++)
+        {
+            // 파티클별 결정적 시드 (위치/속도/주기 분산용)
+            float seed = (i * 0.6180339f) % 1f;
+            float speed = _leftSparkleSpeed * (0.7f + seed * 0.8f);
+            float phase = seed * 7.13f;
+            float life = ((t * speed) + phase) % 1f;
+
+            // 수평 위치: 살짝 좌우로 흔들리며 올라감
+            float hBase = Hash01(i * 12.9898f);
+            float sway = Mathf.Sin(life * Mathf.PI * 2f + seed * 6f) * 0.06f;
+            float x = _leftSparkleArea.x + (hBase + sway) * _leftSparkleArea.width;
+
+            // 수직 위치: 아래에서 위로 상승
+            float y = _leftSparkleArea.yMax - life * _leftSparkleArea.height;
+
+            // 크기: 시작은 작게 → 중간에 커짐 → 위로 갈수록 다시 작아짐
+            float sizeT = Mathf.Sin(life * Mathf.PI);
+            float baseSize = Mathf.Lerp(_leftSparkleSizeRange.x, _leftSparkleSizeRange.y, Hash01(i * 37.719f));
+            float size = baseSize * (0.5f + 0.5f * sizeT);
+
+            // 알파: 페이드 인/아웃 + 짧은 트윙클
+            float fade = Mathf.Sin(life * Mathf.PI);
+            float twinkle = 0.65f + 0.35f * Mathf.Sin(t * 8f + seed * 17f);
+            float alpha = fade * twinkle;
+
+            var rect = new Rect(x - size * 0.5f, y - size * 0.5f, size, size);
+
+            // 외곽 글로우 (보석 톤)
+            GUI.color = new Color(_leftSparkleColor.r, _leftSparkleColor.g, _leftSparkleColor.b,
+                _leftSparkleColor.a * alpha * 0.9f);
+            GUI.DrawTexture(rect, _sparkleTex, ScaleMode.StretchToFill, alphaBlend: true);
+
+            // 내부 코어 (작고 밝게)
+            var coreRect = new Rect(rect.x + size * 0.3f, rect.y + size * 0.3f, size * 0.4f, size * 0.4f);
+            GUI.color = new Color(_leftSparkleCoreColor.r, _leftSparkleCoreColor.g, _leftSparkleCoreColor.b,
+                _leftSparkleCoreColor.a * alpha);
+            GUI.DrawTexture(coreRect, _sparkleTex, ScaleMode.StretchToFill, alphaBlend: true);
+        }
+        GUI.color = prev;
+    }
+
+    private static float Hash01(float x)
+    {
+        float s = Mathf.Sin(x) * 43758.5453f;
+        return s - Mathf.Floor(s);
+    }
+
+    // 네 갈래 빛살 + 부드러운 중심 코어를 가진 반짝이 스프라이트.
+    private static Texture2D MakeSparkle(int size)
+    {
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
+        {
+            wrapMode = TextureWrapMode.Clamp,
+            filterMode = FilterMode.Bilinear,
+            hideFlags = HideFlags.HideAndDontSave,
+        };
+        var px = new Color[size * size];
+        float c = (size - 1) * 0.5f;
+        float maxR = size * 0.5f;
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dx = (x - c) / maxR;
+                float dy = (y - c) / maxR;
+                float r = Mathf.Sqrt(dx * dx + dy * dy);
+
+                // 중심 코어 (radial soft falloff)
+                float core = Mathf.Clamp01(1f - r);
+                core = core * core * (3f - 2f * core);
+
+                // 십자 빛살 (축에 가까울수록 밝게, 반지름에 따라 감쇠)
+                float ax = Mathf.Abs(dx);
+                float ay = Mathf.Abs(dy);
+                float streakH = Mathf.Clamp01(1f - ay / 0.08f) * Mathf.Clamp01(1f - ax);
+                float streakV = Mathf.Clamp01(1f - ax / 0.08f) * Mathf.Clamp01(1f - ay);
+                float streak = Mathf.Max(streakH, streakV);
+                streak *= streak;
+
+                float a = Mathf.Clamp01(core * 0.85f + streak * 0.9f);
+                px[y * size + x] = new Color(1f, 1f, 1f, a);
+            }
+        }
+        tex.SetPixels(px);
+        tex.Apply();
+        return tex;
+    }
+
+    private static Texture2D MakeRadialGlow(int size)
+    {
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
+        {
+            wrapMode = TextureWrapMode.Clamp,
+            filterMode = FilterMode.Bilinear,
+            hideFlags = HideFlags.HideAndDontSave,
+        };
+        var px = new Color[size * size];
+        float c = (size - 1) * 0.5f;
+        float maxR = size * 0.5f;
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dx = (x - c) / maxR;
+                float dy = (y - c) / maxR;
+                float a = Mathf.Clamp01(1f - Mathf.Sqrt(dx * dx + dy * dy));
+                a = a * a * (3f - 2f * a); // smoothstep 형태의 부드러운 폴오프
+                px[y * size + x] = new Color(1f, 1f, 1f, a);
+            }
+        }
+        tex.SetPixels(px);
+        tex.Apply();
+        return tex;
+    }
+
+    private static Texture2D MakeVerticalBeam(int w, int h)
+    {
+        var tex = new Texture2D(w, h, TextureFormat.RGBA32, false)
+        {
+            wrapMode = TextureWrapMode.Clamp,
+            filterMode = FilterMode.Bilinear,
+            hideFlags = HideFlags.HideAndDontSave,
+        };
+        var px = new Color[w * h];
+        float cx = (w - 1) * 0.5f;
+        float maxX = w * 0.5f;
+        for (int y = 0; y < h; y++)
+        {
+            float vy = y / (float)(h - 1);
+            float vAlpha = Mathf.Sin(vy * Mathf.PI); // 위/아래 페이드, 가운데 최대
+            for (int x = 0; x < w; x++)
+            {
+                float dx = Mathf.Abs(x - cx) / maxX;
+                float hAlpha = Mathf.Clamp01(1f - dx);
+                hAlpha = hAlpha * hAlpha;
+                px[y * w + x] = new Color(1f, 1f, 1f, hAlpha * vAlpha);
+            }
+        }
+        tex.SetPixels(px);
+        tex.Apply();
+        return tex;
+    }
+
+    void OnDestroy()
+    {
+        if (_radialGlowTex != null) Destroy(_radialGlowTex);
+        if (_verticalBeamTex != null) Destroy(_verticalBeamTex);
+        if (_sparkleTex != null) Destroy(_sparkleTex);
     }
 
     // ---------------------------------------------------------
@@ -200,7 +441,11 @@ public class LobbyUI : MonoBehaviour
             {
                 float pulse = 0.55f + 0.45f * Mathf.Sin(Time.unscaledTime * 2.2f);
                 float alpha = hovered ? 0.95f : 0.45f * pulse;
-                var glowRect = new Rect(drawRect.x - 32f, drawRect.y - 22f, drawRect.width + 64f, drawRect.height + 44f);
+                var glowRect = new Rect(
+                    drawRect.x - _buttonGlowPadding.x,
+                    drawRect.y - _buttonGlowPadding.y,
+                    drawRect.width + _buttonGlowPadding.x * 2f,
+                    drawRect.height + _buttonGlowPadding.y * 2f);
                 GUI.color = new Color(1f, 0.85f, 0.4f, alpha);
                 GUI.DrawTexture(glowRect, _glowTexture, ScaleMode.StretchToFill, alphaBlend: true);
                 GUI.color = prevColor;

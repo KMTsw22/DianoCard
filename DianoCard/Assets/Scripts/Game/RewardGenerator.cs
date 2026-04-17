@@ -52,6 +52,31 @@ namespace DianoCard.Game
             return reward;
         }
 
+        /// <summary>
+        /// 마을 보물상자 무료 개봉 보상.
+        /// ELITE 풀에서 유물 1개 + 약간의 보너스 골드만 — 카드/물약은 없음.
+        /// 유물 풀이 비면(이미 다 보유) 골드만 더 얹어 보너스를 보강한다.
+        /// </summary>
+        public static BattleReward GenerateTreasureChest(RunState run)
+        {
+            var reward = new BattleReward
+            {
+                gold = Random.Range(15, 31),
+                relic = PickRelic(RelicSource.ELITE, run),
+            };
+            if (reward.relic == null)
+            {
+                // 풀이 비면 BOSS 풀에서 보충 시도
+                reward.relic = PickRelic(RelicSource.BOSS, run);
+            }
+            if (reward.relic == null)
+            {
+                // 그래도 없으면 보너스 골드로 대체
+                reward.gold += Random.Range(40, 71);
+            }
+            return reward;
+        }
+
         // ---------------------------------------------------------
         // Card pool
         // ---------------------------------------------------------

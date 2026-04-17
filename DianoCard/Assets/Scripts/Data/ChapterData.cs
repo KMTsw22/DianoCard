@@ -9,6 +9,7 @@ namespace DianoCard.Data
         public string nameKr;
         public string nameEn;
         public int mana;
+        public int maxFieldSize;
         public int nodeCount;
         public int normalCount;
         public int eliteCount;
@@ -28,6 +29,7 @@ namespace DianoCard.Data
                 nameKr = CSVUtil.GetString(row, "name_kr"),
                 nameEn = CSVUtil.GetString(row, "name_en"),
                 mana = CSVUtil.GetInt(row, "mana"),
+                maxFieldSize = CSVUtil.GetInt(row, "max_field_size", 5),
                 nodeCount = CSVUtil.GetInt(row, "node_count"),
                 normalCount = CSVUtil.GetInt(row, "normal_count"),
                 eliteCount = CSVUtil.GetInt(row, "elite_count"),

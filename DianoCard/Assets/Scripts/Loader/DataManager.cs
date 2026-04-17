@@ -22,6 +22,9 @@ namespace DianoCard.Data
         public IReadOnlyDictionary<string, EventData> Events => _events;
         public IReadOnlyDictionary<string, NodeData> Nodes => _nodes;
         public IReadOnlyDictionary<string, CharacterData> Characters => _characters;
+        public IReadOnlyDictionary<string, UIStringData> UIStrings => _uiStrings;
+        public IReadOnlyDictionary<string, CardTypeLabelData> CardTypeLabels => _cardTypeLabels;
+        public IReadOnlyDictionary<string, StatLabelData> StatLabels => _statLabels;
 
         private Dictionary<string, CardData> _cards = new();
         private Dictionary<string, EnemyData> _enemies = new();
@@ -31,6 +34,9 @@ namespace DianoCard.Data
         private Dictionary<string, EventData> _events = new();
         private Dictionary<string, NodeData> _nodes = new();
         private Dictionary<string, CharacterData> _characters = new();
+        private Dictionary<string, UIStringData> _uiStrings = new();
+        private Dictionary<string, CardTypeLabelData> _cardTypeLabels = new();
+        private Dictionary<string, StatLabelData> _statLabels = new();
 
         public bool IsLoaded { get; private set; }
 
@@ -46,12 +52,16 @@ namespace DianoCard.Data
             _events = LoadTable("event", EventData.FromRow, d => d.id);
             _nodes = LoadTable("node", NodeData.FromRow, d => d.id);
             _characters = LoadTable("character", CharacterData.FromRow, d => d.id);
+            _uiStrings = LoadTable("ui_string", UIStringData.FromRow, d => d.id);
+            _cardTypeLabels = LoadTable("card_type_label", CardTypeLabelData.FromRow, d => d.id);
+            _statLabels = LoadTable("stat_label", StatLabelData.FromRow, d => d.id);
 
             IsLoaded = true;
 
             Debug.Log($"[DataManager] Loaded — cards:{_cards.Count} enemies:{_enemies.Count} " +
                       $"potions:{_potions.Count} relics:{_relics.Count} chapters:{_chapters.Count} " +
-                      $"events:{_events.Count} nodes:{_nodes.Count} characters:{_characters.Count}");
+                      $"events:{_events.Count} nodes:{_nodes.Count} characters:{_characters.Count} " +
+                      $"uiStrings:{_uiStrings.Count} cardTypeLabels:{_cardTypeLabels.Count} statLabels:{_statLabels.Count}");
         }
 
         private Dictionary<string, T> LoadTable<T>(
@@ -92,5 +102,38 @@ namespace DianoCard.Data
         public EventData GetEvent(string id) => _events.TryGetValue(id, out var d) ? d : null;
         public NodeData GetNode(string id) => _nodes.TryGetValue(id, out var d) ? d : null;
         public CharacterData GetCharacter(string id) => _characters.TryGetValue(id, out var d) ? d : null;
+
+        // === UI / Label accessors ===
+
+        /// <summary>ui_string.csv에서 id로 문자열을 꺼내 args로 string.Format 치환.</summary>
+        public string GetUIString(string id, params object[] args)
+        {
+            if (!_uiStrings.TryGetValue(id, out var data))
+            {
+                Debug.LogWarning($"[DataManager] UIString not found: {id}");
+                return id;
+            }
+            if (args == null || args.Length == 0) return data.value;
+            try { return string.Format(data.value, args); }
+            catch { return data.value; }
+        }
+
+        /// <summary>card_type_label.csv에서 cardType+subType 조합으로 라벨을 꺼냄.</summary>
+        public string GetCardTypeLabel(CardType cardType, CardSubType subType)
+        {
+            var key = CardTypeLabelData.BuildKey(cardType, subType);
+            return _cardTypeLabels.TryGetValue(key, out var data) ? data.label : key;
+        }
+
+        /// <summary>stat_label.csv에서 id(ATK/HP/DMG/BLOCK/COST)로 짧은 라벨을 꺼냄.</summary>
+        public string GetStatLabel(string id)
+        {
+            return _statLabels.TryGetValue(id, out var data) ? data.label : id;
+        }
+
+        public string GetStatFullName(string id)
+        {
+            return _statLabels.TryGetValue(id, out var data) ? data.fullName : id;
+        }
     }
 }

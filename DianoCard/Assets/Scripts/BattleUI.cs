@@ -32,6 +32,15 @@ public class BattleUI : MonoBehaviour
     // 타겟팅 모드: 공격 카드 클릭 후 적 클릭 대기 중 (-1 = 비활성)
     private int _targetingCardIndex = -1;
 
+    // 손패 숨김 토글 — 공룡/전투 장면이 카드에 가려질 때 카드를 화면 아래로 슬라이드해서 살짝만 보이게.
+    // _handHidden은 목표 상태, _handHideProgress는 선형 진행도(0=표시, 1=숨김 상태),
+    // 드로우 시 ease-in-out 커브를 적용해 "스르륵" 부드럽게 내려가는 느낌.
+    // HandHideDistance=130 → 카드 상단이 555→685로 내려가 30px 정도의 상단만 드러남.
+    private bool _handHidden;
+    private float _handHideProgress;
+    private const float HandHideDuration = 0.9f;
+    private const float HandHideDistance = 130f;
+
     // EndTurn 애니메이션: 소환수→적 순차 lunge 모션
     private bool _endTurnAnimating;
     private object _attackingUnit;       // 현재 lunge 중인 SummonInstance 또는 EnemyInstance
@@ -39,6 +48,73 @@ public class BattleUI : MonoBehaviour
     private const float LungePixels = 70f;
     private const float LungeDuration = 0.70f;
     private const float BetweenAttacksPause = 0.30f;
+
+    // EndTurn 시 손패 카드가 버린 더미로 날아가는 애니메이션.
+    // 3단계: (1) 화면 중앙으로 모이며 아치형으로 떠오름 (2) 잠깐 머무름 (3) 우하단 더미로 흘러감
+    // 애니메이션 구동 중에는 DrawHand가 비어있는 상태를 그리고, 날아가는 카드는 DrawDiscardFlyingCards에서 그린다.
+    private struct DiscardFlyCard
+    {
+        public CardData data;
+        public Vector2 startCenter;   // 가상 좌표상 시작 중심 (부채꼴)
+        public float startAngleDeg;   // 부채꼴 회전 각도
+        public Vector2 gatherTarget;  // 중앙에 모일 때의 도달 위치
+        public float disperseDelay;   // 모인 뒤 버려지기 시작할 때까지의 추가 지연
+    }
+    private readonly List<DiscardFlyCard> _discardFlyCards = new();
+    private float _discardAnimStartTime = -1f;  // -1 = 비활성
+    private int _discardBaseCount;              // 애니 시작 시점의 discard pile 개수
+    private const float DiscardGatherDuration   = 0.80f;  // 부채꼴 → 중앙으로 모이는 구간
+    private const float DiscardHoldDuration     = 0.28f;  // 중앙에서 머무는 구간
+    private const float DiscardDisperseDuration = 0.70f;  // 중앙 → 더미로 흘러가는 구간
+    private const float DiscardDisperseStagger  = 0.06f;  // 카드별 흩어짐 간격
+    private const float DiscardLandPulseDuration = 0.25f;
+    // 모이기 단계에서 사용하는 2차 Bezier 제어점 — 곡선이 제어점에 끌려올라가며
+    // 결과적으로 화면 중앙 높이를 지나가는 아치를 만든다.
+    private static readonly Vector2 DiscardFlyControl = new Vector2(RefW * 0.5f, 150f);
+    // 카드가 모이는 최종 지점 Y — 화면 중앙보다 살짝 위
+    private const float DiscardGatherCenterY = RefH * 0.48f;
+    // 모일 때 카드 간 가로 간격 (중앙을 기준으로 좌우로 배치)
+    private const float DiscardGatherSpacing = 22f;
+
+    // ---------- 드로우 (덱 → 손패) 애니메이션 ----------
+    // 버림 애니와 동일한 3단계 구조의 역방향:
+    //   (1) 덱 더미에서 뒷면으로 떠올라 화면 중앙으로 모임 (아치 Bezier)
+    //   (2) 중앙에서 잠깐 머물며 플립 (뒷면 → 앞면)
+    //   (3) 부채꼴의 자기 자리로 흩어져 안착
+    // DrawHand는 "현재 비행 중인" CardInstance를 건너뛴다.
+    private struct DrawFlyCard
+    {
+        public CardInstance instance;    // state.hand의 실제 참조 (skip 판별용)
+        public CardData data;
+        public int targetIndex;          // 부채꼴 상에서 도달할 인덱스
+        public Vector2 gatherTarget;     // 중앙에 모일 때의 도달 위치
+        public float disperseDelay;      // 모인 뒤 자기 자리로 날아갈 때까지의 추가 지연
+    }
+    private readonly List<DrawFlyCard> _drawFlyCards = new();
+    private readonly HashSet<CardInstance> _drawFlyingInstances = new();
+    private float _drawAnimStartTime = -1f;
+    private int _drawTotalHandCount;     // 애니 시점 손패 총 개수 (부채꼴 기하에 사용)
+    // 버림 애니와 대칭되는 페이즈 길이 — 전체 톤을 맞추기 위해 같은 값 사용
+    private const float DrawGatherDuration   = 0.80f;  // 덱 → 중앙 모임
+    private const float DrawHoldDuration     = 0.32f;  // 중앙에서 머무름 (플립이 일어남)
+    private const float DrawDisperseDuration = 0.70f;  // 중앙 → 부채꼴 자리
+    private const float DrawDisperseStagger  = 0.06f;
+
+    // ---------- Reshuffle (버림 → 덱) 애니메이션 ----------
+    // 덱이 비었을 때 Draw() 내부에서 discard를 deck으로 옮기고 셔플하는데,
+    // 이 전환이 시각적으로 "뚝" 끊어지지 않도록 카드들이 우측 버림 더미에서
+    // 좌측 덱 더미로 흘러가는 스트림 애니메이션을 보여준다.
+    // 카드 정체성은 중요하지 않고(어차피 셔플됨), 뒷면 N장이 이동하는 것처럼 연출.
+    private struct ReshuffleFlyCard
+    {
+        public float delay;          // 애니 시작 이후 출발 지연 (stagger)
+        public float rotSpin;        // 비행 중 회전량 (살짝 뒤뚱거리는 느낌)
+    }
+    private readonly List<ReshuffleFlyCard> _reshuffleFlyCards = new();
+    private float _reshuffleAnimStartTime = -1f;
+    private int _reshuffleTotalCards;  // 옮겨지는 총 카드 수 (= 애니 시작 시점 discard 개수)
+    private const float ReshuffleFlyDuration = 0.48f;
+    private const float ReshuffleFlyStagger  = 0.035f;
 
     // OnGUI에서 state를 즉시 변경하면 Layout/Repaint 이벤트 간 불일치로
     // ArgumentException이 뜨므로, 버튼 클릭 시에는 액션을 지연시켜 Update에서 실행.
@@ -52,10 +128,15 @@ public class BattleUI : MonoBehaviour
     private SpriteRenderer _worldBgSr;
 
     // 카드 프레임 텍스처 (손패 공통)
+    // 아래→위 순서로 레이어: CardBg → 아트 → CardArtFrame(육각 배너 포함) → CardDescPanel → CardBorder
     private Texture2D _cardFrameTexture;
     private Texture2D _cardBgTexture;
     private Texture2D _cardBorderTexture;
+    private Texture2D _cardArtFrameTexture;
+    private Texture2D _cardDescPanelTexture;
+    private Texture2D _cardCountBadgeTexture;
     private Texture2D _manaFrameTexture;
+    private Texture2D _shieldFxTexture;
 
     // 상단 HUD 아이콘
     private Texture2D _iconHP;
@@ -65,9 +146,12 @@ public class BattleUI : MonoBehaviour
     private Texture2D _iconRelic;
     private Texture2D _iconDeck;
     private Texture2D _iconDiscard;
+    private Texture2D _iconCardBack;  // 드로우 애니메이션의 뒷면 표시용
     private Texture2D _iconFloor;
     private Texture2D _iconTurn;
     private Texture2D _iconShield;
+    private Texture2D _iconShieldGreen;
+    private Texture2D _iconAttack;
     private Texture2D _topBarBg;
     private Texture2D _endTurnButtonTex;
     private float _endTurnHoverScale = 1f;
@@ -84,6 +168,9 @@ public class BattleUI : MonoBehaviour
     private Texture2D _playerSprite;
     // 애니메이션용 world-space 뷰 (Phase 1)
     private BattleEntityView _playerView;
+    private bool _rewardDimmed;
+    private SpriteRenderer _rewardDimOverlay;
+    private static readonly Color RewardOverlayColor = new Color(0f, 0f, 0f, 0.4f);
     private Sprite _playerWorldSprite;
 
     // 적 애니메이션 뷰 (적 id → world Sprite, EnemyInstance → view)
@@ -110,6 +197,30 @@ public class BattleUI : MonoBehaviour
         [Range(0.05f, 2f)] public float scale = 0.25f;
         [Range(0.05f, 2f)] public float intensity = 0.3f;
     }
+
+    // ───────── 카드 레이어 rect 튜닝 (Inspector 노출) ─────────
+    // 손패/호버/날아가는 카드/덱 뷰어 — 모든 BattleUI 카드 렌더링에 적용.
+    // (x, y, w, h) = 카드 rect 내부 비율.
+    [Header("Card Layers (rect 비율)")]
+    [Tooltip("CardBg 뒤 배경판 영역. 금색 테두리(CardBorder) 안쪽에 딱 맞도록 inset.")]
+    [SerializeField] private Vector4 cardBgRectPct = new(0.045f, 0.03f, 0.91f, 0.94f);
+    [Tooltip("아트(일러스트) 영역.")]
+    [SerializeField] private Vector4 cardArtRectPct = new(0.06f, 0.045f, 0.88f, 0.63f);
+    [Tooltip("CardArtFrame 오버레이 (골드 사각 + 육각 배너) 영역.")]
+    [SerializeField] private Vector4 cardArtFrameRectPct = new(0.15f, 0.63f, 0.7f, 0.09f);
+    [Tooltip("CardBorder (외곽 테두리) 영역. 기본은 전체.")]
+    [SerializeField] private Vector4 cardBorderRectPct = new(0f, 0f, 1f, 1f);
+    [Tooltip("카드 이름(카테고리 라벨) 영역 — 금테 안에 들어오도록 Y를 살짝 아래로.")]
+    [SerializeField] private Vector4 cardNameRectPct = new(0.06f, 0.075f, 0.88f, 0.07f);
+    [Tooltip("타입/이름 라벨 (Triceratops 등)이 얹힐 육각 배너 영역 — hex 중앙에 정렬.")]
+    [SerializeField] private Vector4 cardTypeRectPct = new(0.15f, 0.645f, 0.7f, 0.07f);
+    [Tooltip("본문 스탯/설명 영역. hex 배너 바로 아래 붙여서 공백 최소화.")]
+    [SerializeField] private Vector4 cardBodyRectPct = new(0.15f, 0.73f, 0.7f, 0.22f);
+    [Tooltip("골드 디바이더 rect (xPct, yPct, widthPct, 절대높이 px). hex 배너 영역 피해서 좌·우 두 조각으로 그려짐.")]
+    [SerializeField] private Vector4 cardDividerRectPct = new(0.07f, 0.672f, 0.87f, 1.3f);
+    [SerializeField] private Color cardDividerColor = new(0.75f, 0.58f, 0.25f, 0.75f);
+    [Tooltip("좌상단 마나 코스트 오브 — (centerX, centerY, sizeFrac) 카드 폭 기준 비율.")]
+    [SerializeField] private Vector3 cardCostOrbPct = new(0.127f, 0.086f, 0.235f);
 
     [Header("Battle Background Ambience")]
     [SerializeField] private List<BackgroundAmbienceEntry> _bgFxEntries = new();
@@ -153,6 +264,11 @@ public class BattleUI : MonoBehaviour
     // 캐릭터 슬롯 위치 (매 OnGUI 시작 시 갱신 → 플로터가 참조)
     private readonly Dictionary<object, Vector2> _slotPositions = new();
 
+    // 필드 소환수의 "표시용" 위치 — 슬롯 타겟 위치로 프레임마다 lerp해서 부드럽게 이동.
+    // 새 소환수가 생기거나 빠져서 슬롯 레이아웃이 재계산될 때 순간이동 없이 밀려나는 연출용.
+    private readonly Dictionary<SummonInstance, Vector2> _summonDisplayPositions = new();
+    private const float SummonSlideSpeed = 7f;
+
     // 방패(블록) 이펙트 — 플레이어 block이 증가한 프레임에 트리거, 일정 시간 동안 재생
     private int _prevPlayerBlock;
     private float _playerShieldFxStartTime = -1f;
@@ -164,12 +280,19 @@ public class BattleUI : MonoBehaviour
     private GUIStyle _centerStyle;
     private GUIStyle _damageStyle;
     private GUIStyle _intentStyle;
+    private GUIStyle _intentNumberStyle;
     private GUIStyle _targetHintStyle;
     private GUIStyle _cardCostStyle;
     private GUIStyle _cardNameStyle;
     private GUIStyle _cardTypeStyle;
     private GUIStyle _cardDescStyle;
     private bool _stylesReady;
+
+    // 덱 뷰어 — 상단 바 계단(Floor) 아이콘 왼쪽 버튼 클릭 시 오픈.
+    // run.deck 전체를 id로 그룹핑해 카드 그리드로 보여주며, 정렬 탭과 스크롤 지원.
+    private bool _deckViewerOpen;
+    private int _deckViewerSortMode;  // 0=획득순, 1=유형, 2=비용, 3=이름순
+    private Vector2 _deckViewerScroll;
 
     private class DamageFloater
     {
@@ -199,9 +322,25 @@ public class BattleUI : MonoBehaviour
         if (_cardBorderTexture == null)
             Debug.LogWarning("[BattleUI] CardBorder texture not found: Resources/CardSlot/CardBorder");
 
+        _cardArtFrameTexture = Resources.Load<Texture2D>("CardSlot/CardArtFrame");
+        if (_cardArtFrameTexture == null)
+            Debug.LogWarning("[BattleUI] CardArtFrame texture not found: Resources/CardSlot/CardArtFrame");
+
+        _cardDescPanelTexture = Resources.Load<Texture2D>("CardSlot/CardDescPanel");
+        if (_cardDescPanelTexture == null)
+            Debug.LogWarning("[BattleUI] CardDescPanel texture not found: Resources/CardSlot/CardDescPanel");
+
+        _cardCountBadgeTexture = Resources.Load<Texture2D>("CardSlot/CardCountBadge");
+        if (_cardCountBadgeTexture == null)
+            Debug.LogWarning("[BattleUI] CardCountBadge texture not found: Resources/CardSlot/CardCountBadge");
+
         _manaFrameTexture = Resources.Load<Texture2D>("CardSlot/ManaFrame");
         if (_manaFrameTexture == null)
             Debug.LogWarning("[BattleUI] ManaFrame texture not found: Resources/CardSlot/ManaFrame");
+
+        _shieldFxTexture = Resources.Load<Texture2D>("CardArt/Spell/Effect/ShieldBubble");
+        if (_shieldFxTexture == null)
+            Debug.LogWarning("[BattleUI] ShieldBubble texture not found: Resources/CardArt/Spell/Effect/ShieldBubble");
 
         _iconHP     = Resources.Load<Texture2D>("InGame/Icon/HP");
         _iconGold   = Resources.Load<Texture2D>("InGame/Icon/Gold");
@@ -210,9 +349,12 @@ public class BattleUI : MonoBehaviour
         _iconRelic  = Resources.Load<Texture2D>("InGame/Icon/Relic");
         _iconDeck    = Resources.Load<Texture2D>("InGame/Icon/Deck");
         _iconDiscard = Resources.Load<Texture2D>("InGame/Icon/Discard");
+        _iconCardBack = Resources.Load<Texture2D>("InGame/Icon/CardBack");
         _iconFloor   = Resources.Load<Texture2D>("InGame/Icon/Floor");
         _iconTurn    = Resources.Load<Texture2D>("InGame/Icon/Turn");
-        _iconShield  = Resources.Load<Texture2D>("InGame/Icon/Shield");
+        _iconShield       = Resources.Load<Texture2D>("InGame/Icon/Shield");
+        _iconShieldGreen  = Resources.Load<Texture2D>("InGame/Icon/ShieldGreen");
+        _iconAttack       = Resources.Load<Texture2D>("InGame/Icon/Attack");
         _topBarBg   = Resources.Load<Texture2D>("InGame/TopBar");
         _endTurnButtonTex = Resources.Load<Texture2D>("InGame/EndTurnButton");
         if (_endTurnButtonTex == null)
@@ -224,9 +366,12 @@ public class BattleUI : MonoBehaviour
         if (_iconRelic  == null) Debug.LogWarning("[BattleUI] Relic icon not found: Resources/InGame/Icon/Relic");
         if (_iconDeck    == null) Debug.LogWarning("[BattleUI] Deck icon not found: Resources/InGame/Icon/Deck");
         if (_iconDiscard == null) Debug.LogWarning("[BattleUI] Discard icon not found: Resources/InGame/Icon/Discard");
+        if (_iconCardBack == null) Debug.LogWarning("[BattleUI] CardBack icon not found: Resources/InGame/Icon/CardBack");
         if (_iconFloor   == null) Debug.LogWarning("[BattleUI] Floor icon not found: Resources/InGame/Icon/Floor");
         if (_iconTurn    == null) Debug.LogWarning("[BattleUI] Turn icon not found: Resources/InGame/Icon/Turn");
-        if (_iconShield  == null) Debug.LogWarning("[BattleUI] Shield icon not found: Resources/InGame/Icon/Shield");
+        if (_iconShield       == null) Debug.LogWarning("[BattleUI] Shield icon not found: Resources/InGame/Icon/Shield");
+        if (_iconShieldGreen  == null) Debug.LogWarning("[BattleUI] ShieldGreen icon not found: Resources/InGame/Icon/ShieldGreen");
+        if (_iconAttack       == null) Debug.LogWarning("[BattleUI] Attack icon not found: Resources/InGame/Icon/Attack");
     }
 
     void Update()
@@ -234,13 +379,20 @@ public class BattleUI : MonoBehaviour
         var gsm = GameStateManager.Instance;
         if (gsm == null) return;
 
-        // Battle 상태가 아닐 때는 다음 전투를 위해 리셋
-        if (gsm.State != GameState.Battle)
+        // Battle/Reward 상태가 아닐 때는 다음 전투를 위해 리셋
+        // (Reward 상태에서도 BattleUI가 뒷배경/전장을 계속 그려 보상 화면 뒤로 비춰야 하므로 유지)
+        if (gsm.State != GameState.Battle && gsm.State != GameState.Reward)
         {
             if (_battleInitialized)
             {
                 _battleInitialized = false;
                 _battleEndQueued = false;
+                _rewardDimmed = false;
+                if (_rewardDimOverlay != null)
+                {
+                    Destroy(_rewardDimOverlay.gameObject);
+                    _rewardDimOverlay = null;
+                }
                 _battle = null;
                 _lastKnownHp.Clear();
                 _hpBarDisplayedFrac.Clear();
@@ -258,6 +410,20 @@ public class BattleUI : MonoBehaviour
                 DestroyAllEnemyViews();
             }
             return;
+        }
+
+        // Reward 상태에서는 렌더링 상태만 유지하고 전투 로직은 정지
+        if (gsm.State == GameState.Reward)
+        {
+            // world-space 캐릭터/적 스프라이트를 IMGUI 오버레이에 맞춰 dim 처리
+            // (IMGUI 오버레이는 world-space 렌더링을 못 덮기 때문)
+            ApplyRewardDimming();
+            return;
+        }
+        else if (_rewardDimmed)
+        {
+            // Reward에서 빠져나왔을 때 복구 (보통 Map으로 가면 뷰가 파괴되지만 안전장치)
+            RestoreRewardDimming();
         }
 
         // Battle 상태로 진입한 첫 프레임 → 초기화
@@ -350,6 +516,7 @@ public class BattleUI : MonoBehaviour
         var windupTex         = Resources.Load<Texture2D>("Character_infield/Archaeologist/Windup");
         var strikeTex         = Resources.Load<Texture2D>("Character_infield/Archaeologist/Strike");
         var strikeExtendedTex = Resources.Load<Texture2D>("Character_infield/Archaeologist/StrikeExtended");
+        var summonCastTex     = Resources.Load<Texture2D>("Character_infield/Archaeologist/SummonCast");
 
         var baseTex = idleTex != null ? idleTex : _playerSprite;
         _playerWorldSprite = TexToSprite(baseTex);
@@ -373,12 +540,26 @@ public class BattleUI : MonoBehaviour
             : null;
         _playerView.SetAttackFrames(null, windupSprite, strikeSprite, strikeExtendedSprite);
 
+        // SummonCast는 idle보다 캐릭터가 가로로 길게 뻗는 포즈라 pivot을 살짝 왼쪽으로 잡아
+        // 베이스 위치에서 코가 밀려 보이지 않게 함.
+        if (summonCastTex != null)
+        {
+            var summonCastSprite = Sprite.Create(
+                summonCastTex,
+                new Rect(0, 0, summonCastTex.width, summonCastTex.height),
+                new Vector2(0.35f, 0f),
+                100f);
+            _playerView.SetSummonFrame(summonCastSprite);
+        }
+
         if (idleTex == null)
             Debug.LogWarning("[BattleUI] Archaeologist/Idle not found, falling back to Char_Archaeologist_Field");
         if (windupTex == null || strikeTex == null)
             Debug.LogWarning("[BattleUI] Archaeologist windup/strike frames missing");
         if (strikeExtendedTex == null)
             Debug.LogWarning("[BattleUI] Archaeologist/StrikeExtended not found — attack will skip extended phase");
+        if (summonCastTex == null)
+            Debug.LogWarning("[BattleUI] Archaeologist/SummonCast not found — summon will skip frame swap");
     }
 
     private static Sprite TexToSprite(Texture2D tex)
@@ -486,13 +667,20 @@ public class BattleUI : MonoBehaviour
 
         var chapter = DataManager.Instance.GetChapter(run.chapterId);
         int mana = chapter?.mana ?? 3;
+        int maxFieldSize = chapter?.maxFieldSize ?? 5;
+
+        // 이전 전투에서 남은 애니메이션 상태를 정리
+        EndDiscardFlyAnimation();
+        EndDrawFlyAnimation();
+        EndReshuffleAnimation();
 
         _battle = new BattleManager();
         _battle.StartBattle(
             new List<CardData>(run.deck),
             new List<EnemyData>(enemies), // 복사본 전달
             mana,
-            run.playerMaxHp);
+            run.playerMaxHp,
+            maxFieldSize);
 
         // 현재 run의 HP로 플레이어 초기화 (이전 전투 잔존 HP 반영)
         _battle.state.player.hp = Mathf.Clamp(run.playerCurrentHp, 1, run.playerMaxHp);
@@ -500,6 +688,25 @@ public class BattleUI : MonoBehaviour
         PrepareEnemyViews();
         SpawnBackgroundFX();
         SpawnBackgroundVines();
+
+        // 전투 시작 시 이미 Draw된 첫 손패를 드로우 애니메이션으로 등장시킨다.
+        if (_battle.state.hand.Count > 0)
+        {
+            StartCoroutine(InitialDrawCoroutine());
+        }
+    }
+
+    /// <summary>전투 시작 직후 초기 손패를 덱에서 뽑혀나오는 것처럼 애니메이션.</summary>
+    private IEnumerator InitialDrawCoroutine()
+    {
+        // 한 프레임 대기 — OnGUI가 뷰를 한 번 셋업한 뒤 애니메이션 시작
+        yield return null;
+        if (_battle?.state == null || _battle.state.hand.Count == 0) yield break;
+
+        BeginDrawFlyAnimation(_battle.state, 0);
+        float wait = GetDrawFlyTotalDuration() + 0.05f;
+        yield return new WaitForSeconds(wait);
+        EndDrawFlyAnimation();
     }
 
     /// <summary>
@@ -812,24 +1019,34 @@ public class BattleUI : MonoBehaviour
     void OnGUI()
     {
         var gsm = GameStateManager.Instance;
-        if (gsm == null || gsm.State != GameState.Battle) return;
+        if (gsm == null) return;
+        // Reward 상태에서도 배경/전장은 계속 그려서 보상 화면 뒤로 비춰야 함
+        if (gsm.State != GameState.Battle && gsm.State != GameState.Reward) return;
         if (_battle == null || _battle.state == null) return;
+
+        // GUI.depth: 낮을수록 앞. BattleUI는 뒤에 깔리고 RewardUI(=0)가 위로 올라오도록
+        GUI.depth = 10;
 
         EnsureStyles();
 
-        // 우클릭으로 타겟팅 취소
-        if (_targetingCardIndex >= 0
-            && Event.current.type == EventType.MouseDown
-            && Event.current.button == 1)
-        {
-            _targetingCardIndex = -1;
-            Event.current.Use();
-        }
+        bool active = gsm.State == GameState.Battle;
 
-        // 손에 없는 인덱스를 가리키고 있으면 리셋
-        if (_targetingCardIndex >= _battle.state.hand.Count)
+        if (active)
         {
-            _targetingCardIndex = -1;
+            // 우클릭으로 타겟팅 취소
+            if (_targetingCardIndex >= 0
+                && Event.current.type == EventType.MouseDown
+                && Event.current.button == 1)
+            {
+                _targetingCardIndex = -1;
+                Event.current.Use();
+            }
+
+            // 손에 없는 인덱스를 가리키고 있으면 리셋
+            if (_targetingCardIndex >= _battle.state.hand.Count)
+            {
+                _targetingCardIndex = -1;
+            }
         }
 
         // 1) 배경은 스크린 원본 좌표로 꽉 채움
@@ -848,9 +1065,28 @@ public class BattleUI : MonoBehaviour
         DrawFloaters();
         DrawTopBar(state, gsm);
         DrawTurnInfo(state);
-        DrawHand(state);
-        DrawEndTurn(state);
-        DrawTargetingHint(state);
+
+        // Reward 상태에서는 상호작용 UI(손패/턴 종료/타겟팅 힌트) 숨김.
+        // 덱 뷰어가 열려있을 때도 손패 상호작용을 막아 오버레이 아래 카드 클릭이 새지 않게 함.
+        if (active && !_deckViewerOpen)
+        {
+            DrawHand(state);
+            DrawHandHideToggle();
+            DrawEndTurn(state);
+            DrawTargetingHint(state);
+        }
+
+        // 버린 더미로 날아가는 카드 — reward 상태와 관계없이 위에 그려져야 자연스럽다.
+        DrawDiscardFlyingCards();
+
+        // 덱 리셔플 — 버림 더미 → 덱 더미 스트림
+        DrawReshuffleFlyingCards();
+
+        // 덱에서 뽑혀오는 카드 (뒷면 → 플립 → 앞면) — 최상단에 그려 손패/UI 위로 드러나게 함.
+        DrawDrawFlyingCards();
+
+        // 덱 뷰어 오버레이 — 모든 UI 위에 그려짐.
+        DrawDeckViewerOverlay(gsm);
     }
 
     private void DrawTargetingHint(BattleState state)
@@ -858,7 +1094,71 @@ public class BattleUI : MonoBehaviour
         if (_targetingCardIndex < 0 || _targetingCardIndex >= state.hand.Count) return;
         var c = state.hand[_targetingCardIndex].data;
         string text = $"▶ {c.nameKr} 사용 중 — 적을 클릭하세요  (우클릭: 취소)";
+
+        // 살짝 보였다 사라졌다 하는 알파 펄스 (sin 0~1 → 0.35~0.95)
+        float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 2.2f);
+        float alpha = Mathf.Lerp(0.35f, 0.95f, pulse);
+
+        var prevColor = GUI.color;
+        GUI.color = new Color(1f, 1f, 1f, alpha);
         GUI.Label(new Rect(0, 115, RefW, 30), text, _targetHintStyle);
+        GUI.color = prevColor;
+    }
+
+    private void ApplyRewardDimming()
+    {
+        if (_rewardDimmed) return;
+        EnsureRewardDimOverlay();
+        if (_rewardDimOverlay != null) _rewardDimOverlay.enabled = true;
+        // Reward 진입 시점의 공격 애니메이션 lunge를 리셋 — 안 그러면 공룡이 앞으로 튀어나온 채 얼어붙음
+        _attackingUnit = null;
+        _attackProgress = 0f;
+        _rewardDimmed = true;
+    }
+
+    private void RestoreRewardDimming()
+    {
+        if (_rewardDimOverlay != null) _rewardDimOverlay.enabled = false;
+        _rewardDimmed = false;
+    }
+
+    private void EnsureRewardDimOverlay()
+    {
+        var cam = Camera.main;
+        if (cam == null) return;
+
+        if (_rewardDimOverlay == null)
+        {
+            var go = new GameObject("_RewardDimOverlay");
+            _rewardDimOverlay = go.AddComponent<SpriteRenderer>();
+
+            // 1×1 흰 텍스처로 스프라이트 생성
+            var tex = new Texture2D(1, 1, TextureFormat.ARGB32, false)
+            {
+                hideFlags = HideFlags.HideAndDontSave,
+            };
+            tex.SetPixel(0, 0, Color.white);
+            tex.Apply();
+            // PPU=1 로 해서 1×1 스프라이트의 월드 크기 = 1 unit → localScale로 직접 제어 가능
+            _rewardDimOverlay.sprite = Sprite.Create(
+                tex,
+                new Rect(0, 0, 1, 1),
+                new Vector2(0.5f, 0.5f),
+                1f);
+            _rewardDimOverlay.color = RewardOverlayColor;
+            // 어떤 SpriteRenderer보다도 앞에 오도록 큰 sorting order (배경·캐릭터·적 전부 뒤로)
+            _rewardDimOverlay.sortingOrder = 9999;
+        }
+
+        // 매번 카메라 영역을 덮도록 위치/스케일 갱신
+        if (cam.orthographic)
+        {
+            float camH = cam.orthographicSize * 2f;
+            float camW = camH * cam.aspect;
+            _rewardDimOverlay.transform.localScale = new Vector3(camW, camH, 1f);
+        }
+        var camPos = cam.transform.position;
+        _rewardDimOverlay.transform.position = new Vector3(camPos.x, camPos.y, 0f);
     }
 
     private void DrawBackground()
@@ -936,7 +1236,7 @@ public class BattleUI : MonoBehaviour
         };
         _labelStyle = new GUIStyle(GUI.skin.label)
         {
-            fontSize = 22,
+            fontSize = 19,
             fontStyle = FontStyle.Bold,
             normal = { textColor = Color.white },
         };
@@ -954,6 +1254,15 @@ public class BattleUI : MonoBehaviour
             fontStyle = FontStyle.Bold,
             normal = { textColor = new Color(1f, 0.9f, 0.5f) },
         };
+        _intentNumberStyle = new GUIStyle(GUI.skin.label)
+        {
+            fontSize = 11,
+            alignment = TextAnchor.MiddleRight,
+            fontStyle = FontStyle.Bold,
+            wordWrap = false,
+            clipping = TextClipping.Overflow,
+            normal = { textColor = Color.white },
+        };
         _damageStyle = new GUIStyle(GUI.skin.label)
         {
             fontSize = 32,
@@ -965,8 +1274,8 @@ public class BattleUI : MonoBehaviour
         {
             fontSize = 20,
             alignment = TextAnchor.MiddleCenter,
-            fontStyle = FontStyle.Bold,
-            normal = { textColor = new Color(1f, 0.85f, 0.3f) },
+            fontStyle = FontStyle.Normal,
+            normal = { textColor = new Color(1f, 0.96f, 0.85f) },
         };
         _cardCostStyle = new GUIStyle(GUI.skin.label)
         {
@@ -987,18 +1296,49 @@ public class BattleUI : MonoBehaviour
             fontSize = 11,
             alignment = TextAnchor.MiddleCenter,
             fontStyle = FontStyle.Bold,
-            normal = { textColor = new Color(1f, 0.85f, 0.4f) },
+            // 골드 hex 배너 위에 얹히므로 다크 브라운으로 대비 확보 (EXCAVATE 배너 스타일)
+            normal = { textColor = new Color(0.18f, 0.10f, 0.05f) },
         };
         _cardDescStyle = new GUIStyle(GUI.skin.label)
         {
+            // 카드피커 body 스타일과 톤 맞춤
             fontSize = 11,
-            alignment = TextAnchor.MiddleCenter,
-            fontStyle = FontStyle.Normal,
+            alignment = TextAnchor.UpperCenter,
+            fontStyle = FontStyle.Bold,
             wordWrap = true,
             padding = new RectOffset(6, 6, 4, 4),
-            normal = { textColor = new Color(0.95f, 0.88f, 0.72f) },
+            normal = { textColor = new Color(0.96f, 0.92f, 0.74f) },
         };
+        // GUI.skin.label 기본값은 hover 시 색이 바뀌는 상태가 있어 모든 라벨 스타일의
+        // normal 색을 모든 state로 복사해서 호버/액티브/포커스 시 색 변화를 막는다.
+        LockStateColors(_boxStyle);
+        LockStateColors(_buttonStyle);
+        LockStateColors(_labelStyle);
+        LockStateColors(_centerStyle);
+        LockStateColors(_damageStyle);
+        LockStateColors(_intentStyle);
+        LockStateColors(_intentNumberStyle);
+        LockStateColors(_targetHintStyle);
+        LockStateColors(_cardCostStyle);
+        LockStateColors(_cardNameStyle);
+        LockStateColors(_cardTypeStyle);
+        LockStateColors(_cardDescStyle);
+
         _stylesReady = true;
+    }
+
+    // GUIStyle의 모든 인터랙션 state의 텍스트 색을 normal과 동일하게 고정.
+    private static void LockStateColors(GUIStyle s)
+    {
+        if (s == null) return;
+        var c = s.normal.textColor;
+        s.hover.textColor    = c;
+        s.active.textColor   = c;
+        s.focused.textColor  = c;
+        s.onNormal.textColor = c;
+        s.onHover.textColor  = c;
+        s.onActive.textColor = c;
+        s.onFocused.textColor= c;
     }
 
     private static bool CardNeedsTarget(CardData c)
@@ -1029,17 +1369,61 @@ public class BattleUI : MonoBehaviour
         _slotPositions.Clear();
         _slotPositions[state.player] = new Vector2(180, GroundY - 110);
 
-        for (int i = 0; i < state.field.Count; i++)
+        int fieldCount = state.field.Count;
+        for (int i = 0; i < fieldCount; i++)
         {
-            _slotPositions[state.field[i]] = new Vector2(340 + i * 120, GroundY - 55);
+            _slotPositions[state.field[i]] = ComputeFieldSlot(i, fieldCount, GroundY);
         }
+        UpdateSummonDisplayPositions(state);
 
         int aliveIdx = 0;
         foreach (var e in state.enemies)
         {
             if (e.IsDead) continue;
-            _slotPositions[e] = new Vector2(1070 - aliveIdx * 200, GroundY - 100);
+            // 소환수와 같은 톤으로 살짝 대각선 스태거 — 뒤쪽(aliveIdx 큰) 적은 더 멀고 위로
+            _slotPositions[e] = new Vector2(1070 - aliveIdx * 160, GroundY - 100 - aliveIdx * 32);
             aliveIdx++;
+        }
+    }
+
+    // 필드 소환수 슬롯 레이아웃 — 1마리면 중앙, 2마리 이상은 대각선 스태거로 깊이감.
+    // Y 기준은 groundY-55 — 발끝이 지면선 근처에 자연스럽게 닿도록.
+    // 카드 hand와 겹침은 허용(사용자가 카드 숨김 토글로 해결).
+    private static Vector2 ComputeFieldSlot(int index, int total, float groundY)
+    {
+        if (total <= 1)
+            return new Vector2(470f, groundY - 55f);
+        return new Vector2(440f + index * 78f, groundY - 55f - index * 48f);
+    }
+
+    // 슬롯 타겟 위치로 표시 위치를 프레임마다 lerp.
+    // 처음 등장한 소환수는 즉시 타겟에 배치(등장 순간이동은 기존 유지), 이후 레이아웃 재계산 시에만 부드럽게 이동.
+    private void UpdateSummonDisplayPositions(BattleState state)
+    {
+        // 사라진 소환수 정리
+        if (_summonDisplayPositions.Count > 0)
+        {
+            List<SummonInstance> stale = null;
+            foreach (var kv in _summonDisplayPositions)
+            {
+                if (!state.field.Contains(kv.Key))
+                {
+                    stale ??= new List<SummonInstance>();
+                    stale.Add(kv.Key);
+                }
+            }
+            if (stale != null)
+                foreach (var k in stale) _summonDisplayPositions.Remove(k);
+        }
+
+        float t = 1f - Mathf.Exp(-SummonSlideSpeed * Time.deltaTime);
+        foreach (var s in state.field)
+        {
+            if (!_slotPositions.TryGetValue(s, out var target)) continue;
+            if (_summonDisplayPositions.TryGetValue(s, out var cur))
+                _summonDisplayPositions[s] = Vector2.Lerp(cur, target, t);
+            else
+                _summonDisplayPositions[s] = target; // 신규 소환수는 즉시 배치
         }
     }
 
@@ -1047,8 +1431,13 @@ public class BattleUI : MonoBehaviour
     {
         DrawPlayerNPC(state.player, _slotPositions[state.player]);
 
-        foreach (var s in state.field)
-            if (_slotPositions.TryGetValue(s, out var pos)) DrawSummon(s, pos);
+        // Y-sort: 뒤쪽(Y 작은) 공룡부터 먼저 그려서 앞쪽 공룡이 자연스럽게 가리게.
+        // field index가 커질수록 스태거로 위(Y 작음)에 배치되므로 역순 순회.
+        for (int i = state.field.Count - 1; i >= 0; i--)
+        {
+            var s = state.field[i];
+            if (_summonDisplayPositions.TryGetValue(s, out var pos)) DrawSummon(s, pos);
+        }
 
         for (int i = 0; i < state.enemies.Count; i++)
         {
@@ -1084,11 +1473,12 @@ public class BattleUI : MonoBehaviour
             // HP 바 — 캐릭터 발 아래에 살짝 더 넓게, 발과 약간 떨어뜨림
             float barW = Mathf.Max(w + 24f, 110f);
             var barRect = new Rect(center.x - barW / 2, rect.yMax + 6, barW, 16);
-            DrawHpBar(barRect, p.hp, p.maxHp, new Color(0.85f, 0.2f, 0.2f));
+            DrawHpBar(barRect, p.hp, p.maxHp, new Color(0.85f, 0.2f, 0.2f), p.block > 0, _playerShieldFxStartTime);
 
             if (p.block > 0)
             {
-                DrawBlockBadge(new Vector2(center.x, rect.y - 24), p.block, 44f);
+                // 방패 뱃지를 HP 바 왼쪽 끝에 살짝 겹치게 — 머리 위 대신 인라인
+                DrawBlockBadge(new Vector2(barRect.x, barRect.center.y), p.block, 34f);
             }
         }
         else
@@ -1101,23 +1491,78 @@ public class BattleUI : MonoBehaviour
 
             DrawPlayerShieldFx(new Vector2(rect.center.x, rect.center.y), fbW, fbH);
 
-            DrawHpBar(new Rect(rect.x + 6, rect.y + rect.height - 52, rect.width - 12, 18),
-                      p.hp, p.maxHp, new Color(0.85f, 0.2f, 0.2f));
+            var fbHpRect = new Rect(rect.x + 6, rect.y + rect.height - 52, rect.width - 12, 18);
+            DrawHpBar(fbHpRect, p.hp, p.maxHp, new Color(0.85f, 0.2f, 0.2f), p.block > 0, _playerShieldFxStartTime);
 
             if (p.block > 0)
             {
-                DrawBlockBadge(new Vector2(rect.center.x, rect.y - 24), p.block, 44f);
+                DrawBlockBadge(new Vector2(fbHpRect.x, fbHpRect.center.y), p.block, 34f);
             }
         }
     }
 
-    // 방패 아이콘 + 숫자 뱃지. center를 중심으로 size 크기로 그림.
-    private void DrawBlockBadge(Vector2 center, int block, float size = 40f)
+    // 적 머리 위 intent 표시 — 숫자 + 아이콘을 좌우로 나란히. 공격은 검, 방어는 방패, 버프는 텍스트.
+    private void DrawEnemyIntent(Vector2 center, EnemyInstance e)
+    {
+        if (e.intentType == EnemyIntentType.ATTACK)
+        {
+            DrawAttackIconBadge(center, e.intentValue, -45f, boosted: false);
+            return;
+        }
+
+        if (e.intentType == EnemyIntentType.DEFEND && _iconShield != null)
+        {
+            DrawSideBySideBadge(center, e.intentValue, _iconShield, 0f, Color.white);
+            return;
+        }
+
+        // 폴백: 텍스트 라벨 (BUFF 또는 아이콘 미로드)
+        GUI.Label(new Rect(center.x - 80f, center.y - 12f, 160f, 24f),
+                  $"▲ {e.IntentLabel}", _intentStyle);
+    }
+
+    // 공격 아이콘(검) + 데미지 숫자 뱃지. 적은 -45°, 아군은 +45°. boosted면 숫자를 강조 색으로.
+    private void DrawAttackIconBadge(Vector2 center, int value, float angleDeg, bool boosted)
+    {
+        if (_iconAttack == null) return;
+        Color textCol = boosted ? new Color(1f, 0.85f, 0.3f) : Color.white;
+        DrawSideBySideBadge(center, value, _iconAttack, angleDeg, textCol);
+    }
+
+    // 아이콘은 center에 정중앙으로 배치, 숫자는 아이콘 왼쪽에 치우쳐서 표시.
+    private void DrawSideBySideBadge(Vector2 center, int value, Texture2D icon, float angleDeg, Color textCol)
+    {
+        const float iconSize = 56f;
+        const float numberW = 22f;
+        const float overlap = 5f; // 아이콘 가장자리 안으로 숫자 영역을 살짝만 겹쳐 적당한 간격 유지
+
+        var iconRect = new Rect(center.x - iconSize / 2f, center.y - iconSize / 2f, iconSize, iconSize);
+        var numRect = new Rect(iconRect.x + overlap - numberW, center.y - iconSize / 2f, numberW, iconSize);
+
+        DrawTextWithOutline(numRect, value.ToString(), _intentNumberStyle,
+                            textCol, new Color(0f, 0f, 0f, 0.95f), 1.2f);
+
+        if (Mathf.Abs(angleDeg) > 0.01f)
+        {
+            Matrix4x4 baseMatrix = GUI.matrix;
+            GUI.matrix = baseMatrix * RotateAroundPivotMatrix(angleDeg, iconRect.center);
+            GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit, alphaBlend: true);
+            GUI.matrix = baseMatrix;
+        }
+        else
+        {
+            GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit, alphaBlend: true);
+        }
+    }
+
+    // 방패 아이콘 + 숫자 뱃지. center를 중심으로 size 크기로 그림. icon으로 플레이어/적 텍스처 분리.
+    private void DrawBlockBadge(Vector2 center, int block, float size = 40f, Texture2D icon = null)
     {
         var iconRect = new Rect(center.x - size / 2, center.y - size / 2, size, size);
-        if (_iconShield != null)
+        var tex = icon != null ? icon : _iconShield;
+        if (tex != null)
         {
-            GUI.DrawTexture(iconRect, _iconShield, ScaleMode.ScaleToFit, alphaBlend: true);
+            GUI.DrawTexture(iconRect, tex, ScaleMode.ScaleToFit, alphaBlend: true);
         }
 
         int prevFontSize = _centerStyle.fontSize;
@@ -1142,7 +1587,8 @@ public class BattleUI : MonoBehaviour
     private void DrawPlayerShieldFx(Vector2 center, float targetW, float targetH)
     {
         if (_playerShieldFxStartTime < 0f) return;
-        if (_manaFrameTexture == null) return;
+        var tex = _shieldFxTexture != null ? _shieldFxTexture : _manaFrameTexture;
+        if (tex == null) return;
 
         float t = Time.time - _playerShieldFxStartTime;
         if (t >= ShieldFxDuration)
@@ -1153,46 +1599,46 @@ public class BattleUI : MonoBehaviour
 
         float n = t / ShieldFxDuration;
 
-        // 엔벨로프: 0~0.15 fade-in → 0.15~0.65 hold → 0.65~1 fade-out
+        // 엔벨로프: 0~0.2 fade-in → 0.2~0.6 hold → 0.6~1 fade-out (in/out 길게 잡아 더 부드럽게)
         float envelope;
-        if (n < 0.15f) envelope = n / 0.15f;
-        else if (n < 0.65f) envelope = 1f;
-        else envelope = 1f - (n - 0.65f) / 0.35f;
+        if (n < 0.2f) envelope = n / 0.2f;
+        else if (n < 0.6f) envelope = 1f;
+        else envelope = 1f - (n - 0.6f) / 0.4f;
         envelope = Mathf.Clamp01(envelope);
 
-        float pulse = 0.92f + 0.08f * Mathf.Sin(Time.time * 6f);
+        float pulse = 0.95f + 0.05f * Mathf.Sin(Time.time * 5f);
 
         // 캐릭터 실루엣 대비 살짝 크게 잡은 버블 기준 크기
         float baseSize = Mathf.Max(targetW, targetH) * 1.35f;
 
         var prevColor = GUI.color;
 
-        // 1) 바깥 soft glow — 옅은 하늘빛 오라
+        // 1) 바깥 soft glow — 매우 옅은 오라
         {
-            float size = baseSize * 1.2f * pulse;
+            float size = baseSize * 1.25f * pulse;
             var r = new Rect(center.x - size / 2f, center.y - size / 2f, size, size);
-            GUI.color = new Color(0.45f, 0.78f, 1f, 0.16f * envelope);
-            GUI.DrawTexture(r, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
+            GUI.color = new Color(1f, 1f, 1f, 0.10f * envelope);
+            GUI.DrawTexture(r, tex, ScaleMode.StretchToFill, alphaBlend: true);
         }
 
-        // 2) 메인 bubble — 캐릭터를 감싸는 중심 방패
+        // 2) 메인 bubble — 캐릭터를 감싸는 중심 방패. 완전 흰색 틴트로 원본 색감을 살림.
         {
             float size = baseSize * pulse;
             var r = new Rect(center.x - size / 2f, center.y - size / 2f, size, size);
-            GUI.color = new Color(0.6f, 0.88f, 1f, 0.5f * envelope);
-            GUI.DrawTexture(r, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
+            GUI.color = new Color(1f, 1f, 1f, 0.30f * envelope);
+            GUI.DrawTexture(r, tex, ScaleMode.StretchToFill, alphaBlend: true);
         }
 
-        // 3) 확산 링 — 트리거 직후 0.5초 동안 밖으로 퍼지며 페이드
+        // 3) 확산 링 — 트리거 직후 0.5초 동안 밖으로 퍼지며 페이드 (옅게)
         {
             float ringN = Mathf.Clamp01(n / 0.5f);
-            float ringAlpha = (1f - ringN) * 0.55f;
+            float ringAlpha = (1f - ringN) * 0.20f;
             if (ringAlpha > 0f)
             {
                 float size = baseSize * (1.05f + ringN * 0.55f);
                 var r = new Rect(center.x - size / 2f, center.y - size / 2f, size, size);
-                GUI.color = new Color(0.75f, 0.95f, 1f, ringAlpha);
-                GUI.DrawTexture(r, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
+                GUI.color = new Color(1f, 1f, 1f, ringAlpha);
+                GUI.DrawTexture(r, tex, ScaleMode.StretchToFill, alphaBlend: true);
             }
         }
 
@@ -1208,12 +1654,28 @@ public class BattleUI : MonoBehaviour
             center.x += lunge;
         }
 
-        const float w = 110, h = 110;
+        const float w = 150, h = 150;
+
+        // Idle bob — 각 공룡 개체마다 위상차를 둬서 동시 움직임 방지
+        const float bobFreq = 1.6f;
+        const float bobFraction = 0.028f;
+        float phase = (s.GetHashCode() & 0x3FF) * (Mathf.PI * 2f / 1024f);
+        float bob = Mathf.Sin(Time.time * bobFreq + phase) * h * bobFraction;
+        center.y += bob;
+
         var rect = new Rect(center.x - w / 2, center.y - h / 2, w, h);
+
+        // Reward 상태면 공룡도 world-space overlay와 같은 톤으로 어둡게 tint
+        bool inReward = GameStateManager.Instance != null && GameStateManager.Instance.State == GameState.Reward;
+        Color prevGuiColor = GUI.color;
+        if (inReward) GUI.color = new Color(0.6f, 0.6f, 0.6f, 1f);
 
         if (_fieldDinoSprites.TryGetValue(s.data.id, out var tex))
         {
+            var prevMatrix = GUI.matrix;
+            GUIUtility.ScaleAroundPivot(new Vector2(-1f, 1f), rect.center);
             GUI.DrawTexture(rect, tex, ScaleMode.ScaleToFit, alphaBlend: true);
+            GUI.matrix = prevMatrix;
         }
         else
         {
@@ -1222,54 +1684,14 @@ public class BattleUI : MonoBehaviour
                       s.data.nameKr, _centerStyle);
         }
 
+        if (inReward) GUI.color = prevGuiColor;
+
         // HP 바 — 적과 동일 스타일, 스프라이트 발 아래로 약간 떨어뜨림
         DrawHpBar(new Rect(rect.x + 6f, rect.y + rect.height + 6f, rect.width - 12f, 14f),
                   s.hp, s.data.hp, new Color(0.85f, 0.2f, 0.2f));
 
-        // ATK 뱃지 — 좌상단 작은 빨간 원 + 숫자
-        DrawAtkBadge(new Vector2(rect.x + 6f, rect.y + 6f), s.TotalAttack, s.tempAttackBonus > 0);
-    }
-
-    // 작은 ATK 뱃지 — _manaFrameTexture(원형)를 빨간 틴트로 재활용 + 글로우 + 숫자
-    private void DrawAtkBadge(Vector2 topLeft, int attack, bool boosted)
-    {
-        const float size = 30f;
-        var rect = new Rect(topLeft.x, topLeft.y, size, size);
-
-        if (_manaFrameTexture != null)
-        {
-            var prev = GUI.color;
-
-            // 작은 빨간 글로우 (저강도)
-            Color glowTint = boosted ? new Color(1f, 0.85f, 0.4f) : new Color(1f, 0.35f, 0.35f);
-            const int layers = 4;
-            for (int i = 0; i < layers; i++)
-            {
-                float t = i / (float)(layers - 1);
-                float scale = Mathf.Lerp(1.10f, 1.55f, t);
-                float alpha = 0.30f * (1f - t) * (1f - t);
-                float gs = size * scale;
-                var gr = new Rect(rect.center.x - gs * 0.5f, rect.center.y - gs * 0.5f, gs, gs);
-                GUI.color = new Color(glowTint.r, glowTint.g, glowTint.b, alpha);
-                GUI.DrawTexture(gr, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
-            }
-
-            // 본체 — 어두운 빨강 틴트
-            GUI.color = boosted ? new Color(1f, 0.78f, 0.30f, 1f) : new Color(0.82f, 0.18f, 0.18f, 1f);
-            GUI.DrawTexture(rect, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
-            GUI.color = prev;
-        }
-        else
-        {
-            FillRect(rect, boosted ? new Color(0.85f, 0.65f, 0.15f, 0.95f) : new Color(0.78f, 0.18f, 0.18f, 0.95f));
-            DrawBorder(rect, 1f, new Color(0.85f, 0.66f, 0.28f, 0.95f));
-        }
-
-        int prevFontSize = _cardCostStyle.fontSize;
-        _cardCostStyle.fontSize = Mathf.RoundToInt(size * 0.50f);
-        DrawTextWithOutline(rect, attack.ToString(), _cardCostStyle,
-                            Color.white, new Color(0f, 0f, 0f, 0.95f), 1.4f);
-        _cardCostStyle.fontSize = prevFontSize;
+        // ATK 뱃지 — 머리 위 (적 intent와 미러 대칭). 아군은 검을 +45°로 회전.
+        DrawAttackIconBadge(new Vector2(rect.center.x, rect.y - 12f), s.TotalAttack, +45f, s.tempAttackBonus > 0);
     }
 
     private void DrawEnemy(EnemyInstance e, int enemyIndex, Vector2 center)
@@ -1310,26 +1732,26 @@ public class BattleUI : MonoBehaviour
                       e.data.nameKr, _centerStyle);
         }
 
-        GUI.Label(new Rect(rect.x - 30, rect.y - 32, rect.width + 60, 24),
-                  $"▲ {e.IntentLabel}", _intentStyle);
+        DrawEnemyIntent(new Vector2(rect.center.x, rect.y - 14), e);
 
-        DrawHpBar(new Rect(rect.x + 20, rect.y + rect.height - 8, rect.width - 40, 18),
-                  e.hp, e.data.hp, new Color(0.85f, 0.2f, 0.2f));
+        var enemyHpRect = new Rect(rect.x + 20, rect.y + rect.height - 8, rect.width - 40, 18);
+        DrawHpBar(enemyHpRect, e.hp, e.data.hp, new Color(0.85f, 0.2f, 0.2f));
 
         if (e.block > 0)
         {
-            DrawBlockBadge(new Vector2(rect.xMax - 22, rect.y + rect.height - 8), e.block, 40f);
+            // HP 바 왼쪽 끝에 살짝 겹치게 — 플레이어 파란 방패와 미러 대칭
+            DrawBlockBadge(new Vector2(enemyHpRect.x, enemyHpRect.center.y), e.block, 34f,
+                           _iconShieldGreen);
         }
 
-        // 타겟팅 모드: 빨간 펄스 외곽선 + 클릭 처리
+        // 타겟팅 모드: 발치 둥근 글로우 + 클릭 처리
         if (_targetingCardIndex >= 0)
         {
-            float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 4f);
-            var glowRect = new Rect(rect.x - 6, rect.y - 6, rect.width + 12, rect.height + 12);
-            DrawBorder(glowRect, 4, new Color(1f, 0.2f, 0.2f, pulse));
-
             var ev = Event.current;
-            if (ev.type == EventType.MouseDown && ev.button == 0 && rect.Contains(ev.mousePosition))
+            bool hovered = rect.Contains(ev.mousePosition);
+            DrawTargetFootGlow(rect, hovered);
+
+            if (ev.type == EventType.MouseDown && ev.button == 0 && hovered)
             {
                 ev.Use();
                 int cardIdx = _targetingCardIndex;
@@ -1343,8 +1765,78 @@ public class BattleUI : MonoBehaviour
         }
     }
 
-    private void DrawHpBar(Rect rect, int curr, int max, Color fill)
+    // 타겟팅 모드에서 선택된 카드 외곽에 부드럽게 빛나는 글로우.
+    // 단단한 노란 외곽선 대신 여러 겹의 옅은 보더가 바깥으로 퍼지며 펄스.
+    private void DrawSoftCardGlow(Rect cardRect)
     {
+        float pulse = 0.6f + 0.4f * Mathf.Sin(Time.time * 3f); // 0.2~1.0
+        Color tint = new Color(1f, 0.92f, 0.65f); // 따뜻한 옅은 노랑
+
+        const int layers = 5;
+        for (int i = 0; i < layers; i++)
+        {
+            float t = i / (float)(layers - 1);
+            float expand = Mathf.Lerp(1f, 9f, t);
+            float thickness = Mathf.Lerp(2f, 1f, t);
+            float alpha = Mathf.Lerp(0.55f, 0.05f, t) * pulse;
+            var r = new Rect(cardRect.x - expand, cardRect.y - expand,
+                             cardRect.width + expand * 2f, cardRect.height + expand * 2f);
+            DrawBorder(r, thickness, new Color(tint.r, tint.g, tint.b, alpha));
+        }
+    }
+
+    // 타겟팅 가능한 적 발치에 떠 있는 납작한 타원형 글로우.
+    // 호버되면 더 밝게 펄스, 아니면 옅게 깔려 있어 "여기 클릭 가능"만 알림.
+    private void DrawTargetFootGlow(Rect enemyRect, bool hovered)
+    {
+        if (_manaFrameTexture == null) return;
+
+        float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 4f);
+        float glowW = enemyRect.width * 0.95f;
+        float glowH = enemyRect.width * 0.32f;
+        float cx = enemyRect.center.x;
+        float cy = enemyRect.yMax - glowH * 0.45f;
+
+        var prevColor = GUI.color;
+
+        // 1) 외부 soft halo
+        {
+            float w = glowW * 1.5f;
+            float h = glowH * 1.5f;
+            var r = new Rect(cx - w * 0.5f, cy - h * 0.5f, w, h);
+            float a = (hovered ? 0.42f : 0.22f) * (0.7f + 0.3f * pulse);
+            GUI.color = new Color(1f, 0.50f, 0.32f, a);
+            GUI.DrawTexture(r, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
+        }
+
+        // 2) 내부 메인 글로우
+        {
+            var r = new Rect(cx - glowW * 0.5f, cy - glowH * 0.5f, glowW, glowH);
+            float a = (hovered ? 0.78f : 0.48f) * (0.78f + 0.22f * pulse);
+            GUI.color = new Color(1f, 0.32f, 0.22f, a);
+            GUI.DrawTexture(r, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
+        }
+
+        GUI.color = prevColor;
+    }
+
+    private void DrawHpBar(Rect rect, int curr, int max, Color fill, bool blueTint = false, float blueTintStart = -1f)
+    {
+        // 블록이 살아있는 동안 fill 색을 파란 톤으로 유지. 시작 직후 짧게 더 강한 페이드 인.
+        if (blueTint)
+        {
+            float intensity = 0.85f;
+            if (blueTintStart >= 0f)
+            {
+                const float fadeIn = 0.18f;
+                float ft = Time.time - blueTintStart;
+                if (ft >= 0f && ft < fadeIn)
+                    intensity = Mathf.Lerp(0f, 0.85f, ft / fadeIn);
+            }
+            var blue = new Color(0.30f, 0.62f, 1f);
+            fill = Color.Lerp(fill, blue, intensity);
+        }
+
         float realFrac = max > 0 ? Mathf.Clamp01((float)curr / max) : 0f;
 
         // 위치 기반 키로 bar의 표시 fraction을 추적 — 데미지 받으면 pale trail이 따라 내려감
@@ -1470,15 +1962,15 @@ public class BattleUI : MonoBehaviour
         const float barX = 10f;
         const float barY = 8f;
         const float barW = RefW - 20f;
-        const float barH = 68f;
+        const float barH = 58.14f;
         var barRect = new Rect(barX, barY, barW, barH);
 
         // 배경 없음 — 스탯만 화면 위에 떠 있는 미니멀 스타일
 
-        const float iconSize = 50f;
-        const float iconLabelGap = 6f;
-        const float slotGap = 28f;
-        const float padX = 20f;
+        const float iconSize = 42.75f;
+        const float iconLabelGap = 5.13f;
+        const float slotGap = 23.94f;
+        const float padX = 17.1f;
         float iconY = barY + (barH - iconSize) * 0.5f;
         float cursorX = barX + padX;
 
@@ -1506,38 +1998,145 @@ public class BattleUI : MonoBehaviour
             DrawSlot(_iconRelic, $"{run.relics.Count}", new Color(0.85f, 0.55f, 1f));
 
             DrawRightSlots(barRect, barY, barH, iconY, iconSize, iconLabelGap,
-                $"{run.currentFloor}/5", $"{state.turn}");
+                $"{run.currentFloor}/5", $"{state.turn}", run.deck.Count);
         }
         else
         {
             DrawRightSlots(barRect, barY, barH, iconY, iconSize, iconLabelGap,
-                null, $"{state.turn}");
+                null, $"{state.turn}", -1);
         }
     }
 
-    // 우측 정렬 슬롯들 (Floor + Turn). 우→좌 순서로 그려서 cursor 계산을 단순화.
+    // 우측 정렬 슬롯들 (DeckView + Floor + Turn). 우→좌 순서로 그려서 cursor 계산을 단순화.
     private void DrawRightSlots(
         Rect barRect, float barY, float barH,
         float iconY, float iconSize, float iconLabelGap,
-        string floorLabel, string turnLabel)
+        string floorLabel, string turnLabel, int deckCount = -1)
     {
-        const float rightPad = 28f;       // 화면 우측 가장자리 여백 (padX보다 살짝 크게)
-        const float rightSlotGap = 56f;   // Floor ↔ Turn 간격 (좌측 slotGap보다 넓게)
+        const float rightPad = 23.94f;    // 화면 우측 가장자리 여백 (padX보다 살짝 크게)
+        const float rightSlotGap = 47.88f;// Floor ↔ Turn 간격 (좌측 slotGap보다 넓게)
 
         float right = barRect.xMax - rightPad;
+        bool anyDrawn = false;
 
         // Turn 슬롯 (가장 오른쪽) — 모래시계는 아주 미세하게 좌우로 기울음
         // 글로우는 새 따뜻한 모래시계 톤과 어울리도록 골드/앰버 계열로
-        right = DrawRightSlot(right, barY, barH, iconY, iconSize, iconLabelGap,
-            _iconTurn, turnLabel, new Color(1f, 0.78f, 0.35f), wobblePhase: 0f);
+        // 맵 화면처럼 턴 개념이 없는 경우 turnLabel=null로 스킵.
+        if (turnLabel != null)
+        {
+            right = DrawRightSlot(right, barY, barH, iconY, iconSize, iconLabelGap,
+                _iconTurn, turnLabel, new Color(1f, 0.78f, 0.35f), wobblePhase: 0f);
+            anyDrawn = true;
+        }
 
         // Floor 슬롯 — 계단도 동일하게 살짝 기울음 (위상만 다르게)
         if (floorLabel != null)
         {
-            right -= rightSlotGap;
-            DrawRightSlot(right, barY, barH, iconY, iconSize, iconLabelGap,
+            if (anyDrawn) right -= rightSlotGap;
+            right = DrawRightSlot(right, barY, barH, iconY, iconSize, iconLabelGap,
                 _iconFloor, floorLabel, new Color(1f, 0.82f, 0.35f), wobblePhase: 2.4f);
+            anyDrawn = true;
         }
+
+        // Deck View 버튼 — 계단 왼쪽. 클릭하면 덱 전체 보기 오버레이 오픈.
+        if (deckCount >= 0)
+        {
+            if (anyDrawn) right -= rightSlotGap;
+            DrawDeckViewRightSlot(right, barY, barH, iconY, iconSize, iconLabelGap, deckCount);
+        }
+    }
+
+    // 계단 왼쪽에 위치한 덱 뷰 버튼. 덱 카운트를 라벨로 표시하고 클릭 시 오버레이를 토글.
+    private float DrawDeckViewRightSlot(float right, float barY, float barH,
+        float iconY, float iconSize, float iconLabelGap, int deckCount)
+    {
+        string label = deckCount.ToString();
+        var labelSize = _labelStyle.CalcSize(new GUIContent(label));
+        float labelX = right - labelSize.x;
+        var labelRect = new Rect(labelX, barY + (barH - labelSize.y) * 0.5f, labelSize.x + 2f, labelSize.y);
+
+        float iconX = labelX - iconLabelGap - iconSize;
+        var iconRect = new Rect(iconX, iconY, iconSize, iconSize);
+
+        // 클릭 히트 영역 — 아이콘 + 라벨 묶어 살짝 여유 있게
+        var hitRect = new Rect(iconX - 8f, barY, (right - iconX) + 16f, barH);
+        var ev = Event.current;
+        bool hover = hitRect.Contains(ev.mousePosition);
+
+        if (hover)
+        {
+            FillRect(hitRect, new Color(1f, 0.82f, 0.35f, 0.10f));
+            DrawBorder(hitRect, 1f, new Color(1f, 0.82f, 0.35f, 0.35f));
+        }
+
+        if (_iconDeck != null)
+        {
+            Color glowTint = hover ? new Color(1f, 0.92f, 0.60f) : new Color(0.70f, 0.88f, 1f);
+            DrawIconGlow(iconRect, glowTint, hover ? 1.35f : 1f);
+
+            float angle = Mathf.Sin(Time.time * 0.7f + 1.2f) * 0.32f;
+            var prevMatrix = GUI.matrix;
+            GUIUtility.RotateAroundPivot(angle, iconRect.center);
+            GUI.DrawTexture(iconRect, _iconDeck, ScaleMode.ScaleToFit);
+            GUI.matrix = prevMatrix;
+        }
+
+        GUI.Label(labelRect, label, _labelStyle);
+
+        if (hover && ev.type == EventType.MouseDown && ev.button == 0)
+        {
+            _deckViewerOpen = !_deckViewerOpen;
+            _deckViewerScroll = Vector2.zero;
+            ev.Use();
+        }
+
+        return iconX;
+    }
+
+    // =========================================================
+    // 맵 화면에서 같은 스타일의 상단 HUD를 재사용.
+    // BattleState가 없으므로 RunState에서 HP/골드/포션/유물을 읽고, 턴은 생략.
+    // =========================================================
+    public void DrawMapTopBar(RunState run, int currentFloor, int totalFloors)
+    {
+        if (run == null) return;
+        EnsureStyles();
+
+        const float barX = 10f;
+        const float barY = 8f;
+        const float barW = RefW - 20f;
+        const float barH = 58.14f;
+        var barRect = new Rect(barX, barY, barW, barH);
+
+        const float iconSize = 42.75f;
+        const float iconLabelGap = 5.13f;
+        const float slotGap = 23.94f;
+        const float padX = 17.1f;
+        float iconY = barY + (barH - iconSize) * 0.5f;
+        float cursorX = barX + padX;
+
+        void DrawSlot(Texture2D tex, string label, Color glowTint, float glowIntensity = 1f)
+        {
+            if (tex != null)
+            {
+                var iconRect = new Rect(cursorX, iconY, iconSize, iconSize);
+                DrawIconGlow(iconRect, glowTint, glowIntensity);
+                GUI.DrawTexture(iconRect, tex, ScaleMode.ScaleToFit);
+                cursorX += iconSize + iconLabelGap;
+            }
+            var size = _labelStyle.CalcSize(new GUIContent(label));
+            var labelRect = new Rect(cursorX, barY + (barH - size.y) * 0.5f, size.x + 2f, size.y);
+            GUI.Label(labelRect, label, _labelStyle);
+            cursorX += size.x + slotGap;
+        }
+
+        DrawSlot(_iconHP,     $"{run.playerCurrentHp}/{run.playerMaxHp}", new Color(1f, 0.55f, 0.50f), 1.6f);
+        DrawSlot(_iconGold,   $"{run.gold}",                               new Color(1f, 0.82f, 0.35f));
+        DrawSlot(_iconPotion, $"{run.potions.Count}/{RunState.MaxPotionSlots}", new Color(0.55f, 1f, 0.65f));
+        DrawSlot(_iconRelic,  $"{run.relics.Count}",                       new Color(0.85f, 0.55f, 1f));
+
+        DrawRightSlots(barRect, barY, barH, iconY, iconSize, iconLabelGap,
+            $"{currentFloor}/{totalFloors}", turnLabel: null);
     }
 
     // 한 슬롯을 right 기준으로 우→좌로 그리고, 이 슬롯의 left x를 반환
@@ -1651,14 +2250,63 @@ public class BattleUI : MonoBehaviour
                             Color.white, new Color(0, 0, 0, 0.95f), 1.5f);
         _cardCostStyle.fontSize = prevFontSize;
 
-        // 좌하단 덱 더미 — 화면 좌측 최하단 모서리에 작게
-        DrawCardPile(new Rect(22f, RefH - 88f, 78f, 78f), _iconDeck, state.deck.Count);
+        // 좌하단 덱 더미 — 화면 좌측 최하단 모서리에 작게. 하늘색 카운트 뱃지.
+        var skyBlue = new Color(0.30f, 0.65f, 1f, 1f);
+        int deckDisplay = GetDeckDisplayCount(state);
+        float deckPulse = GetReshuffleDeckLandPulse();
+        DrawCardPile(new Rect(22f, RefH - 88f, 78f, 78f), _iconDeck, deckDisplay, skyBlue, deckPulse);
 
-        // 우하단 버린 카드 더미 — 좌측 덱과 대칭
-        DrawCardPile(new Rect(RefW - 90f, RefH - 88f, 78f, 78f), _iconDiscard, state.discard.Count);
+        // 우하단 버린 카드 더미 — 좌측 덱과 동일한 하늘색 뱃지.
+        // 손패가 버려지는 애니메이션 중에는 착지한 카드 수만큼 카운트가 틱틱 올라가며,
+        // 카드가 착지할 때마다 뱃지가 잠깐 커졌다 돌아오는 펄스가 들어간다.
+        int discardDisplay = GetDiscardDisplayCount(state);
+        float discardPulse = GetDiscardLandPulse();
+        DrawCardPile(new Rect(RefW - 90f, RefH - 88f, 78f, 78f), _iconDiscard, discardDisplay, skyBlue, discardPulse);
     }
 
-    private void DrawCardPile(Rect rect, Texture2D icon, int count)
+    // 덱 더미에 표시할 카운트 — reshuffle 중엔 착지한 카드 수(0에서 증가),
+    // 드로우 애니 중엔 실제 덱 개수 + 아직 손에 도달하지 않은 카드(덱에서 빠져나가는 중처럼 보이게).
+    private int GetDeckDisplayCount(BattleState state)
+    {
+        if (IsReshuffleActive) return GetReshuffleLandedCount();
+        if (IsDrawFlyActive) return state.deck.Count + GetDrawFlyInFlightCount();
+        return state.deck.Count;
+    }
+
+    // 드로우 애니에서 아직 손에 도달하지 않은 카드 수 (덱에서 "빠져나가는 중"인 카드)
+    private int GetDrawFlyInFlightCount()
+    {
+        if (!IsDrawFlyActive) return 0;
+        float localNow = Time.time - _drawAnimStartTime;
+        float holdEnd = DrawGatherDuration + DrawHoldDuration;
+        int inFlight = 0;
+        for (int k = 0; k < _drawFlyCards.Count; k++)
+        {
+            float disperseLocal = localNow - holdEnd - _drawFlyCards[k].disperseDelay;
+            if (disperseLocal < 0f) { inFlight++; continue; }
+            if (disperseLocal / DrawDisperseDuration < 1f) inFlight++;
+        }
+        return inFlight;
+    }
+
+    // Reshuffle 중 가장 최근에 덱에 착지한 카드로부터의 경과 시간 → 덱 뱃지 펄스
+    private float GetReshuffleDeckLandPulse()
+    {
+        if (!IsReshuffleActive) return 0f;
+        float localNow = Time.time - _reshuffleAnimStartTime;
+        float mostRecent = -999f;
+        for (int k = 0; k < _reshuffleFlyCards.Count; k++)
+        {
+            float end = _reshuffleFlyCards[k].delay + ReshuffleFlyDuration;
+            if (end <= localNow && end > mostRecent) mostRecent = end;
+        }
+        if (mostRecent < 0f) return 0f;
+        float t = (localNow - mostRecent) / DiscardLandPulseDuration;
+        if (t < 0f || t > 1f) return 0f;
+        return Mathf.Sin(t * Mathf.PI);
+    }
+
+    private void DrawCardPile(Rect rect, Texture2D icon, int count, Color? badgeColor, float badgePulse = 0f)
     {
         if (icon != null)
         {
@@ -1670,25 +2318,105 @@ public class BattleUI : MonoBehaviour
             DrawBorder(rect, 2f, new Color(0.7f, 0.55f, 0.3f, 1f));
         }
 
-        // 카운트 텍스트 — 아이콘 중앙 위에 외곽선 텍스트.
-        int prevFontSize = _centerStyle.fontSize;
-        _centerStyle.fontSize = Mathf.RoundToInt(rect.height * 0.26f);
-        DrawTextWithOutline(rect, count.ToString(), _centerStyle,
-                            Color.white, new Color(0, 0, 0, 0.95f), 1.6f);
-        _centerStyle.fontSize = prevFontSize;
+        if (badgeColor.HasValue)
+        {
+            // 둥근 카운트 뱃지 — 우하단에 살짝 걸친 위치
+            Color baseTint = badgeColor.Value;
+            // 본체는 옅게 (alpha 낮춤), glow는 거의 안 보일 정도
+            Color body = new Color(baseTint.r, baseTint.g, baseTint.b, 0.55f);
+            Color glow = new Color(
+                Mathf.Lerp(baseTint.r, 1f, 0.6f),
+                Mathf.Lerp(baseTint.g, 1f, 0.6f),
+                Mathf.Lerp(baseTint.b, 1f, 0.6f));
+            // 카드 착지 펄스 — 뱃지가 잠깐 커지면서 glow가 밝아진다.
+            float pulse = Mathf.Clamp01(badgePulse);
+            float scale = 1f + 0.45f * pulse;
+            float bSize = rect.height * 0.40f * scale;
+            if (pulse > 0f)
+            {
+                float gBoost = 0.35f * pulse;
+                glow = new Color(
+                    Mathf.Clamp01(glow.r + gBoost),
+                    Mathf.Clamp01(glow.g + gBoost),
+                    Mathf.Clamp01(glow.b + gBoost));
+                body = new Color(body.r, body.g, body.b, Mathf.Clamp01(body.a + 0.3f * pulse));
+            }
+            var center = new Vector2(rect.xMax - rect.height * 0.40f * 0.35f, rect.yMax - rect.height * 0.40f * 0.35f);
+            DrawCountBadge(center, count, body, glow, bSize);
+        }
+        else
+        {
+            // 카운트 텍스트 — 아이콘 중앙 위에 외곽선 텍스트.
+            int prevFontSize = _centerStyle.fontSize;
+            _centerStyle.fontSize = Mathf.RoundToInt(rect.height * 0.26f);
+            DrawTextWithOutline(rect, count.ToString(), _centerStyle,
+                                Color.white, new Color(0, 0, 0, 0.95f), 1.6f);
+            _centerStyle.fontSize = prevFontSize;
+        }
+    }
+
+    // 둥근 카운트 뱃지 — _manaFrameTexture를 색상 틴트로 재활용 + 글로우 + 숫자.
+    // ATK 뱃지와 동일한 형태, 색상만 파라미터화.
+    private void DrawCountBadge(Vector2 center, int count, Color bodyColor, Color glowColor, float size)
+    {
+        var rect = new Rect(center.x - size / 2f, center.y - size / 2f, size, size);
+
+        if (_manaFrameTexture != null)
+        {
+            var prev = GUI.color;
+
+            const int layers = 4;
+            for (int i = 0; i < layers; i++)
+            {
+                float t = i / (float)(layers - 1);
+                float scale = Mathf.Lerp(1.10f, 1.55f, t);
+                float alpha = 0.12f * (1f - t) * (1f - t);
+                float gs = size * scale;
+                var gr = new Rect(rect.center.x - gs * 0.5f, rect.center.y - gs * 0.5f, gs, gs);
+                GUI.color = new Color(glowColor.r, glowColor.g, glowColor.b, alpha);
+                GUI.DrawTexture(gr, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
+            }
+
+            GUI.color = bodyColor;
+            GUI.DrawTexture(rect, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
+            GUI.color = prev;
+        }
+        else
+        {
+            FillRect(rect, bodyColor);
+            DrawBorder(rect, 1f, new Color(0.85f, 0.66f, 0.28f, 0.95f));
+        }
+
+        int prevFontSize = _cardCostStyle.fontSize;
+        _cardCostStyle.fontSize = Mathf.RoundToInt(size * 0.50f);
+        DrawTextWithOutline(rect, count.ToString(), _cardCostStyle,
+                            Color.white, new Color(0f, 0f, 0f, 0.95f), 1.4f);
+        _cardCostStyle.fontSize = prevFontSize;
     }
 
     private void DrawHand(BattleState state)
     {
         const float cardW = 150f;
-        const float cardH = 225f;
+        const float cardH = 209f;
+
+        // 숨김 진행도 업데이트 — 고정 지속시간으로 선형 진행, 표시에는 ease-in-out 적용
+        float hideTarget = _handHidden ? 1f : 0f;
+        _handHideProgress = Mathf.MoveTowards(
+            _handHideProgress, hideTarget, Time.deltaTime / HandHideDuration);
+
+        // 버린 더미 비행 애니메이션 중이면 일반 손패 렌더링을 건너뛴다 —
+        // 날아가는 카드는 DrawDiscardFlyingCards가 별도로 그린다.
+        if (IsDiscardFlyActive) return;
 
         int n = state.hand.Count;
         if (n == 0) return;
 
         // 부채꼴 기하: 화면 하단 훨씬 아래 가상의 원 중심에서 반지름만큼 떨어진 호 위에 카드 배치
         // 카드를 화면 아래로 내려서 배틀필드(발끝 Y≈540)를 가리지 않게 함.
-        float centerCardY = RefH - cardH * 0.5f + 60f; // 중앙 카드의 y 중심 (상단 ≈ Y 567, 노출 ≈ 160px)
+        // 숨김 슬라이드 진행도에 ease-in-out 적용 후 Y 오프셋 계산 — 천천히 시작, 중간은 부드럽게, 끝은 잦아듦.
+        float easedHide = EaseInOutCubic(_handHideProgress);
+        float hideOffset = easedHide * HandHideDistance;
+        float centerCardY = RefH - cardH * 0.5f + 60f + hideOffset; // 중앙 카드의 y 중심 (상단 ≈ Y 567, 노출 ≈ 160px)
         float fanRadius   = 1100f;
         float fanOriginX  = RefW * 0.5f;
         float fanOriginY  = centerCardY + fanRadius;
@@ -1706,18 +2434,25 @@ public class BattleUI : MonoBehaviour
         System.Array.Sort(drawOrder, (a, b) => Mathf.Abs(b - midIdx).CompareTo(Mathf.Abs(a - midIdx)));
 
         // 1) 호버 인덱스 계산 — 최상단(= drawOrder의 마지막)부터 역순 검사
+        // 숨김 슬라이드가 조금이라도 진행 중이면 호버/클릭 비활성 — 사라지는 카드 클릭으로 인한 오조작 방지
+        bool inputActive = _handHideProgress < 0.01f;
+
         Vector2 mouse = Event.current.mousePosition;
         int hoverIdx = -1;
-        for (int k = n - 1; k >= 0; k--)
+        if (inputActive && !IsDrawFlyActive)
         {
-            int i = drawOrder[k];
-            float angle = startAngle + i * anglePerCard;
-            Vector2 center = FanCardCenter(fanOriginX, fanOriginY, fanRadius, angle);
-            center.y += CardIdleBob(i);
-            if (PointInRotatedRect(mouse, center, cardW, cardH, angle))
+            for (int k = n - 1; k >= 0; k--)
             {
-                hoverIdx = i;
-                break;
+                int i = drawOrder[k];
+                if (IsBeingDrawnInto(state.hand[i])) continue;
+                float angle = startAngle + i * anglePerCard;
+                Vector2 center = FanCardCenter(fanOriginX, fanOriginY, fanRadius, angle);
+                center.y += CardIdleBob(i);
+                if (PointInRotatedRect(mouse, center, cardW, cardH, angle))
+                {
+                    hoverIdx = i;
+                    break;
+                }
             }
         }
 
@@ -1730,6 +2465,7 @@ public class BattleUI : MonoBehaviour
         foreach (int i in drawOrder)
         {
             if (i == hoverIdx) continue;
+            if (IsBeingDrawnInto(state.hand[i])) continue;
 
             var c = state.hand[i].data;
             bool canPlay = IsCardPlayable(state, c);
@@ -1743,8 +2479,7 @@ public class BattleUI : MonoBehaviour
 
             if (i == _targetingCardIndex)
             {
-                var glowRect = new Rect(rect.x - 4, rect.y - 4, rect.width + 8, rect.height + 8);
-                DrawBorder(glowRect, 4, new Color(1f, 0.85f, 0.3f, 1f));
+                DrawSoftCardGlow(rect);
             }
             DrawCardFrame(rect, c, canPlay, drawCost: false);
         }
@@ -1755,6 +2490,7 @@ public class BattleUI : MonoBehaviour
         foreach (int i in drawOrder)
         {
             if (i == hoverIdx) continue;
+            if (IsBeingDrawnInto(state.hand[i])) continue;
 
             var c = state.hand[i].data;
             bool canPlay = IsCardPlayable(state, c);
@@ -1786,12 +2522,12 @@ public class BattleUI : MonoBehaviour
 
             // 호버 카드는 부채꼴 위치와 무관하게 화면 하단에 고정 앵커해서 전체가 항상 보이게 함.
             // x는 부채꼴 위치 유지(손 위 어느 카드인지 직관적으로 보이게), y만 화면 하단 기준.
-            var hoverRect = new Rect(fanCenter.x - hw * 0.5f, RefH - hh - hoverBottomPad, hw, hh);
+            // 숨김 진행도에 따라 함께 아래로 슬라이드.
+            var hoverRect = new Rect(fanCenter.x - hw * 0.5f, RefH - hh - hoverBottomPad + hideOffset, hw, hh);
 
             if (i == _targetingCardIndex)
             {
-                var glowRect = new Rect(hoverRect.x - 4, hoverRect.y - 4, hoverRect.width + 8, hoverRect.height + 8);
-                DrawBorder(glowRect, 4, new Color(1f, 0.85f, 0.3f, 1f));
+                DrawSoftCardGlow(hoverRect);
             }
             DrawCardFrame(hoverRect, c, canPlay, drawCost: true);
 
@@ -1810,9 +2546,14 @@ public class BattleUI : MonoBehaviour
                     else
                     {
                         _targetingCardIndex = -1;
+                        bool isAttack = IsAttackSpell(c);
+                        bool isSummon = c.cardType == CardType.SUMMON;
                         _pending.Add(() => {
                             _battle.PlayCard(captured, -1);
-                            _playerView?.PlayAttack(ComputeAttackDir(-1));
+                            if (isAttack)
+                                _playerView?.PlayAttack(ComputeAttackDir(-1));
+                            else if (isSummon)
+                                _playerView?.PlaySummon(ComputeAttackDir(-1));
                         });
                     }
                 }
@@ -1820,9 +2561,95 @@ public class BattleUI : MonoBehaviour
         }
     }
 
+    // 부드러운 ease-in-out 커브 (cubic). 0..1 입력을 0..1 출력으로 매핑 — 시작/끝은 천천히, 중간은 빠르게.
+    private static float EaseInOutCubic(float t)
+    {
+        t = Mathf.Clamp01(t);
+        return t < 0.5f
+            ? 4f * t * t * t
+            : 1f - Mathf.Pow(-2f * t + 2f, 3f) * 0.5f;
+    }
+
+    // 사인 기반 ease-in-out — cubic보다 C∞ 부드러움. 도함수가 전 구간에서 매끄러워
+    // 감속/가속 전환이 시각적으로 더 자연스럽다. 버림 애니에 사용.
+    private static float EaseInOutSine(float t)
+    {
+        t = Mathf.Clamp01(t);
+        return 0.5f - 0.5f * Mathf.Cos(Mathf.PI * t);
+    }
+
+    // 손패 숨김/표시 토글 버튼 — "서랍 손잡이" 스타일의 반투명 pill 탭.
+    // 카드 상단 경계(Y≈555) 바로 위에 앉아 카드를 아래로 당겨 내리는 손잡이처럼 보이게.
+    // 카드가 슬라이드해서 내려갈 때 같은 hideOffset만큼 함께 따라 내려감.
+    // 어두운 반투명 fill + 금색 얇은 테두리 + 작은 쉐브론(▽/△). 호버 시 살짝 밝아짐.
+    private void DrawHandHideToggle()
+    {
+        // 카드 드로우/리셔플 애니메이션 중엔 탭 숨김 — 손패가 재배치되는 중이라 탭이 떠있으면 어색함
+        if (IsDrawFlyActive || IsReshuffleActive) return;
+
+        const float w = 76f;
+        const float h = 20f;
+        // DrawHand와 동일한 ease 커브 적용 — 탭이 카드와 같은 속도·곡선으로 슬라이드
+        float hideOffset = EaseInOutCubic(_handHideProgress) * HandHideDistance;
+        var rect = new Rect(RefW * 0.5f - w * 0.5f, 540f + hideOffset, w, h);
+
+        var ev = Event.current;
+        bool hover = rect.Contains(ev.mousePosition);
+
+        // 호버 시 탭이 살짝 위로 들리는 리프트 효과
+        if (hover) rect.y -= 2f;
+
+        // 부드러운 호흡 펄스 — 사라졌다 돌아오는 느낌이지만 완전히 사라지진 않음.
+        // 1.3Hz sine으로 pulse(0..1) 계산, 알파를 baseMin ↔ baseMax 사이에서 왕복.
+        float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 1.3f);
+
+        // 배경 알파 — 기존보다 훨씬 옅게, 호흡으로 0.18 ↔ 0.42 사이 왕복. 호버 시 고정 0.55.
+        float fillA = hover ? 0.55f : Mathf.Lerp(0.18f, 0.42f, pulse);
+        FillRect(rect, new Color(0.08f, 0.05f, 0.05f, fillA));
+
+        // 금색 얇은 테두리 — 호흡으로 0.25 ↔ 0.60 사이. 호버 시 밝게 고정.
+        float borderA = hover ? 1f : Mathf.Lerp(0.25f, 0.60f, pulse);
+        Color goldBorder = hover
+            ? new Color(0.98f, 0.82f, 0.42f, 1f)
+            : new Color(0.86f, 0.66f, 0.28f, borderA);
+        DrawBorder(rect, 1f, goldBorder);
+
+        // 호버 시 외곽 금색 글로우 (탭 자체가 옅어서 호버 피드백은 글로우로 보강)
+        if (hover)
+        {
+            for (int i = 0; i < 3; i++)
+            {
+                float pad = (i + 1) * 2f;
+                float ga = 0.10f * (1f - i / 3f);
+                FillRect(new Rect(rect.x - pad, rect.y - pad, rect.width + pad * 2f, rect.height + pad * 2f),
+                         new Color(0.86f, 0.66f, 0.28f, ga));
+            }
+        }
+
+        // 쉐브론 — 숨김 상태면 위로(펼치기), 표시 상태면 아래로(숨기기). 텍스트도 함께 호흡.
+        string label = _handHidden ? "▲" : "▼";
+        int prevFontSize = _centerStyle.fontSize;
+        Color prevColor = _centerStyle.normal.textColor;
+        _centerStyle.fontSize = 13;
+        float textA = hover ? 1f : Mathf.Lerp(0.40f, 0.80f, pulse);
+        _centerStyle.normal.textColor = hover
+            ? new Color(1f, 0.92f, 0.68f, 1f)
+            : new Color(0.94f, 0.86f, 0.58f, textA);
+        GUI.Label(rect, label, _centerStyle);
+        _centerStyle.fontSize = prevFontSize;
+        _centerStyle.normal.textColor = prevColor;
+
+        // 클릭 처리
+        if (hover && ev.type == EventType.MouseDown && ev.button == 0)
+        {
+            ev.Use();
+            _handHidden = !_handHidden;
+        }
+    }
+
     private bool IsCardPlayable(BattleState state, CardData c)
     {
-        if (state.IsOver || _endTurnAnimating) return false;
+        if (state.IsOver || _endTurnAnimating || IsDrawFlyActive) return false;
         if (state.player.mana < c.cost) return false;
         if (c.cardType == CardType.SUMMON && c.subType == CardSubType.CARNIVORE && state.field.Count == 0) return false;
         return true;
@@ -1838,7 +2665,7 @@ public class BattleUI : MonoBehaviour
     // 손패 카드의 idle 수직 호흡 — 카드마다 위상이 어긋나 자연스럽게 출렁인다.
     private static float CardIdleBob(int i)
     {
-        return Mathf.Sin(Time.time * 1.6f + i * 0.55f) * 3.2f;
+        return Mathf.Sin(Time.time * 1.6f + i * 0.55f) * 1.6f;
     }
 
     private static Matrix4x4 RotateAroundPivotMatrix(float angleDeg, Vector2 pivot)
@@ -1860,7 +2687,9 @@ public class BattleUI : MonoBehaviour
     }
 
     /// <summary>
-    /// CardFrame 텍스처를 깔고 그 위에 cost/이름/타입/일러스트/설명을 겹쳐 그린다.
+    /// 카드 프레임을 레이어 구조로 그린다.
+    /// 아래→위 순서: CardBg → 아트 → CardArtFrame(골드 사각 테두리 + 타입 배너) →
+    ///              CardDescPanel → CardBorder → (cost/name/type/desc 텍스트)
     /// 슬롯 위치는 프레임 이미지 비율 기반 (2:3 기준).
     /// </summary>
     private void DrawCardFrame(Rect rect, CardData c, bool canPlay, bool drawCost)
@@ -1870,23 +2699,19 @@ public class BattleUI : MonoBehaviour
         // 비활성화 카드는 전체적으로 어둡게
         if (!canPlay) GUI.color = new Color(0.55f, 0.55f, 0.55f, 0.9f);
 
-        // 1) 배경 (어두운 슬레이트 텍스처) — 카드 전체를 채움
+        // 1) 배경 판 (CardBg)
+        var bgRect = RectFromPct(rect, cardBgRectPct);
         if (_cardBgTexture != null)
         {
-            GUI.DrawTexture(rect, _cardBgTexture, ScaleMode.StretchToFill, alphaBlend: true);
+            GUI.DrawTexture(bgRect, _cardBgTexture, ScaleMode.StretchToFill, alphaBlend: true);
         }
         else
         {
-            FillRect(rect, new Color(0.13f, 0.15f, 0.16f, 1f));
+            FillRect(bgRect, new Color(0.13f, 0.15f, 0.16f, 1f));
         }
 
-        // 2) 아트 — 카드 상단 영역. SUMMON(공룡)은 슬롯 안에서 더 작게 그려서 다른 카드와 시각 비중을 맞춤.
-        var artRect = new Rect(
-            rect.x + rect.width  * 0.04f,
-            rect.y + rect.height * 0.04f,
-            rect.width  * 0.92f,
-            rect.height * 0.62f);
-
+        // 2) 아트 — 카드 상단 영역
+        var artRect = RectFromPct(rect, cardArtRectPct);
         if (_cardSprites.TryGetValue(c.id, out var cardTex))
         {
             GUI.DrawTexture(artRect, cardTex, ScaleMode.ScaleToFit, alphaBlend: true);
@@ -1896,19 +2721,31 @@ public class BattleUI : MonoBehaviour
             FillRect(artRect, GetCardTypeTint(c) * new Color(1f, 1f, 1f, 0.35f));
         }
 
-        // 3) 설명 패널 — 카드 하단 영역. 어두운 톤 + 가는 브론즈 테두리로 끼움 느낌
-        var descPanelRect = new Rect(
-            rect.x + rect.width  * 0.07f,
-            rect.y + rect.height * 0.69f,
-            rect.width  * 0.86f,
-            rect.height * 0.24f);
-        FillRect(descPanelRect, new Color(0.06f, 0.05f, 0.05f, 0.85f));
-        DrawBorder(descPanelRect, 1, new Color(0.55f, 0.42f, 0.22f, 0.7f));
+        // 3) 골드 디바이더 — 좌·우 두 조각으로 나눠 hex 배너 영역은 건너뜀 (카드피커와 동일 로직)
+        {
+            float divL = rect.x + rect.width * cardDividerRectPct.x;
+            float divR = divL + rect.width * cardDividerRectPct.z;
+            float hexL = rect.x + rect.width * cardArtFrameRectPct.x;
+            float hexR = hexL + rect.width * cardArtFrameRectPct.z;
+            float divY = rect.y + rect.height * cardDividerRectPct.y;
+            float divH = cardDividerRectPct.w;
 
-        // 4) 테두리 (가운데 투명) — 위에 얹어서 외곽 마무리
+            if (divL < hexL)
+                FillRect(new Rect(divL, divY, hexL - divL, divH), cardDividerColor);
+            if (divR > hexR)
+                FillRect(new Rect(hexR, divY, divR - hexR, divH), cardDividerColor);
+        }
+
+        // 4) 아트 프레임 + 타입 배너 (CardArtFrame) — 디바이더 위에 덮어 hex 중앙 가리기
+        if (_cardArtFrameTexture != null)
+        {
+            GUI.DrawTexture(RectFromPct(rect, cardArtFrameRectPct), _cardArtFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
+        }
+
+        // 5) 외곽 테두리 (CardBorder)
         if (_cardBorderTexture != null)
         {
-            GUI.DrawTexture(rect, _cardBorderTexture, ScaleMode.StretchToFill, alphaBlend: true);
+            GUI.DrawTexture(RectFromPct(rect, cardBorderRectPct), _cardBorderTexture, ScaleMode.StretchToFill, alphaBlend: true);
         }
         else
         {
@@ -1923,42 +2760,29 @@ public class BattleUI : MonoBehaviour
             DrawCardCost(rect, c, canPlay);
         }
 
-        // 4) 이름 배너 — 호버 카드는 폰트 키우고, 손패 카드는 작게 (가려져도 우측만 보이게)
-        var nameRect = new Rect(
-            rect.x,
-            rect.y + rect.height * 0.03f,
-            rect.width,
-            rect.height * 0.09f);
+        // 4) 이름 배너 — 호버 카드는 폰트 키우고, 손패 카드는 작게
+        var nameRect = RectFromPct(rect, cardNameRectPct);
         int prevNameSize = _cardNameStyle.fontSize;
         _cardNameStyle.fontSize = drawCost ? 16 : 11;
         GUI.Label(nameRect, GetCardCategoryLabel(c), _cardNameStyle);
         _cardNameStyle.fontSize = prevNameSize;
 
-        // 5) 타입 라벨 — 아트 슬롯 아래, 설명 패널 바로 위에 자리잡아 시각적으로 묶임
-        var typeRect = new Rect(
-            rect.x + rect.width * 0.1f,
-            rect.y + rect.height * 0.625f,
-            rect.width * 0.8f,
-            rect.height * 0.05f);
+        // 5) 타입 라벨 — 육각 배너 위치
+        var typeRect = RectFromPct(rect, cardTypeRectPct);
         GUI.Label(typeRect, GetCardTypeLabel(c), _cardTypeStyle);
 
         // 6) 설명 — 하단 패널 안에 가운데 정렬되도록 패널 rect 그대로 사용
-        GUI.Label(descPanelRect, GetCardBody(c), _cardDescStyle);
+        GUI.Label(RectFromPct(rect, cardBodyRectPct), GetCardBody(c), _cardDescStyle);
     }
 
     private void DrawCardCost(Rect rect, CardData c, bool canPlay)
     {
         var prevColor = GUI.color;
 
-        // CardFrame 텍스처(848×1256)의 좌상단 코스트 링 중심: 픽셀 약 (108, 108).
-        // 정규화 (0.127, 0.086). 오브는 카드폭의 23.5%로 링 외경을 완전히 덮음.
-        // (이전 20%는 살짝 작아 가장자리가 비쳐서 +3.5%p 여유 줌)
-        const float orbCenterXFrac = 0.127f;
-        const float orbCenterYFrac = 0.086f;
-        const float orbSizeFrac    = 0.235f;
-        float orbSize = rect.width * orbSizeFrac;
-        float orbCx = rect.x + rect.width  * orbCenterXFrac;
-        float orbCy = rect.y + rect.height * orbCenterYFrac;
+        // 마나 오브 위치 — Inspector의 cardCostOrbPct (centerX, centerY, sizeFrac).
+        float orbSize = rect.width * cardCostOrbPct.z;
+        float orbCx = rect.x + rect.width  * cardCostOrbPct.x;
+        float orbCy = rect.y + rect.height * cardCostOrbPct.y;
         var orbRect = new Rect(orbCx - orbSize * 0.5f, orbCy - orbSize * 0.5f, orbSize, orbSize);
 
         if (_manaFrameTexture != null)
@@ -2082,7 +2906,7 @@ public class BattleUI : MonoBehaviour
 
     private void DrawEndTurn(BattleState state)
     {
-        GUI.enabled = !state.IsOver && !_endTurnAnimating;
+        GUI.enabled = !state.IsOver && !_endTurnAnimating && !IsDrawFlyActive;
 
         // 베이스 사이즈(살짝 작아짐) + 호버 시 확대
         var baseRect = new Rect(RefW - 280f, RefH - 80f, 150f, 72f);
@@ -2195,9 +3019,52 @@ public class BattleUI : MonoBehaviour
             yield break;
         }
 
-        // Phase 3: 정리 + 다음 턴 시작
-        _battle.EndTurnCleanup();
+        // Phase 3: 손패 → (중앙 모임 → 머뭄 → 더미) 3단계 비행 애니메이션
+        if (state.hand.Count > 0)
+        {
+            BeginDiscardFlyAnimation(state);
+
+            // 마지막 카드가 착지할 때까지 대기
+            int n = _discardFlyCards.Count;
+            float wait = DiscardGatherDuration + DiscardHoldDuration
+                       + DiscardDisperseDuration + Mathf.Max(0, n - 1) * DiscardDisperseStagger
+                       + 0.05f;
+            yield return new WaitForSeconds(wait);
+
+            _battle.EndTurnCleanup();
+            EndDiscardFlyAnimation();
+        }
+        else
+        {
+            _battle.EndTurnCleanup();
+        }
+
+        // Phase 4: 다음 턴 시작 — StartNextTurnIfAlive가 내부에서 Draw를 호출하고
+        // 덱이 비어있으면 discard→deck reshuffle까지 해버린다. 애니메이션을 위해
+        // 호출 전 상태를 스냅샷해두고, 호출 후 상태 변화를 보고 reshuffle/draw를 분기 재생.
+        int handBeforeNextTurn = state.hand.Count;
+        int deckBeforeNextTurn = state.deck.Count;
+        int discardBeforeNextTurn = state.discard.Count;
         _battle.StartNextTurnIfAlive();
+
+        // 덱이 비어있었고 지금은 차있다면 reshuffle이 일어난 것.
+        // 이 경우 버림 → 덱 스트림 애니메이션을 먼저 재생.
+        bool reshuffled = deckBeforeNextTurn == 0 && discardBeforeNextTurn > 0 && state.deck.Count > 0;
+        if (reshuffled && !state.IsOver)
+        {
+            BeginReshuffleAnimation(discardBeforeNextTurn);
+            float reshuffleWait = GetReshuffleTotalDuration() + 0.1f;
+            yield return new WaitForSeconds(reshuffleWait);
+            EndReshuffleAnimation();
+        }
+
+        if (!state.IsOver && state.hand.Count > handBeforeNextTurn)
+        {
+            BeginDrawFlyAnimation(state, handBeforeNextTurn);
+            float drawWait = GetDrawFlyTotalDuration() + 0.05f;
+            yield return new WaitForSeconds(drawWait);
+            EndDrawFlyAnimation();
+        }
 
         _endTurnAnimating = false;
         _attackingUnit = null;
@@ -2242,6 +3109,832 @@ public class BattleUI : MonoBehaviour
     }
 
     // =========================================================
+    // 손패 → 버린 더미 비행 애니메이션
+    // =========================================================
+
+    // 현재 손패의 각 카드 위치/각도를 캡처해서 _discardFlyCards에 채우고
+    // Time.time 기준으로 애니메이션을 시작한다. DrawHand는 비활성 상태가 된다.
+    private void BeginDiscardFlyAnimation(BattleState state)
+    {
+        _discardFlyCards.Clear();
+        _discardBaseCount = state.discard.Count;
+
+        const float cardW = 150f;
+        const float cardH = 209f;
+
+        int n = state.hand.Count;
+        if (n == 0) return;
+
+        // DrawHand와 동일한 부채꼴 기하 — 현재 숨김 오프셋도 그대로 반영해서
+        // 캡처 시점의 실제 화면 위치에서 카드가 날아가는 것처럼 보이게 함.
+        float easedHide = EaseInOutCubic(_handHideProgress);
+        float hideOffset = easedHide * HandHideDistance;
+        float centerCardY = RefH - cardH * 0.5f + 60f + hideOffset;
+        float fanRadius = 1100f;
+        float fanOriginX = RefW * 0.5f;
+        float fanOriginY = centerCardY + fanRadius;
+
+        const float anglePerCard = 6f;
+        float totalAngle = (n - 1) * anglePerCard;
+        float startAngleDeg = -totalAngle * 0.5f;
+
+        // 가운데 카드부터 바깥쪽 순서로 순차 날아가게 — 중앙이 먼저 뜨고 양옆이 뒤따름
+        float midIdx = (n - 1) * 0.5f;
+        var order = new int[n];
+        for (int k = 0; k < n; k++) order[k] = k;
+        System.Array.Sort(order, (a, b) => Mathf.Abs(a - midIdx).CompareTo(Mathf.Abs(b - midIdx)));
+
+        // 모일 위치 — 화면 중앙 기준으로 좌우 균등하게 배치, 원래 순서(i) 기준으로 나열.
+        float gatherCenterX = RefW * 0.5f;
+        float gatherMid = (n - 1) * 0.5f;
+
+        for (int k = 0; k < n; k++)
+        {
+            int i = order[k];
+            float angle = startAngleDeg + i * anglePerCard;
+            Vector2 center = FanCardCenter(fanOriginX, fanOriginY, fanRadius, angle);
+
+            // 각 카드의 최종 "모임" 위치 — i 기준 좌우 정렬.
+            float gx = gatherCenterX + (i - gatherMid) * DiscardGatherSpacing;
+            // 약간의 Y 편차로 겹침 느낌 (중앙 카드가 살짝 앞으로 나옴)
+            float gy = DiscardGatherCenterY - Mathf.Abs(i - gatherMid) * 2f;
+
+            _discardFlyCards.Add(new DiscardFlyCard
+            {
+                data = state.hand[i].data,
+                startCenter = center,
+                startAngleDeg = angle,
+                gatherTarget = new Vector2(gx, gy),
+                // 중앙(k=0) 카드부터 먼저 버려지고 바깥으로 갈수록 뒤따라 감
+                disperseDelay = k * DiscardDisperseStagger,
+            });
+        }
+
+        _discardAnimStartTime = Time.time;
+    }
+
+    private void EndDiscardFlyAnimation()
+    {
+        _discardFlyCards.Clear();
+        _discardAnimStartTime = -1f;
+        _discardBaseCount = 0;
+    }
+
+    private bool IsDiscardFlyActive => _discardAnimStartTime >= 0f && _discardFlyCards.Count > 0;
+
+    // 모이는 단계가 끝나는 시각 (애니 시작 기준)
+    private const float DiscardGatherEndLocal = DiscardGatherDuration;
+    private const float DiscardHoldEndLocal   = DiscardGatherDuration + DiscardHoldDuration;
+
+    // 카드 i가 실제 더미에 착지하는 시각 (애니 시작 기준)
+    private float DiscardLandLocalTime(int cardIndex)
+    {
+        return DiscardHoldEndLocal + _discardFlyCards[cardIndex].disperseDelay + DiscardDisperseDuration;
+    }
+
+    // 버린 더미 UI에 표시할 카운트 — 애니메이션 중에는 착지한 카드 수만큼만 더해줘서
+    // 숫자가 한 장씩 틱틱 올라가는 것처럼 보이게 함.
+    private int GetDiscardDisplayCount(BattleState state)
+    {
+        // reshuffle 중엔 버린 더미가 점점 줄어드는 것처럼 보여야 함 (_reshuffleTotalCards → 0)
+        if (IsReshuffleActive)
+        {
+            return Mathf.Max(0, _reshuffleTotalCards - GetReshuffleLandedCount());
+        }
+        if (!IsDiscardFlyActive) return state.discard.Count;
+        int landed = 0;
+        float localNow = Time.time - _discardAnimStartTime;
+        for (int i = 0; i < _discardFlyCards.Count; i++)
+        {
+            if (localNow >= DiscardLandLocalTime(i)) landed++;
+        }
+        return _discardBaseCount + landed;
+    }
+
+    // 가장 최근 "착지" 이후 경과 시간을 바탕으로 한 뱃지 펄스 (0..1 → 정점→감쇠).
+    private float GetDiscardLandPulse()
+    {
+        if (!IsDiscardFlyActive) return 0f;
+        float localNow = Time.time - _discardAnimStartTime;
+        float mostRecent = -999f;
+        for (int i = 0; i < _discardFlyCards.Count; i++)
+        {
+            float land = DiscardLandLocalTime(i);
+            if (land <= localNow && land > mostRecent) mostRecent = land;
+        }
+        if (mostRecent < 0f) return 0f;
+        float t = (localNow - mostRecent) / DiscardLandPulseDuration;
+        if (t < 0f || t > 1f) return 0f;
+        return Mathf.Sin(t * Mathf.PI);
+    }
+
+    // 날아가는 카드들을 실제로 그린다. OnGUI에서 UI 스케일이 적용된 상태로 호출.
+    // 3단계 페이즈를 공유하되, disperseDelay만 카드별로 달라진다.
+    private void DrawDiscardFlyingCards()
+    {
+        if (!IsDiscardFlyActive) return;
+
+        const float cardW = 150f;
+        const float cardH = 209f;
+
+        // 버린 더미 중심 (DrawTopBar의 Rect와 일치)
+        Vector2 pileTarget = new Vector2(RefW - 90f + 39f, RefH - 88f + 39f);
+
+        float localNow = Time.time - _discardAnimStartTime;
+        Matrix4x4 baseMatrix = GUI.matrix;
+
+        // 드로우 순서 — 바깥쪽 카드부터 안쪽 카드로. 원래 중앙 카드가 맨 위에 오도록.
+        // _discardFlyCards는 중앙(k=0)부터 바깥 순서로 저장되어 있으므로, 역순으로 그린다.
+        for (int k = _discardFlyCards.Count - 1; k >= 0; k--)
+        {
+            var fc = _discardFlyCards[k];
+
+            Vector2 center;
+            float angle;
+            float scale;
+
+            if (localNow < DiscardGatherEndLocal)
+            {
+                // Phase 1: 부채꼴 → 모임 위치. 사인 ease로 부드럽게 감속, 상단 제어점으로 아치
+                float t = EaseInOutSine(Mathf.Clamp01(localNow / DiscardGatherDuration));
+                float u = 1f - t;
+                center = u * u * fc.startCenter
+                       + 2f * u * t * DiscardFlyControl
+                       + t * t * fc.gatherTarget;
+                angle = Mathf.Lerp(fc.startAngleDeg, 0f, t);
+                scale = Mathf.Lerp(1f, 0.72f, t);
+            }
+            else if (localNow < DiscardHoldEndLocal)
+            {
+                // Phase 2: 중앙에서 잠깐 머무름 — 튀는 바빙 대신, 가운데로 수렴하는 완만한 드리프트.
+                // gather 마무리 속도(0)에서 hold 마무리 속도(0)로 이어지며 바운스 없이 "숨을 고르는" 느낌.
+                float holdT = (localNow - DiscardGatherEndLocal) / DiscardHoldDuration;
+                // 0→1→0으로 부드럽게 오르내리는 곡선 (사인 반주기)
+                float breathe = Mathf.Sin(holdT * Mathf.PI);
+                // 아주 미세한 수직 떠오름 (+2px 이내) — 한 번만 완만하게 올라갔다 내려옴
+                float lift = -1.8f * breathe;
+                center = new Vector2(fc.gatherTarget.x, fc.gatherTarget.y + lift);
+                angle = 0f;
+                // 숨쉬기처럼 아주 살짝만 커졌다 줄어듦 (±1.5%)
+                scale = 0.72f * (1f + 0.015f * breathe);
+            }
+            else
+            {
+                // Phase 3: 중앙 → 더미. disperseDelay만큼 기다렸다 출발. 사인 ease로 부드럽게.
+                float disperseLocal = localNow - DiscardHoldEndLocal - fc.disperseDelay;
+                if (disperseLocal < 0f)
+                {
+                    // 아직 자기 차례 아님 — 모임 위치에 조용히 대기 (hold 마지막 상태 유지)
+                    center = fc.gatherTarget;
+                    angle = 0f;
+                    scale = 0.72f;
+                }
+                else
+                {
+                    float t = disperseLocal / DiscardDisperseDuration;
+                    if (t >= 1f) continue;  // 착지 완료
+                    float et = EaseInOutSine(t);
+                    center = Vector2.Lerp(fc.gatherTarget, pileTarget, et);
+                    // 더미에 가까워질수록 작아지며 흡수
+                    scale = Mathf.Lerp(0.72f, 0.25f, et);
+                    angle = 0f;
+                }
+            }
+
+            float w = cardW * scale;
+            float h = cardH * scale;
+            var rect = new Rect(center.x - w * 0.5f, center.y - h * 0.5f, w, h);
+
+            if (Mathf.Abs(angle) > 0.01f)
+                GUI.matrix = baseMatrix * RotateAroundPivotMatrix(angle, center);
+            else
+                GUI.matrix = baseMatrix;
+
+            DrawCardFrame(rect, fc.data, canPlay: true, drawCost: false);
+        }
+        GUI.matrix = baseMatrix;
+    }
+
+    // =========================================================
+    // 덱 → 손패 드로우 애니메이션
+    // =========================================================
+
+    // state.hand의 [fromIndex..끝] 구간을 "새로 드로우된 카드"로 간주하고
+    // 중앙으로 모였다가 자기 부채꼴 자리로 흩어지는 3단계 애니메이션을 시작한다.
+    // 호출 시점에 state.hand는 이미 새 카드를 포함하고 있어야 한다.
+    private void BeginDrawFlyAnimation(BattleState state, int fromIndex)
+    {
+        _drawFlyCards.Clear();
+        _drawFlyingInstances.Clear();
+
+        int n = state.hand.Count;
+        if (fromIndex < 0 || fromIndex >= n) return;
+
+        _drawTotalHandCount = n;
+
+        int drawn = n - fromIndex;
+        // 중앙 클러스터 위치 — 버림 애니와 동일한 기하. 중앙 기준 좌우 균등.
+        float gatherCenterX = RefW * 0.5f;
+        float gatherMid = (drawn - 1) * 0.5f;
+
+        // 흩어짐 순서: 중앙(k=0) 카드부터 먼저 자기 자리로 날아가고 바깥으로 퍼짐
+        var order = new int[drawn];
+        for (int k = 0; k < drawn; k++) order[k] = k;
+        System.Array.Sort(order, (a, b) => Mathf.Abs(a - gatherMid).CompareTo(Mathf.Abs(b - gatherMid)));
+
+        for (int k = 0; k < drawn; k++)
+        {
+            int localK = order[k];
+            int handIdx = fromIndex + localK;
+            var inst = state.hand[handIdx];
+            _drawFlyingInstances.Add(inst);
+
+            float gx = gatherCenterX + (localK - gatherMid) * DiscardGatherSpacing;
+            float gy = DiscardGatherCenterY - Mathf.Abs(localK - gatherMid) * 2f;
+
+            _drawFlyCards.Add(new DrawFlyCard
+            {
+                instance = inst,
+                data = inst.data,
+                targetIndex = handIdx,
+                gatherTarget = new Vector2(gx, gy),
+                disperseDelay = k * DrawDisperseStagger,
+            });
+        }
+
+        _drawAnimStartTime = Time.time;
+    }
+
+    private void EndDrawFlyAnimation()
+    {
+        _drawFlyCards.Clear();
+        _drawFlyingInstances.Clear();
+        _drawAnimStartTime = -1f;
+        _drawTotalHandCount = 0;
+    }
+
+    private bool IsDrawFlyActive => _drawAnimStartTime >= 0f && _drawFlyCards.Count > 0;
+
+    // 특정 CardInstance가 지금 드로우 애니 때문에 DrawHand에서 건너뛰어져야 하는지 검사.
+    // Phase 3가 끝난 카드는 더 이상 "비행 중"이 아니므로 즉시 DrawHand가 이어받는다.
+    // (이게 없으면 carousel의 마지막 카드를 기다리는 동안 먼저 착지한 카드가 투명 상태가 됨)
+    private bool IsBeingDrawnInto(CardInstance inst)
+    {
+        if (!IsDrawFlyActive) return false;
+        if (!_drawFlyingInstances.Contains(inst)) return false;
+
+        float localNow = Time.time - _drawAnimStartTime;
+        float holdEnd = DrawGatherDuration + DrawHoldDuration;
+
+        for (int k = 0; k < _drawFlyCards.Count; k++)
+        {
+            if (!ReferenceEquals(_drawFlyCards[k].instance, inst)) continue;
+            float disperseLocal = localNow - holdEnd - _drawFlyCards[k].disperseDelay;
+            if (disperseLocal < 0f) return true;            // gather/hold/대기 중
+            return disperseLocal < DrawDisperseDuration;    // disperse 끝난 카드는 DrawHand가 그린다
+        }
+        return false;
+    }
+
+    // 드로우 애니 총 시간 (마지막으로 안착하는 카드의 끝 시각) — 대기 계산용
+    private float GetDrawFlyTotalDuration()
+    {
+        if (_drawFlyCards.Count == 0) return 0f;
+        float max = 0f;
+        for (int i = 0; i < _drawFlyCards.Count; i++)
+        {
+            float end = DrawGatherDuration + DrawHoldDuration
+                      + _drawFlyCards[i].disperseDelay + DrawDisperseDuration;
+            if (end > max) max = end;
+        }
+        return max;
+    }
+
+    // 드로우 카드의 최종 부채꼴 위치/각도 — DrawHand의 부채꼴 계산과 일치해야 함.
+    private void GetDrawFanTarget(int targetIndex, int handCount, out Vector2 center, out float angleDeg)
+    {
+        const float cardH = 209f;
+        float hideOffset = EaseInOutCubic(_handHideProgress) * HandHideDistance;
+        float centerCardY = RefH - cardH * 0.5f + 60f + hideOffset;
+        float fanRadius = 1100f;
+        float fanOriginX = RefW * 0.5f;
+        float fanOriginY = centerCardY + fanRadius;
+
+        const float anglePerCard = 6f;
+        float totalAngle = (handCount - 1) * anglePerCard;
+        float startAngle = -totalAngle * 0.5f;
+
+        angleDeg = startAngle + targetIndex * anglePerCard;
+        center = FanCardCenter(fanOriginX, fanOriginY, fanRadius, angleDeg);
+    }
+
+    // 드로우 애니: 버림 애니와 동일한 3단계 구조의 역방향.
+    //   Phase 1 (gather): 덱 → 중앙 클러스터, 뒷면 유지, Bezier 아치, 사인 ease
+    //   Phase 2 (hold):   중앙에서 은은한 숨쉬기 + 플립 (뒷면 → 앞면)
+    //   Phase 3 (disperse): 중앙 → 부채꼴 자리, 앞면, 사인 ease, 회전 정렬
+    private void DrawDrawFlyingCards()
+    {
+        if (!IsDrawFlyActive) return;
+
+        const float cardW = 150f;
+        const float cardH = 209f;
+
+        // 덱 더미 중심 (DrawTopBar의 Rect와 일치: (22, RefH-88, 78, 78))
+        Vector2 deckCenter = new Vector2(22f + 39f, RefH - 88f + 39f);
+        // 버림 애니와 동일한 상단 아치 제어점 — 전체 톤 통일
+        Vector2 control = DiscardFlyControl;
+
+        float localNow = Time.time - _drawAnimStartTime;
+        float gatherEnd = DrawGatherDuration;
+        float holdEnd   = DrawGatherDuration + DrawHoldDuration;
+
+        Matrix4x4 baseMatrix = GUI.matrix;
+
+        // 드로우 순서: 바깥 → 안쪽. 중앙 카드가 맨 위에 겹치도록.
+        // _drawFlyCards는 중앙(k=0)부터 저장되어 있으므로 역순 드로우.
+        for (int k = _drawFlyCards.Count - 1; k >= 0; k--)
+        {
+            var fc = _drawFlyCards[k];
+
+            Vector2 center;
+            float angleDeg;
+            float scale;
+            float scaleX = 1f;
+            bool showFront = false;
+
+            if (localNow < gatherEnd)
+            {
+                // Phase 1: 덱 → 모임 위치. Bezier 아치 + 사인 ease
+                float t = EaseInOutSine(Mathf.Clamp01(localNow / DrawGatherDuration));
+                float u = 1f - t;
+                center = u * u * deckCenter
+                       + 2f * u * t * control
+                       + t * t * fc.gatherTarget;
+                angleDeg = 0f;
+                // 덱에서 작게 나와 클러스터에서 적당히 커짐
+                scale = Mathf.Lerp(0.32f, 0.72f, t);
+                scaleX = 1f;
+                showFront = false;  // 가는 동안은 계속 뒷면
+            }
+            else if (localNow < holdEnd)
+            {
+                // Phase 2: 중앙에서 머무름 — 은은한 숨쉬기 + 플립
+                float holdT = (localNow - gatherEnd) / DrawHoldDuration;
+                float breathe = Mathf.Sin(holdT * Mathf.PI);
+                float lift = -1.8f * breathe;
+                center = new Vector2(fc.gatherTarget.x, fc.gatherTarget.y + lift);
+                angleDeg = 0f;
+                scale = 0.72f * (1f + 0.015f * breathe);
+
+                // 플립 — hold 구간 전체에 걸쳐 1 → 0 → 1. 중간에 앞면으로 교체.
+                scaleX = Mathf.Abs(Mathf.Cos(holdT * Mathf.PI));
+                showFront = holdT >= 0.5f;
+            }
+            else
+            {
+                // Phase 3: 중앙 → 부채꼴 자기 자리. disperseDelay만큼 기다렸다 출발.
+                float disperseLocal = localNow - holdEnd - fc.disperseDelay;
+                GetDrawFanTarget(fc.targetIndex, _drawTotalHandCount, out Vector2 fanCenter, out float fanAngle);
+
+                if (disperseLocal < 0f)
+                {
+                    // 아직 자기 차례 아님 — 모임 위치에 조용히 대기 (앞면)
+                    center = fc.gatherTarget;
+                    angleDeg = 0f;
+                    scale = 0.72f;
+                    scaleX = 1f;
+                    showFront = true;
+                }
+                else
+                {
+                    float t = disperseLocal / DrawDisperseDuration;
+                    if (t >= 1f) continue;  // 착지 완료 — DrawHand가 이어서 그린다
+                    float et = EaseInOutSine(t);
+                    center = Vector2.Lerp(fc.gatherTarget, fanCenter, et);
+                    // 착지 시점의 DrawHand 위치와 정확히 맞추기 위해 idle bob을 점진적으로 블렌딩.
+                    // 이게 없으면 핸드오프 프레임에서 ±1.6px 정도 Y가 튈 수 있다.
+                    center.y += CardIdleBob(fc.targetIndex) * et;
+                    angleDeg = Mathf.Lerp(0f, fanAngle, et);
+                    scale = Mathf.Lerp(0.72f, 1f, et);
+                    scaleX = 1f;
+                    showFront = true;
+                }
+            }
+
+            float w = cardW * scale * scaleX;
+            float h = cardH * scale;
+            var rect = new Rect(center.x - w * 0.5f, center.y - h * 0.5f, w, h);
+
+            if (Mathf.Abs(angleDeg) > 0.01f)
+                GUI.matrix = baseMatrix * RotateAroundPivotMatrix(angleDeg, center);
+            else
+                GUI.matrix = baseMatrix;
+
+            if (showFront)
+            {
+                DrawCardFrame(rect, fc.data, canPlay: true, drawCost: false);
+            }
+            else if (_iconCardBack != null)
+            {
+                GUI.DrawTexture(rect, _iconCardBack, ScaleMode.StretchToFill, alphaBlend: true);
+            }
+            else
+            {
+                FillRect(rect, new Color(0.16f, 0.20f, 0.28f, 1f));
+                DrawBorder(rect, 2f, new Color(0.70f, 0.55f, 0.28f, 1f));
+            }
+        }
+        GUI.matrix = baseMatrix;
+    }
+
+    // =========================================================
+    // 덱 리셔플 (버림 → 덱) 애니메이션
+    // =========================================================
+
+    private void BeginReshuffleAnimation(int cardCount)
+    {
+        _reshuffleFlyCards.Clear();
+        _reshuffleTotalCards = cardCount;
+        if (cardCount <= 0) return;
+
+        for (int k = 0; k < cardCount; k++)
+        {
+            // 카드별 살짝 다른 회전 스핀 — 진짜 한 묶음이 쏟아져 흐르는 느낌
+            float spin = (k % 2 == 0 ? -1f : 1f) * (8f + (k % 3) * 4f);
+            _reshuffleFlyCards.Add(new ReshuffleFlyCard
+            {
+                delay = k * ReshuffleFlyStagger,
+                rotSpin = spin,
+            });
+        }
+        _reshuffleAnimStartTime = Time.time;
+    }
+
+    private void EndReshuffleAnimation()
+    {
+        _reshuffleFlyCards.Clear();
+        _reshuffleAnimStartTime = -1f;
+        _reshuffleTotalCards = 0;
+    }
+
+    private bool IsReshuffleActive => _reshuffleAnimStartTime >= 0f && _reshuffleFlyCards.Count > 0;
+
+    private float GetReshuffleTotalDuration()
+    {
+        if (_reshuffleFlyCards.Count == 0) return 0f;
+        return ReshuffleFlyDuration
+             + (_reshuffleFlyCards.Count - 1) * ReshuffleFlyStagger;
+    }
+
+    // 지금까지 덱에 착지한 카드 수 — 덱/버림 더미 카운트 표시에 사용
+    private int GetReshuffleLandedCount()
+    {
+        if (!IsReshuffleActive) return 0;
+        float localNow = Time.time - _reshuffleAnimStartTime;
+        int landed = 0;
+        for (int k = 0; k < _reshuffleFlyCards.Count; k++)
+        {
+            float end = _reshuffleFlyCards[k].delay + ReshuffleFlyDuration;
+            if (localNow >= end) landed++;
+        }
+        return landed;
+    }
+
+    private void DrawReshuffleFlyingCards()
+    {
+        if (!IsReshuffleActive) return;
+        if (_iconCardBack == null) return;  // 뒷면 텍스처 없으면 조용히 스킵
+
+        // 양쪽 더미 중심 (DrawTopBar Rect와 일치)
+        Vector2 discardCenter = new Vector2(RefW - 90f + 39f, RefH - 88f + 39f);  // (1229, 671)
+        Vector2 deckCenter    = new Vector2(22f + 39f,        RefH - 88f + 39f);  // (61, 671)
+        // 부드러운 아치 — 화면 중앙 근처까지 살짝 떠올랐다 우→좌로 흘러감
+        Vector2 control       = new Vector2(RefW * 0.5f, RefH - 380f);
+
+        // 덱에 카드가 착지할 때마다 터지는 빛 플래시 — 카드 드로우보다 먼저 그려
+        // 플래시 위에 카드 뒷면이 겹쳐 흡수되는 느낌을 만든다.
+        DrawReshuffleDeckFlash(deckCenter);
+
+        // 비행 중 카드 크기 — 더미 아이콘보다 약간 작게 (이동 중 느낌)
+        const float baseW = 52f;
+        const float baseH = 78f;
+
+        float localNow = Time.time - _reshuffleAnimStartTime;
+        Matrix4x4 baseMatrix = GUI.matrix;
+
+        for (int k = 0; k < _reshuffleFlyCards.Count; k++)
+        {
+            var fc = _reshuffleFlyCards[k];
+            float raw = (localNow - fc.delay) / ReshuffleFlyDuration;
+            if (raw <= 0f || raw >= 1f) continue;  // 아직 안 출발 또는 착지 완료
+
+            float t = EaseInOutSine(raw);
+            float u = 1f - t;
+            Vector2 center = u * u * discardCenter
+                           + 2f * u * t * control
+                           + t * t * deckCenter;
+
+            // 시작 스케일 0.85 → 끝 0.70으로 살짝 작아지며 덱에 흡수되는 느낌
+            float scale = Mathf.Lerp(0.85f, 0.70f, t);
+            float angle = fc.rotSpin * Mathf.Sin(t * Mathf.PI);  // 중간에 가장 많이 기울었다 돌아옴
+
+            float w = baseW * scale;
+            float h = baseH * scale;
+            var rect = new Rect(center.x - w * 0.5f, center.y - h * 0.5f, w, h);
+
+            if (Mathf.Abs(angle) > 0.01f)
+                GUI.matrix = baseMatrix * RotateAroundPivotMatrix(angle, center);
+            else
+                GUI.matrix = baseMatrix;
+
+            GUI.DrawTexture(rect, _iconCardBack, ScaleMode.StretchToFill, alphaBlend: true);
+        }
+        GUI.matrix = baseMatrix;
+    }
+
+    // 덱에 카드가 착지할 때마다 덱 위에 퍼지는 방사형 빛 플래시.
+    // 가장 최근 착지 이벤트의 펄스 값을 받아 확장/감쇠하는 여러 레이어로 표현.
+    // 추가로 리셔플 전체 구간에는 은은한 상시 오라가 깔려 있어 "마법적인" 느낌을 준다.
+    private void DrawReshuffleDeckFlash(Vector2 deckCenter)
+    {
+        if (!IsReshuffleActive || _manaFrameTexture == null) return;
+
+        var prevColor = GUI.color;
+
+        // (1) 상시 오라 — 리셔플 동안 덱이 은은하게 숨 쉬는 듯한 약한 글로우
+        {
+            float breathe = 0.5f + 0.5f * Mathf.Sin(Time.time * 3.2f);
+            float auraAlpha = 0.10f + 0.08f * breathe;
+            float auraSize = 110f + 8f * breathe;
+            var auraRect = new Rect(deckCenter.x - auraSize * 0.5f,
+                                    deckCenter.y - auraSize * 0.5f,
+                                    auraSize, auraSize);
+            GUI.color = new Color(0.45f, 0.80f, 1f, auraAlpha);
+            GUI.DrawTexture(auraRect, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
+        }
+
+        // (2) 착지 임팩트 플래시 — 매 카드 착지마다 팽창하며 페이드
+        float pulse = GetReshuffleDeckLandPulse();
+        if (pulse > 0.01f)
+        {
+            // 여러 레이어를 다른 크기/알파로 겹쳐 soft radial burst
+            const int layers = 4;
+            for (int i = 0; i < layers; i++)
+            {
+                float t = i / (float)(layers - 1);
+                float scale = Mathf.Lerp(1.1f, 2.4f, t) * (0.85f + 0.25f * pulse);
+                float alpha = 0.55f * pulse * (1f - t) * (1f - t);
+                float size = 90f * scale;
+                var r = new Rect(deckCenter.x - size * 0.5f,
+                                 deckCenter.y - size * 0.5f,
+                                 size, size);
+                GUI.color = new Color(0.60f, 0.90f, 1f, alpha);
+                GUI.DrawTexture(r, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
+            }
+
+            // (3) 중심 하이라이트 — 짧고 강한 흰색 번쩍임
+            float coreSize = 60f * (0.8f + 0.4f * pulse);
+            var coreRect = new Rect(deckCenter.x - coreSize * 0.5f,
+                                    deckCenter.y - coreSize * 0.5f,
+                                    coreSize, coreSize);
+            GUI.color = new Color(1f, 1f, 1f, 0.35f * pulse);
+            GUI.DrawTexture(coreRect, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
+        }
+
+        GUI.color = prevColor;
+    }
+
+    // =========================================================
+    // 덱 뷰어 오버레이 — 상단 바 계단 왼쪽 버튼을 누르면 뜨는 전체 덱 보기 팝업
+    // =========================================================
+
+    private void DrawDeckViewerOverlay(GameStateManager gsm)
+    {
+        if (!_deckViewerOpen) return;
+        var run = gsm?.CurrentRun;
+        if (run == null)
+        {
+            _deckViewerOpen = false;
+            return;
+        }
+
+        var ev = Event.current;
+
+        // 1) 화면 전체 어둡게 — 뒤 UI를 가리고 클릭 이벤트도 흡수
+        FillRect(new Rect(0f, 0f, RefW, RefH), new Color(0f, 0f, 0f, 0.72f));
+
+        // 2) 패널 — 가운데 배치
+        const float panelW = 1060f;
+        const float panelH = 600f;
+        var panelRect = new Rect((RefW - panelW) * 0.5f, (RefH - panelH) * 0.5f, panelW, panelH);
+        FillRect(panelRect, new Color(0.08f, 0.05f, 0.05f, 0.97f));
+        DrawBorder(panelRect, 2f, new Color(0.70f, 0.55f, 0.28f, 1f));
+
+        // 3) 제목
+        int prevLabelFS = _labelStyle.fontSize;
+        _labelStyle.fontSize = 24;
+        var titleRect = new Rect(panelRect.x + 28f, panelRect.y + 12f, panelRect.width - 120f, 34f);
+        GUI.Label(titleRect, $"덱 · {run.deck.Count}장", _labelStyle);
+        _labelStyle.fontSize = prevLabelFS;
+
+        // 4) Close 버튼 (우상단)
+        var closeRect = new Rect(panelRect.xMax - 44f, panelRect.y + 10f, 34f, 34f);
+        bool closeHover = closeRect.Contains(ev.mousePosition);
+        FillRect(closeRect, closeHover
+            ? new Color(0.55f, 0.18f, 0.18f, 1f)
+            : new Color(0.18f, 0.12f, 0.10f, 0.90f));
+        DrawBorder(closeRect, 1f, new Color(0.70f, 0.55f, 0.28f, 0.9f));
+        int prevCenterFS = _centerStyle.fontSize;
+        var prevCenterC = _centerStyle.normal.textColor;
+        _centerStyle.fontSize = 20;
+        _centerStyle.normal.textColor = closeHover ? Color.white : new Color(0.92f, 0.85f, 0.70f);
+        GUI.Label(closeRect, "×", _centerStyle);
+        _centerStyle.fontSize = prevCenterFS;
+        _centerStyle.normal.textColor = prevCenterC;
+
+        if (closeHover && ev.type == EventType.MouseDown && ev.button == 0)
+        {
+            _deckViewerOpen = false;
+            ev.Use();
+            return;
+        }
+
+        // 5) 정렬 탭 — 획득순 / 유형 / 비용 / 이름순
+        string[] tabs = { "획득순", "유형", "비용", "이름순" };
+        const float tabW = 104f;
+        const float tabH = 32f;
+        const float tabGap = 6f;
+        float tabsY = panelRect.y + 54f;
+        float tabsStartX = panelRect.x + 28f;
+
+        for (int i = 0; i < tabs.Length; i++)
+        {
+            var tabRect = new Rect(tabsStartX + i * (tabW + tabGap), tabsY, tabW, tabH);
+            bool active = _deckViewerSortMode == i;
+            bool tabHover = tabRect.Contains(ev.mousePosition);
+
+            Color bg = active
+                ? new Color(0.55f, 0.40f, 0.20f, 1f)
+                : (tabHover ? new Color(0.26f, 0.20f, 0.14f, 1f) : new Color(0.15f, 0.12f, 0.09f, 0.9f));
+            FillRect(tabRect, bg);
+            DrawBorder(tabRect, 1f, active
+                ? new Color(1f, 0.82f, 0.35f, 1f)
+                : new Color(0.55f, 0.42f, 0.22f, 0.7f));
+
+            int prevTabFS = _centerStyle.fontSize;
+            var prevTabC = _centerStyle.normal.textColor;
+            _centerStyle.fontSize = 14;
+            _centerStyle.normal.textColor = active
+                ? new Color(1f, 0.95f, 0.70f)
+                : new Color(0.85f, 0.80f, 0.70f);
+            GUI.Label(tabRect, tabs[i], _centerStyle);
+            _centerStyle.fontSize = prevTabFS;
+            _centerStyle.normal.textColor = prevTabC;
+
+            if (tabHover && ev.type == EventType.MouseDown && ev.button == 0)
+            {
+                _deckViewerSortMode = i;
+                _deckViewerScroll = Vector2.zero;
+                ev.Use();
+            }
+        }
+
+        // 6) 카드 그룹핑 — id 기준 중복 묶음 + 정렬
+        var grouped = new List<(CardData data, int count, int firstIndex)>();
+        var indexMap = new Dictionary<string, int>();
+        for (int i = 0; i < run.deck.Count; i++)
+        {
+            var c = run.deck[i];
+            if (indexMap.TryGetValue(c.id, out int gi))
+            {
+                var g = grouped[gi];
+                grouped[gi] = (g.data, g.count + 1, g.firstIndex);
+            }
+            else
+            {
+                indexMap[c.id] = grouped.Count;
+                grouped.Add((c, 1, i));
+            }
+        }
+
+        switch (_deckViewerSortMode)
+        {
+            case 1:  // 유형 (타입 → 비용 → 이름)
+                grouped.Sort((a, b) =>
+                {
+                    int t = ((int)a.data.cardType).CompareTo((int)b.data.cardType);
+                    if (t != 0) return t;
+                    int co = a.data.cost.CompareTo(b.data.cost);
+                    if (co != 0) return co;
+                    return string.Compare(a.data.nameKr, b.data.nameKr, StringComparison.CurrentCulture);
+                });
+                break;
+            case 2:  // 비용 (비용 → 이름)
+                grouped.Sort((a, b) =>
+                {
+                    int co = a.data.cost.CompareTo(b.data.cost);
+                    if (co != 0) return co;
+                    return string.Compare(a.data.nameKr, b.data.nameKr, StringComparison.CurrentCulture);
+                });
+                break;
+            case 3:  // 이름순
+                grouped.Sort((a, b) =>
+                    string.Compare(a.data.nameKr, b.data.nameKr, StringComparison.CurrentCulture));
+                break;
+            default:  // 획득순 — run.deck 등장 순서 유지
+                grouped.Sort((a, b) => a.firstIndex.CompareTo(b.firstIndex));
+                break;
+        }
+
+        // 7) 카드 그리드 (스크롤)
+        const int cols = 6;
+        const float gridPadX = 28f;
+        const float cellGap = 12f;
+        float gridTop = tabsY + tabH + 14f;
+        float gridBottom = panelRect.yMax - 18f;
+        float viewH = gridBottom - gridTop;
+        float gridW = panelRect.width - gridPadX * 2f;
+        float cardW = (gridW - cellGap * (cols - 1)) / cols;
+        float cardH = cardW * 1.45f;
+
+        int rows = (grouped.Count + cols - 1) / cols;
+        float contentH = Mathf.Max(viewH, rows * (cardH + cellGap) - cellGap + 4f);
+
+        var viewportRect = new Rect(panelRect.x + gridPadX, gridTop, gridW, viewH);
+        var contentRect = new Rect(0f, 0f,
+            gridW - (contentH > viewH ? 16f : 0f),
+            contentH);
+
+        // 스크롤 영역 밖 라이트 박스
+        FillRect(viewportRect, new Color(0.04f, 0.03f, 0.03f, 0.55f));
+
+        _deckViewerScroll = GUI.BeginScrollView(viewportRect, _deckViewerScroll, contentRect);
+        float innerW = contentRect.width;
+        float innerCardW = (innerW - cellGap * (cols - 1)) / cols;
+        float innerCardH = innerCardW * 1.45f;
+        for (int i = 0; i < grouped.Count; i++)
+        {
+            int row = i / cols;
+            int col = i % cols;
+            var cardRect = new Rect(
+                col * (innerCardW + cellGap),
+                row * (innerCardH + cellGap),
+                innerCardW,
+                innerCardH);
+
+            DrawCardFrame(cardRect, grouped[i].data, canPlay: true, drawCost: true);
+
+            // 중복 카운트 뱃지 — 우상단. CardCountBadge 텍스처 (왼쪽 V-notch) 위에 숫자 얹음.
+            if (grouped[i].count > 1)
+            {
+                float badgeW = innerCardW * 0.34f;
+                float badgeH = badgeW * 0.42f;  // 2.4:1 비율에 맞춤
+                var badgeRect = new Rect(
+                    cardRect.xMax - badgeW - 2f,
+                    cardRect.y + 4f,
+                    badgeW, badgeH);
+
+                if (_cardCountBadgeTexture != null)
+                {
+                    GUI.DrawTexture(badgeRect, _cardCountBadgeTexture, ScaleMode.StretchToFill, alphaBlend: true);
+                }
+                else
+                {
+                    FillRect(badgeRect, new Color(0.10f, 0.07f, 0.05f, 0.92f));
+                    DrawBorder(badgeRect, 1f, new Color(1f, 0.82f, 0.35f, 1f));
+                }
+
+                // 텍스트는 V-notch를 피해 오른쪽으로 살짝 밀어 채워진 영역 중앙에 위치.
+                var textRect = new Rect(
+                    badgeRect.x + badgeRect.width * 0.12f,
+                    badgeRect.y,
+                    badgeRect.width * 0.88f,
+                    badgeRect.height);
+                int prevBadgeFS = _cardCostStyle.fontSize;
+                _cardCostStyle.fontSize = Mathf.RoundToInt(badgeRect.height * 0.68f);
+                DrawTextWithOutline(textRect, $"×{grouped[i].count}", _cardCostStyle,
+                    new Color(1f, 0.95f, 0.60f),
+                    new Color(0f, 0f, 0f, 0.85f), 1f);
+                _cardCostStyle.fontSize = prevBadgeFS;
+            }
+        }
+        GUI.EndScrollView();
+
+        // 8) 패널 밖 클릭 → 닫기 / ESC → 닫기
+        if (ev.type == EventType.MouseDown && ev.button == 0
+            && !panelRect.Contains(ev.mousePosition))
+        {
+            _deckViewerOpen = false;
+            ev.Use();
+        }
+        else if (ev.type == EventType.KeyDown && ev.keyCode == KeyCode.Escape)
+        {
+            _deckViewerOpen = false;
+            ev.Use();
+        }
+    }
+
+    // =========================================================
     // 저수준 사각형 그리기 유틸
     // =========================================================
 
@@ -2251,6 +3944,16 @@ public class BattleUI : MonoBehaviour
         GUI.color = color;
         GUI.DrawTexture(rect, Texture2D.whiteTexture);
         GUI.color = prev;
+    }
+
+    // (x, y, w, h) 비율 Vector4를 주어진 rect 안의 실제 Rect로 변환.
+    private static Rect RectFromPct(Rect rect, Vector4 pct)
+    {
+        return new Rect(
+            rect.x + rect.width  * pct.x,
+            rect.y + rect.height * pct.y,
+            rect.width  * pct.z,
+            rect.height * pct.w);
     }
 
     private static void DrawBorder(Rect rect, float thickness, Color color)

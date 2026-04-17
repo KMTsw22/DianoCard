@@ -1,16 +1,10 @@
 fileFormatVersion: 2
-guid: 70a8eaaa67e32344b997d3f5f9b9d60e
+guid: c7defdf2c0615cc4ca3003cd0108dc1a
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -8286603219715691346
-    second: CardBorder_0
-  - first:
-      213: 3150461226311858566
-    second: CardBorder_1
-  - first:
-      213: -4800351313309830076
-    second: CardBorder_2
+      213: -4405190471960877958
+    second: "\u2605\u2605_STRICT_3-Photoroom_0"
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -132,7 +126,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: CardBorder_0
+      name: "\u2605\u2605_STRICT_3-Photoroom_0"
       rect:
         serializedVersion: 2
         x: 0
@@ -147,52 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: eacec36a642100d80800000000000000
-      internalID: -8286603219715691346
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: CardBorder_1
-      rect:
-        serializedVersion: 2
-        x: 28
-        y: 24
-        width: 37
-        height: 37
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 689b5f02bcfa8bb20800000000000000
-      internalID: 3150461226311858566
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: CardBorder_2
-      rect:
-        serializedVersion: 2
-        x: 783
-        y: 24
-        width: 37
-        height: 38
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 4447615f9e9b16db0800000000000000
-      internalID: -4800351313309830076
+      spriteID: a7426defa9e9dd2c0800000000000000
+      internalID: -4405190471960877958
       vertices: []
       indices: 
       edges: []
@@ -211,9 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      CardBorder_0: -8286603219715691346
-      CardBorder_1: 3150461226311858566
-      CardBorder_2: -4800351313309830076
+      "\u2605\u2605_STRICT_3-Photoroom_0": -4405190471960877958
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

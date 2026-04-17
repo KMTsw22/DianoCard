@@ -1,0 +1,24 @@
+id,value
+reward.title,CHOOSE A CARD
+reward.subtitle,"Pick one card to add to your deck, or skip"
+reward.skip,SKIP
+reward.row.gold,+{0} Gold
+reward.row.card,Choose a card
+reward.row.potion_full,Potion slots full
+reward.row.potion,Potion: {0}
+reward.row.relic,Relic: {0}
+shop.title,MERCHANT
+shop.subtitle,
+shop.section.cards,CARDS
+shop.section.potions,POTIONS
+shop.section.relics,RELICS
+shop.section.services,SERVICES
+shop.sold_out,SOLD
+shop.not_enough_gold,Not enough gold
+shop.potion_full,Potion Full
+shop.owned,Owned
+shop.remove_card,Card Remove
+shop.remove_card_used,Removed
+shop.remove_card_pick,Pick a card to remove
+shop.cancel,CANCEL
+shop.exit,LEAVE SHOP

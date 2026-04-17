@@ -1,0 +1,8 @@
+id,label
+SUMMON_HERBIVORE,Herbivore
+SUMMON_CARNIVORE,Carnivore
+MAGIC_ATTACK,Spell (Attack)
+MAGIC_DEFENSE,Spell (Defense)
+BUFF,Buff
+UTILITY,Utility
+RITUAL,Ritual

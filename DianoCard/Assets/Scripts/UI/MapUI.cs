@@ -24,9 +24,9 @@ public class MapUI : MonoBehaviour
     private const float RopeAlpha = 0.55f;    // 살짝 흐리게
 
     // 스크롤 가능한 맵 컨텐츠 영역 (스크린 가상 좌표)
-    // 헤더(상단 ~95)와 hint footer(하단 ~660) 사이를 클리핑 그룹으로 묶는다
-    private const float MapAreaY = 92f;
-    private const float MapAreaH = 580f;
+    // 상단바(~66) 아래부터 hint footer(~660) 위까지 클리핑 그룹으로 묶는다
+    private const float MapAreaY = 72f;
+    private const float MapAreaH = 588f;
 
     // 그룹 좌표계 기준 — floor 1이 그룹 하단 근처, 최상층이 그룹 상단 방향
     // 층 간격을 넉넉히 잡아 노드가 시원하게 흩뿌려진 인상. 화면을 넘으면 휠로 스크롤.
@@ -62,10 +62,7 @@ public class MapUI : MonoBehaviour
     private Texture2D _nodeStartTex;
     private Texture2D _ropeTex;
 
-    private GUIStyle _headerStyle;
-    private GUIStyle _subHeaderStyle;
     private GUIStyle _smallStyle;
-    private GUIStyle _runInfoStyle;
     private GUIStyle _backButtonStyle;
     private bool _stylesReady;
     private bool _assetsLoaded;
@@ -229,8 +226,11 @@ public class MapUI : MonoBehaviour
         GUI.EndGroup();
 
         // 6) 헤더/UI는 스크롤과 무관 (스크린 가상 좌표)
-        DrawHeader(gsm);
-        DrawRunInfo(gsm);
+        //    상단 HUD는 전투와 동일한 BattleUI.DrawMapTopBar를 재사용.
+        var battleUI = gsm.GetComponent<BattleUI>();
+        if (battleUI != null)
+            battleUI.DrawMapTopBar(gsm.CurrentRun, map.currentFloor, map.totalFloors);
+
         DrawBackButton(gsm);
     }
 
@@ -241,8 +241,8 @@ public class MapUI : MonoBehaviour
         return Floor1Y - (floor - 1) * FloorSpacing + _scrollY;
     }
 
-    private const float ScrollTopPad = 40f;     // 보스 위 여백
-    private const float ScrollBottomPad = 60f;  // start deco 아래 여백
+    private const float ScrollTopPad = 130f;    // 보스 위 여백 — 끝까지 올렸을 때 보스가 화면 중앙 근처에 오도록
+    private const float ScrollBottomPad = 130f; // start deco 아래 여백 — 끝까지 내렸을 때 시작 노드가 화면 중앙 근처에 오도록
 
     private void GetScrollBounds(int totalFloors, out float minScroll, out float maxScroll)
     {
@@ -286,13 +286,14 @@ public class MapUI : MonoBehaviour
         if (_lastSnappedFloor == map.currentFloor) return;
         _lastSnappedFloor = map.currentFloor;
 
-        // 현재 층이 그룹 중앙에 오도록 시도 — 단, 스크롤 bound 안에서 clamp
+        // 현재 층이 뷰포트 하단 쪽에 오도록 정렬 — 위쪽에 앞으로 진행할 층들이 더 많이 보이게.
+        // bound 안에서 clamp.
         float targetOriginalY = map.currentFloor == 0
             ? StartDecoBaseY
             : Floor1Y - (map.currentFloor - 1) * FloorSpacing;
-        float groupCenter = MapAreaH * 0.5f;
+        float targetViewportY = MapAreaH * 0.78f; // 하단에서 약 22% 지점
         GetScrollBounds(map.totalFloors, out float lo, out float hi);
-        _scrollY = Mathf.Clamp(groupCenter - targetOriginalY, lo, hi);
+        _scrollY = Mathf.Clamp(targetViewportY - targetOriginalY, lo, hi);
     }
 
     private void DrawMapBackground()
@@ -314,45 +315,6 @@ public class MapUI : MonoBehaviour
             GUI.color = prev;
         }
 
-        // 상단/하단에 살짝 어두운 사선 그라디언트 — 헤더/푸터 텍스트 가독성 ↑
-        var prevColor = GUI.color;
-        GUI.color = new Color(0.08f, 0.05f, 0.02f, 0.35f);
-        GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height * 0.14f), Texture2D.whiteTexture);
-        GUI.DrawTexture(new Rect(0, Screen.height * 0.88f, Screen.width, Screen.height * 0.12f), Texture2D.whiteTexture);
-        GUI.color = prevColor;
-    }
-
-    private void DrawHeader(GameStateManager gsm)
-    {
-        var map = gsm.CurrentMap;
-
-        // 왼쪽 상단: 유적지 타이틀
-        GUI.Label(new Rect(60, 26, 420, 38), "ANCIENT SITE", _headerStyle);
-        GUI.Label(new Rect(60, 62, 420, 24), $"Sector B12   |   Floor {map.currentFloor} / {map.totalFloors}", _subHeaderStyle);
-
-        // 중앙 상단: ACTIVE DIG
-        GUI.Label(new Rect(0, 28, RefW, 28), "ACTIVE DIG", _headerStyle);
-
-        // 오른쪽 상단: 이웃 섹터
-        GUI.Label(new Rect(RefW - 460, 26, 400, 38), "SECTOR ?", _headerStyle);
-
-        // 힌트
-        string hint = map.currentFloor <= map.totalFloors
-            ? "다음 노드를 선택하세요"
-            : "클리어!";
-        GUI.Label(new Rect(0, RefH - 32, RefW, 22), hint, _smallStyle);
-    }
-
-    private void DrawRunInfo(GameStateManager gsm)
-    {
-        var run = gsm.CurrentRun;
-        if (run == null) return;
-
-        string text =
-            $"HP: {run.playerCurrentHp}/{run.playerMaxHp}    Gold: {run.gold}    Deck: {run.deck.Count}\n" +
-            $"Relics: {run.relics.Count}    Potions: {run.potions.Count}/{RunState.MaxPotionSlots}";
-
-        GUI.Box(new Rect(10, RefH - 86, 320, 70), text, _runInfoStyle);
     }
 
     private void DrawBackButton(GameStateManager gsm)
@@ -601,28 +563,33 @@ public class MapUI : MonoBehaviour
 
             if (isStart)
             {
-                // 시작 노드: 녹색 halo — 여러 겹의 원으로 부드러운 발광
-                float pulse = 0.75f + 0.25f * Mathf.Sin(Time.time * 2.2f);
+                // 시작 노드: 크기·알파가 함께 숨쉬는 녹색 다중 원 halo
+                float pulse01 = 0.5f + 0.5f * Mathf.Sin(Time.time * 2.2f); // 0..1
+                float pulseExtra = Mathf.Lerp(10f, 36f, pulse01);
+                float pulseAlpha = Mathf.Lerp(0.6f, 1f, pulse01);
                 for (int i = 0; i < 5; i++)
                 {
-                    float r = size + 6f + i * 10f;
+                    float r = size + pulseExtra + i * 12f;
                     var hRect = new Rect(center.x - r / 2f, center.y - r / 2f, r, r);
-                    float a = (0.32f - i * 0.055f) * pulse;
+                    float a = (0.34f - i * 0.058f) * pulseAlpha;
                     GUI.color = new Color(0.45f, 1f, 0.35f, Mathf.Max(0f, a));
                     GUI.DrawTexture(hRect, _circleTexture);
                 }
             }
             else
             {
-                // 일반/엘리트 등: 노란 단일 펄스
-                float highlightSize = size + HighlightPad;
-                var glowRect = new Rect(
-                    center.x - highlightSize / 2f,
-                    center.y - highlightSize / 2f,
-                    highlightSize, highlightSize);
-                float pulse = 0.55f + 0.35f * Mathf.Sin(Time.time * 3f);
-                GUI.color = new Color(1f, 0.88f, 0.35f, pulse);
-                GUI.DrawTexture(glowRect, _circleTexture);
+                // 일반/엘리트 등: 크기·알파가 함께 숨쉬는 노란 다중 원 halo
+                float pulse01 = 0.5f + 0.5f * Mathf.Sin(Time.time * 2.6f); // 0..1
+                float pulseExtra = Mathf.Lerp(14f, 44f, pulse01);
+                float pulseAlpha = Mathf.Lerp(0.55f, 1f, pulse01);
+                for (int i = 0; i < 5; i++)
+                {
+                    float r = size + pulseExtra + i * 14f;
+                    var hRect = new Rect(center.x - r / 2f, center.y - r / 2f, r, r);
+                    float a = (0.36f - i * 0.062f) * pulseAlpha;
+                    GUI.color = new Color(1f, 0.85f, 0.30f, Mathf.Max(0f, a));
+                    GUI.DrawTexture(hRect, _circleTexture);
+                }
             }
 
             GUI.color = prev;
@@ -692,22 +659,6 @@ public class MapUI : MonoBehaviour
     {
         if (_stylesReady) return;
 
-        _headerStyle = new GUIStyle(GUI.skin.label)
-        {
-            fontSize = 26,
-            alignment = TextAnchor.MiddleCenter,
-            fontStyle = FontStyle.Bold,
-            normal = { textColor = new Color(0.25f, 0.15f, 0.05f) },
-        };
-
-        _subHeaderStyle = new GUIStyle(GUI.skin.label)
-        {
-            fontSize = 16,
-            alignment = TextAnchor.MiddleCenter,
-            fontStyle = FontStyle.Italic,
-            normal = { textColor = new Color(0.35f, 0.22f, 0.1f) },
-        };
-
         _smallStyle = new GUIStyle(GUI.skin.label)
         {
             fontSize = 16,
@@ -720,14 +671,6 @@ public class MapUI : MonoBehaviour
         {
             fontSize = 14,
             fontStyle = FontStyle.Bold,
-        };
-
-        _runInfoStyle = new GUIStyle(GUI.skin.box)
-        {
-            fontSize = 15,
-            alignment = TextAnchor.UpperLeft,
-            padding = new RectOffset(10, 10, 8, 8),
-            normal = { textColor = Color.white },
         };
 
         _stylesReady = true;
