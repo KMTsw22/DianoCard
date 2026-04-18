@@ -272,7 +272,18 @@ public class ShopUI : MonoBehaviour
     // 카드 제거 선택 스크롤
     private float _removeScrollY;
 
-    // 호버 툴팁 — 포션/유물/서비스 행 위에 마우스 올리면 상세 표시
+    [Header("Hover Tooltip (호버 상세정보)")]
+    [SerializeField, Range(160f, 400f)] private float tooltipWidth = 240f;
+    [SerializeField] private Color tooltipFillColor = new(0.05f, 0.07f, 0.10f, 0.95f);
+    [SerializeField] private Color tooltipBorderColor = new(0.80f, 0.62f, 0.30f, 0.9f);
+    [SerializeField, Range(0, 16)] private int tooltipCornerRadius = 6;
+    [SerializeField] private Vector2 tooltipMouseOffset = new(18f, 14f);
+    [SerializeField, Range(8, 20)] private int tooltipTitleFontSize = 14;
+    [SerializeField] private Color tooltipTitleColor = new(1f, 0.90f, 0.55f);
+    [SerializeField, Range(8, 18)] private int tooltipBodyFontSize = 12;
+    [SerializeField] private Color tooltipBodyColor = new(0.92f, 0.88f, 0.74f);
+
+    // 호버 툴팁 런타임 상태
     private string _tooltipTitle;
     private string _tooltipBody;
     private GUIStyle _tooltipTitleStyle;
@@ -590,9 +601,7 @@ public class ShopUI : MonoBehaviour
             {
                 var p = entry.potion;
                 _tooltipTitle = p.nameEn;
-                _tooltipBody = $"[{p.potionType}]  Value: {p.value}";
-                if (!string.IsNullOrEmpty(p.description))
-                    _tooltipBody += $"\n{p.description}";
+                _tooltipBody = $"Type: {p.potionType}\nValue: {p.value}\nTarget: {p.target}";
             }
             if (purchasable && GUI.Button(r, GUIContent.none, GUIStyle.none))
             {
@@ -622,9 +631,7 @@ public class ShopUI : MonoBehaviour
             {
                 var r2 = entry.relic;
                 _tooltipTitle = r2.nameEn;
-                _tooltipBody = $"[{r2.trigger}]  {r2.effectType}: {r2.value}";
-                if (!string.IsNullOrEmpty(r2.description))
-                    _tooltipBody += $"\n{r2.description}";
+                _tooltipBody = $"Trigger: {r2.trigger}\nEffect: {r2.effectType}\nValue: {r2.value}";
             }
             if (!entry.sold && GUI.Button(r, GUIContent.none, GUIStyle.none))
             {
@@ -665,59 +672,60 @@ public class ShopUI : MonoBehaviour
         EnsureTooltipStyles();
 
         string body = string.IsNullOrEmpty(_tooltipBody) ? "" : _tooltipBody;
+        float tw = tooltipWidth;
 
-        // 폭/높이 추정
-        const float tooltipW = 240f;
         var titleSize = _tooltipTitleStyle.CalcSize(new GUIContent(_tooltipTitle));
-        float bodyH = string.IsNullOrEmpty(body) ? 0f : _tooltipBodyStyle.CalcHeight(new GUIContent(body), tooltipW - 24f);
+        float bodyH = string.IsNullOrEmpty(body) ? 0f : _tooltipBodyStyle.CalcHeight(new GUIContent(body), tw - 24f);
         float tooltipH = 12f + titleSize.y + 6f + bodyH + 12f;
 
-        // 마우스 우측 하단에 배치, 화면 밖으로 나가면 좌측으로
+        // 마우스 근처 배치, 화면 밖 보정
         var mouse = Event.current.mousePosition;
-        float tx = mouse.x + 18f;
-        float ty = mouse.y + 14f;
-        if (tx + tooltipW > RefW) tx = mouse.x - tooltipW - 10f;
+        float tx = mouse.x + tooltipMouseOffset.x;
+        float ty = mouse.y + tooltipMouseOffset.y;
+        if (tx + tw > RefW) tx = mouse.x - tw - 10f;
         if (ty + tooltipH > RefH) ty = RefH - tooltipH - 4f;
 
-        var tooltipRect = new Rect(tx, ty, tooltipW, tooltipH);
+        var tooltipRect = new Rect(tx, ty, tw, tooltipH);
 
-        // 배경 + 테두리 (둥근 모서리)
-        DrawRoundedFilledRect(tooltipRect, new Color(0.80f, 0.62f, 0.30f, 0.9f), 6);
+        // 배경 + 테두리 (Inspector 색/둥글기)
+        DrawRoundedFilledRect(tooltipRect, tooltipBorderColor, tooltipCornerRadius);
         var tooltipInner = new Rect(tooltipRect.x + 1f, tooltipRect.y + 1f, tooltipRect.width - 2f, tooltipRect.height - 2f);
-        DrawRoundedFilledRect(tooltipInner, new Color(0.05f, 0.07f, 0.10f, 0.95f), 5);
+        DrawRoundedFilledRect(tooltipInner, tooltipFillColor, Mathf.Max(0, tooltipCornerRadius - 1));
 
-        // 타이틀 (Bold, 골드)
-        var titleRect = new Rect(tx + 12f, ty + 10f, tooltipW - 24f, titleSize.y);
+        // 타이틀
+        var titleRect = new Rect(tx + 12f, ty + 10f, tw - 24f, titleSize.y);
         GUI.Label(titleRect, _tooltipTitle, _tooltipTitleStyle);
 
-        // 본문 (Normal, 크림)
+        // 본문
         if (!string.IsNullOrEmpty(body))
         {
-            var bodyRect = new Rect(tx + 12f, titleRect.yMax + 6f, tooltipW - 24f, bodyH);
+            var bodyRect = new Rect(tx + 12f, titleRect.yMax + 6f, tw - 24f, bodyH);
             GUI.Label(bodyRect, body, _tooltipBodyStyle);
         }
     }
 
     private void EnsureTooltipStyles()
     {
-        if (_tooltipTitleStyle != null) return;
-
-        _tooltipTitleStyle = new GUIStyle(GUI.skin.label)
+        // Inspector에서 값 바뀌면 반영되도록 매번 갱신
+        if (_tooltipTitleStyle == null)
         {
-            fontSize = 14,
-            fontStyle = FontStyle.Bold,
-            alignment = TextAnchor.UpperLeft,
-            wordWrap = true,
-            normal = { textColor = new Color(1f, 0.90f, 0.55f) },
-        };
-        _tooltipBodyStyle = new GUIStyle(GUI.skin.label)
-        {
-            fontSize = 12,
-            fontStyle = FontStyle.Normal,
-            alignment = TextAnchor.UpperLeft,
-            wordWrap = true,
-            normal = { textColor = new Color(0.92f, 0.88f, 0.74f) },
-        };
+            _tooltipTitleStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.UpperLeft,
+                wordWrap = true,
+            };
+            _tooltipBodyStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontStyle = FontStyle.Normal,
+                alignment = TextAnchor.UpperLeft,
+                wordWrap = true,
+            };
+        }
+        _tooltipTitleStyle.fontSize = tooltipTitleFontSize;
+        _tooltipTitleStyle.normal.textColor = tooltipTitleColor;
+        _tooltipBodyStyle.fontSize = tooltipBodyFontSize;
+        _tooltipBodyStyle.normal.textColor = tooltipBodyColor;
         LockStateColors(_tooltipTitleStyle);
         LockStateColors(_tooltipBodyStyle);
     }
