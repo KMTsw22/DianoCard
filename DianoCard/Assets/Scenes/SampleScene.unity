@@ -512,6 +512,15 @@ MonoBehaviour:
     godRayMinAlpha: 0.15
     godRayMaxAlpha: 0.45
     godRayPulseSpeed: 0.6
+  hudStripEnabled: 1
+  hudStripHeight: 74
+  hudStripBgColorBattle: {r: 0.03, g: 0.05, b: 0.08, a: 0.88}
+  hudStripBgColorMap: {r: 0.102, g: 0.102, b: 0.102, a: 1}
+  hudStripBgColorVillage: {r: 0.03, g: 0.05, b: 0.08, a: 0.88}
+  hudDividerCenterY: 78
+  hudDividerHeight: 120
+  hudDividerOverscan: 600
+  hudDividerTint: {r: 0.412, g: 0.412, b: 0.412, a: 1}
 --- !u!114 &727273077
 MonoBehaviour:
   m_ObjectHideFlags: 0

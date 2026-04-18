@@ -26,8 +26,8 @@ public class LobbyUI : MonoBehaviour
     [SerializeField] private Rect _centerHaloRect = new Rect(490f, 320f, 300f, 240f);
 
     [Header("Left Gem Glow (Orange Crystal)")]
-    [SerializeField] private Rect _leftGemOuterRect = new Rect(60f, 300f, 230f, 230f);
-    [SerializeField] private Rect _leftGemHotspotRect = new Rect(135f, 365f, 90f, 90f);
+    [SerializeField] private Rect _leftGemOuterRect = new Rect(180f, 300f, 100f, 230f);
+    [SerializeField] private Rect _leftGemHotspotRect = new Rect(195f, 365f, 90f, 90f);
 
     [Header("Right Gem Glow (Blue Runestone)")]
     [SerializeField] private Rect _rightGemOuterRect = new Rect(940f, 140f, 220f, 220f);
@@ -36,13 +36,69 @@ public class LobbyUI : MonoBehaviour
     [Header("Button Glow Padding")]
     [SerializeField] private Vector2 _buttonGlowPadding = new Vector2(32f, 22f);
 
-    [Header("Left Sparkles (Rising Glints)")]
-    [SerializeField] private Rect _leftSparkleArea = new Rect(40f, 200f, 280f, 380f);
-    [SerializeField, Range(0, 60)] private int _leftSparkleCount = 22;
-    [SerializeField] private Color _leftSparkleColor = new Color(1f, 0.78f, 0.38f, 1f);
-    [SerializeField] private Color _leftSparkleCoreColor = new Color(1f, 0.96f, 0.7f, 1f);
-    [SerializeField, Range(0.2f, 4f)] private float _leftSparkleSpeed = 0.9f;
-    [SerializeField] private Vector2 _leftSparkleSizeRange = new Vector2(6f, 18f);
+    // ── 떠오르는 반짝이 이펙트 ──────────────────────────────────
+    // List 형태로 노출해서 디자이너가 위치/색/속도 등을 다른 보석/빛기둥마다
+    // 자유롭게 추가/조절할 수 있게 함. 각 이미터는 독립된 시드를 사용.
+    [Serializable]
+    public class SparkleEmitter
+    {
+        public string name = "Sparkle";
+        public bool enabled = true;
+
+        [Header("Position (1280x720 가상 좌표)")]
+        public Rect area = new Rect(40f, 200f, 280f, 380f);
+
+        [Header("Count & Size")]
+        [Range(0, 80)] public int count = 22;
+        public Vector2 sizeRange = new Vector2(6f, 18f);
+        [Range(0.05f, 0.9f)] public float coreSizeRatio = 0.4f;
+
+        [Header("Motion")]
+        [Range(0.05f, 4f)] public float riseSpeed = 0.9f;
+        [Range(0f, 0.5f)] public float swayAmount = 0.06f;
+        [Range(0.1f, 8f)] public float swayFrequency = 1f;
+
+        [Header("Color")]
+        public Color outerColor = new Color(1f, 0.78f, 0.38f, 1f);
+        public Color coreColor = new Color(1f, 0.96f, 0.7f, 1f);
+        [Range(0f, 2f)] public float outerAlphaMul = 0.9f;
+
+        [Header("Twinkle")]
+        [Range(0f, 20f)] public float twinkleSpeed = 8f;
+        [Range(0f, 1f)] public float twinkleDepth = 0.35f;
+
+        [Header("Seed")]
+        [Tooltip("같은 이미터를 여러 개 둘 때 패턴이 겹치지 않게 하는 시드")]
+        public int seedOffset = 0;
+    }
+
+    [Header("Rising Sparkle Emitters")]
+    [SerializeField]
+    private List<SparkleEmitter> _sparkleEmitters = new List<SparkleEmitter>
+    {
+        new SparkleEmitter
+        {
+            name = "Left Gem",
+            area = new Rect(160f, 150f, 150f, 380f),
+            count = 22,
+            outerColor = new Color(1f, 0.78f, 0.38f, 1f),
+            coreColor = new Color(1f, 0.96f, 0.7f, 1f),
+            riseSpeed = 0.15f,
+            sizeRange = new Vector2(6f, 18f),
+            seedOffset = 0,
+        },
+        new SparkleEmitter
+        {
+            name = "Right Gem",
+            area = new Rect(950f, 140f, 250f, 360f),
+            count = 80,
+            outerColor = new Color(0.55f, 0.85f, 1f, 1f),
+            coreColor = new Color(0.85f, 0.97f, 1f, 1f),
+            riseSpeed = 0.15f,
+            sizeRange = new Vector2(5f, 16f),
+            seedOffset = 100,
+        },
+    };
 
     private readonly List<Action> _pending = new();
 
@@ -182,7 +238,7 @@ public class LobbyUI : MonoBehaviour
 
         GUI.color = prev;
 
-        DrawLeftSparkles(t);
+        DrawSparkleEmitters(t);
     }
 
     private void EnsureGlowTextures()
@@ -192,54 +248,73 @@ public class LobbyUI : MonoBehaviour
         if (_sparkleTex == null) _sparkleTex = MakeSparkle(64);
     }
 
-    // 왼쪽 보석 주변에서 위로 떠오르는 주황톤 반짝이.
-    // 상태 없이 시간 기반 결정 함수로 각 파티클의 진행도를 계산한다.
-    private void DrawLeftSparkles(float t)
+    private void DrawSparkleEmitters(float t)
     {
-        if (_sparkleTex == null || _leftSparkleCount <= 0) return;
-        if (_leftSparkleArea.width <= 0f || _leftSparkleArea.height <= 0f) return;
+        if (_sparkleTex == null || _sparkleEmitters == null) return;
 
         var prev = GUI.color;
-        for (int i = 0; i < _leftSparkleCount; i++)
+        for (int e = 0; e < _sparkleEmitters.Count; e++)
         {
+            DrawSparkleEmitter(_sparkleEmitters[e], t);
+        }
+        GUI.color = prev;
+    }
+
+    // 한 영역에서 위로 떠오르는 반짝이.
+    // 상태 없이 시간 기반 결정 함수로 각 파티클의 진행도를 계산한다.
+    private void DrawSparkleEmitter(SparkleEmitter em, float t)
+    {
+        if (em == null || !em.enabled || em.count <= 0) return;
+        if (em.area.width <= 0f || em.area.height <= 0f) return;
+
+        float coreRatio = Mathf.Clamp(em.coreSizeRatio, 0.05f, 0.9f);
+        float coreOffset = (1f - coreRatio) * 0.5f;
+
+        for (int i = 0; i < em.count; i++)
+        {
+            int idx = i + em.seedOffset;
             // 파티클별 결정적 시드 (위치/속도/주기 분산용)
-            float seed = (i * 0.6180339f) % 1f;
-            float speed = _leftSparkleSpeed * (0.7f + seed * 0.8f);
+            float seed = (idx * 0.6180339f) % 1f;
+            if (seed < 0f) seed += 1f;
+            float speed = em.riseSpeed * (0.7f + seed * 0.8f);
             float phase = seed * 7.13f;
             float life = ((t * speed) + phase) % 1f;
 
             // 수평 위치: 살짝 좌우로 흔들리며 올라감
-            float hBase = Hash01(i * 12.9898f);
-            float sway = Mathf.Sin(life * Mathf.PI * 2f + seed * 6f) * 0.06f;
-            float x = _leftSparkleArea.x + (hBase + sway) * _leftSparkleArea.width;
+            float hBase = Hash01(idx * 12.9898f);
+            float sway = Mathf.Sin(life * Mathf.PI * 2f * em.swayFrequency + seed * 6f) * em.swayAmount;
+            float x = em.area.x + (hBase + sway) * em.area.width;
 
             // 수직 위치: 아래에서 위로 상승
-            float y = _leftSparkleArea.yMax - life * _leftSparkleArea.height;
+            float y = em.area.yMax - life * em.area.height;
 
             // 크기: 시작은 작게 → 중간에 커짐 → 위로 갈수록 다시 작아짐
             float sizeT = Mathf.Sin(life * Mathf.PI);
-            float baseSize = Mathf.Lerp(_leftSparkleSizeRange.x, _leftSparkleSizeRange.y, Hash01(i * 37.719f));
+            float baseSize = Mathf.Lerp(em.sizeRange.x, em.sizeRange.y, Hash01(idx * 37.719f));
             float size = baseSize * (0.5f + 0.5f * sizeT);
 
             // 알파: 페이드 인/아웃 + 짧은 트윙클
             float fade = Mathf.Sin(life * Mathf.PI);
-            float twinkle = 0.65f + 0.35f * Mathf.Sin(t * 8f + seed * 17f);
+            float twinkle = (1f - em.twinkleDepth) + em.twinkleDepth * Mathf.Sin(t * em.twinkleSpeed + seed * 17f);
             float alpha = fade * twinkle;
 
             var rect = new Rect(x - size * 0.5f, y - size * 0.5f, size, size);
 
-            // 외곽 글로우 (보석 톤)
-            GUI.color = new Color(_leftSparkleColor.r, _leftSparkleColor.g, _leftSparkleColor.b,
-                _leftSparkleColor.a * alpha * 0.9f);
+            // 외곽 글로우
+            GUI.color = new Color(em.outerColor.r, em.outerColor.g, em.outerColor.b,
+                em.outerColor.a * alpha * em.outerAlphaMul);
             GUI.DrawTexture(rect, _sparkleTex, ScaleMode.StretchToFill, alphaBlend: true);
 
             // 내부 코어 (작고 밝게)
-            var coreRect = new Rect(rect.x + size * 0.3f, rect.y + size * 0.3f, size * 0.4f, size * 0.4f);
-            GUI.color = new Color(_leftSparkleCoreColor.r, _leftSparkleCoreColor.g, _leftSparkleCoreColor.b,
-                _leftSparkleCoreColor.a * alpha);
+            var coreRect = new Rect(
+                rect.x + size * coreOffset,
+                rect.y + size * coreOffset,
+                size * coreRatio,
+                size * coreRatio);
+            GUI.color = new Color(em.coreColor.r, em.coreColor.g, em.coreColor.b,
+                em.coreColor.a * alpha);
             GUI.DrawTexture(coreRect, _sparkleTex, ScaleMode.StretchToFill, alphaBlend: true);
         }
-        GUI.color = prev;
     }
 
     private static float Hash01(float x)

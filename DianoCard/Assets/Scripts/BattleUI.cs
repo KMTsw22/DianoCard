@@ -154,6 +154,9 @@ public class BattleUI : MonoBehaviour
     private Texture2D _iconAttack;
     private Texture2D _topBarBg;
     private Texture2D _endTurnButtonTex;
+    private Texture2D _hudDividerTexMap;     // 맵 전용 구분선 — Map/divider_map
+    private Texture2D _hudDividerTexVillage; // 마을 전용 구분선 — VillageUI/divider_village
+    private Texture2D _hudDividerTexBattle;  // 전투 전용 구분선 — InGame/divider_battle (없으면 스킵)
     private float _endTurnHoverScale = 1f;
 
     // 카드 위에 표시되는 일러스트 (카드 id → 텍스처). 카테고리별 CardArt/{Spell|Summon|Utility}/.
@@ -179,6 +182,30 @@ public class BattleUI : MonoBehaviour
 
     // 데미지 시 스폰되는 VFX 프리팹 (Inspector에서 할당)
     // 기본값으로 Resources 또는 AssetDatabase로는 못 불러오므로 SerializeField로 노출.
+    [Header("HUD Strip & Divider (상단 네비바 공용 — Battle/Map/Village 전부)")]
+    [Tooltip("HUD 스트립 배경 + 구분선 표시 여부.")]
+    [SerializeField] private bool hudStripEnabled = true;
+    [Tooltip("HUD 스트립 높이 (px).")]
+    [SerializeField, Range(40f, 300f)] private float hudStripHeight = 74f;
+    [Tooltip("배틀 화면용 HUD 스트립 배경색 + 알파.")]
+    [SerializeField] private Color hudStripBgColorBattle = new(0.03f, 0.05f, 0.08f, 0.88f);
+    [Tooltip("맵 화면용 HUD 스트립 배경색 + 알파. 양피지/원목 톤에 맞춘 진한 다크 브라운 솔리드.")]
+    [SerializeField] private Color hudStripBgColorMap = new(0.102f, 0.102f, 0.102f, 1f);
+    [Tooltip("마을(캠프) 화면용 HUD 스트립 배경색 + 알파. 밤/모닥불 톤에 맞춰 따로 튜닝.")]
+    [SerializeField] private Color hudStripBgColorVillage = new(0.03f, 0.05f, 0.08f, 0.88f);
+    [Tooltip("구분선 중심 Y (px). 기본적으로 스트립 하단 경계와 맞춤.")]
+    [SerializeField, Range(0f, 400f)] private float hudDividerCenterY = 78f;
+    [Tooltip("구분선 높이 (px). 붓자국 두께 느낌.")]
+    [SerializeField, Range(2f, 600f)] private float hudDividerHeight = 120f;
+    [Tooltip("가로 오버스캔 (px). 양끝 페이드를 화면 밖으로 밀어 가장자리까지 선이 이어지게. (Width가 0일 때만 사용)")]
+    [SerializeField, Range(0f, 600f)] private float hudDividerOverscan = 600f;
+    [Tooltip("구분선 가로 길이 (px). 0이면 오버스캔 기반 자동(전체+오버스캔). >0이면 이 값 직접 사용해 가운데 정렬.")]
+    [SerializeField, Range(0f, 4000f)] private float hudDividerWidth = 0f;
+    [Tooltip("구분선 틴트 색 + 알파. 검정-회색 스트립과 어울리는 어두운 회색으로 기본값.")]
+    [SerializeField] private Color hudDividerTint = new(0.412f, 0.412f, 0.412f, 1f);
+
+    public enum HudContext { Battle, Map, Village }
+
     [Header("Damage VFX Prefabs")]
     [SerializeField] private GameObject _vfxHitA;
     [SerializeField] private GameObject _vfxHitD;
@@ -356,6 +383,9 @@ public class BattleUI : MonoBehaviour
         _iconShieldGreen  = Resources.Load<Texture2D>("InGame/Icon/ShieldGreen");
         _iconAttack       = Resources.Load<Texture2D>("InGame/Icon/Attack");
         _topBarBg   = Resources.Load<Texture2D>("InGame/TopBar");
+        _hudDividerTexMap     = Resources.Load<Texture2D>("Map/divider_map");
+        _hudDividerTexVillage = Resources.Load<Texture2D>("VillageUI/divider_village");
+        _hudDividerTexBattle  = Resources.Load<Texture2D>("InGame/divider_battle"); // 유저가 넣을 예정 — 없으면 null
         _endTurnButtonTex = Resources.Load<Texture2D>("InGame/EndTurnButton");
         if (_endTurnButtonTex == null)
             Debug.LogWarning("[BattleUI] EndTurnButton texture not found: Resources/InGame/EndTurnButton");
@@ -1954,6 +1984,47 @@ public class BattleUI : MonoBehaviour
         GUI.color = prevColor;
     }
 
+    // Battle/Map/Village 공통 상단 HUD 스트립 + 구분선 — 호출자가 컨텍스트를 넘겨주면 그 색 사용.
+    public void DrawHudStripAndDivider(HudContext ctx = HudContext.Battle)
+    {
+        if (!hudStripEnabled) return;
+
+        Color bg = ctx switch
+        {
+            HudContext.Map     => hudStripBgColorMap,
+            HudContext.Village => hudStripBgColorVillage,
+            _                  => hudStripBgColorBattle,
+        };
+        Texture2D divTex = ctx switch
+        {
+            HudContext.Map     => _hudDividerTexMap,
+            HudContext.Village => _hudDividerTexVillage,
+            _                  => _hudDividerTexBattle,
+        };
+
+        // 1) 바 배경 채우기. Map은 디바이더가 갈색으로 비치는 걸 막으려고 한 번 더 덮음.
+        FillRect(new Rect(0f, 0f, RefW, hudStripHeight), bg);
+        if (ctx == HudContext.Map)
+            FillRect(new Rect(0f, 0f, RefW, hudStripHeight), bg);
+
+        // 2) 디바이더는 마지막에 그려서 바 위로 겹치도록. Width가 0이면 오버스캔 기반 자동, >0이면 그 값 직접 사용해 가운데 정렬.
+        if (divTex != null)
+        {
+            float divW = hudDividerWidth > 0f ? hudDividerWidth : (RefW + hudDividerOverscan * 2f);
+            float divX = hudDividerWidth > 0f ? (RefW - divW) * 0.5f : -hudDividerOverscan;
+            var prev = GUI.color;
+            GUI.color = hudDividerTint;
+            GUI.DrawTexture(
+                new Rect(divX,
+                         hudDividerCenterY - hudDividerHeight * 0.5f,
+                         divW,
+                         hudDividerHeight),
+                divTex, ScaleMode.StretchToFill, alphaBlend: true);
+            GUI.color = prev;
+        }
+        // 텍스처 없으면 아예 선 생략 — 호출 측에서 나중에 따로 붙이도록.
+    }
+
     private void DrawTopBar(BattleState state, GameStateManager gsm)
     {
         var p = state.player;
@@ -1965,7 +2036,7 @@ public class BattleUI : MonoBehaviour
         const float barH = 58.14f;
         var barRect = new Rect(barX, barY, barW, barH);
 
-        // 배경 없음 — 스탯만 화면 위에 떠 있는 미니멀 스타일
+        DrawHudStripAndDivider(HudContext.Battle);
 
         const float iconSize = 42.75f;
         const float iconLabelGap = 5.13f;
@@ -2097,10 +2168,12 @@ public class BattleUI : MonoBehaviour
     // 맵 화면에서 같은 스타일의 상단 HUD를 재사용.
     // BattleState가 없으므로 RunState에서 HP/골드/포션/유물을 읽고, 턴은 생략.
     // =========================================================
-    public void DrawMapTopBar(RunState run, int currentFloor, int totalFloors)
+    public void DrawMapTopBar(RunState run, int currentFloor, int totalFloors, HudContext ctx = HudContext.Map)
     {
         if (run == null) return;
         EnsureStyles();
+
+        DrawHudStripAndDivider(ctx);
 
         const float barX = 10f;
         const float barY = 8f;
@@ -2136,7 +2209,7 @@ public class BattleUI : MonoBehaviour
         DrawSlot(_iconRelic,  $"{run.relics.Count}",                       new Color(0.85f, 0.55f, 1f));
 
         DrawRightSlots(barRect, barY, barH, iconY, iconSize, iconLabelGap,
-            $"{currentFloor}/{totalFloors}", turnLabel: null);
+            $"{currentFloor}/{totalFloors}", turnLabel: null, deckCount: run.deck.Count);
     }
 
     // 한 슬롯을 right 기준으로 우→좌로 그리고, 이 슬롯의 left x를 반환
@@ -3708,7 +3781,8 @@ public class BattleUI : MonoBehaviour
     // 덱 뷰어 오버레이 — 상단 바 계단 왼쪽 버튼을 누르면 뜨는 전체 덱 보기 팝업
     // =========================================================
 
-    private void DrawDeckViewerOverlay(GameStateManager gsm)
+    // Map/Village 화면에서도 덱 뷰어를 띄울 수 있도록 public. 내부적으로 _deckViewerOpen 체크.
+    public void DrawDeckViewerOverlay(GameStateManager gsm)
     {
         if (!_deckViewerOpen) return;
         var run = gsm?.CurrentRun;
