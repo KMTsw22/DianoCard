@@ -26,6 +26,7 @@ namespace DianoCard.Data
         STATUS,   // 오염 카드 (잡초 등) — 효과 없음, 사용 시 exhaust, 덱 순환 방해 목적
         TAUNT,    // 도발 — 대상 공룡에게 도발 상태 부여 (적 공격 이 공룡 집중)
         FEED,     // 먹이 — 대상(또는 전체) 공룡 EXP 증가. 진화 조건 충족 시 진화 가능.
+        EVOLVE,   // 진화 촉매 — 대상 육식공룡 1마리를 다음 티어로 즉시 업그레이드. value로 대상 rank 지정(0=T0→T1, 1=T1→T2).
     }
 
     public enum Rarity

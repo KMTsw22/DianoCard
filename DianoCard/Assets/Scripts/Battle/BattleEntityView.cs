@@ -30,6 +30,10 @@ namespace DianoCard.Battle
         // N프레임 시퀀스(2~8장 등). 설정되면 4페이즈 로직 대신 이것을 우선 사용.
         // 첫 프레임은 idle, 중간~후반은 strike peak, 마지막은 follow-through 정도로 해석.
         private Sprite[] _attackSequence;
+        // 피격/소환도 동일한 "균등 시간 N프레임" 시퀀스로 재생 가능.
+        // null이면 HitRoutine은 프레임 스왑 없이 shake/flash만, SummonRoutine은 _summonCastSprite 단일 프레임 사용.
+        private Sprite[] _hitSequence;
+        private Sprite[] _summonSequence;
 
         // 스케일 기준이 되는 스프라이트 높이 (바뀌지 않는 고정값). 프레임 스왑 중에도 이 값으로 scale 계산.
         private float _scaleReferenceHeight = -1f;
@@ -99,6 +103,27 @@ namespace DianoCard.Battle
         public void SetSummonFrame(Sprite summonCast)
         {
             if (summonCast != null) _summonCastSprite = summonCast;
+        }
+
+        /// <summary>피격 모션용 N프레임 시퀀스. 설정되면 HitRoutine 동안 shake/flash와 함께 균등 시간으로 프레임을 스왑한다.</summary>
+        public void SetHitSequence(Sprite[] frames)
+        {
+            _hitSequence = SanitizeSequence(frames);
+        }
+
+        /// <summary>소환 모션용 N프레임 시퀀스. 설정되면 SummonRoutine 동안 push-hold-return 내내 프레임을 균등 시간으로 스왑한다.
+        /// _summonCastSprite(단일 프레임)보다 우선 적용되며, 없으면 _summonCastSprite 폴백.</summary>
+        public void SetSummonSequence(Sprite[] frames)
+        {
+            _summonSequence = SanitizeSequence(frames);
+        }
+
+        private static Sprite[] SanitizeSequence(Sprite[] frames)
+        {
+            if (frames == null || frames.Length == 0) return null;
+            var clean = new System.Collections.Generic.List<Sprite>(frames.Length);
+            foreach (var f in frames) if (f != null) clean.Add(f);
+            return clean.Count > 0 ? clean.ToArray() : null;
         }
 
         public void SetBasePosition(Vector3 pos)
@@ -325,30 +350,49 @@ namespace DianoCard.Battle
         private IEnumerator SummonRoutine(Vector3 dir, float distance, float duration)
         {
             // 3-페이즈 분할:
-            //   0~20% push    — idle에서 summonCast로 프레임 스왑, 앞으로 밀어냄
+            //   0~20% push    — idle에서 소환 포즈로 프레임 스왑, 앞으로 밀어냄
             //   20~80% hold   — 뻗은 자세 유지 (소환 순간의 임팩트)
             //   80~100% return — 복귀하며 idle 프레임으로
+            // _summonSequence가 설정되어 있으면 push-hold-return 구간 **전체**를 시퀀스의 균등 시간 재생으로 덮음.
+            // 없으면 기존 _summonCastSprite 단일 프레임 동작.
             float pushEnd = duration * 0.20f;
             float holdEnd = duration * 0.80f;
 
             Sprite originalSprite = _sr.sprite;
-            if (_summonCastSprite != null) { _sr.sprite = _summonCastSprite; ApplyWorldHeight(); }
+            bool useSeq = _summonSequence != null && _summonSequence.Length > 0;
+            if (!useSeq && _summonCastSprite != null) { _sr.sprite = _summonCastSprite; ApplyWorldHeight(); }
 
             float t = 0f;
-            int phase = -1; // 0=push, 1=hold, 2=return
+            int phase = -1;
+            int lastFrameIdx = -1;
             while (t < duration)
             {
                 t += Time.deltaTime;
 
-                int newPhase;
-                if      (t < pushEnd) newPhase = 0;
-                else if (t < holdEnd) newPhase = 1;
-                else                  newPhase = 2;
-
-                if (newPhase != phase)
+                if (useSeq)
                 {
-                    phase = newPhase;
-                    if (phase == 2 && _idleSprite != null) { _sr.sprite = _idleSprite; ApplyWorldHeight(); }
+                    float p = Mathf.Clamp01(t / duration);
+                    int n = _summonSequence.Length;
+                    int idx = Mathf.Clamp(Mathf.FloorToInt(p * n), 0, n - 1);
+                    if (idx != lastFrameIdx)
+                    {
+                        _sr.sprite = _summonSequence[idx];
+                        ApplyWorldHeight();
+                        lastFrameIdx = idx;
+                    }
+                }
+                else
+                {
+                    int newPhase;
+                    if      (t < pushEnd) newPhase = 0;
+                    else if (t < holdEnd) newPhase = 1;
+                    else                  newPhase = 2;
+
+                    if (newPhase != phase)
+                    {
+                        phase = newPhase;
+                        if (phase == 2 && _idleSprite != null) { _sr.sprite = _idleSprite; ApplyWorldHeight(); }
+                    }
                 }
 
                 float offset;
@@ -378,6 +422,11 @@ namespace DianoCard.Battle
 
         private IEnumerator HitRoutine(float duration)
         {
+            // _hitSequence가 있으면 shake/flash와 동시에 프레임을 균등 시간 재생.
+            // 없으면 프레임 스왑 없이 기존 shake/flash만.
+            bool useSeq = _hitSequence != null && _hitSequence.Length > 0;
+            int lastFrameIdx = -1;
+
             float t = 0f;
             while (t < duration)
             {
@@ -391,10 +440,23 @@ namespace DianoCard.Battle
                 transform.position = _basePosition + shake;
                 float flash = Mathf.Max(0f, 1f - p * 2.2f);
                 _sr.color = Color.Lerp(_baseColor, new Color(1.3f, 0.8f, 0.8f, 1f), flash);
+
+                if (useSeq)
+                {
+                    int n = _hitSequence.Length;
+                    int idx = Mathf.Clamp(Mathf.FloorToInt(p * n), 0, n - 1);
+                    if (idx != lastFrameIdx)
+                    {
+                        _sr.sprite = _hitSequence[idx];
+                        ApplyWorldHeight();
+                        lastFrameIdx = idx;
+                    }
+                }
                 yield return null;
             }
             transform.position = _basePosition;
             _sr.color = _baseColor;
+            if (useSeq && _idleSprite != null) { _sr.sprite = _idleSprite; ApplyWorldHeight(); }
             _currentAnim = null;
         }
     }

@@ -51,4 +51,6 @@ C140,뿌리 방벽,Root Wall,MAGIC,DEFENSE,COMMON,1,0,0,5,SELF,Gain 5 block + dr
 C141,화석 폭발,Fossil Burst,MAGIC,ATTACK,UNCOMMON,1,0,0,8,ENEMY,Deal 8 damage. Exhaust (removed from deck permanently).,FossilBurst.png,1
 C142,고대의 외침,Ancient Cry,MAGIC,DEBUFF,UNCOMMON,1,0,0,0,ALL_ENEMY,Apply Vulnerable 1 turn to all enemies.,AncientCry.png,1
 C143,결빙 브레스,Frost Breath,MAGIC,DEBUFF,RARE,2,0,0,6,ENEMY,Deal 6 damage + Bind 1 turn.,FrostBreath.png,2
+C150,진화의 각인 I,Evolution Sigil I,MAGIC,EVOLVE,UNCOMMON,1,0,0,0,ALLY,대상 베이스 육식공룡(T0)을 다음 티어(T1)로 즉시 진화시킨다. HP 비율·누적 버프 승계.,EvolutionSigilI.png,1
+C151,진화의 각인 II,Evolution Sigil II,MAGIC,EVOLVE,RARE,2,0,0,1,ALLY,대상 1차 진화체(T1)를 최종체(T2)로 즉시 진화시킨다. HP 비율·누적 버프 승계.,EvolutionSigilII.png,2
 C901,잡초,Weed,UTILITY,STATUS,COMMON,1,0,0,0,SELF,⚠ 오염 카드 — 적이 강제 삽입. 효과 없음. 사용 시 소진(exhaust).,Weed.png,1

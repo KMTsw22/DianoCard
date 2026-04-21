@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 6022a84b2829a97439f96c79ce40f0a5
+guid: 079bb2cf23e502d47b24439ad96ca5af
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 7889101035397206070
-    second: Boss_Battle_0
+      213: -6102273106060595805
+    second: idle_boss_f01_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,13 +126,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Boss_Battle_0
+      name: idle_boss_f01_0
       rect:
         serializedVersion: 2
         x: 0
-        y: 0
-        width: 1376
-        height: 768
+        y: 60
+        width: 848
+        height: 1204
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 630540ce797bb7d60800000000000000
-      internalID: 7889101035397206070
+      spriteID: 3ada6d6f0fe505ba0800000000000000
+      internalID: -6102273106060595805
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Boss_Battle_0: 7889101035397206070
+      idle_boss_f01_0: -6102273106060595805
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

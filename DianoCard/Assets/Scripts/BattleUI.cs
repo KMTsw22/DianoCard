@@ -546,26 +546,35 @@ public class BattleUI : MonoBehaviour
             }
         }
 
+        // 정적 폴백 스프라이트 — attack 시퀀스가 없을 때만 사용. 없어도 PlayerView는 시퀀스로 만들 수 있음.
         _playerSprite = Resources.Load<Texture2D>("Character_infield/Char_Archaeologist_Field");
-        if (_playerSprite == null)
-            Debug.LogWarning("[BattleUI] Player sprite not found: Character_infield/Char_Archaeologist_Field");
-        else
-            EnsurePlayerView();
+        EnsurePlayerView();
     }
 
     private void EnsurePlayerView()
     {
-        if (_playerView != null || _playerSprite == null) return;
+        if (_playerView != null) return;
 
-        // Archaeologist 프레임 세트 로드 — 있으면 idle로 사용, 없으면 기존 Char_Archaeologist_Field 폴백
-        var idleTex           = Resources.Load<Texture2D>("Character_infield/Archaeologist/Idle");
-        var windupTex         = Resources.Load<Texture2D>("Character_infield/Archaeologist/Windup");
-        var strikeTex         = Resources.Load<Texture2D>("Character_infield/Archaeologist/Strike");
-        var strikeExtendedTex = Resources.Load<Texture2D>("Character_infield/Archaeologist/StrikeExtended");
-        var summonCastTex     = Resources.Load<Texture2D>("Character_infield/Archaeologist/SummonCast");
+        // Character_infield/Archaeologist/ 에서 공격(attack_f##), 피격(hit_f##), 소환(summon_f##) 시퀀스를 순서대로 로드.
+        // hit/summon은 없으면 attack 시퀀스로 폴백한다.
+        var attackSeq = LoadFrameSequence("Character_infield/Archaeologist/attack_f");
+        var hitSeq    = LoadFrameSequence("Character_infield/Archaeologist/hit_f");
+        var summonSeq = LoadFrameSequence("Character_infield/Archaeologist/summon_f");
+        if (hitSeq == null || hitSeq.Length == 0)       hitSeq = attackSeq;
+        if (summonSeq == null || summonSeq.Length == 0) summonSeq = attackSeq;
 
-        var baseTex = idleTex != null ? idleTex : _playerSprite;
-        _playerWorldSprite = TexToSprite(baseTex);
+        // Idle / 베이스 스프라이트 = 공격 시퀀스 첫 프레임. 시퀀스를 못 불러온 경우에만 기존 Char_Archaeologist_Field 폴백.
+        Sprite baseSprite = (attackSeq != null && attackSeq.Length > 0)
+            ? attackSeq[0]
+            : (_playerSprite != null ? TexToSprite(_playerSprite) : null);
+
+        if (baseSprite == null)
+        {
+            Debug.LogWarning("[BattleUI] PlayerView init skipped — Character_infield/Archaeologist/attack_f## 없음 + Char_Archaeologist_Field 폴백도 없음");
+            return;
+        }
+
+        _playerWorldSprite = baseSprite;
 
         var go = new GameObject("PlayerView");
         go.transform.SetParent(transform, worldPositionStays: false);
@@ -575,40 +584,25 @@ public class BattleUI : MonoBehaviour
         _playerView.SetSprite(_playerWorldSprite);
         _playerView.SetSortingOrder(50);
 
-        Sprite windupSprite         = windupTex != null ? TexToSprite(windupTex) : null;
-        Sprite strikeSprite         = strikeTex != null ? TexToSprite(strikeTex) : null;
-        Sprite strikeExtendedSprite = strikeExtendedTex != null
-            ? Sprite.Create(
-                strikeExtendedTex,
-                new Rect(0, 0, strikeExtendedTex.width, strikeExtendedTex.height),
-                new Vector2(0.12f, 0f),
-                100f)
-            : null;
-        _playerView.SetAttackFrames(null, windupSprite, strikeSprite, strikeExtendedSprite);
-
-        // N프레임 공격 시퀀스 로드 — move-board로 뽑은 CH001_attack_fXX.png 가 있으면 이걸 우선 사용.
-        // 최대 8프레임까지 탐색, 끊기는 인덱스에서 중단.
-        var attackSeq = new System.Collections.Generic.List<Sprite>();
-        for (int i = 1; i <= 8; i++)
+        if (attackSeq != null && attackSeq.Length > 0)
         {
-            var frameTex = Resources.Load<Texture2D>(
-                $"Character_infield/Archaeologist/CH001_attack_f{i:D2}");
-            if (frameTex == null) break;
-            attackSeq.Add(TexToSprite(frameTex));
+            _playerView.SetAttackSequence(attackSeq);
+            Debug.Log($"[BattleUI] Archaeologist attack sequence loaded: {attackSeq.Length} frames");
         }
-        if (attackSeq.Count >= 2)
+        if (hitSeq != null && hitSeq.Length > 0)    _playerView.SetHitSequence(hitSeq);
+        if (summonSeq != null && summonSeq.Length > 0)
         {
-            _playerView.SetAttackSequence(attackSeq.ToArray());
-            Debug.Log($"[BattleUI] Archaeologist N-frame attack loaded: {attackSeq.Count} frames");
+            _playerView.SetSummonSequence(summonSeq);
+            // 하위 호환: 시퀀스 미지원 경로에서도 뭔가 보이도록 첫 프레임을 SummonCast로도 세팅.
+            _playerView.SetSummonFrame(summonSeq[0]);
         }
 
         // 공격 FX 스프라이트 로드 — FX/Attack/slash_gold.png (기본) 또는 캐릭터별 전용 이름.
-        // 여러 후보를 순서대로 시도, 첫 번째 발견된 것을 사용.
         Texture2D fxTex = null;
         foreach (var candidate in new[] {
-            "FX/Attack/CH001_fx",        // 캐릭터 전용 (있으면 우선)
-            "FX/Attack/slash_gold",       // 범용 금빛 슬래시 (유물 마도사 기본)
-            "FX/Attack/impact_punch",     // 범용 임팩트
+            "FX/Attack/CH001_fx",
+            "FX/Attack/slash_gold",
+            "FX/Attack/impact_punch",
         })
         {
             fxTex = Resources.Load<Texture2D>(candidate);
@@ -617,26 +611,22 @@ public class BattleUI : MonoBehaviour
         if (fxTex != null) _playerAttackFxSprite = TexToSprite(fxTex);
         else Debug.LogWarning("[BattleUI] Player attack FX not found. Place PNG at Resources/FX/Attack/slash_gold.png (or CH001_fx.png).");
 
-        // SummonCast는 idle보다 캐릭터가 가로로 길게 뻗는 포즈라 pivot을 살짝 왼쪽으로 잡아
-        // 베이스 위치에서 코가 밀려 보이지 않게 함.
-        if (summonCastTex != null)
-        {
-            var summonCastSprite = Sprite.Create(
-                summonCastTex,
-                new Rect(0, 0, summonCastTex.width, summonCastTex.height),
-                new Vector2(0.35f, 0f),
-                100f);
-            _playerView.SetSummonFrame(summonCastSprite);
-        }
+        if (attackSeq == null || attackSeq.Length == 0)
+            Debug.LogWarning("[BattleUI] Character_infield/Archaeologist/attack_f## 시퀀스 없음 — 정적 Char_Archaeologist_Field 폴백 사용");
+    }
 
-        if (idleTex == null)
-            Debug.LogWarning("[BattleUI] Archaeologist/Idle not found, falling back to Char_Archaeologist_Field");
-        if (windupTex == null || strikeTex == null)
-            Debug.LogWarning("[BattleUI] Archaeologist windup/strike frames missing");
-        if (strikeExtendedTex == null)
-            Debug.LogWarning("[BattleUI] Archaeologist/StrikeExtended not found — attack will skip extended phase");
-        if (summonCastTex == null)
-            Debug.LogWarning("[BattleUI] Archaeologist/SummonCast not found — summon will skip frame swap");
+    /// <summary>Resources 경로 프리픽스 뒤에 01, 02… 를 붙여가며 연속적으로 로드한다 (끊기는 번호에서 중단, 최대 99).
+    /// 예: LoadFrameSequence("Character_infield/Archaeologist/attack_f") → attack_f01, attack_f02, ... 를 순서대로.</summary>
+    private static Sprite[] LoadFrameSequence(string pathPrefix)
+    {
+        var list = new System.Collections.Generic.List<Sprite>();
+        for (int i = 1; i <= 99; i++)
+        {
+            var tex = Resources.Load<Texture2D>($"{pathPrefix}{i:D2}");
+            if (tex == null) break;
+            list.Add(TexToSprite(tex));
+        }
+        return list.Count > 0 ? list.ToArray() : null;
     }
 
     private static Sprite TexToSprite(Texture2D tex)
@@ -1127,11 +1117,9 @@ public class BattleUI : MonoBehaviour
     {
         string path = enemy.enemyType switch
         {
-            EnemyType.BOSS => "Backgrounds/Boss_Battle",
-            EnemyType.ELITE => "Backgrounds/Elite_Battle",
-            _ => UnityEngine.Random.value < 0.5f
-                ? "Backgrounds/Normal_Battle"
-                : "Backgrounds/Normal_Battle2",
+            EnemyType.BOSS => "Backgrounds/Boss",
+            EnemyType.ELITE => "Backgrounds/Elite",
+            _ => "Backgrounds/Normal",
         };
 
         var tex = Resources.Load<Texture2D>(path);
@@ -1716,11 +1704,12 @@ public class BattleUI : MonoBehaviour
             && c.target == TargetType.ENEMY;
     }
 
-    // ALLY 단일 타겟 카드 — 수호 마법(MAGIC/DEFENSE + ALLY)
+    // ALLY 단일 타겟 카드 — 수호 마법(MAGIC/DEFENSE + ALLY) / 진화 촉매(MAGIC/EVOLVE + ALLY)
     private static bool CardNeedsAllyTarget(CardData c)
     {
         if (c.target != TargetType.ALLY) return false;
-        return c.cardType == CardType.MAGIC && c.subType == CardSubType.DEFENSE;
+        if (c.cardType != CardType.MAGIC) return false;
+        return c.subType == CardSubType.DEFENSE || c.subType == CardSubType.EVOLVE;
     }
 
     // 플레이어가 공격 모션(채찍 lunge)을 취해야 하는 카드인지 여부.
@@ -1839,7 +1828,18 @@ public class BattleUI : MonoBehaviour
                 Vector3 feetWorld = GuiToWorld(feetGui);
                 Vector3 topWorld  = GuiToWorld(new Vector2(center.x, rect.y));
                 float worldHeight = Mathf.Abs(feetWorld.y - topWorld.y);
-                _playerView.SetBasePosition(feetWorld);
+
+                // pivot 보정 — 스프라이트 pivot이 Center면 bounds.min.y가 음수라 발이 아래로 쏠린다.
+                // 새 시퀀스 에셋들은 pivot=Center가 기본이라 이 보정 없으면 캐릭터가 지면 아래로 박힘.
+                // pivot=Bottom인 스프라이트면 bounds.min.y≈0 → 영향 없음.
+                Vector3 pivotOffset = Vector3.zero;
+                var psr = _playerView.GetComponent<SpriteRenderer>();
+                if (psr != null && psr.sprite != null && psr.sprite.bounds.size.y > 0.001f)
+                {
+                    float s = worldHeight / psr.sprite.bounds.size.y;
+                    pivotOffset = new Vector3(0f, -psr.sprite.bounds.min.y * s, 0f);
+                }
+                _playerView.SetBasePosition(feetWorld + pivotOffset);
                 _playerView.SetWorldHeight(worldHeight);
             }
 
@@ -2154,19 +2154,18 @@ public class BattleUI : MonoBehaviour
             DrawBlockBadge(new Vector2(summonHpRect.x, summonHpRect.center.y), s.block, 30f, _iconShieldGreen);
         }
 
-        // 스택 인디케이터 — 다음 합성/진화까지 몇 장 더 필요한지 안내.
-        // 육식: 진화 테이블 참조로 "합성까지 N장". 초식/최종체: 단순 누적 스택 표시.
-        var nextEvo = DataManager.Instance.GetEvolution(s.data.id);
+        // 티어/스택 인디케이터 — 육식: 현재 티어 (T0/T1/T2·MAX). 초식: 덮어쓰기 누적 스택.
+        // 육식 진화는 스택이 아니라 "진화의 각인" 카드로 트리거되므로 "합성까지 N장" 표시 없음.
         string stackText = null;
-        if (nextEvo != null)
+        if (s.data.subType == CardSubType.CARNIVORE)
         {
-            int remaining = Mathf.Max(0, nextEvo.stacksRequired - s.stacks);
-            if (remaining > 0) stackText = $"합성까지 {remaining}장";
+            if (s.data.id.EndsWith("_T2"))      stackText = "T2 · MAX";
+            else if (s.data.id.EndsWith("_T1")) stackText = "T1";
+            else                                 stackText = "T0";
         }
         else if (s.stacks > 0)
         {
-            bool isMaxCarn = s.data.subType == CardSubType.CARNIVORE;
-            stackText = isMaxCarn ? $"MAX · 스택 {s.stacks}" : $"스택 {s.stacks}";
+            stackText = $"스택 {s.stacks}";
         }
         if (!string.IsNullOrEmpty(stackText))
         {

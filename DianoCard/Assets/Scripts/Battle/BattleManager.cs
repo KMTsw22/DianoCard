@@ -115,9 +115,12 @@ namespace DianoCard.Battle
                 return false;
             }
 
-            // 덮어쓰기/합성 사전 판정 — 같은 id SUMMON이 이미 필드에 있으면 슬롯 체크를 건너뛰고
-            // ResolveCard 단계에서 스택 증가 + 진화로 처리. (초식=덮어쓰기, 육식=합성)
-            bool isOverwrite = card.cardType == CardType.SUMMON && FindOverwriteTarget(card.id) != null;
+            // 덮어쓰기 사전 판정 — 초식만 해당. 같은 id 초식 SUMMON이 필드에 있으면 슬롯 체크 건너뛰고
+            // ResolveCard에서 스택 증가(같은 몸 강화)로 처리. 육식은 더 이상 "합성" 경로가 없고,
+            // 대신 별도 "진화의 각인" (MAGIC/EVOLVE) 카드로 업그레이드한다.
+            bool isOverwrite = card.cardType == CardType.SUMMON
+                && card.subType == CardSubType.HERBIVORE
+                && FindOverwriteTarget(card.id) != null;
 
             // 필드 슬롯 제한 — 꽉 차면 swapFieldIndex로 교체 가능. 미지정이면 블록. (덮어쓰기/합성은 슬롯 불필요)
             bool needsSwap = card.cardType == CardType.SUMMON && !isOverwrite && state.field.Count >= state.maxFieldSize;
@@ -134,14 +137,25 @@ namespace DianoCard.Battle
                 state.field.RemoveAt(swapFieldIndex);
             }
 
-            // 수호 마법 단일 타겟(MAGIC/DEFENSE + ALLY): 대상 필요
+            // 수호 마법 / 진화 촉매 단일 타겟(MAGIC + ALLY): 대상 필요
             if (card.target == TargetType.ALLY
-                && card.cardType == CardType.MAGIC && card.subType == CardSubType.DEFENSE)
+                && card.cardType == CardType.MAGIC
+                && (card.subType == CardSubType.DEFENSE || card.subType == CardSubType.EVOLVE))
             {
                 if (allyTargetIndex < 0 || allyTargetIndex >= state.field.Count)
                 {
                     Log($"  ! Cannot play {card.nameKr}: ally target required");
                     return false;
+                }
+                // 진화 촉매는 대상이 "육식공룡 + 다음 진화 경로 존재 + 대상 rank 일치"여야 함.
+                if (card.subType == CardSubType.EVOLVE)
+                {
+                    var target = state.field[allyTargetIndex];
+                    if (!CanEvolveWithCatalyst(target, card))
+                    {
+                        Log($"  ! Cannot play {card.nameKr}: target is not a valid evolution subject");
+                        return false;
+                    }
                 }
             }
 
@@ -195,33 +209,17 @@ namespace DianoCard.Battle
                 case CardType.SUMMON:
                     if (isOverwrite)
                     {
+                        // 초식만 덮어쓰기 — 같은 공룡이 그대로 강해짐(카드 형태 불변, 스탯 영구 상승).
                         var existing = FindOverwriteTarget(c.id);
                         if (existing != null)
                         {
                             existing.stacks++;
-                            if (c.subType == CardSubType.HERBIVORE)
-                            {
-                                // 초식: 같은 공룡이 그대로 강해짐 — 카드 형태 불변.
-                                // 스탯 영구 상승. HP 보너스는 현재 HP에도 더해짐(풀 회복 아님 — 기존 상처는 유지).
-                                const int atkGain = 1;
-                                const int hpGain = 3;
-                                existing.attack += atkGain;
-                                existing.maxHp += hpGain;
-                                existing.hp += hpGain;
-                                Log($"    🌿 덮어쓰기! {c.nameKr} +{atkGain} ATK / +{hpGain} HP (now ATK {existing.attack} / HP {existing.hp}/{existing.maxHp})");
-                            }
-                            else // CARNIVORE
-                            {
-                                // 육식: 각 합성마다 작은 스탯 상승(진화 사이사이 성장감) + 진화 체크.
-                                // HP 보너스는 현재 HP에도 더해짐 + 최소 50% HP 보장 (합성 보상 — "두 몸의 생명력 재조합" 플레이버).
-                                const int carnAtkPerStack = 1;
-                                const int carnHpPerStack = 1;
-                                existing.attack += carnAtkPerStack;
-                                existing.maxHp += carnHpPerStack;
-                                existing.hp = Math.Max(existing.hp + carnHpPerStack, existing.maxHp / 2);
-                                Log($"    🦖 합성! {c.nameKr} +{carnAtkPerStack}/+{carnHpPerStack}, 스택 {existing.stacks} (ATK {existing.attack} / HP {existing.hp}/{existing.maxHp})");
-                                CheckEvolution(existing);
-                            }
+                            const int atkGain = 1;
+                            const int hpGain = 3;
+                            existing.attack += atkGain;
+                            existing.maxHp += hpGain;
+                            existing.hp += hpGain;
+                            Log($"    🌿 덮어쓰기! {c.nameKr} +{atkGain} ATK / +{hpGain} HP (now ATK {existing.attack} / HP {existing.hp}/{existing.maxHp})");
                         }
                     }
                     else
@@ -255,24 +253,8 @@ namespace DianoCard.Battle
             }
         }
 
-        /// <summary>현재 카드 id에서 스택 임계치 충족 시 즉시 진화. 여러 티어 동시 충족 가능(연속 진화).</summary>
-        private void CheckEvolution(SummonInstance s)
-        {
-            while (true)
-            {
-                var evo = DataManager.Instance.GetEvolution(s.data.id);
-                if (evo == null) return; // 더 이상 진화 경로 없음 (최종 형태)
-                if (s.stacks < evo.stacksRequired) return;
-                var next = DataManager.Instance.GetCard(evo.resultCardId);
-                if (next == null)
-                {
-                    Log($"    [WARN] Evolution target card missing: {evo.resultCardId}");
-                    return;
-                }
-                EvolveSummon(s, next);
-            }
-        }
-
+        /// <summary>대상 공룡을 next 티어로 교체. 스택 누적 보너스와 현재 HP 비율을 보존한다.
+        /// 진화 촉매 카드(MAGIC/EVOLVE) 사용 시 호출된다 — 과거의 스택 임계치 자동 진화 루프는 제거됨.</summary>
         private void EvolveSummon(SummonInstance s, CardData next)
         {
             // 진화 전 스택 누적으로 쌓인 보너스(현재 스탯 - 현재 data 기준)를 보존해서 새 형태 위에 얹음.
@@ -410,6 +392,46 @@ namespace DianoCard.Battle
             {
                 ResolvePurify(c);
             }
+            else if (c.subType == CardSubType.EVOLVE)
+            {
+                // 진화 촉매 — 대상 육식공룡을 다음 티어로 교체. PlayCard 단계에서 유효성 검증 완료.
+                if (allyTargetIndex >= 0 && allyTargetIndex < state.field.Count)
+                {
+                    var target = state.field[allyTargetIndex];
+                    var evo = DataManager.Instance.GetEvolution(target.data.id);
+                    var next = evo != null ? DataManager.Instance.GetCard(evo.resultCardId) : null;
+                    if (next != null)
+                    {
+                        EvolveSummon(target, next);
+                    }
+                    else
+                    {
+                        Log($"    [WARN] {target.data.nameKr}의 진화 경로를 찾을 수 없음");
+                    }
+                }
+            }
+        }
+
+        /// <summary>진화 촉매 카드(MAGIC/EVOLVE)가 대상 공룡에게 쓰일 수 있는지 판정.
+        /// 조건: 대상 살아있음 + 육식공룡 + 다음 진화 경로 존재 + 카드 rank와 대상 rank 일치.
+        /// rank는 카드의 value로 지정: 0=T0(베이스)→T1, 1=T1→T2. 대상 rank는 현재 data.id의 접미사로 판정.</summary>
+        private bool CanEvolveWithCatalyst(SummonInstance target, CardData catalyst)
+        {
+            if (target == null || target.IsDead) return false;
+            if (target.data.subType != CardSubType.CARNIVORE) return false;
+            var evo = DataManager.Instance.GetEvolution(target.data.id);
+            if (evo == null) return false;
+            int targetRank = GetCarnivoreRank(target.data.id);
+            return targetRank == catalyst.value;
+        }
+
+        /// <summary>육식공룡 티어 rank 판정 — 베이스=0, _T1=1, _T2=2. 진화 CSV와 카드 id 규칙에 의존.</summary>
+        private static int GetCarnivoreRank(string cardId)
+        {
+            if (string.IsNullOrEmpty(cardId)) return 0;
+            if (cardId.EndsWith("_T2")) return 2;
+            if (cardId.EndsWith("_T1")) return 1;
+            return 0;
         }
 
         private void ResolveBuff(CardData c)

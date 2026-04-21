@@ -1,0 +1,2613 @@
+fileFormatVersion: 2
+guid: 03863a46f3d469f44a988aba2414b133
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 4931135405679509329
+    second: Elite_Battle_0
+  - first:
+      213: 4648772115244368827
+    second: Elite_Battle_1
+  - first:
+      213: -2682007176628023510
+    second: Elite_Battle_2
+  - first:
+      213: 539684969954672081
+    second: Elite_Battle_3
+  - first:
+      213: 6734600834731786484
+    second: Elite_Battle_4
+  - first:
+      213: 1185977827027710606
+    second: Elite_Battle_5
+  - first:
+      213: 8701660416713452533
+    second: Elite_Battle_6
+  - first:
+      213: 3074185121063595253
+    second: Elite_Battle_7
+  - first:
+      213: 8664911607189099670
+    second: Elite_Battle_8
+  - first:
+      213: 7590586991262797516
+    second: Elite_Battle_9
+  - first:
+      213: 7031621943327122924
+    second: Elite_Battle_10
+  - first:
+      213: 2918336142551258321
+    second: Elite_Battle_11
+  - first:
+      213: -8077693352028587634
+    second: Elite_Battle_12
+  - first:
+      213: 3321833712851465122
+    second: Elite_Battle_13
+  - first:
+      213: -2270176914357790199
+    second: Elite_Battle_14
+  - first:
+      213: -7630532347474635790
+    second: Elite_Battle_15
+  - first:
+      213: -7326138094476463234
+    second: Elite_Battle_16
+  - first:
+      213: 9039850583913088744
+    second: Elite_Battle_17
+  - first:
+      213: -9163172618239642300
+    second: Elite_Battle_18
+  - first:
+      213: -3597998435247064206
+    second: Elite_Battle_19
+  - first:
+      213: 325996277432327519
+    second: Elite_Battle_20
+  - first:
+      213: -5094387865465367519
+    second: Elite_Battle_21
+  - first:
+      213: -7965122193325973584
+    second: Elite_Battle_22
+  - first:
+      213: 6891811187881891224
+    second: Elite_Battle_23
+  - first:
+      213: -6330112508415194430
+    second: Elite_Battle_24
+  - first:
+      213: -5951219431212768535
+    second: Elite_Battle_25
+  - first:
+      213: 7856701310651294329
+    second: Elite_Battle_26
+  - first:
+      213: -2951443418531543283
+    second: Elite_Battle_27
+  - first:
+      213: -7172400028378509250
+    second: Elite_Battle_28
+  - first:
+      213: -7048336607680720340
+    second: Elite_Battle_29
+  - first:
+      213: -9004849582016677275
+    second: Elite_Battle_30
+  - first:
+      213: -3789582112306490391
+    second: Elite_Battle_31
+  - first:
+      213: 850639833106652588
+    second: Elite_Battle_32
+  - first:
+      213: -640519797446768113
+    second: Elite_Battle_33
+  - first:
+      213: 4990264717036003322
+    second: Elite_Battle_34
+  - first:
+      213: -8221053837317727143
+    second: Elite_Battle_35
+  - first:
+      213: 6489451158906957804
+    second: Elite_Battle_36
+  - first:
+      213: -7711183972925189236
+    second: Elite_Battle_37
+  - first:
+      213: 7286491139314993931
+    second: Elite_Battle_38
+  - first:
+      213: 6027840426181871892
+    second: Elite_Battle_39
+  - first:
+      213: -1050812709537303632
+    second: Elite_Battle_40
+  - first:
+      213: 2788628692597955285
+    second: Elite_Battle_41
+  - first:
+      213: 9135939680561874221
+    second: Elite_Battle_42
+  - first:
+      213: -331703402811132475
+    second: Elite_Battle_43
+  - first:
+      213: 7455718539008865662
+    second: Elite_Battle_44
+  - first:
+      213: 6920533259994853093
+    second: Elite_Battle_45
+  - first:
+      213: -7611347490949969271
+    second: Elite_Battle_46
+  - first:
+      213: 3938036480515276646
+    second: Elite_Battle_47
+  - first:
+      213: -4992480745011118572
+    second: Elite_Battle_48
+  - first:
+      213: 8688009956576475528
+    second: Elite_Battle_49
+  - first:
+      213: -2716479778784606984
+    second: Elite_Battle_50
+  - first:
+      213: 9141065837334635615
+    second: Elite_Battle_51
+  - first:
+      213: -1717721513740960223
+    second: Elite_Battle_52
+  - first:
+      213: -2306314130072532264
+    second: Elite_Battle_53
+  - first:
+      213: 3207347104042491507
+    second: Elite_Battle_54
+  - first:
+      213: 1216964471454874340
+    second: Elite_Battle_55
+  - first:
+      213: 7598714668855820894
+    second: Elite_Battle_56
+  - first:
+      213: 1955030803803007192
+    second: Elite_Battle_57
+  - first:
+      213: -37551062060161061
+    second: Elite_Battle_58
+  - first:
+      213: 2087053867851049733
+    second: Elite_Battle_59
+  - first:
+      213: -6095584789599214488
+    second: Elite_Battle_60
+  - first:
+      213: -6245263522349474567
+    second: Elite_Battle_61
+  - first:
+      213: -1116538180662266797
+    second: Elite_Battle_62
+  - first:
+      213: -5996676113945220764
+    second: Elite_Battle_63
+  - first:
+      213: 1353822232286913980
+    second: Elite_Battle_64
+  - first:
+      213: -8080345410461692294
+    second: Elite_Battle_65
+  - first:
+      213: -8194496764562167870
+    second: Elite_Battle_66
+  - first:
+      213: 2385360297401242131
+    second: Elite_Battle_67
+  - first:
+      213: -146195072049720541
+    second: Elite_Battle_68
+  - first:
+      213: 4261491930215452353
+    second: Elite_Battle_69
+  - first:
+      213: -6852263379703243842
+    second: Elite_Battle_70
+  - first:
+      213: -9029026918218080337
+    second: Elite_Battle_71
+  - first:
+      213: -6129060921254608220
+    second: Elite_Battle_72
+  - first:
+      213: -456754355237727475
+    second: Elite_Battle_73
+  - first:
+      213: 4076634189630742775
+    second: Elite_Battle_74
+  - first:
+      213: -3541390031597591046
+    second: Elite_Battle_75
+  - first:
+      213: -1524914902497939963
+    second: Elite_Battle_76
+  - first:
+      213: 3073051156209093413
+    second: Elite_Battle_77
+  - first:
+      213: -3925055219916719623
+    second: Elite_Battle_78
+  - first:
+      213: 4918826645455598267
+    second: Elite_Battle_79
+  - first:
+      213: -5569701432344486330
+    second: Elite_Battle_80
+  - first:
+      213: -4155006561633755608
+    second: Elite_Battle_81
+  - first:
+      213: -5796491037403186737
+    second: Elite_Battle_82
+  - first:
+      213: -2243847999875781791
+    second: Elite_Battle_83
+  - first:
+      213: 7360822262806439975
+    second: Elite_Battle_84
+  - first:
+      213: -1834187883522343666
+    second: Elite_Battle_85
+  - first:
+      213: -341468129091140252
+    second: Elite_Battle_86
+  - first:
+      213: 8738253357024625954
+    second: Elite_Battle_87
+  - first:
+      213: -4844439768305440433
+    second: Elite_Battle_88
+  - first:
+      213: -3966791685594411303
+    second: Elite_Battle_89
+  - first:
+      213: 3630026339070002578
+    second: Elite_Battle_90
+  - first:
+      213: 6367478522850030784
+    second: Elite_Battle_91
+  - first:
+      213: -878140179064970754
+    second: Elite_Battle_92
+  - first:
+      213: -2838216336841139547
+    second: Elite_Battle_93
+  - first:
+      213: -3039069692089997016
+    second: Elite_Battle_94
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: Elite_Battle_0
+      rect:
+        serializedVersion: 2
+        x: 62
+        y: 740
+        width: 23
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 15ff0e27689ee6440800000000000000
+      internalID: 4931135405679509329
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_1
+      rect:
+        serializedVersion: 2
+        x: 73
+        y: 0
+        width: 1122
+        height: 768
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bb3c1eacb91c38040800000000000000
+      internalID: 4648772115244368827
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_2
+      rect:
+        serializedVersion: 2
+        x: 76
+        y: 758
+        width: 6
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a2fc908cea897cad0800000000000000
+      internalID: -2682007176628023510
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_3
+      rect:
+        serializedVersion: 2
+        x: 620
+        y: 753
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1ddf3ccee985d7700800000000000000
+      internalID: 539684969954672081
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_4
+      rect:
+        serializedVersion: 2
+        x: 737
+        y: 753
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4f0cc3a17cb167d50800000000000000
+      internalID: 6734600834731786484
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_5
+      rect:
+        serializedVersion: 2
+        x: 1090
+        y: 755
+        width: 6
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e82f973dc80757010800000000000000
+      internalID: 1185977827027710606
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_6
+      rect:
+        serializedVersion: 2
+        x: 1245
+        y: 734
+        width: 24
+        height: 31
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5fb684eab0282c870800000000000000
+      internalID: 8701660416713452533
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_7
+      rect:
+        serializedVersion: 2
+        x: 61
+        y: 693
+        width: 27
+        height: 47
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5fc69c27413b9aa20800000000000000
+      internalID: 3074185121063595253
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_8
+      rect:
+        serializedVersion: 2
+        x: 559
+        y: 734
+        width: 20
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6945aa4b233ff3870800000000000000
+      internalID: 8664911607189099670
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_9
+      rect:
+        serializedVersion: 2
+        x: 1226
+        y: 677
+        width: 47
+        height: 58
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cce8be2e6ae275960800000000000000
+      internalID: 7590586991262797516
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_10
+      rect:
+        serializedVersion: 2
+        x: 54
+        y: 704
+        width: 16
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ce5eadef6e6559160800000000000000
+      internalID: 7031621943327122924
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_11
+      rect:
+        serializedVersion: 2
+        x: 1260
+        y: 718
+        width: 10
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1d493f77243008820800000000000000
+      internalID: 2918336142551258321
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_12
+      rect:
+        serializedVersion: 2
+        x: 1197
+        y: 692
+        width: 9
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e893dcb91b446ef80800000000000000
+      internalID: -8077693352028587634
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_13
+      rect:
+        serializedVersion: 2
+        x: 1206
+        y: 680
+        width: 15
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2a3bd697926891e20800000000000000
+      internalID: 3321833712851465122
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_14
+      rect:
+        serializedVersion: 2
+        x: 1271
+        y: 699
+        width: 7
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 90a5962df16be70e0800000000000000
+      internalID: -2270176914357790199
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_15
+      rect:
+        serializedVersion: 2
+        x: 42
+        y: 683
+        width: 6
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2f395ad1247ea1690800000000000000
+      internalID: -7630532347474635790
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_16
+      rect:
+        serializedVersion: 2
+        x: 51
+        y: 670
+        width: 14
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e73f547f734545a90800000000000000
+      internalID: -7326138094476463234
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_17
+      rect:
+        serializedVersion: 2
+        x: 1187
+        y: 681
+        width: 15
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8e64fbcf530047d70800000000000000
+      internalID: 9039850583913088744
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_18
+      rect:
+        serializedVersion: 2
+        x: 1266
+        y: 674
+        width: 9
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4457d326d0fd5d080800000000000000
+      internalID: -9163172618239642300
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_19
+      rect:
+        serializedVersion: 2
+        x: 1271
+        y: 681
+        width: 17
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 27bffa47c77511ec0800000000000000
+      internalID: -3597998435247064206
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_20
+      rect:
+        serializedVersion: 2
+        x: 37
+        y: 645
+        width: 21
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f5d147a13eb268400800000000000000
+      internalID: 325996277432327519
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_21
+      rect:
+        serializedVersion: 2
+        x: 54
+        y: 660
+        width: 9
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 12450e24a391d49b0800000000000000
+      internalID: -5094387865465367519
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_22
+      rect:
+        serializedVersion: 2
+        x: 1233
+        y: 660
+        width: 10
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0bf9932f093367190800000000000000
+      internalID: -7965122193325973584
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_23
+      rect:
+        serializedVersion: 2
+        x: 1266
+        y: 661
+        width: 12
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 89553c0d2c1a4af50800000000000000
+      internalID: 6891811187881891224
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_24
+      rect:
+        serializedVersion: 2
+        x: 1275
+        y: 645
+        width: 18
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2cac7a3463ce628a0800000000000000
+      internalID: -6330112508415194430
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_25
+      rect:
+        serializedVersion: 2
+        x: 27
+        y: 644
+        width: 8
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9e2292e4575096da0800000000000000
+      internalID: -5951219431212768535
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_26
+      rect:
+        serializedVersion: 2
+        x: 1276
+        y: 418
+        width: 42
+        height: 226
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 97267b7273c980d60800000000000000
+      internalID: 7856701310651294329
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_27
+      rect:
+        serializedVersion: 2
+        x: 1295
+        y: 645
+        width: 7
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d0743c729dd5a07d0800000000000000
+      internalID: -2951443418531543283
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_28
+      rect:
+        serializedVersion: 2
+        x: 17
+        y: 415
+        width: 37
+        height: 228
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e305f79dc24867c90800000000000000
+      internalID: -7172400028378509250
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_29
+      rect:
+        serializedVersion: 2
+        x: 1176
+        y: 603
+        width: 11
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c221fc1f2374f2e90800000000000000
+      internalID: -7048336607680720340
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_30
+      rect:
+        serializedVersion: 2
+        x: 17
+        y: 541
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 56a3210d309580380800000000000000
+      internalID: -9004849582016677275
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_31
+      rect:
+        serializedVersion: 2
+        x: 1308
+        y: 541
+        width: 7
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9e31ccc9523b86bc0800000000000000
+      internalID: -3789582112306490391
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_32
+      rect:
+        serializedVersion: 2
+        x: 9
+        y: 501
+        width: 10
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cad9e1cdb641ecb00800000000000000
+      internalID: 850639833106652588
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_33
+      rect:
+        serializedVersion: 2
+        x: 114
+        y: 470
+        width: 14
+        height: 48
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f0a849943aa6c17f0800000000000000
+      internalID: -640519797446768113
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_34
+      rect:
+        serializedVersion: 2
+        x: 128
+        y: 494
+        width: 6
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aff9812125bf04540800000000000000
+      internalID: 4990264717036003322
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_35
+      rect:
+        serializedVersion: 2
+        x: 130
+        y: 490
+        width: 13
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 95c905b8713f8ed80800000000000000
+      internalID: -8221053837317727143
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_36
+      rect:
+        serializedVersion: 2
+        x: 1139
+        y: 466
+        width: 42
+        height: 39
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cef65e942792f0a50800000000000000
+      internalID: 6489451158906957804
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_37
+      rect:
+        serializedVersion: 2
+        x: 1182
+        y: 470
+        width: 36
+        height: 69
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c83db10480f5cf490800000000000000
+      internalID: -7711183972925189236
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_38
+      rect:
+        serializedVersion: 2
+        x: 1234
+        y: 491
+        width: 13
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b0bc6e1f511de1560800000000000000
+      internalID: 7286491139314993931
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_39
+      rect:
+        serializedVersion: 2
+        x: 1180
+        y: 492
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4194f454ee037a350800000000000000
+      internalID: 6027840426181871892
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_40
+      rect:
+        serializedVersion: 2
+        x: 101
+        y: 441
+        width: 15
+        height: 38
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0b3309a7863ca61f0800000000000000
+      internalID: -1050812709537303632
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_41
+      rect:
+        serializedVersion: 2
+        x: 1151
+        y: 452
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5da53c8650333b620800000000000000
+      internalID: 2788628692597955285
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_42
+      rect:
+        serializedVersion: 2
+        x: 1244
+        y: 465
+        width: 8
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d2549453cb069ce70800000000000000
+      internalID: 9135939680561874221
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_43
+      rect:
+        serializedVersion: 2
+        x: 1142
+        y: 393
+        width: 56
+        height: 60
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5c577a8338d856bf0800000000000000
+      internalID: -331703402811132475
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_44
+      rect:
+        serializedVersion: 2
+        x: 1198
+        y: 429
+        width: 12
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e75fae65288087760800000000000000
+      internalID: 7455718539008865662
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_45
+      rect:
+        serializedVersion: 2
+        x: 1203
+        y: 447
+        width: 14
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5eee44a555caa0060800000000000000
+      internalID: 6920533259994853093
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_46
+      rect:
+        serializedVersion: 2
+        x: 103
+        y: 409
+        width: 12
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 98acddb98cf0f5690800000000000000
+      internalID: -7611347490949969271
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_47
+      rect:
+        serializedVersion: 2
+        x: 1209
+        y: 406
+        width: 14
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 66f74ad7057b6a630800000000000000
+      internalID: 3938036480515276646
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_48
+      rect:
+        serializedVersion: 2
+        x: 1234
+        y: 429
+        width: 9
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 41e72a5b63527bab0800000000000000
+      internalID: -4992480745011118572
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_49
+      rect:
+        serializedVersion: 2
+        x: 12
+        y: 398
+        width: 30
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8893cc24603029870800000000000000
+      internalID: 8688009956576475528
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_50
+      rect:
+        serializedVersion: 2
+        x: 33
+        y: 409
+        width: 6
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8f40302a8002d4ad0800000000000000
+      internalID: -2716479778784606984
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_51
+      rect:
+        serializedVersion: 2
+        x: 1125
+        y: 327
+        width: 85
+        height: 89
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f542ac692f69bde70800000000000000
+      internalID: 9141065837334635615
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_52
+      rect:
+        serializedVersion: 2
+        x: 1232
+        y: 396
+        width: 26
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 12e7c66526d6928e0800000000000000
+      internalID: -1717721513740960223
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_53
+      rect:
+        serializedVersion: 2
+        x: 1288
+        y: 398
+        width: 25
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8da0090a4835effd0800000000000000
+      internalID: -2306314130072532264
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_54
+      rect:
+        serializedVersion: 2
+        x: 13
+        y: 379
+        width: 11
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 37e94d7a239c28c20800000000000000
+      internalID: 3207347104042491507
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_55
+      rect:
+        serializedVersion: 2
+        x: 26
+        y: 245
+        width: 25
+        height: 150
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4eab6513db683e010800000000000000
+      internalID: 1216964471454874340
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_56
+      rect:
+        serializedVersion: 2
+        x: 61
+        y: 363
+        width: 23
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e5283ba4bbe047960800000000000000
+      internalID: 7598714668855820894
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_57
+      rect:
+        serializedVersion: 2
+        x: 85
+        y: 371
+        width: 10
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8d8ef99682aa12b10800000000000000
+      internalID: 1955030803803007192
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_58
+      rect:
+        serializedVersion: 2
+        x: 92
+        y: 378
+        width: 7
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bd727fc02879a7ff0800000000000000
+      internalID: -37551062060161061
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_59
+      rect:
+        serializedVersion: 2
+        x: 98
+        y: 312
+        width: 52
+        height: 85
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 50bed546f64b6fc10800000000000000
+      internalID: 2087053867851049733
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_60
+      rect:
+        serializedVersion: 2
+        x: 1185
+        y: 318
+        width: 62
+        height: 68
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8642aadfde1286ba0800000000000000
+      internalID: -6095584789599214488
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_61
+      rect:
+        serializedVersion: 2
+        x: 1241
+        y: 376
+        width: 7
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9fc97ad4aed5459a0800000000000000
+      internalID: -6245263522349474567
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_62
+      rect:
+        serializedVersion: 2
+        x: 1248
+        y: 367
+        width: 18
+        height: 21
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 354f67bb0724180f0800000000000000
+      internalID: -1116538180662266797
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_63
+      rect:
+        serializedVersion: 2
+        x: 1278
+        y: 244
+        width: 24
+        height: 149
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 469a93b98d687cca0800000000000000
+      internalID: -5996676113945220764
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_64
+      rect:
+        serializedVersion: 2
+        x: 1307
+        y: 383
+        width: 13
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cb5ec7cb52eb9c210800000000000000
+      internalID: 1353822232286913980
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_65
+      rect:
+        serializedVersion: 2
+        x: 1309
+        y: 349
+        width: 10
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a7e09f229a8dcdf80800000000000000
+      internalID: -8080345410461692294
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_66
+      rect:
+        serializedVersion: 2
+        x: 11
+        y: 350
+        width: 8
+        height: 28
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2c72f23eb9c474e80800000000000000
+      internalID: -8194496764562167870
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_67
+      rect:
+        serializedVersion: 2
+        x: 91
+        y: 363
+        width: 9
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 312dbe36d808a1120800000000000000
+      internalID: 2385360297401242131
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_68
+      rect:
+        serializedVersion: 2
+        x: 1240
+        y: 365
+        width: 9
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 32350964b5c98fdf0800000000000000
+      internalID: -146195072049720541
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_69
+      rect:
+        serializedVersion: 2
+        x: 1246
+        y: 373
+        width: 10
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1ce8fa9055cd32b30800000000000000
+      internalID: 4261491930215452353
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_70
+      rect:
+        serializedVersion: 2
+        x: 61
+        y: 321
+        width: 26
+        height: 43
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ebbde51d2ced7e0a0800000000000000
+      internalID: -6852263379703243842
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_71
+      rect:
+        serializedVersion: 2
+        x: 68
+        y: 354
+        width: 6
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fafdb201bd372b280800000000000000
+      internalID: -9029026918218080337
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_72
+      rect:
+        serializedVersion: 2
+        x: 79
+        y: 307
+        width: 8
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4a204e5b09331faa0800000000000000
+      internalID: -6129060921254608220
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_73
+      rect:
+        serializedVersion: 2
+        x: 1200
+        y: 270
+        width: 22
+        height: 61
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d03517a755849a9f0800000000000000
+      internalID: -456754355237727475
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_74
+      rect:
+        serializedVersion: 2
+        x: 1262
+        y: 318
+        width: 11
+        height: 20
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7f02720523d139830800000000000000
+      internalID: 4076634189630742775
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_75
+      rect:
+        serializedVersion: 2
+        x: 1301
+        y: 228
+        width: 42
+        height: 91
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: af5248387847adec0800000000000000
+      internalID: -3541390031597591046
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_76
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 115
+        width: 73
+        height: 185
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 50e29ebb9f966dae0800000000000000
+      internalID: -1524914902497939963
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_77
+      rect:
+        serializedVersion: 2
+        x: 114
+        y: 288
+        width: 7
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 52b427eaebba5aa20800000000000000
+      internalID: 3073051156209093413
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_78
+      rect:
+        serializedVersion: 2
+        x: 1168
+        y: 281
+        width: 26
+        height: 31
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9f93215c2176789c0800000000000000
+      internalID: -3925055219916719623
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_79
+      rect:
+        serializedVersion: 2
+        x: 114
+        y: 269
+        width: 13
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bb27b12e5ce234440800000000000000
+      internalID: 4918826645455598267
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_80
+      rect:
+        serializedVersion: 2
+        x: 1169
+        y: 278
+        width: 11
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 64e5f1c8e0274b2b0800000000000000
+      internalID: -5569701432344486330
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_81
+      rect:
+        serializedVersion: 2
+        x: 1209
+        y: 272
+        width: 6
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 82e176edb837656c0800000000000000
+      internalID: -4155006561633755608
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_82
+      rect:
+        serializedVersion: 2
+        x: 68
+        y: 232
+        width: 6
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fc9f8d3dc1abe8fa0800000000000000
+      internalID: -5796491037403186737
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_83
+      rect:
+        serializedVersion: 2
+        x: 84
+        y: 218
+        width: 15
+        height: 43
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 16bee6de1204cd0e0800000000000000
+      internalID: -2243847999875781791
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_84
+      rect:
+        serializedVersion: 2
+        x: 95
+        y: 212
+        width: 26
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7286d5549d4e62660800000000000000
+      internalID: 7360822262806439975
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_85
+      rect:
+        serializedVersion: 2
+        x: 1272
+        y: 225
+        width: 14
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e0d335f76d7ab86e0800000000000000
+      internalID: -1834187883522343666
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_86
+      rect:
+        serializedVersion: 2
+        x: 111
+        y: 204
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 465c767bb8cd24bf0800000000000000
+      internalID: -341468129091140252
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_87
+      rect:
+        serializedVersion: 2
+        x: 1217
+        y: 15
+        width: 93
+        height: 211
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 22541d68123844970800000000000000
+      internalID: 8738253357024625954
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_88
+      rect:
+        serializedVersion: 2
+        x: 1174
+        y: 141
+        width: 14
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f49e06a92b715ccb0800000000000000
+      internalID: -4844439768305440433
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_89
+      rect:
+        serializedVersion: 2
+        x: 1152
+        y: 125
+        width: 37
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9de0c2a9aff13f8c0800000000000000
+      internalID: -3966791685594411303
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_90
+      rect:
+        serializedVersion: 2
+        x: 54
+        y: 49
+        width: 26
+        height: 61
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 295449109b1706230800000000000000
+      internalID: 3630026339070002578
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_91
+      rect:
+        serializedVersion: 2
+        x: 1164
+        y: 103
+        width: 12
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0c4b76deaf3dd5850800000000000000
+      internalID: 6367478522850030784
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_92
+      rect:
+        serializedVersion: 2
+        x: 1187
+        y: 96
+        width: 32
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ef1a5d3e82830d3f0800000000000000
+      internalID: -878140179064970754
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_93
+      rect:
+        serializedVersion: 2
+        x: 1168
+        y: 89
+        width: 15
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5aa9fd67741ac98d0800000000000000
+      internalID: -2838216336841139547
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: Elite_Battle_94
+      rect:
+        serializedVersion: 2
+        x: 1204
+        y: 91
+        width: 9
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 829e15b773e03d5d0800000000000000
+      internalID: -3039069692089997016
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      Elite_Battle_0: 4931135405679509329
+      Elite_Battle_1: 4648772115244368827
+      Elite_Battle_10: 7031621943327122924
+      Elite_Battle_11: 2918336142551258321
+      Elite_Battle_12: -8077693352028587634
+      Elite_Battle_13: 3321833712851465122
+      Elite_Battle_14: -2270176914357790199
+      Elite_Battle_15: -7630532347474635790
+      Elite_Battle_16: -7326138094476463234
+      Elite_Battle_17: 9039850583913088744
+      Elite_Battle_18: -9163172618239642300
+      Elite_Battle_19: -3597998435247064206
+      Elite_Battle_2: -2682007176628023510
+      Elite_Battle_20: 325996277432327519
+      Elite_Battle_21: -5094387865465367519
+      Elite_Battle_22: -7965122193325973584
+      Elite_Battle_23: 6891811187881891224
+      Elite_Battle_24: -6330112508415194430
+      Elite_Battle_25: -5951219431212768535
+      Elite_Battle_26: 7856701310651294329
+      Elite_Battle_27: -2951443418531543283
+      Elite_Battle_28: -7172400028378509250
+      Elite_Battle_29: -7048336607680720340
+      Elite_Battle_3: 539684969954672081
+      Elite_Battle_30: -9004849582016677275
+      Elite_Battle_31: -3789582112306490391
+      Elite_Battle_32: 850639833106652588
+      Elite_Battle_33: -640519797446768113
+      Elite_Battle_34: 4990264717036003322
+      Elite_Battle_35: -8221053837317727143
+      Elite_Battle_36: 6489451158906957804
+      Elite_Battle_37: -7711183972925189236
+      Elite_Battle_38: 7286491139314993931
+      Elite_Battle_39: 6027840426181871892
+      Elite_Battle_4: 6734600834731786484
+      Elite_Battle_40: -1050812709537303632
+      Elite_Battle_41: 2788628692597955285
+      Elite_Battle_42: 9135939680561874221
+      Elite_Battle_43: -331703402811132475
+      Elite_Battle_44: 7455718539008865662
+      Elite_Battle_45: 6920533259994853093
+      Elite_Battle_46: -7611347490949969271
+      Elite_Battle_47: 3938036480515276646
+      Elite_Battle_48: -4992480745011118572
+      Elite_Battle_49: 8688009956576475528
+      Elite_Battle_5: 1185977827027710606
+      Elite_Battle_50: -2716479778784606984
+      Elite_Battle_51: 9141065837334635615
+      Elite_Battle_52: -1717721513740960223
+      Elite_Battle_53: -2306314130072532264
+      Elite_Battle_54: 3207347104042491507
+      Elite_Battle_55: 1216964471454874340
+      Elite_Battle_56: 7598714668855820894
+      Elite_Battle_57: 1955030803803007192
+      Elite_Battle_58: -37551062060161061
+      Elite_Battle_59: 2087053867851049733
+      Elite_Battle_6: 8701660416713452533
+      Elite_Battle_60: -6095584789599214488
+      Elite_Battle_61: -6245263522349474567
+      Elite_Battle_62: -1116538180662266797
+      Elite_Battle_63: -5996676113945220764
+      Elite_Battle_64: 1353822232286913980
+      Elite_Battle_65: -8080345410461692294
+      Elite_Battle_66: -8194496764562167870
+      Elite_Battle_67: 2385360297401242131
+      Elite_Battle_68: -146195072049720541
+      Elite_Battle_69: 4261491930215452353
+      Elite_Battle_7: 3074185121063595253
+      Elite_Battle_70: -6852263379703243842
+      Elite_Battle_71: -9029026918218080337
+      Elite_Battle_72: -6129060921254608220
+      Elite_Battle_73: -456754355237727475
+      Elite_Battle_74: 4076634189630742775
+      Elite_Battle_75: -3541390031597591046
+      Elite_Battle_76: -1524914902497939963
+      Elite_Battle_77: 3073051156209093413
+      Elite_Battle_78: -3925055219916719623
+      Elite_Battle_79: 4918826645455598267
+      Elite_Battle_8: 8664911607189099670
+      Elite_Battle_80: -5569701432344486330
+      Elite_Battle_81: -4155006561633755608
+      Elite_Battle_82: -5796491037403186737
+      Elite_Battle_83: -2243847999875781791
+      Elite_Battle_84: 7360822262806439975
+      Elite_Battle_85: -1834187883522343666
+      Elite_Battle_86: -341468129091140252
+      Elite_Battle_87: 8738253357024625954
+      Elite_Battle_88: -4844439768305440433
+      Elite_Battle_89: -3966791685594411303
+      Elite_Battle_9: 7590586991262797516
+      Elite_Battle_90: 3630026339070002578
+      Elite_Battle_91: 6367478522850030784
+      Elite_Battle_92: -878140179064970754
+      Elite_Battle_93: -2838216336841139547
+      Elite_Battle_94: -3039069692089997016
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
