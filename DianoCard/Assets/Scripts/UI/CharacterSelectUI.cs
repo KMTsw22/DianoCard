@@ -32,8 +32,9 @@ public class CharacterSelectUI : MonoBehaviour
     private const float RefW = 1280f;
     private const float RefH = 720f;
 
-    // 선택 가능한 캐릭터 ID. 현재 MVP에서는 고고학자만 노출.
-    private const string SelectedCharacterId = "CH001";
+    // 선택 가능한 캐릭터 ID 목록 — 슬롯 순서대로. 나머지 슬롯은 "Coming Soon" 잠김 상태.
+    private static readonly string[] AvailableCharacterIds = new[] { "CH001", "CH002" };
+    private string _selectedCharacterId = "CH001";
 
     private readonly List<Action> _pending = new();
 
@@ -106,9 +107,9 @@ public class CharacterSelectUI : MonoBehaviour
     {
         // 테이블에서 캐릭터 정보 로드
         DataManager.Instance.Load();
-        _selectedCharacter = DataManager.Instance.GetCharacter(SelectedCharacterId);
+        _selectedCharacter = DataManager.Instance.GetCharacter(_selectedCharacterId);
         if (_selectedCharacter == null)
-            Debug.LogError($"[CharacterSelectUI] Missing character data: {SelectedCharacterId}");
+            Debug.LogError($"[CharacterSelectUI] Missing character data: {_selectedCharacterId}");
 
         // UI 요소 — CharSelect/UI/
         _cardSlotSelected  = Resources.Load<Texture2D>("CharSelect/UI/CardSlot_Selected");
@@ -367,55 +368,87 @@ public class CharacterSelectUI : MonoBehaviour
     {
         var ev = Event.current;
 
-        // 카드 0 — Selected (Archaeologist)
-        // 6초 사이클 / ±5% 펄스. 베이크 텍스처가 4배 해상도 + mipmap + trilinear 필터링
-        // → Unity가 스케일에 맞게 미p 레벨을 골라 부드럽게 샘플링.
-        // sin파에 SmoothStep을 한 번 더 입혀 호흡 같은 ease-in/out 곡선 생성.
-        Rect baseRect = CardRects[0];
-        float sinNorm = (Mathf.Sin(Time.time * (Mathf.PI * 2f / 6f)) + 1f) * 0.5f;
-        float pulse = Mathf.SmoothStep(0f, 1f, sinNorm);
-        float pulseScale = Mathf.Lerp(1.00f, 1.10f, pulse);
-
-        float w = baseRect.width  * pulseScale;
-        float h = baseRect.height * pulseScale;
-        var pulsedRect = new Rect(
-            baseRect.center.x - w * 0.5f,
-            baseRect.center.y - h * 0.5f,
-            w,
-            h);
-
-        Texture2D selectedTex = _selectedCardBaked ?? _cardSlotSelected;
-        if (selectedTex != null)
+        // 슬롯별 렌더 — AvailableCharacterIds[i]에 매핑. 선택 중이면 펄스 + 베이크 포트레이트, 아니면 플레인 선택 프레임 + 이름 라벨.
+        for (int i = 0; i < CardRects.Length; i++)
         {
-            GUI.DrawTexture(pulsedRect, selectedTex, ScaleMode.StretchToFill, alphaBlend: true);
-        }
-
-        // 카드 1~4 — Locked (실루엣과 자물쇠는 이미 텍스처에 포함되어 있음)
-        // 호버 시 살짝 커지는 효과로 클릭 가능함을 표시
-        for (int i = 1; i < 5; i++)
-        {
-            if (_cardSlotLocked != null)
+            bool isAvailable = i < AvailableCharacterIds.Length;
+            if (!isAvailable)
             {
-                DrawScalableTexture(CardRects[i], _cardSlotLocked, ScaleMode.StretchToFill);
+                if (_cardSlotLocked != null)
+                    DrawScalableTexture(CardRects[i], _cardSlotLocked, ScaleMode.StretchToFill);
+                continue;
             }
-        }
 
-        // 클릭 처리
-        // 선택된 카드(CardRects[0])는 이미 선택 상태이므로 클릭해도 아무 동작 없음.
-        // 확정은 우하단 ✓ 버튼에서만 가능.
-        // 잠긴 카드는 클릭 시 "Coming Soon" 표시.
-        if (ev.type == EventType.MouseDown && ev.button == 0)
-        {
-            for (int i = 1; i < 5; i++)
+            string slotCharId = AvailableCharacterIds[i];
+            bool isSelected = slotCharId == _selectedCharacterId;
+            Rect baseRect = CardRects[i];
+
+            if (isSelected)
             {
-                if (CardRects[i].Contains(ev.mousePosition))
+                // 선택된 슬롯: 6초 사이클 펄스 + 베이크된 프레임+초상화
+                float sinNorm = (Mathf.Sin(Time.time * (Mathf.PI * 2f / 6f)) + 1f) * 0.5f;
+                float pulse = Mathf.SmoothStep(0f, 1f, sinNorm);
+                float pulseScale = Mathf.Lerp(1.00f, 1.10f, pulse);
+                float w = baseRect.width  * pulseScale;
+                float h = baseRect.height * pulseScale;
+                var pulsedRect = new Rect(baseRect.center.x - w * 0.5f, baseRect.center.y - h * 0.5f, w, h);
+                Texture2D selectedTex = _selectedCardBaked ?? _cardSlotSelected;
+                if (selectedTex != null)
+                    GUI.DrawTexture(pulsedRect, selectedTex, ScaleMode.StretchToFill, alphaBlend: true);
+            }
+            else
+            {
+                // 비선택 사용 가능 슬롯: 프레임만 + 이름 라벨, 살짝 dim
+                var prev = GUI.color;
+                GUI.color = new Color(1f, 1f, 1f, 0.55f);
+                if (_cardSlotSelected != null)
+                    DrawScalableTexture(baseRect, _cardSlotSelected, ScaleMode.StretchToFill);
+                GUI.color = prev;
+
+                var ch = DataManager.Instance.GetCharacter(slotCharId);
+                if (ch != null)
                 {
-                    ev.Use();
-                    _comingSoonTimer = 1.5f;
-                    return;
+                    var labelRect = new Rect(baseRect.x, baseRect.center.y - 12f, baseRect.width, 24f);
+                    GUI.Label(labelRect, ch.nameKr, _cardNameStyle);
                 }
             }
         }
+
+        // 클릭 처리: 사용 가능 슬롯 → 선택 변경, 잠긴 슬롯 → Coming Soon 표시.
+        if (ev.type == EventType.MouseDown && ev.button == 0)
+        {
+            for (int i = 0; i < CardRects.Length; i++)
+            {
+                if (!CardRects[i].Contains(ev.mousePosition)) continue;
+                ev.Use();
+                if (i >= AvailableCharacterIds.Length)
+                {
+                    _comingSoonTimer = 1.5f;
+                    return;
+                }
+                string slotCharId = AvailableCharacterIds[i];
+                if (slotCharId != _selectedCharacterId)
+                    SwitchSelection(slotCharId);
+                return;
+            }
+        }
+    }
+
+    /// <summary>선택 캐릭터 변경 — 데이터 + 포트레이트 재로드 + 베이크 재빌드.</summary>
+    private void SwitchSelection(string characterId)
+    {
+        _selectedCharacterId = characterId;
+        _selectedCharacter = DataManager.Instance.GetCharacter(characterId);
+        string portraitName = _selectedCharacter != null ? _selectedCharacter.cardPortrait : null;
+        if (!string.IsNullOrEmpty(portraitName))
+            _archaeologistCardPortrait = Resources.Load<Texture2D>("Character_select/" + portraitName);
+        // 기존 베이크 파기 → 다음 OnGUI 사이클에서 새 초상화로 다시 구움.
+        if (_selectedCardBaked != null)
+        {
+            Destroy(_selectedCardBaked);
+            _selectedCardBaked = null;
+        }
+        BuildSelectedCardComposite();
     }
 
     // =========================================================
@@ -448,7 +481,8 @@ public class CharacterSelectUI : MonoBehaviour
         if (ConfirmButtonRect.Contains(ev.mousePosition))
         {
             ev.Use();
-            _pending.Add(() => gsm.ConfirmCharacterSelection());
+            string chosen = _selectedCharacterId;
+            _pending.Add(() => gsm.ConfirmCharacterSelection(chosen));
         }
     }
 

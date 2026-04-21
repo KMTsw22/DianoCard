@@ -1,3 +1,4 @@
+using DianoCard.Battle;
 using DianoCard.Game;
 using UnityEngine;
 
@@ -5,7 +6,7 @@ using UnityEngine;
 public class CheatUI : MonoBehaviour
 {
     private bool _open;
-    private Rect _windowRect = new(20f, 20f, 220f, 340f);
+    private Rect _windowRect = new(20f, 20f, 260f, 620f);
     private GUIStyle _btnStyle;
     private GUIStyle _titleStyle;
     private GUIStyle _stateStyle;
@@ -84,6 +85,45 @@ public class CheatUI : MonoBehaviour
         if (GUILayout.Button("Village", _btnStyle))
             gsm.Cheat_EnterVillage();
 
+        GUILayout.Space(8f);
+        GUILayout.Label("— 훈련장 입장 —", _stateStyle);
+
+        if (GUILayout.Button("E901 이끼 수호석상 (보스)", _btnStyle))
+            gsm.Cheat_StartBossBattle();
+
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("E001", _btnStyle)) gsm.Cheat_StartBattleWith("E001");
+        if (GUILayout.Button("E008", _btnStyle)) gsm.Cheat_StartBattleWith("E008");
+        if (GUILayout.Button("E101", _btnStyle)) gsm.Cheat_StartBattleWith("E101");
+        GUILayout.EndHorizontal();
+
+        // ===== 전투 중에만 보이는 제어 =====
+        var battle = GetActiveBattle();
+        if (gsm.State == GameState.Battle && battle != null && battle.state != null)
+        {
+            GUILayout.Space(10f);
+            GUILayout.Label("— 전투 중 제어 —", _stateStyle);
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("전체 즉사", _btnStyle)) battle.Cheat_KillAllEnemies();
+            if (GUILayout.Button("쫄류만 즉사", _btnStyle)) battle.Cheat_ClearAddsOnly();
+            GUILayout.EndHorizontal();
+
+            GUILayout.Label("보스 HP 설정", _stateStyle);
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("70%", _btnStyle)) battle.Cheat_SetPrimaryHpRatio(0.70f);
+            if (GUILayout.Button("50%", _btnStyle)) battle.Cheat_SetPrimaryHpRatio(0.50f);
+            if (GUILayout.Button("30%", _btnStyle)) battle.Cheat_SetPrimaryHpRatio(0.30f);
+            if (GUILayout.Button("5%",  _btnStyle)) battle.Cheat_SetPrimaryHpRatio(0.05f);
+            GUILayout.EndHorizontal();
+
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("풀 회복", _btnStyle)) battle.Cheat_FullHeal();
+            string invLabel = battle.state.player.cheatInvincible ? "무적 OFF" : "무적 ON";
+            if (GUILayout.Button(invLabel, _btnStyle)) battle.Cheat_ToggleInvincible();
+            GUILayout.EndHorizontal();
+        }
+
         GUILayout.Space(12f);
         GUILayout.Label("— Gold —", _stateStyle);
         GUILayout.BeginHorizontal();
@@ -94,5 +134,12 @@ public class CheatUI : MonoBehaviour
         GUILayout.EndHorizontal();
 
         GUI.DragWindow();
+    }
+
+    /// <summary>현재 씬에 떠있는 BattleUI에서 BattleManager 인스턴스를 획득.</summary>
+    private DianoCard.Battle.BattleManager GetActiveBattle()
+    {
+        var ui = Object.FindFirstObjectByType<BattleUI>();
+        return ui != null ? ui.Battle : null;
     }
 }

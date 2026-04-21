@@ -25,12 +25,26 @@ public class BattleUI : MonoBehaviour
     private const float RefH = 720f;
 
     private BattleManager _battle;
+    /// <summary>치트/훈련장 UI에서 현재 전투의 매니저에 접근하기 위한 퍼블릭 getter.</summary>
+    public BattleManager Battle => _battle;
     private bool _battleInitialized;
     private bool _battleEndQueued;
     private float _battleEndDelay;
 
     // 타겟팅 모드: 공격 카드 클릭 후 적 클릭 대기 중 (-1 = 비활성)
     private int _targetingCardIndex = -1;
+    // 소환수 공격 타겟팅: 공룡 클릭 후 적 클릭 대기 중 (-1 = 비활성).
+    // _targetingCardIndex와 상호 배타적 — 하나가 활성이면 다른 하나는 자동 해제.
+    private int _targetingSummonIndex = -1;
+    // 공룡 교체 모드: 필드 꽉 찬 상태에서 SUMMON 카드 클릭 후 교체할 필드 공룡 클릭 대기 중 (-1 = 비활성).
+    private int _swapFromCardIndex = -1;
+
+    // 패시브 호버 툴팁 — 프레임마다 리셋. 해당 프레임에 마우스가 칩 위에 있으면 채워진다.
+    private string _hoveredPassiveTitle;
+    private string _hoveredPassiveBody;
+    private GUIStyle _passiveChipStyle;
+    private GUIStyle _tooltipTitleStyle;
+    private GUIStyle _tooltipBodyStyle;
 
     // 손패 숨김 토글 — 공룡/전투 장면이 카드에 가려질 때 카드를 화면 아래로 슬라이드해서 살짝만 보이게.
     // _handHidden은 목표 상태, _handHideProgress는 선형 진행도(0=표시, 1=숨김 상태),
@@ -428,6 +442,8 @@ public class BattleUI : MonoBehaviour
                 _hpBarDisplayedFrac.Clear();
                 _floaters.Clear();
                 _targetingCardIndex = -1;
+                _targetingSummonIndex = -1;
+                _swapFromCardIndex = -1;
                 _endTurnAnimating = false;
                 _attackingUnit = null;
                 _attackProgress = 0;
@@ -570,6 +586,37 @@ public class BattleUI : MonoBehaviour
             : null;
         _playerView.SetAttackFrames(null, windupSprite, strikeSprite, strikeExtendedSprite);
 
+        // N프레임 공격 시퀀스 로드 — move-board로 뽑은 CH001_attack_fXX.png 가 있으면 이걸 우선 사용.
+        // 최대 8프레임까지 탐색, 끊기는 인덱스에서 중단.
+        var attackSeq = new System.Collections.Generic.List<Sprite>();
+        for (int i = 1; i <= 8; i++)
+        {
+            var frameTex = Resources.Load<Texture2D>(
+                $"Character_infield/Archaeologist/CH001_attack_f{i:D2}");
+            if (frameTex == null) break;
+            attackSeq.Add(TexToSprite(frameTex));
+        }
+        if (attackSeq.Count >= 2)
+        {
+            _playerView.SetAttackSequence(attackSeq.ToArray());
+            Debug.Log($"[BattleUI] Archaeologist N-frame attack loaded: {attackSeq.Count} frames");
+        }
+
+        // 공격 FX 스프라이트 로드 — FX/Attack/slash_gold.png (기본) 또는 캐릭터별 전용 이름.
+        // 여러 후보를 순서대로 시도, 첫 번째 발견된 것을 사용.
+        Texture2D fxTex = null;
+        foreach (var candidate in new[] {
+            "FX/Attack/CH001_fx",        // 캐릭터 전용 (있으면 우선)
+            "FX/Attack/slash_gold",       // 범용 금빛 슬래시 (유물 마도사 기본)
+            "FX/Attack/impact_punch",     // 범용 임팩트
+        })
+        {
+            fxTex = Resources.Load<Texture2D>(candidate);
+            if (fxTex != null) { Debug.Log($"[BattleUI] Player attack FX loaded: {candidate}"); break; }
+        }
+        if (fxTex != null) _playerAttackFxSprite = TexToSprite(fxTex);
+        else Debug.LogWarning("[BattleUI] Player attack FX not found. Place PNG at Resources/FX/Attack/slash_gold.png (or CH001_fx.png).");
+
         // SummonCast는 idle보다 캐릭터가 가로로 길게 뻗는 포즈라 pivot을 살짝 왼쪽으로 잡아
         // 베이스 위치에서 코가 밀려 보이지 않게 함.
         if (summonCastTex != null)
@@ -612,17 +659,77 @@ public class BattleUI : MonoBehaviour
     {
         foreach (var enemy in DataManager.Instance.Enemies.Values)
         {
-            if (string.IsNullOrEmpty(enemy.image)) continue;
-
-            string filename = Path.GetFileNameWithoutExtension(enemy.image);
-            var tex = Resources.Load<Texture2D>("Monsters/" + filename);
-            if (tex != null)
+            Texture2D tex = null;
+            if (!string.IsNullOrEmpty(enemy.image))
             {
-                _enemySprites[enemy.id] = tex;
-                _enemyWorldSprites[enemy.id] = TexToSprite(tex);
+                string filename = Path.GetFileNameWithoutExtension(enemy.image);
+                tex = Resources.Load<Texture2D>("Monsters/" + filename);
+                if (tex == null)
+                    Debug.LogWarning($"[BattleUI] Enemy sprite not found: Monsters/{filename} — placeholder 사용");
             }
-            else Debug.LogWarning($"[BattleUI] Enemy sprite not found: Monsters/{filename}");
+
+            // 아트가 없거나 로드 실패 → 카드형 placeholder 생성
+            if (tex == null) tex = BuildEnemyPlaceholderTex(enemy);
+
+            _enemySprites[enemy.id] = tex;
+            _enemyWorldSprites[enemy.id] = TexToSprite(tex);
         }
+    }
+
+    /// <summary>
+    /// 아트 없는 적용 임시 placeholder. 둥근 마름모형 실루엣 + 반투명 외곽으로 실제 적 옆에 있어도 덜 두드러짐.
+    /// 폰트는 못 굽기 때문에 IMGUI 라벨로 별도. 여기는 실루엣 컬러 도형만.
+    /// </summary>
+    private Texture2D BuildEnemyPlaceholderTex(EnemyData enemy)
+    {
+        const int W = 192, H = 192;
+        var tex = new Texture2D(W, H, TextureFormat.RGBA32, false);
+        tex.filterMode = FilterMode.Bilinear;
+
+        Color body = enemy.enemyType switch
+        {
+            EnemyType.BOSS  => new Color(0.65f, 0.20f, 0.22f, 1f),
+            EnemyType.ELITE => new Color(0.45f, 0.30f, 0.65f, 1f),
+            _               => new Color(0.32f, 0.50f, 0.35f, 1f),
+        };
+        Color outline = new Color(body.r * 0.4f, body.g * 0.4f, body.b * 0.4f, 1f);
+
+        var pixels = new Color[W * H];
+        Vector2 center = new Vector2(W / 2f, H / 2f);
+        // 둥근 모서리 사각형 마스크 — radius로 4구석 잘라냄, 외곽 8px는 outline
+        float radius = W * 0.35f;
+        for (int y = 0; y < H; y++)
+        {
+            for (int x = 0; x < W; x++)
+            {
+                int idx = y * W + x;
+                float dx = Mathf.Max(0f, Mathf.Abs(x - center.x) - (W / 2f - radius));
+                float dy = Mathf.Max(0f, Mathf.Abs(y - center.y) - (H / 2f - radius));
+                float dist = Mathf.Sqrt(dx * dx + dy * dy);
+
+                if (dist > radius + 1f)
+                {
+                    pixels[idx] = new Color(0, 0, 0, 0); // 투명
+                }
+                else if (dist > radius - 4f)
+                {
+                    // 외곽 라인 (안티에일리어싱 흉내)
+                    float a = Mathf.Clamp01(radius + 1f - dist);
+                    pixels[idx] = new Color(outline.r, outline.g, outline.b, a);
+                }
+                else
+                {
+                    // 본체 — 약간 그라데이션
+                    float t = (y / (float)H);
+                    pixels[idx] = Color.Lerp(body, body * 0.7f, t);
+                }
+            }
+        }
+
+        tex.SetPixels(pixels);
+        tex.Apply();
+        tex.name = "EnemyPlaceholder_" + enemy.id;
+        return tex;
     }
 
     /// <summary>
@@ -632,7 +739,15 @@ public class BattleUI : MonoBehaviour
     private void EnsureEnemyView(EnemyInstance e)
     {
         if (e == null || _enemyViews.ContainsKey(e)) return;
-        if (!_enemyWorldSprites.TryGetValue(e.data.id, out var sprite)) return;
+
+        // 런타임 소환된 쫄(EnemyData가 DataManager에 없음) 등은 캐시에 없을 수 있음 — placeholder 생성
+        if (!_enemyWorldSprites.TryGetValue(e.data.id, out var sprite))
+        {
+            var tex = BuildEnemyPlaceholderTex(e.data);
+            sprite = TexToSprite(tex);
+            _enemySprites[e.data.id] = tex;
+            _enemyWorldSprites[e.data.id] = sprite;
+        }
 
         var go = new GameObject($"EnemyView_{e.data.id}");
         go.transform.SetParent(transform, worldPositionStays: false);
@@ -694,10 +809,12 @@ public class BattleUI : MonoBehaviour
         _pending.Clear();
         _battleEndQueued = false;
         _targetingCardIndex = -1;
+        _targetingSummonIndex = -1;
+        _swapFromCardIndex = -1;
 
         var chapter = DataManager.Instance.GetChapter(run.chapterId);
         int mana = chapter?.mana ?? 3;
-        int maxFieldSize = chapter?.maxFieldSize ?? 5;
+        int maxFieldSize = chapter?.maxFieldSize ?? 2;
 
         // 이전 전투에서 남은 애니메이션 상태를 정리
         EndDiscardFlyAnimation();
@@ -875,6 +992,81 @@ public class BattleUI : MonoBehaviour
         for (int i = 0; i < _spawnedBgFx.Count; i++)
             if (_spawnedBgFx[i] != null) Destroy(_spawnedBgFx[i]);
         _spawnedBgFx.Clear();
+    }
+
+    // =========================================================
+    // 공격 이펙트 FX — peak 프레임 타이밍에 타겟 위치에 오버레이 스폰
+    // =========================================================
+
+    private Sprite _playerAttackFxSprite;
+
+    /// <summary>
+    /// 공격 이펙트 스프라이트를 타겟 world 위치에 잠깐 스폰.
+    /// scale-up(0→1) → hold → fade-out 으로 자연스럽게 사라짐.
+    /// </summary>
+    private void SpawnAttackFx(Sprite sprite, Vector3 targetWorld, float peakDelay, float lifetime = 0.35f, float size = 1.6f)
+    {
+        if (sprite == null) return;
+        StartCoroutine(AttackFxRoutine(sprite, targetWorld, peakDelay, lifetime, size));
+    }
+
+    private IEnumerator AttackFxRoutine(Sprite sprite, Vector3 targetWorld, float peakDelay, float lifetime, float size)
+    {
+        if (peakDelay > 0f) yield return new WaitForSeconds(peakDelay);
+
+        var go = new GameObject("AttackFx");
+        go.transform.SetParent(transform, worldPositionStays: false);
+        go.transform.position = targetWorld;
+        var sr = go.AddComponent<SpriteRenderer>();
+        sr.sprite = sprite;
+        sr.sortingOrder = 120; // 캐릭터(50)보다 위에
+
+        // 스프라이트 월드 높이를 size에 맞춤
+        float baseH = sprite.bounds.size.y;
+        if (baseH <= 0.01f) baseH = 1f;
+        float scaleVal = size / baseH;
+
+        // 0~20%: scale-up + 약한 회전, 20~65%: 유지, 65~100%: 페이드/축소 아웃
+        float t = 0f;
+        float rot0 = UnityEngine.Random.Range(-15f, 15f);
+        while (t < lifetime)
+        {
+            t += Time.deltaTime;
+            float p = Mathf.Clamp01(t / lifetime);
+            float s, a;
+            if (p < 0.20f)
+            {
+                float k = p / 0.20f;
+                s = Mathf.Lerp(0.6f, 1.1f, k);
+                a = Mathf.Lerp(0f, 1f, k);
+            }
+            else if (p < 0.65f)
+            {
+                s = Mathf.Lerp(1.1f, 1.0f, (p - 0.20f) / 0.45f);
+                a = 1f;
+            }
+            else
+            {
+                float k = (p - 0.65f) / 0.35f;
+                s = Mathf.Lerp(1.0f, 1.15f, k);
+                a = Mathf.Lerp(1f, 0f, k);
+            }
+            go.transform.localScale = new Vector3(scaleVal * s, scaleVal * s, 1f);
+            go.transform.rotation = Quaternion.Euler(0, 0, rot0 * (1f - p));
+            var c = sr.color; c.a = a; sr.color = c;
+            yield return null;
+        }
+        Destroy(go);
+    }
+
+    /// <summary>플레이어 공격 시 ComputeAttackDir + 타겟 world 좌표 기반으로 FX 예약.</summary>
+    private void TriggerPlayerAttackFx(int preferredEnemyIdx, float attackDuration = 0.75f)
+    {
+        if (_playerAttackFxSprite == null) return;
+        var targetWorld = GetAttackTargetWorld(preferredEnemyIdx);
+        if (targetWorld == Vector3.zero) return;
+        // 공격 peak는 sequence routine에서 60% 지점. 그 타이밍에 FX 스폰.
+        SpawnAttackFx(_playerAttackFxSprite, targetWorld, peakDelay: attackDuration * 0.55f, lifetime: 0.35f, size: 1.8f);
     }
 
     // 공격 방향 (플레이어 → 타겟 적). 기본은 오른쪽(+x). 적 위치를 world로 변환해 벡터 계산.
@@ -1057,18 +1249,24 @@ public class BattleUI : MonoBehaviour
         // GUI.depth: 낮을수록 앞. BattleUI는 뒤에 깔리고 RewardUI(=0)가 위로 올라오도록
         GUI.depth = 10;
 
+        // 매 프레임 호버 툴팁 상태 리셋 — 이번 프레임에 패시브 칩 위에 마우스 있으면 채워짐.
+        _hoveredPassiveTitle = null;
+        _hoveredPassiveBody = null;
+
         EnsureStyles();
 
         bool active = gsm.State == GameState.Battle;
 
         if (active)
         {
-            // 우클릭으로 타겟팅 취소
-            if (_targetingCardIndex >= 0
+            // 우클릭으로 타겟팅 취소 (카드/공룡/교체 모두)
+            if ((_targetingCardIndex >= 0 || _targetingSummonIndex >= 0 || _swapFromCardIndex >= 0)
                 && Event.current.type == EventType.MouseDown
                 && Event.current.button == 1)
             {
                 _targetingCardIndex = -1;
+                _targetingSummonIndex = -1;
+                _swapFromCardIndex = -1;
                 Event.current.Use();
             }
 
@@ -1077,6 +1275,20 @@ public class BattleUI : MonoBehaviour
             {
                 _targetingCardIndex = -1;
             }
+            if (_swapFromCardIndex >= _battle.state.hand.Count)
+            {
+                _swapFromCardIndex = -1;
+            }
+            // 필드에 없는 공룡을 가리키고 있으면 리셋
+            if (_targetingSummonIndex >= _battle.state.field.Count
+                || (_targetingSummonIndex >= 0
+                    && _targetingSummonIndex < _battle.state.field.Count
+                    && !_battle.state.field[_targetingSummonIndex].CanAttack))
+            {
+                _targetingSummonIndex = -1;
+            }
+            // 카드 타겟팅과 공룡 타겟팅은 상호 배타 — 카드 선택되면 공룡 해제
+            if (_targetingCardIndex >= 0 || _swapFromCardIndex >= 0) _targetingSummonIndex = -1;
         }
 
         // 1) 배경은 스크린 원본 좌표로 꽉 채움
@@ -1117,6 +1329,127 @@ public class BattleUI : MonoBehaviour
 
         // 덱 뷰어 오버레이 — 모든 UI 위에 그려짐.
         DrawDeckViewerOverlay(gsm);
+
+        // 패시브 호버 툴팁 — 최상단에 그려야 다른 UI 위로 나옴.
+        DrawPassiveTooltip();
+    }
+
+    /// <summary>적의 패시브 리스트를 HP 바 아래 한 줄 칩으로 그리고, 호버 시 툴팁 정보 세팅.</summary>
+    private void DrawEnemyPassives(Rect rowRect, EnemyInstance e)
+    {
+        if (e?.data?.passiveIds == null || e.data.passiveIds.Count == 0) return;
+
+        EnsurePassiveStyles();
+
+        const float chipH = 20f;
+        const float chipPadX = 8f;
+        const float chipGap = 4f;
+
+        // 각 칩 가로폭을 내용에 맞춰 계산하고 왼쪽부터 배치. 공간 넘치면 잘림.
+        float x = rowRect.x;
+        float y = rowRect.y;
+
+        foreach (var pid in e.data.passiveIds)
+        {
+            var p = DianoCard.Data.DataManager.Instance.GetPassive(pid);
+            string label = p != null ? p.nameKr : pid;
+            var content = new GUIContent(label);
+            var size = _passiveChipStyle.CalcSize(content);
+            float chipW = size.x + chipPadX * 2f;
+            if (x + chipW > rowRect.xMax) break; // 넘치면 잘라냄
+
+            var chipRect = new Rect(x, y, chipW, chipH);
+
+            // 배경 — 둥근 느낌을 주는 반투명 칩. 호버 시 밝아짐.
+            var ev = Event.current;
+            bool hovered = ev != null && chipRect.Contains(ev.mousePosition);
+
+            Color bg = hovered
+                ? new Color(0.45f, 0.12f, 0.16f, 0.96f)
+                : new Color(0.20f, 0.06f, 0.08f, 0.88f);
+            Color border = new Color(1f, 0.8f, 0.4f, hovered ? 1f : 0.85f);
+
+            FillRect(chipRect, bg);
+            DrawBorder(chipRect, 1, border);
+
+            // 라벨
+            var labelRect = new Rect(chipRect.x + chipPadX, chipRect.y, size.x, chipH);
+            GUI.Label(labelRect, content, _passiveChipStyle);
+
+            if (hovered && p != null)
+            {
+                _hoveredPassiveTitle = p.nameKr;
+                _hoveredPassiveBody = p.description;
+            }
+
+            x += chipW + chipGap;
+        }
+    }
+
+    /// <summary>호버 중인 패시브 툴팁 — 마우스 근처에 둥근 패널로. ShopUI 툴팁과 같은 톤.</summary>
+    private void DrawPassiveTooltip()
+    {
+        if (string.IsNullOrEmpty(_hoveredPassiveTitle)) return;
+        EnsurePassiveStyles();
+
+        const float tw = 260f;
+        string body = _hoveredPassiveBody ?? "";
+        var titleSize = _tooltipTitleStyle.CalcSize(new GUIContent(_hoveredPassiveTitle));
+        float bodyH = string.IsNullOrEmpty(body) ? 0f : _tooltipBodyStyle.CalcHeight(new GUIContent(body), tw - 24f);
+        float th = 10f + titleSize.y + 6f + bodyH + 10f;
+
+        var mouse = Event.current.mousePosition;
+        float tx = mouse.x + 18f;
+        float ty = mouse.y + 18f;
+        if (tx + tw > RefW) tx = mouse.x - tw - 12f;
+        if (ty + th > RefH) ty = RefH - th - 6f;
+
+        var outer = new Rect(tx, ty, tw, th);
+        FillRect(outer, new Color(1f, 0.8f, 0.4f, 1f));
+        var inner = new Rect(outer.x + 1, outer.y + 1, outer.width - 2, outer.height - 2);
+        FillRect(inner, new Color(0.08f, 0.05f, 0.08f, 0.96f));
+
+        var titleRect = new Rect(tx + 12f, ty + 8f, tw - 24f, titleSize.y);
+        GUI.Label(titleRect, _hoveredPassiveTitle, _tooltipTitleStyle);
+
+        if (!string.IsNullOrEmpty(body))
+        {
+            var bodyRect = new Rect(tx + 12f, titleRect.yMax + 4f, tw - 24f, bodyH);
+            GUI.Label(bodyRect, body, _tooltipBodyStyle);
+        }
+    }
+
+    private void EnsurePassiveStyles()
+    {
+        if (_passiveChipStyle == null)
+        {
+            _passiveChipStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 11,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft,
+                normal = { textColor = new Color(1f, 0.88f, 0.6f) },
+            };
+        }
+        if (_tooltipTitleStyle == null)
+        {
+            _tooltipTitleStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 14,
+                fontStyle = FontStyle.Bold,
+                wordWrap = true,
+                normal = { textColor = new Color(1f, 0.88f, 0.5f) },
+            };
+        }
+        if (_tooltipBodyStyle == null)
+        {
+            _tooltipBodyStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 12,
+                wordWrap = true,
+                normal = { textColor = new Color(0.9f, 0.9f, 0.9f) },
+            };
+        }
     }
 
     private void DrawTargetingHint(BattleState state)
@@ -1373,9 +1706,21 @@ public class BattleUI : MonoBehaviour
 
     private static bool CardNeedsTarget(CardData c)
     {
+        return CardNeedsEnemyTarget(c) || CardNeedsAllyTarget(c);
+    }
+
+    private static bool CardNeedsEnemyTarget(CardData c)
+    {
         return c.cardType == CardType.MAGIC
             && c.subType == CardSubType.ATTACK
             && c.target == TargetType.ENEMY;
+    }
+
+    // ALLY 단일 타겟 카드 — 수호 마법(MAGIC/DEFENSE + ALLY)
+    private static bool CardNeedsAllyTarget(CardData c)
+    {
+        if (c.target != TargetType.ALLY) return false;
+        return c.cardType == CardType.MAGIC && c.subType == CardSubType.DEFENSE;
     }
 
     // 플레이어가 공격 모션(채찍 lunge)을 취해야 하는 카드인지 여부.
@@ -1466,7 +1811,7 @@ public class BattleUI : MonoBehaviour
         for (int i = state.field.Count - 1; i >= 0; i--)
         {
             var s = state.field[i];
-            if (_summonDisplayPositions.TryGetValue(s, out var pos)) DrawSummon(s, pos);
+            if (_summonDisplayPositions.TryGetValue(s, out var pos)) DrawSummon(s, i, pos);
         }
 
         for (int i = 0; i < state.enemies.Count; i++)
@@ -1510,6 +1855,16 @@ public class BattleUI : MonoBehaviour
                 // 방패 뱃지를 HP 바 왼쪽 끝에 살짝 겹치게 — 머리 위 대신 인라인
                 DrawBlockBadge(new Vector2(barRect.x, barRect.center.y), p.block, 34f);
             }
+
+            // 디버프 표시 (rough — HP 바 우측 끝)
+            if (p.poisonStacks > 0 || p.weakTurns > 0)
+            {
+                var sb = new System.Text.StringBuilder();
+                if (p.poisonStacks > 0) sb.Append($"☠{p.poisonStacks} ");
+                if (p.weakTurns > 0) sb.Append($"↓{p.weakTurns}T");
+                GUI.Label(new Rect(barRect.xMax - 80, barRect.yMax + 2, 80, 18),
+                          sb.ToString().Trim(), _centerStyle);
+            }
         }
         else
         {
@@ -1537,6 +1892,7 @@ public class BattleUI : MonoBehaviour
         if (e.intentType == EnemyIntentType.ATTACK)
         {
             DrawAttackIconBadge(center, e.intentValue, -45f, boosted: false);
+            DrawTargetHint(center, e);
             return;
         }
 
@@ -1549,6 +1905,73 @@ public class BattleUI : MonoBehaviour
         // 폴백: 텍스트 라벨 (BUFF 또는 아이콘 미로드)
         GUI.Label(new Rect(center.x - 80f, center.y - 12f, 160f, 24f),
                   $"▲ {e.IntentLabel}", _intentStyle);
+        // 카운트다운 공격·광역·강탈 등에도 타겟 힌트
+        DrawTargetHint(center, e);
+    }
+
+    /// <summary>공격 인텐트 아래에 "→ 공룡 / → 플레이어 / → 전체" 타겟 힌트 표시. 반투명 배경 박스로 가독성 확보.</summary>
+    private void DrawTargetHint(Vector2 center, EnemyInstance e)
+    {
+        if (_battle?.state == null) return;
+        string hint = GetTargetHint(e);
+        if (string.IsNullOrEmpty(hint)) return;
+
+        // 텍스트 크기에 맞춰 배경 박스 동적 크기 결정.
+        var content = new GUIContent(hint);
+        var textSize = _intentStyle.CalcSize(content);
+        float padX = 6f;
+        float padY = 2f;
+        float boxW = Mathf.Max(80f, textSize.x + padX * 2);
+        float boxH = textSize.y + padY * 2;
+        // 아이콘 아래에 붙임 (center.y + 18). 스프라이트 상단에 살짝 겹치나 배경 박스로 가독성 확보.
+        var boxRect = new Rect(center.x - boxW * 0.5f, center.y + 18f, boxW, boxH);
+
+        // 반투명 검정 배경
+        FillRect(boxRect, new Color(0f, 0f, 0f, 0.72f));
+        DrawBorder(boxRect, 1, new Color(0f, 0f, 0f, 0.9f));
+
+        // 텍스트 (밝은 노랑)
+        var labelRect = new Rect(boxRect.x, boxRect.y + padY, boxRect.width, textSize.y);
+        var prev = _intentStyle.normal.textColor;
+        _intentStyle.normal.textColor = new Color(1f, 0.88f, 0.5f);
+        GUI.Label(labelRect, hint, _intentStyle);
+        _intentStyle.normal.textColor = prev;
+    }
+
+    private string GetTargetHint(EnemyInstance e)
+    {
+        bool hasField = _battle.state.field.Count > 0;
+
+        switch (e.intentAction)
+        {
+            // 단일 대상 공격 — RollIntent 시점에 확정된 intentTargetDino 그대로 표시.
+            case DianoCard.Data.EnemyAction.ATTACK:
+            case DianoCard.Data.EnemyAction.MULTI_ATTACK:
+            case DianoCard.Data.EnemyAction.COUNTDOWN_ATTACK:
+                if (e.intentTargetDino != null && !e.intentTargetDino.IsDead)
+                    return $"→ {e.intentTargetDino.data.nameKr}";
+                return "→ 플레이어";
+
+            // 광역: 플레이어 + 필드 전체
+            case DianoCard.Data.EnemyAction.COUNTDOWN_AOE:
+                return "→ 전체";
+
+            // 공룡 특정 겨냥
+            case DianoCard.Data.EnemyAction.STEAL_SUMMON:
+            case DianoCard.Data.EnemyAction.SILENCE:
+                return hasField ? "→ 공룡" : "→ (공룡 없음)";
+
+            // 플레이어 직접 디버프
+            case DianoCard.Data.EnemyAction.POISON:
+            case DianoCard.Data.EnemyAction.WEAK:
+            case DianoCard.Data.EnemyAction.DRAIN:
+            case DianoCard.Data.EnemyAction.VULNERABLE:
+            case DianoCard.Data.EnemyAction.CLOG_DECK:
+                return "→ 플레이어";
+
+            default:
+                return null; // DEFEND/BUFF_SELF/SUMMON/REFILL_MOSS/ARMOR_UP/IDLE 등은 자기 대상
+        }
     }
 
     // 공격 아이콘(검) + 데미지 숫자 뱃지. 적은 -45°, 아군은 +45°. boosted면 숫자를 강조 색으로.
@@ -1675,7 +2098,7 @@ public class BattleUI : MonoBehaviour
         GUI.color = prevColor;
     }
 
-    private void DrawSummon(SummonInstance s, Vector2 center)
+    private void DrawSummon(SummonInstance s, int summonIndex, Vector2 center)
     {
         // Lunge 오프셋: 공격 중인 소환수는 오른쪽으로 sin 곡선 이동
         if (ReferenceEquals(_attackingUnit, s))
@@ -1697,8 +2120,13 @@ public class BattleUI : MonoBehaviour
 
         // Reward 상태면 공룡도 world-space overlay와 같은 톤으로 어둡게 tint
         bool inReward = GameStateManager.Instance != null && GameStateManager.Instance.State == GameState.Reward;
+        // 공격 불가 상태(이미 공격 / 침묵)는 어둡게, 이번 턴 선택된 공룡은 살짝 밝게.
+        bool selected = _targetingSummonIndex == summonIndex;
+        bool dimmed = !s.CanAttack && !inReward;
         Color prevGuiColor = GUI.color;
         if (inReward) GUI.color = new Color(0.6f, 0.6f, 0.6f, 1f);
+        else if (dimmed) GUI.color = new Color(0.55f, 0.55f, 0.55f, 1f);
+        else if (selected) GUI.color = new Color(1.12f, 1.08f, 0.9f, 1f);
 
         if (_fieldDinoSprites.TryGetValue(s.data.id, out var tex))
         {
@@ -1714,14 +2142,120 @@ public class BattleUI : MonoBehaviour
                       s.data.nameKr, _centerStyle);
         }
 
-        if (inReward) GUI.color = prevGuiColor;
+        GUI.color = prevGuiColor;
 
         // HP 바 — 적과 동일 스타일, 스프라이트 발 아래로 약간 떨어뜨림
-        DrawHpBar(new Rect(rect.x + 6f, rect.y + rect.height + 6f, rect.width - 12f, 14f),
-                  s.hp, s.data.hp, new Color(0.85f, 0.2f, 0.2f));
+        var summonHpRect = new Rect(rect.x + 6f, rect.y + rect.height + 6f, rect.width - 12f, 14f);
+        DrawHpBar(summonHpRect, s.hp, s.maxHp, new Color(0.85f, 0.2f, 0.2f));
+
+        // 방어도 뱃지 — HP 바 왼쪽에 겹치게 (플레이어와 동일 스타일)
+        if (s.block > 0)
+        {
+            DrawBlockBadge(new Vector2(summonHpRect.x, summonHpRect.center.y), s.block, 30f, _iconShieldGreen);
+        }
+
+        // 스택 인디케이터 — 다음 합성/진화까지 몇 장 더 필요한지 안내.
+        // 육식: 진화 테이블 참조로 "합성까지 N장". 초식/최종체: 단순 누적 스택 표시.
+        var nextEvo = DataManager.Instance.GetEvolution(s.data.id);
+        string stackText = null;
+        if (nextEvo != null)
+        {
+            int remaining = Mathf.Max(0, nextEvo.stacksRequired - s.stacks);
+            if (remaining > 0) stackText = $"합성까지 {remaining}장";
+        }
+        else if (s.stacks > 0)
+        {
+            bool isMaxCarn = s.data.subType == CardSubType.CARNIVORE;
+            stackText = isMaxCarn ? $"MAX · 스택 {s.stacks}" : $"스택 {s.stacks}";
+        }
+        if (!string.IsNullOrEmpty(stackText))
+        {
+            var stackRect = new Rect(rect.x, summonHpRect.yMax + 3f, rect.width, 16f);
+            var prev = _centerStyle.normal.textColor;
+            _centerStyle.normal.textColor = new Color(0f, 0f, 0f, 0.8f);
+            GUI.Label(new Rect(stackRect.x + 1, stackRect.y + 1, stackRect.width, stackRect.height), stackText, _centerStyle);
+            _centerStyle.normal.textColor = new Color(1f, 0.88f, 0.55f);
+            GUI.Label(stackRect, stackText, _centerStyle);
+            _centerStyle.normal.textColor = prev;
+        }
 
         // ATK 뱃지 — 머리 위 (적 intent와 미러 대칭). 아군은 검을 +45°로 회전.
         DrawAttackIconBadge(new Vector2(rect.center.x, rect.y - 12f), s.TotalAttack, +45f, s.tempAttackBonus > 0);
+
+        // 상태 라벨 — 우선순위: 도발 > 침묵 > 공격 완료. 스택 인디케이터 아래로 배치.
+        string stateLabel = null;
+        if (s.tauntTurns > 0)        stateLabel = $"🛡 도발 {s.tauntTurns}T";
+        else if (s.silencedTurns > 0) stateLabel = $"침묵 {s.silencedTurns}T";
+        else if (s.hasAttackedThisTurn) stateLabel = "공격 완료";
+        if (stateLabel != null)
+        {
+            GUI.Label(new Rect(rect.x, summonHpRect.yMax + 22f, rect.width, 20f),
+                      stateLabel, _centerStyle);
+        }
+
+        // 클릭 처리 우선순위:
+        //   1) 교체 모드 (swap) — 필드 꽉 찬 상태에서 SUMMON 카드 플레이 시
+        //   2) 아군 타겟 카드 모드 — 수호 마법/먹이 단일 타겟 카드
+        //   3) 일반 summon-attack 선택 토글
+        if (!inReward && _battle?.state != null && !_battle.state.IsOver)
+        {
+            var ev = Event.current;
+            bool hovered = ev != null && rect.Contains(ev.mousePosition);
+
+            bool allyTargetMode = _targetingCardIndex >= 0
+                && _targetingCardIndex < _battle.state.hand.Count
+                && CardNeedsAllyTarget(_battle.state.hand[_targetingCardIndex].data);
+
+            if (_swapFromCardIndex >= 0)
+            {
+                DrawTargetFootGlow(rect, hovered);
+                if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && hovered)
+                {
+                    ev.Use();
+                    int cardIdx = _swapFromCardIndex;
+                    int swapIdx = summonIndex;
+                    _swapFromCardIndex = -1;
+                    _pending.Add(() => {
+                        _battle.PlayCard(cardIdx, -1, swapIdx);
+                        _playerView?.PlaySummon(ComputeAttackDir(-1));
+                    });
+                }
+            }
+            else if (allyTargetMode)
+            {
+                DrawTargetFootGlow(rect, hovered);
+                if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && hovered)
+                {
+                    ev.Use();
+                    int cardIdx = _targetingCardIndex;
+                    int allyIdx = summonIndex;
+                    _targetingCardIndex = -1;
+                    _pending.Add(() => { _battle.PlayCard(cardIdx, -1, -1, allyIdx); });
+                }
+            }
+            else if (_targetingCardIndex < 0)
+            {
+                if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && hovered)
+                {
+                    if (s.CanAttack)
+                    {
+                        ev.Use();
+                        _targetingSummonIndex = (_targetingSummonIndex == summonIndex) ? -1 : summonIndex;
+                    }
+                    else
+                    {
+                        ev.Use();
+                        _targetingSummonIndex = -1;
+                    }
+                }
+            }
+        }
+
+        // 선택 하이라이트 (발치 글로우) — 적 타겟팅 글로우와 유사한 톤.
+        if (selected && _battle?.state != null && !_battle.state.IsOver)
+        {
+            DrawTargetFootGlow(rect, true);
+        }
     }
 
     private void DrawEnemy(EnemyInstance e, int enemyIndex, Vector2 center)
@@ -1764,6 +2298,22 @@ public class BattleUI : MonoBehaviour
 
         DrawEnemyIntent(new Vector2(rect.center.x, rect.y - 14), e);
 
+        // 아트 없는 placeholder 적은 가운데에 이름 라벨 (식별용)
+        if (string.IsNullOrEmpty(e.data.image))
+        {
+            GUI.Label(new Rect(rect.x, rect.center.y - 11, rect.width, 22),
+                      e.data.nameKr, _centerStyle);
+        }
+
+        // 디버프 스택 표시 (rough — 적 머리 위 우측)
+        if (e.poisonStacks > 0 || e.weakTurns > 0)
+        {
+            var sb = new System.Text.StringBuilder();
+            if (e.poisonStacks > 0) sb.Append($"☠{e.poisonStacks} ");
+            if (e.weakTurns > 0) sb.Append($"↓{e.weakTurns}T");
+            GUI.Label(new Rect(rect.xMax - 70, rect.y + 4, 70, 18), sb.ToString().Trim(), _centerStyle);
+        }
+
         var enemyHpRect = new Rect(rect.x + 20, rect.y + rect.height - 8, rect.width - 40, 18);
         DrawHpBar(enemyHpRect, e.hp, e.data.hp, new Color(0.85f, 0.2f, 0.2f));
 
@@ -1774,8 +2324,13 @@ public class BattleUI : MonoBehaviour
                            _iconShieldGreen);
         }
 
-        // 타겟팅 모드: 발치 둥근 글로우 + 클릭 처리
-        if (_targetingCardIndex >= 0)
+        // 패시브 칩 — HP 바 바로 아래 한 줄. 호버 시 툴팁.
+        DrawEnemyPassives(new Rect(rect.x, enemyHpRect.yMax + 4f, rect.width, 22f), e);
+
+        // 타겟팅 모드: 발치 둥근 글로우 + 클릭 처리 — 적을 대상으로 하는 카드일 때만
+        if (_targetingCardIndex >= 0
+            && _targetingCardIndex < _battle.state.hand.Count
+            && CardNeedsEnemyTarget(_battle.state.hand[_targetingCardIndex].data))
         {
             var ev = Event.current;
             bool hovered = rect.Contains(ev.mousePosition);
@@ -1790,9 +2345,38 @@ public class BattleUI : MonoBehaviour
                 _pending.Add(() => {
                     _battle.PlayCard(cardIdx, eIdx);
                     _playerView?.PlayAttack(ComputeAttackDir(eIdx));
+                    TriggerPlayerAttackFx(eIdx);
                 });
             }
         }
+        // 소환수 타겟팅 모드: 선택된 공룡이 이 적을 공격
+        else if (_targetingSummonIndex >= 0)
+        {
+            var ev = Event.current;
+            bool hovered = rect.Contains(ev.mousePosition);
+            DrawTargetFootGlow(rect, hovered);
+
+            if (ev.type == EventType.MouseDown && ev.button == 0 && hovered)
+            {
+                ev.Use();
+                int sIdx = _targetingSummonIndex;
+                int eIdx = enemyIndex;
+                var summon = (sIdx >= 0 && sIdx < _battle.state.field.Count) ? _battle.state.field[sIdx] : null;
+                _targetingSummonIndex = -1;
+                _pending.Add(() => StartCoroutine(ManualSummonAttackCoroutine(summon, eIdx)));
+            }
+        }
+    }
+
+    /// <summary>수동 소환수 공격 — lunge 애니메이션 후 데미지 적용.</summary>
+    private IEnumerator ManualSummonAttackCoroutine(SummonInstance summon, int enemyIndex)
+    {
+        if (summon == null || _battle?.state == null) yield break;
+        if (!summon.CanAttack) yield break;
+        int currentIdx = _battle.state.field.IndexOf(summon);
+        if (currentIdx < 0) yield break;
+        yield return AnimateLunge(summon, isSummon: true);
+        _battle.CommandSummonAttack(currentIdx, enemyIndex);
     }
 
     // 타겟팅 모드에서 선택된 카드 외곽에 부드럽게 빛나는 글로우.
@@ -2550,7 +3134,7 @@ public class BattleUI : MonoBehaviour
 
             GUI.matrix = baseMatrix * RotateAroundPivotMatrix(angle, center);
 
-            if (i == _targetingCardIndex)
+            if (i == _targetingCardIndex || i == _swapFromCardIndex)
             {
                 DrawSoftCardGlow(rect);
             }
@@ -2598,7 +3182,7 @@ public class BattleUI : MonoBehaviour
             // 숨김 진행도에 따라 함께 아래로 슬라이드.
             var hoverRect = new Rect(fanCenter.x - hw * 0.5f, RefH - hh - hoverBottomPad + hideOffset, hw, hh);
 
-            if (i == _targetingCardIndex)
+            if (i == _targetingCardIndex || i == _swapFromCardIndex)
             {
                 DrawSoftCardGlow(hoverRect);
             }
@@ -2612,19 +3196,32 @@ public class BattleUI : MonoBehaviour
                 {
                     ev.Use();
                     int captured = i;
+                    bool isSummon = c.cardType == CardType.SUMMON;
+                    bool fieldFull = _battle.state.field.Count >= _battle.state.maxFieldSize;
+
                     if (CardNeedsTarget(c))
                     {
                         _targetingCardIndex = captured;
+                        _swapFromCardIndex = -1;
+                    }
+                    else if (isSummon && fieldFull)
+                    {
+                        // 필드 꽉 참 → 교체 모드 진입. 교체할 공룡 클릭 대기.
+                        _swapFromCardIndex = captured;
+                        _targetingCardIndex = -1;
                     }
                     else
                     {
                         _targetingCardIndex = -1;
+                        _swapFromCardIndex = -1;
                         bool isAttack = IsAttackSpell(c);
-                        bool isSummon = c.cardType == CardType.SUMMON;
                         _pending.Add(() => {
                             _battle.PlayCard(captured, -1);
                             if (isAttack)
+                            {
                                 _playerView?.PlayAttack(ComputeAttackDir(-1));
+                                TriggerPlayerAttackFx(-1);
+                            }
                             else if (isSummon)
                                 _playerView?.PlaySummon(ComputeAttackDir(-1));
                         });
@@ -2724,7 +3321,11 @@ public class BattleUI : MonoBehaviour
     {
         if (state.IsOver || _endTurnAnimating || IsDrawFlyActive) return false;
         if (state.player.mana < c.cost) return false;
-        if (c.cardType == CardType.SUMMON && c.subType == CardSubType.CARNIVORE && state.field.Count == 0) return false;
+        // SUMMON은 슬롯 꽉 차도 교체 모드로 플레이 가능하므로 별도 필드 체크 없음.
+        // ALLY 타겟 카드(수호 마법) / ALL_ALLY 방어는 필드에 공룡 없으면 플레이 불가.
+        if (CardNeedsAllyTarget(c) && state.field.Count == 0) return false;
+        if (c.cardType == CardType.MAGIC && c.subType == CardSubType.DEFENSE
+            && c.target == TargetType.ALL_ALLY && state.field.Count == 0) return false;
         return true;
     }
 
@@ -3031,12 +3632,14 @@ public class BattleUI : MonoBehaviour
             if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
             {
                 _targetingCardIndex = -1;
+                _swapFromCardIndex = -1;
                 _pending.Add(() => StartCoroutine(EndTurnCoroutine()));
             }
         }
         else if (GUI.Button(rect, "END\nTURN", _buttonStyle))
         {
             _targetingCardIndex = -1;
+            _swapFromCardIndex = -1;
             _pending.Add(() => StartCoroutine(EndTurnCoroutine()));
         }
 
@@ -3053,15 +3656,18 @@ public class BattleUI : MonoBehaviour
         _endTurnAnimating = true;
         var state = _battle.state;
 
-        // Phase 1: 소환수가 1, 2, 3 순서대로 lunge → 공격
+        // Phase 1: 아직 공격 안 한 공룡들 자동 랜덤 공격.
         var summons = new List<SummonInstance>(state.field);
         foreach (var s in summons)
         {
-            if (s.IsDead) continue;
+            if (s.IsDead || !s.CanAttack) continue;
             if (state.AllEnemiesDead) break;
-
+            int targetIdx = _battle.PickRandomTargetIndex();
+            if (targetIdx < 0) break;
             yield return AnimateLunge(s, isSummon: true);
-            _battle.DoSummonAttack(s);
+            int currentSIdx = state.field.IndexOf(s);
+            if (currentSIdx < 0) continue;
+            _battle.CommandSummonAttack(currentSIdx, targetIdx);
             yield return new WaitForSeconds(BetweenAttacksPause);
         }
 
@@ -3073,14 +3679,15 @@ public class BattleUI : MonoBehaviour
             yield break;
         }
 
-        // Phase 2: 적이 차례대로 lunge → 행동
+        // 적이 차례대로 행동 — 공격 계열만 lunge 애니메이션.
         var enemies = new List<EnemyInstance>(state.enemies);
         foreach (var e in enemies)
         {
             if (e.IsDead) continue;
             if (state.PlayerLost) break;
 
-            yield return AnimateEnemyAttack(e);
+            if (IsAttackAction(e.intentAction))
+                yield return AnimateEnemyAttack(e);
             _battle.DoEnemyAction(e);
             yield return new WaitForSeconds(BetweenAttacksPause);
         }
@@ -3141,6 +3748,16 @@ public class BattleUI : MonoBehaviour
 
         _endTurnAnimating = false;
         _attackingUnit = null;
+    }
+
+    /// <summary>적 인텐트 액션이 "공격"에 해당해서 lunge 애니메이션을 재생해야 하는지.</summary>
+    private static bool IsAttackAction(EnemyAction a)
+    {
+        return a == EnemyAction.ATTACK
+            || a == EnemyAction.MULTI_ATTACK
+            || a == EnemyAction.DRAIN
+            || a == EnemyAction.COUNTDOWN_ATTACK
+            || a == EnemyAction.COUNTDOWN_AOE;
     }
 
     /// <summary>

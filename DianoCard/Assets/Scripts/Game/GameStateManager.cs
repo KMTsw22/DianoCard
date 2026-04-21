@@ -15,6 +15,8 @@ namespace DianoCard.Game
         Village,         // 마을(캠프) 노드 상호작용 화면
         Defeat,
         Victory,
+        Training,        // 훈련장 — 임의 적을 골라 자유롭게 전투 (승패 무관, 맵/보상 없음)
+        AnimationTest,   // 애니메이션 테스트 — Resources/AnimationTest 폴더의 프레임 시퀀스 프리뷰 (에디터 전용 개발 툴)
     }
 
     /// <summary>
@@ -36,6 +38,9 @@ namespace DianoCard.Game
         public MapState CurrentMap { get; private set; }
         public ShopState CurrentShop { get; private set; }
         public List<EnemyData> CurrentEnemies { get; private set; } = new();
+
+        /// <summary>훈련장 모드 플래그 — true면 EndBattle이 Reward/Defeat 대신 Training으로 복귀.</summary>
+        public bool IsTrainingMode { get; private set; }
 
         // 이전 코드 호환용 — 리스트의 첫 적 (배경/보상 결정에 사용)
         public EnemyData PrimaryEnemy => CurrentEnemies.Count > 0 ? CurrentEnemies[0] : null;
@@ -73,6 +78,22 @@ namespace DianoCard.Game
             if (GetComponent<ShopUI>() == null) gameObject.AddComponent<ShopUI>();
             if (GetComponent<VillageUI>() == null) gameObject.AddComponent<VillageUI>();
             if (GetComponent<GameOverUI>() == null) gameObject.AddComponent<GameOverUI>();
+            if (GetComponent<TrainingUI>() == null) gameObject.AddComponent<TrainingUI>();
+            if (GetComponent<AnimationTestUI>() == null) gameObject.AddComponent<AnimationTestUI>();
+        }
+
+        /// <summary>Lobby에서 애니메이션 테스트 화면 진입. Run 상태는 건드리지 않음.</summary>
+        public void EnterAnimationTest()
+        {
+            State = GameState.AnimationTest;
+            Debug.Log("[GSM] EnterAnimationTest");
+        }
+
+        /// <summary>애니메이션 테스트에서 로비로 복귀.</summary>
+        public void ExitAnimationTest()
+        {
+            State = GameState.Lobby;
+            Debug.Log("[GSM] ExitAnimationTest");
         }
 
         // =========================================================
@@ -86,11 +107,12 @@ namespace DianoCard.Game
                 playerMaxHp = 70,
                 playerCurrentHp = 70,
                 gold = 0,
-                deck = BuildStarterDeck(),
+                deck = new List<CardData>(), // 캐릭터 확정 시 채움
                 relics = new List<RelicData>(),
                 potions = new List<PotionData>(),
                 currentFloor = 0,
                 chapterId = "CH01",
+                characterId = "CH001",
             };
 
             // 캐릭터 선택 화면을 먼저 보여주고, 거기서 확인하면 맵을 생성한다
@@ -98,10 +120,9 @@ namespace DianoCard.Game
         }
 
         /// <summary>
-        /// 캐릭터 선택을 확정 → 맵 생성 후 Map 상태로 전환.
-        /// 추후 캐릭터별 다른 시작 덱/HP/유물을 적용할 자리.
+        /// 캐릭터 선택을 확정 → 시작 덱 빌드 + 맵 생성 후 Map 상태로 전환.
         /// </summary>
-        public void ConfirmCharacterSelection()
+        public void ConfirmCharacterSelection(string characterId = null)
         {
             if (CurrentRun == null)
             {
@@ -109,26 +130,64 @@ namespace DianoCard.Game
                 return;
             }
 
-            // MVP: 고고학자 1명만 있어서 RunState는 이미 세팅되어 있음
+            if (!string.IsNullOrEmpty(characterId)) CurrentRun.characterId = characterId;
+            CurrentRun.deck = BuildStarterDeck(CurrentRun.characterId);
             CurrentMap = GenerateMap(CurrentRun.chapterId);
             State = GameState.Map;
         }
 
-        private List<CardData> BuildStarterDeck()
+        // 캐릭터 archetype별 시작 덱 구성.
+        // HERB(초식 조련사): 트리/스테고 각 2장(덮어쓰기 보장) + 마법·버프
+        // CARN(육식 사냥꾼): 랩터/카르노 각 2장(합성 보장) + 마법·버프
+        public static readonly Dictionary<string, Dictionary<string, int>> StarterDecksByArchetype = new()
+        {
+            ["HERB"] = new()
+            {
+                { "C001", 2 }, // 트리케라톱스 x2 (덮어쓰기 재료)
+                { "C002", 2 }, // 스테고사우루스 x2 (덮어쓰기 재료)
+                { "C101", 2 }, // 공격 마법
+                { "C102", 2 }, // 방어 마법
+                { "C201", 1 }, // 공격 강화
+                { "C202", 1 }, // 전체 힐
+            },
+            ["CARN"] = new()
+            {
+                { "C004", 2 }, // 랩터 x2 (합성 재료)
+                { "C005", 2 }, // 카르노타우루스 x2 (합성 재료)
+                { "C101", 2 }, // 공격 마법
+                { "C102", 2 }, // 방어 마법
+                { "C201", 1 }, // 공격 강화
+                { "C202", 1 }, // 전체 힐
+            },
+        };
+
+        /// <summary>현재 실행 중인 런의 archetype에서 시작 덱 카드 id 집합을 반환.</summary>
+        public static HashSet<string> GetStarterCardIdsFor(string archetype)
+        {
+            if (archetype != null && StarterDecksByArchetype.TryGetValue(archetype, out var comp))
+                return new HashSet<string>(comp.Keys);
+            return new HashSet<string>();
+        }
+
+        // 오버로드 — 인자 없이 호출 시 HERB 덱을 기본 반환(치트/훈련 경로용).
+        private List<CardData> BuildStarterDeck() => BuildStarterDeck("CH001");
+
+        private List<CardData> BuildStarterDeck(string characterId)
         {
             var deck = new List<CardData>();
-            void Add(string id, int count)
+            var character = DataManager.Instance.GetCharacter(characterId);
+            string archetype = character?.archetype ?? "HERB";
+            if (!StarterDecksByArchetype.TryGetValue(archetype, out var composition))
             {
-                var c = DataManager.Instance.GetCard(id);
-                if (c == null) { Debug.LogError($"[GameStateManager] Missing card: {id}"); return; }
-                for (int i = 0; i < count; i++) deck.Add(c);
+                Debug.LogError($"[GameStateManager] Unknown archetype '{archetype}', falling back to HERB");
+                composition = StarterDecksByArchetype["HERB"];
             }
-            Add("C001", 3); // 트리케라톱스
-            Add("C002", 2); // 스테고사우루스
-            Add("C101", 6); // 공격 마법
-            Add("C102", 5); // 방어 마법
-            Add("C201", 2); // 공격 강화
-            Add("C202", 2); // 전체 힐
+            foreach (var kv in composition)
+            {
+                var c = DataManager.Instance.GetCard(kv.Key);
+                if (c == null) { Debug.LogError($"[GameStateManager] Missing card: {kv.Key}"); continue; }
+                for (int i = 0; i < kv.Value; i++) deck.Add(c);
+            }
             return deck;
         }
 
@@ -407,6 +466,16 @@ namespace DianoCard.Game
 
             CurrentRun.playerCurrentHp = Mathf.Max(0, remainingPlayerHp);
 
+            // 훈련장 모드: 보상/패배 없이 훈련장 메뉴로 복귀. HP/덱 리셋으로 자유롭게 재시도.
+            if (IsTrainingMode)
+            {
+                CurrentRun.playerCurrentHp = CurrentRun.playerMaxHp;
+                CurrentEnemies.Clear();
+                State = GameState.Training;
+                Debug.Log($"[GSM] Training: battle ended (won={won}) → back to Training menu");
+                return;
+            }
+
             if (won)
             {
                 // 보상은 노드의 첫 적 기준으로 생성 (같은 노드는 같은 등급 적이므로 OK)
@@ -423,6 +492,70 @@ namespace DianoCard.Game
             {
                 State = GameState.Defeat;
             }
+        }
+
+        // =========================================================
+        // 훈련장
+        // =========================================================
+
+        /// <summary>Lobby에서 훈련장 진입. 임시 Run(70HP, 스타터덱)을 만들고 Training 상태로 전환.</summary>
+        public void EnterTraining()
+        {
+            CurrentRun = new RunState
+            {
+                playerMaxHp = 70,
+                playerCurrentHp = 70,
+                gold = 0,
+                deck = BuildStarterDeck(),
+                relics = new List<RelicData>(),
+                potions = new List<PotionData>(),
+                currentFloor = 0,
+                chapterId = "CH01",
+            };
+            CurrentMap = null;
+            CurrentShop = null;
+            CurrentEnemies.Clear();
+            IsTrainingMode = true;
+            State = GameState.Training;
+            Debug.Log("[GSM] EnterTraining — 훈련장 입장");
+        }
+
+        /// <summary>훈련장에서 특정 적(또는 여러 적)과의 전투 시작. EndBattle이 Training으로 복귀시킴.</summary>
+        public void TrainingStartBattle(params string[] enemyIds)
+        {
+            if (!IsTrainingMode)
+            {
+                Debug.LogWarning("[GSM] TrainingStartBattle: not in training mode");
+                return;
+            }
+            if (CurrentRun == null) { EnterTraining(); }
+
+            CurrentEnemies.Clear();
+            foreach (var id in enemyIds)
+            {
+                var e = DataManager.Instance.GetEnemy(id);
+                if (e != null) CurrentEnemies.Add(e);
+                else Debug.LogWarning($"[GSM] TrainingStartBattle: enemy '{id}' not found");
+            }
+            if (CurrentEnemies.Count == 0)
+            {
+                Debug.LogError("[GSM] TrainingStartBattle: no valid enemies loaded");
+                return;
+            }
+
+            CurrentRun.playerCurrentHp = CurrentRun.playerMaxHp; // 매 전투마다 풀 HP로 시작
+            State = GameState.Battle;
+            Debug.Log($"[GSM] Training battle: [{string.Join(",", enemyIds)}] → Battle");
+        }
+
+        /// <summary>훈련장 종료 — Lobby로 복귀, Run 정리.</summary>
+        public void ExitTraining()
+        {
+            IsTrainingMode = false;
+            CurrentRun = null;
+            CurrentEnemies.Clear();
+            State = GameState.Lobby;
+            Debug.Log("[GSM] ExitTraining — 로비로 복귀");
         }
 
         public void TakeCardReward(CardData card)
@@ -476,6 +609,7 @@ namespace DianoCard.Game
             CurrentMap = null;
             CurrentShop = null;
             CurrentEnemies.Clear();
+            IsTrainingMode = false;
             State = GameState.Lobby;
         }
 
@@ -667,6 +801,54 @@ namespace DianoCard.Game
             State = GameState.Shop;
             Debug.Log($"[GSM] Cheat_EnterShop: cards={CurrentShop.cards.Count} potions={CurrentShop.potions.Count} relics={CurrentShop.relics.Count}");
         }
+
+        /// <summary>
+        /// 치트: 특정 적 ID로 바로 전투 진입.
+        /// Run이 없으면 테스트 Run을 생성. Map은 건너뛰므로 EndBattle 후 Lobby로 복귀한다.
+        /// </summary>
+        public void Cheat_StartBattleWith(params string[] enemyIds)
+        {
+            if (enemyIds == null || enemyIds.Length == 0)
+            {
+                Debug.LogWarning("[GSM] Cheat_StartBattleWith: empty enemyIds");
+                return;
+            }
+
+            if (CurrentRun == null)
+            {
+                CurrentRun = new RunState
+                {
+                    playerMaxHp = 70,
+                    playerCurrentHp = 70,
+                    gold = 50,
+                    deck = BuildStarterDeck(),
+                    relics = new List<RelicData>(),
+                    potions = new List<PotionData>(),
+                    currentFloor = 14,
+                    chapterId = "CH01",
+                };
+            }
+
+            CurrentEnemies.Clear();
+            foreach (var id in enemyIds)
+            {
+                var e = DataManager.Instance.GetEnemy(id);
+                if (e != null) CurrentEnemies.Add(e);
+                else Debug.LogWarning($"[GSM] Cheat_StartBattleWith: enemy '{id}' not found");
+            }
+
+            if (CurrentEnemies.Count == 0)
+            {
+                Debug.LogError("[GSM] Cheat_StartBattleWith: no valid enemies loaded");
+                return;
+            }
+
+            State = GameState.Battle;
+            Debug.Log($"[GSM] Cheat_StartBattleWith: [{string.Join(",", enemyIds)}] → Battle");
+        }
+
+        /// <summary>치트 편의 메서드 — 1챕터 보스(E901) 전투 시작.</summary>
+        public void Cheat_StartBossBattle() => Cheat_StartBattleWith("E901");
 
         /// <summary>
         /// 치트: 현재 상태 무시하고 바로 마을로 진입.

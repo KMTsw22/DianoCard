@@ -19,6 +19,7 @@ namespace DianoCard.Data
         public string cardPortrait;
         public string fieldPortrait;
         public bool unlocked;
+        public string archetype;  // "HERB" or "CARN" — 덱/보상 풀 분기에 사용
 
         public static CharacterData FromRow(Dictionary<string, string> row)
         {
@@ -35,6 +36,7 @@ namespace DianoCard.Data
                 cardPortrait = CSVUtil.GetString(row, "card_portrait"),
                 fieldPortrait = CSVUtil.GetString(row, "field_portrait"),
                 unlocked = CSVUtil.GetBool(row, "unlocked"),
+                archetype = CSVUtil.GetString(row, "archetype"),
             };
         }
     }

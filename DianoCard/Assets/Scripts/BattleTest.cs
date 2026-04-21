@@ -101,8 +101,8 @@ public class BattleTest : MonoBehaviour
             var c = s.hand[i].data;
             if (s.player.mana < c.cost) continue;
 
-            // 육식 공룡 + 제물 없음 → 건너뜀
-            if (c.cardType == CardType.SUMMON && c.subType == CardSubType.CARNIVORE && s.field.Count == 0)
+            // 필드 꽉 차면 소환 카드 건너뜀
+            if (c.cardType == CardType.SUMMON && s.field.Count >= s.maxFieldSize)
                 continue;
 
             return i;

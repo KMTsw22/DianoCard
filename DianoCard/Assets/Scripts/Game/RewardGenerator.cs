@@ -87,11 +87,29 @@ namespace DianoCard.Game
             int chapterIdx = ParseChapterIndex(run.chapterId);
 
             // 현재 챕터 이하 카드만 (RITUAL은 MVP에서 제외 — 제물 의식 같은 특수 효과)
+            // 시작 덱에 이미 들어있는 카드 + 진화 결과체는 보상 풀에서 제외 (중복 수집 / 진화 결과 직접 획득 방지).
+            // 캐릭터 archetype에 따라 공룡 종류 분리: HERB는 초식만, CARN은 육식만.
+            var evoResults = DataManager.Instance.EvolutionResultIds;
+            var character = DataManager.Instance.GetCharacter(run.characterId);
+            string archetype = character?.archetype ?? "HERB";
+            var starterIds = GameStateManager.GetStarterCardIdsFor(archetype);
+            bool isHerb = archetype == "HERB";
+
             var allEligible = new List<CardData>();
             foreach (var c in DataManager.Instance.Cards.Values)
             {
                 if (c.chapter > chapterIdx) continue;
                 if (c.cardType == CardType.RITUAL) continue;
+                if (starterIds.Contains(c.id)) continue;
+                if (evoResults.Contains(c.id)) continue;
+                // SUMMON 공룡은 캐릭터 archetype과 sub_type 일치 필요 — 다른 공룡 획득 불가.
+                if (c.cardType == CardType.SUMMON)
+                {
+                    bool matchHerb = c.subType == CardSubType.HERBIVORE;
+                    bool matchCarn = c.subType == CardSubType.CARNIVORE;
+                    if (isHerb && !matchHerb) continue;
+                    if (!isHerb && !matchCarn) continue;
+                }
                 allEligible.Add(c);
             }
 

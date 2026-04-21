@@ -1,0 +1,7 @@
+base_card_id,result_card_id,stacks_required
+C004,C004_T1,1
+C004_T1,C004_T2,4
+C005,C005_T1,1
+C005_T1,C005_T2,4
+C010,C010_T1,1
+C010_T1,C010_T2,4

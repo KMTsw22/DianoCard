@@ -14,9 +14,11 @@ namespace DianoCard.Battle
         public List<CardInstance> deck = new();
         public List<CardInstance> hand = new();
         public List<CardInstance> discard = new();
+        // 필드에 소환된 공룡과 1:1 바인딩된 카드 — 덱 순환에서 빠져있다가 공룡이 죽거나 제거되면 discard로 복귀.
+        public List<CardInstance> bound = new();
         public int turn;
-        // 플레이어 필드(소환수) 동시 수용 가능 수. 챕터별로 다름 — 1챕터 2체, 후반으로 갈수록 증가.
-        public int maxFieldSize = 5;
+        // 플레이어 필드(소환수) 동시 수용 가능 수. 기본 2 — 테크트리/유물로 증가 가능.
+        public int maxFieldSize = 2;
 
         public bool AllEnemiesDead
         {

@@ -22,6 +22,10 @@ namespace DianoCard.Data
         SACRIFICE,
         ATTACK_BUFF,
         SPECIAL,
+        PURIFY,   // 정화 — 빼앗긴 소환수 회수 + 디버프 해제
+        STATUS,   // 오염 카드 (잡초 등) — 효과 없음, 사용 시 exhaust, 덱 순환 방해 목적
+        TAUNT,    // 도발 — 대상 공룡에게 도발 상태 부여 (적 공격 이 공룡 집중)
+        FEED,     // 먹이 — 대상(또는 전체) 공룡 EXP 증가. 진화 조건 충족 시 진화 가능.
     }
 
     public enum Rarity
@@ -61,6 +65,40 @@ namespace DianoCard.Data
         SUMMON_ATTACK,
         FLY_ATTACK,
         PHASE_ATTACK,
+    }
+
+    /// <summary>enemy_pattern.csv의 action 컬럼 값.</summary>
+    public enum EnemyAction
+    {
+        UNKNOWN,
+        ATTACK,
+        MULTI_ATTACK,
+        DEFEND,
+        POISON,
+        WEAK,
+        DRAIN,
+        SUMMON,
+        BUFF_SELF,
+        COUNTDOWN_ATTACK,
+        COUNTDOWN_AOE,
+        REFILL_MOSS,   // 이끼 쫄을 target 수까지 보충 (E901 보스)
+        IDLE,          // 행동하지 않음 (이끼 수호 상태 등)
+        STEAL_SUMMON,  // 플레이어 필드의 공룡 1체를 빼앗아 적 편에 편입 (정화로 해제 가능)
+        VULNERABLE,    // 플레이어에게 취약 N턴 부여 (받는 피해 +50%)
+        ARMOR_UP,      // 자가 영구 장갑 +N (extraBlockPerTurn 증가, 매 턴 자동 리프레시)
+        CLOG_DECK,     // 플레이어 버림더미에 잡초(STATUS 카드) N장 강제 추가
+        SILENCE,       // 플레이어 필드의 모든 공룡을 N턴 침묵 — 이 기간엔 공격 명령 불가
+    }
+
+    /// <summary>enemy_pattern.csv의 target 컬럼 값.</summary>
+    public enum IntentTarget
+    {
+        SUMMONER,
+        SELF,
+        ALL,
+        FIELD,
+        RANDOM,
+        ALLY_FIELD,
     }
 
     public enum PotionType

@@ -27,8 +27,16 @@ namespace DianoCard.Battle
         private Sprite _strikeExtendedSprite;
         private Sprite _summonCastSprite;
 
+        // N프레임 시퀀스(2~8장 등). 설정되면 4페이즈 로직 대신 이것을 우선 사용.
+        // 첫 프레임은 idle, 중간~후반은 strike peak, 마지막은 follow-through 정도로 해석.
+        private Sprite[] _attackSequence;
+
         // 스케일 기준이 되는 스프라이트 높이 (바뀌지 않는 고정값). 프레임 스왑 중에도 이 값으로 scale 계산.
         private float _scaleReferenceHeight = -1f;
+
+        // BattleUI에서 마지막으로 지정한 "캐릭터가 월드에서 가져야 할 실제 높이".
+        // 프레임 스왑으로 스프라이트 bounds가 달라져도 이 값에 맞춰 스케일이 재계산됨.
+        private float _intendedWorldHeight = -1f;
 
         // 현재 애니메이션 페이즈의 스케일 배율 (StrikeExtended에서 캐릭터 비율 보정용). 기본 1.0
         private float _activeScaleMultiplier = 1f;
@@ -71,6 +79,22 @@ namespace DianoCard.Battle
             if (_sr.sprite == null && _idleSprite != null) _sr.sprite = _idleSprite;
         }
 
+        /// <summary>
+        /// N프레임 공격 시퀀스 지정 (move-board로 생성한 CH001_attack_f01~fN.png 같은 결과).
+        /// 설정되면 기존 4페이즈 로직 대신 프레임 시퀀스를 균등 시간으로 재생.
+        /// 첫 프레임은 idle로도 재사용되어 대기 포즈가 됨.
+        /// </summary>
+        public void SetAttackSequence(Sprite[] frames)
+        {
+            if (frames == null || frames.Length == 0) { _attackSequence = null; return; }
+            // null 제거한 유효 프레임만 보관
+            var clean = new System.Collections.Generic.List<Sprite>(frames.Length);
+            foreach (var f in frames) if (f != null) clean.Add(f);
+            _attackSequence = clean.Count > 0 ? clean.ToArray() : null;
+            if (_attackSequence != null && _idleSprite == null) _idleSprite = _attackSequence[0];
+            if (_sr.sprite == null && _idleSprite != null) _sr.sprite = _idleSprite;
+        }
+
         /// <summary>소환 모션용 프레임 지정. null이면 PlaySummon 호출해도 프레임 스왑 없이 위치 트윈만 적용.</summary>
         public void SetSummonFrame(Sprite summonCast)
         {
@@ -82,14 +106,26 @@ namespace DianoCard.Battle
             _basePosition = pos;
         }
 
-        /// <summary>Rescales transform to target world-space height. 기준 스프라이트 높이 고정으로 프레임 스왑 시 크기 점프 방지.</summary>
+        /// <summary>Rescales transform to target world-space height. 현재 스프라이트의 bounds를 기준으로 매번 재계산 → 프레임 스왑 시 보이는 높이 일관.</summary>
         public void SetWorldHeight(float worldHeight)
         {
-            // 기준 높이가 아직 없으면 현재 스프라이트로 한 번 잡기
+            _intendedWorldHeight = worldHeight;
+            // 기준 높이 캐시 (디버그·폴백용, 실제 스케일은 아래 ApplyWorldHeight가 현재 sprite 기준으로 재계산)
             if (_scaleReferenceHeight <= 0f && _sr.sprite != null && _sr.sprite.bounds.size.y > 0f)
                 _scaleReferenceHeight = _sr.sprite.bounds.size.y;
-            if (_scaleReferenceHeight <= 0f) return;
-            float s = (worldHeight / _scaleReferenceHeight) * _activeScaleMultiplier;
+            ApplyWorldHeight();
+        }
+
+        /// <summary>
+        /// 저장된 intendedWorldHeight 와 **현재 스프라이트의 bounds 높이**로 스케일 재계산.
+        /// 프레임 스왑(공격 시퀀스, idle/strike 교체 등)마다 호출되어 캐릭터가 커보이거나 작아보이는 점프 방지.
+        /// </summary>
+        private void ApplyWorldHeight()
+        {
+            if (_intendedWorldHeight <= 0f || _sr.sprite == null) return;
+            float boundsH = _sr.sprite.bounds.size.y;
+            if (boundsH <= 0.001f) return;
+            float s = (_intendedWorldHeight / boundsH) * _activeScaleMultiplier;
             transform.localScale = new Vector3(s, s, 1f);
         }
 
@@ -136,7 +172,14 @@ namespace DianoCard.Battle
 
         private IEnumerator AttackRoutine(Vector3 dir, float distance, float duration)
         {
-            // 4-프레임 페이즈 분할:
+            // 0) N프레임 시퀀스가 설정돼 있으면 우선 재생 (move-board 결과물 사용 경로).
+            if (_attackSequence != null && _attackSequence.Length > 0)
+            {
+                yield return SequenceAttackRoutine(dir, distance, duration);
+                yield break;
+            }
+
+            // 4-프레임 페이즈 분할 (레거시):
             //   0~30% windup    — 뒤로 빼며 채찍 당김
             //   30~45% strike   — 스냅 순간 (짧게, 크랙 치는 찰나)
             //   45~80% extended — 채찍 최대로 뻗은 상태 유지 (길게, 시각적 임팩트)
@@ -175,6 +218,7 @@ namespace DianoCard.Battle
                     _activeScaleMultiplier = (phase == 2 && _strikeExtendedSprite != null)
                         ? _strikeExtendedScaleBoost
                         : 1f;
+                    ApplyWorldHeight();
                 }
 
                 // 위치 트윈
@@ -208,6 +252,73 @@ namespace DianoCard.Battle
             if (_idleSprite != null) _sr.sprite = _idleSprite;
             else if (originalSprite != null) _sr.sprite = originalSprite;
             _activeScaleMultiplier = 1f;
+            ApplyWorldHeight();
+            _currentAnim = null;
+        }
+
+        /// <summary>
+        /// N프레임 공격 시퀀스를 균등 시간으로 재생.
+        /// 위치는 idle(처음) → 중간 peak에서 최대 전진 → 마지막에 복귀하는 3단 곡선.
+        /// 프레임 개수와 무관하게 동작 (2~8 프레임 모두 OK).
+        /// </summary>
+        private IEnumerator SequenceAttackRoutine(Vector3 dir, float distance, float duration)
+        {
+            int n = _attackSequence.Length;
+            Sprite originalSprite = _sr.sprite;
+            float perFrame = duration / n;
+            int lastFrame = -1;
+
+            // 위치 커브: 앞 20% 약간 뒤로(windup) → 60% 지점에서 peak(+distance) → 마지막 20% 복귀
+            float backEnd = duration * 0.20f;   // 이 시점까지 살짝 뒤로
+            float peakT   = duration * 0.60f;   // 이 시점에서 전진 최대
+            float returnStart = duration * 0.85f;
+
+            float t = 0f;
+            while (t < duration)
+            {
+                t += Time.deltaTime;
+
+                // 현재 재생 프레임 = (t / duration) * n
+                int frameIdx = Mathf.Clamp(Mathf.FloorToInt(t / perFrame), 0, n - 1);
+                if (frameIdx != lastFrame)
+                {
+                    _sr.sprite = _attackSequence[frameIdx];
+                    lastFrame = frameIdx;
+                    ApplyWorldHeight(); // 프레임별 bounds 높이 차이로 캐릭터가 커/작아 보이는 것 방지
+                }
+
+                // 위치 오프셋 — 모든 프레임에 균일하게 적용되는 앞뒤 모션
+                float offset;
+                if (t < backEnd)
+                {
+                    float p = t / backEnd;
+                    offset = Mathf.Lerp(0f, -distance * 0.15f, p);
+                }
+                else if (t < peakT)
+                {
+                    float p = (t - backEnd) / (peakT - backEnd);
+                    offset = Mathf.Lerp(-distance * 0.15f, distance, Mathf.Pow(p, 0.6f));
+                }
+                else if (t < returnStart)
+                {
+                    offset = distance;
+                }
+                else
+                {
+                    float p = (t - returnStart) / (duration - returnStart);
+                    offset = Mathf.Lerp(distance, 0f, p);
+                }
+                transform.position = _basePosition + dir * offset;
+                yield return null;
+            }
+
+            transform.position = _basePosition;
+            // 공격 종료 후 idle 프레임으로 복귀
+            if (_idleSprite != null) _sr.sprite = _idleSprite;
+            else if (_attackSequence != null && _attackSequence.Length > 0) _sr.sprite = _attackSequence[0];
+            else if (originalSprite != null) _sr.sprite = originalSprite;
+            _activeScaleMultiplier = 1f;
+            ApplyWorldHeight();
             _currentAnim = null;
         }
 
@@ -221,7 +332,7 @@ namespace DianoCard.Battle
             float holdEnd = duration * 0.80f;
 
             Sprite originalSprite = _sr.sprite;
-            if (_summonCastSprite != null) _sr.sprite = _summonCastSprite;
+            if (_summonCastSprite != null) { _sr.sprite = _summonCastSprite; ApplyWorldHeight(); }
 
             float t = 0f;
             int phase = -1; // 0=push, 1=hold, 2=return
@@ -237,7 +348,7 @@ namespace DianoCard.Battle
                 if (newPhase != phase)
                 {
                     phase = newPhase;
-                    if (phase == 2 && _idleSprite != null) _sr.sprite = _idleSprite;
+                    if (phase == 2 && _idleSprite != null) { _sr.sprite = _idleSprite; ApplyWorldHeight(); }
                 }
 
                 float offset;
@@ -261,6 +372,7 @@ namespace DianoCard.Battle
             transform.position = _basePosition;
             if (_idleSprite != null) _sr.sprite = _idleSprite;
             else if (originalSprite != null) _sr.sprite = originalSprite;
+            ApplyWorldHeight();
             _currentAnim = null;
         }
 

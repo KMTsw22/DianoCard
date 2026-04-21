@@ -10,13 +10,15 @@ C008,티렉스,T-Rex,SUMMON,CARNIVORE,RARE,3,15,22,0,FIELD,Apex carnivore. 2 sac
 C009,프테라노돈,Pteranodon,SUMMON,CARNIVORE,UNCOMMON,2,5,8,0,FIELD,Flying. Can strike enemy back row.,Pteranodon.png,2
 C010,콤프소그나투스,Compsognathus,SUMMON,CARNIVORE,COMMON,0,2,5,0,FIELD,Tiny sacrifice fodder. Costs 0 mana.,Compsognathus.png,1
 C101,공격 마법,Attack Spell,MAGIC,ATTACK,COMMON,1,5,0,5,ENEMY,Deal 5 damage to an enemy.,AttackSpell.png,1
-C102,방어 마법,Defense Spell,MAGIC,DEFENSE,COMMON,1,0,0,5,SELF,Gain 5 block.,DefenseSpell.png,1
+C102,방어 마법,Defense Spell,MAGIC,DEFENSE,COMMON,1,0,0,6,SELF,Gain 6 block.,DefenseSpell.png,1
 C103,화염구,Fireball,MAGIC,ATTACK,UNCOMMON,2,0,0,12,ENEMY,Deal 12 damage to an enemy.,Fireball.png,1
 C104,수호 결계,Ward,MAGIC,DEFENSE,UNCOMMON,2,0,0,10,SELF,Gain 10 block. Next turn +5.,Ward.png,1
 C105,번개,Lightning,MAGIC,ATTACK,RARE,1,0,0,8,RANDOM,Deal 8 damage to a random enemy.,Lightning.png,2
 C106,전체 공격,Meteor,MAGIC,ATTACK,RARE,3,0,0,10,ALL_ENEMY,Deal 10 damage to ALL enemies.,Meteor.png,3
+C107,정화,Purify,MAGIC,PURIFY,UNCOMMON,1,0,0,0,SELF,Release stolen dinosaurs and clear player debuffs (poison/weak).,Purify.png,1
+C108,도발,Taunt,BUFF,TAUNT,COMMON,1,0,0,2,ALL_ALLY,All summons gain Taunt for 2 turns — enemies focus them.,Taunt.png,1
 C201,공격 강화,Power Up,BUFF,ATTACK_BUFF,COMMON,1,0,0,3,ALLY,+3 ATK to a herbivore this turn.,PowerUp.png,1
-C202,전체 힐,Heal All,BUFF,HEAL,COMMON,1,0,0,2,ALL_ALLY,Heal +2 HP to all allies and you.,HealAll.png,1
+C202,공룡 치유,Dino Heal,BUFF,HEAL,COMMON,1,0,0,2,ALL_ALLY,Heal +2 HP to all dinosaurs on field.,HealAll.png,1
 C203,광폭화,Berserk,BUFF,ATTACK_BUFF,UNCOMMON,1,0,0,5,ALLY,+5 ATK this turn. Lose 1 HP.,Berserk.png,1
 C204,광역 공격,Cleave,BUFF,SPECIAL,UNCOMMON,2,0,0,0,ALLY,Target's attacks become AoE.,Cleave.png,2
 C205,재생,Regenerate,BUFF,HEAL,UNCOMMON,1,0,0,3,ALLY,Ally +3 HP / +1 each turn (3T).,Regenerate.png,2
@@ -24,3 +26,29 @@ C206,분노의 함성,Roar,BUFF,SPECIAL,RARE,2,0,0,0,ALL_ALLY,All allies +2 ATK 
 C301,제물 의식,Sacrifice,RITUAL,SACRIFICE,COMMON,0,0,0,0,ALLY,Kill an ally. Gain +2 mana.,Sacrifice.png,1
 C302,카드 드로우,Draw,UTILITY,DRAW,COMMON,1,0,0,2,SELF,Draw 2 cards.,Draw.png,1
 C303,발굴,Excavate,UTILITY,DRAW,UNCOMMON,1,0,0,3,SELF,Draw 3 cards. Discard 1.,Excavate.png,2
+C004_T1,알파 랩터,Alpha Raptor,SUMMON,CARNIVORE,UNCOMMON,1,10,15,0,FIELD,랩터 1차 진화. 빠른 공격 강화.,Raptor_T1.png,1
+C004_T2,절멸 랩터,Apex Raptor,SUMMON,CARNIVORE,RARE,1,13,18,0,FIELD,랩터 최종체. 압도적 속공.,Raptor_T2.png,1
+C005_T1,폭풍 카르노타우루스,Storm Carnotaurus,SUMMON,CARNIVORE,UNCOMMON,1,11,12,0,FIELD,카르노타우루스 1차 진화. 극공격형.,Carnotaurus_T1.png,1
+C005_T2,심연 카르노타우루스,Abyss Carnotaurus,SUMMON,CARNIVORE,RARE,1,15,14,0,FIELD,카르노타우루스 최종체. 글래스 캐논의 극치.,Carnotaurus_T2.png,1
+C010_T1,영리한 콤프소그나투스,Clever Compsognathus,SUMMON,CARNIVORE,UNCOMMON,0,3,8,0,FIELD,콤프소그나투스 1차 진화. 더 단단해진 소형.,Compsognathus_T1.png,1
+C010_T2,무리의 콤프소그나투스,Pack Compsognathus,SUMMON,CARNIVORE,RARE,0,4,12,0,FIELD,콤프소그나투스 최종체. 0코스트 최강 소형.,Compsognathus_T2.png,1
+C111,수호의 바람,Guardian Wind,MAGIC,DEFENSE,COMMON,1,0,0,7,ALLY,Grant 7 block to a target dinosaur.,GuardianWind.png,1
+C112,무리의 방패,Herd Shield,MAGIC,DEFENSE,UNCOMMON,2,0,0,5,ALL_ALLY,Grant 5 block to all dinosaurs on field.,HerdShield.png,1
+C114,대지의 결계,Earthen Barrier,MAGIC,DEFENSE,RARE,2,0,0,12,ALLY,Grant 12 block to a target dinosaur. Massive single-target shield.,EarthenBarrier.png,1
+C121,돌진,Charge,MAGIC,ATTACK,UNCOMMON,2,0,0,7,ENEMY,Deal 7 damage + gain 5 block on summoner. Hybrid attack/defense.,Charge.png,1
+C124,분노의 일격,Fury Strike,MAGIC,ATTACK,UNCOMMON,1,0,0,5,ENEMY,Deal 5 damage. If summoner HP is at or below half, deal 10 instead.,FuryStrike.png,1
+C129,포효,Roar,MAGIC,ATTACK,UNCOMMON,2,0,0,4,ALL_ENEMY,Deal 4 damage to all enemies and apply 1 Weak (reduces their damage 25%).,Roar.png,1
+C131,발톱 투척,Claw Throw,MAGIC,ATTACK,UNCOMMON,1,0,0,0,ENEMY,Deal damage equal to total ATK of your dinosaurs on field.,ClawThrow.png,1
+C132,동족 소환,Pack Call,BUFF,SPECIAL,UNCOMMON,2,0,0,1,SELF,This turn, all SUMMON cards cost 1 less.,PackCall.png,1
+C133,속박의 덩굴,Binding Vine,MAGIC,DEBUFF,UNCOMMON,1,0,0,1,ENEMY,Bind enemy 1 turn. Bound enemies cannot attack.,BindingVine.png,1
+C134,봉인의 사슬,Sealing Chain,MAGIC,DEBUFF,RARE,2,0,0,2,ENEMY,Bind enemy 2 turns. Bound enemies cannot attack.,SealingChain.png,2
+C135,취약 돌풍,Gale Force,MAGIC,DEBUFF,COMMON,1,0,0,3,ENEMY,Deal 3 damage + apply Vulnerable 1 turn (take 50% more damage).,GaleForce.png,1
+C136,맹독 가시,Venom Thorn,MAGIC,DEBUFF,UNCOMMON,1,0,0,3,ENEMY,Apply 3 Poison. Poison deals damage each turn equal to stacks.,VenomThorn.png,1
+C137,뼈 화살,Bone Arrow,MAGIC,ATTACK,COMMON,0,0,0,3,ENEMY,Deal 3 damage. 0-cost basic attack.,BoneArrow.png,1
+C138,원시의 분노,Primal Fury,MAGIC,ATTACK,UNCOMMON,0,0,0,5,ENEMY,Deal 5 damage. Add a copy to discard pile after use.,PrimalFury.png,1
+C139,전격 타격,Shock Strike,MAGIC,ATTACK,COMMON,1,0,0,4,ENEMY,Deal 4 damage + draw 1 card.,ShockStrike.png,1
+C140,뿌리 방벽,Root Wall,MAGIC,DEFENSE,COMMON,1,0,0,5,SELF,Gain 5 block + draw 1 card.,RootWall.png,1
+C141,화석 폭발,Fossil Burst,MAGIC,ATTACK,UNCOMMON,1,0,0,8,ENEMY,Deal 8 damage. Exhaust (removed from deck permanently).,FossilBurst.png,1
+C142,고대의 외침,Ancient Cry,MAGIC,DEBUFF,UNCOMMON,1,0,0,0,ALL_ENEMY,Apply Vulnerable 1 turn to all enemies.,AncientCry.png,1
+C143,결빙 브레스,Frost Breath,MAGIC,DEBUFF,RARE,2,0,0,6,ENEMY,Deal 6 damage + Bind 1 turn.,FrostBreath.png,2
+C901,잡초,Weed,UTILITY,STATUS,COMMON,1,0,0,0,SELF,⚠ 오염 카드 — 적이 강제 삽입. 효과 없음. 사용 시 소진(exhaust).,Weed.png,1

@@ -129,6 +129,8 @@ public class MapUI : MonoBehaviour
     // 미리보기: 미래 노드 클릭 시 현재 층 → 해당 노드까지의 가능 경로 강조
     private MapNode _previewTarget;
     private readonly HashSet<(int fromFloor, int fromCol, int toCol)> _previewEdges = new();
+    // 현재 층에서 실제 도달 가능한 컬럼 집합 — 매 OnGUI마다 재계산. 직전 층 클리어 노드에서 연결된 컬럼만 포함.
+    private readonly HashSet<int> _reachableColumns = new();
 
     private Texture2D _bgTexture;
     private Texture2D _circleTexture;
@@ -304,6 +306,7 @@ public class MapUI : MonoBehaviour
         HandleScrollInput(map);
 
         // 5) 맵 컨텐츠 — 클리핑 그룹 안에서 그리기 (헤더/푸터 영역 침범 방지)
+        RecomputeReachableColumns(map);
         GUI.BeginGroup(new Rect(0f, MapAreaY, RefW, MapAreaH));
         DrawMapDecor();
         DrawRopes(map);
@@ -637,6 +640,39 @@ public class MapUI : MonoBehaviour
     // 로프 (노드 연결선)
     // ---------------------------------------------------------
 
+    // 현재 층에서 도달 가능한 컬럼 집합을 계산 — 직전 층의 클리어된 노드와 연결된 컬럼만.
+    // 시작 층(floor 0) 또는 직전 층에 클리어 노드가 없으면(엣지 케이스) 전체 허용(fail-open).
+    private void RecomputeReachableColumns(MapState map)
+    {
+        _reachableColumns.Clear();
+        int cf = map.currentFloor;
+        var currentFloorNodes = map.NodesOnFloor(cf);
+
+        if (cf == 0)
+        {
+            foreach (var n in currentFloorNodes) _reachableColumns.Add(n.column);
+            return;
+        }
+
+        // 직전 층의 클리어된 노드 찾기
+        MapNode fromNode = null;
+        foreach (var n in map.NodesOnFloor(cf - 1))
+            if (n.cleared) { fromNode = n; break; }
+
+        if (fromNode == null)
+        {
+            // 데이터 이상 — 안전하게 전체 허용
+            foreach (var n in currentFloorNodes) _reachableColumns.Add(n.column);
+            return;
+        }
+
+        var fromNodes = map.NodesOnFloor(cf - 1);
+        foreach (var (fc, tc) in GetFloorEdges(cf - 1, fromNodes, currentFloorNodes))
+        {
+            if (fc == fromNode.column) _reachableColumns.Add(tc);
+        }
+    }
+
     private void DrawRopes(MapState map)
     {
         for (int f = 0; f < map.totalFloors; f++)
@@ -898,7 +934,9 @@ public class MapUI : MonoBehaviour
 
     private void DrawNode(MapNode node, Vector2 center, MapState map, GameStateManager gsm)
     {
-        bool isCurrent = node.floor == map.currentFloor && !node.cleared;
+        // 현재 층 노드라도 직전 층 클리어 노드와 연결된 컬럼이 아니면 진입 불가.
+        bool onCurrentFloor = node.floor == map.currentFloor && !node.cleared;
+        bool isCurrent = onCurrentFloor && _reachableColumns.Contains(node.column);
         bool isPast = node.cleared;
         bool isBoss = node.kind == NodeKind.Boss;
         bool isStart = node.floor == 0;

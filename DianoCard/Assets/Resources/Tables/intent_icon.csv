@@ -1,0 +1,9 @@
+icon_id,icon_image,color_hint,description_kr
+ATTACK,intent_attack.png,#E74C3C,일반 공격
+DEFEND,intent_defend.png,#3498DB,자가 방어도
+AOE,intent_aoe.png,#E67E22,광역 공격
+DEBUFF,intent_debuff.png,#9B59B6,디버프 부여
+BUFF,intent_buff.png,#F1C40F,자가 강화
+SUMMON,intent_summon.png,#27AE60,쫄 소환
+COUNTDOWN,intent_countdown.png,#C0392B,N턴 후 발동
+UNKNOWN,intent_unknown.png,#7F8C8D,알 수 없음

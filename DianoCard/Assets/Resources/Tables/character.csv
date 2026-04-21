@@ -1,2 +1,3 @@
-id,name_kr,name_en,max_hp,start_gold,description,passive_name,passive_description,card_portrait,field_portrait,unlocked
-CH001,고고학자,THE ARCHAEOLOGIST,70,99,The last guardian of ancient knowledge.\nCommands dinosaurs through the power of magical relics.,Relic Bond,"At the start of each combat, gain 1 Artifact charge.",Char_Archaeologist_Card,Char_Archaeologist_Field,TRUE
+id,name_kr,name_en,max_hp,start_gold,description,passive_name,passive_description,card_portrait,field_portrait,unlocked,archetype
+CH001,초식 조련사,THE HERB TAMER,70,99,초식 공룡을 기르는 조련사.\n같은 공룡을 덮어씌워 점점 강하게 키운다.,Overwrite Growth,"같은 초식 공룡 카드가 필드 위에 쌓일 때마다 스택이 누적되어 진화한다.",Char_Archaeologist_Card,Char_Archaeologist_Field,TRUE,HERB
+CH002,육식 사냥꾼,THE CARNI HUNTER,70,99,육식 공룡의 무리를 이끄는 사냥꾼.\n같은 종을 합성해 거대한 포식자로 키운다.,Fusion Hunt,"같은 육식 공룡을 합성하면 더 강한 진화체로 변모한다.",Char_Archaeologist_Card,Char_Archaeologist_Field,TRUE,CARN

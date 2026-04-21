@@ -1,18 +1,25 @@
-id,name_kr,name_en,enemy_type,chapter,hp,attack,defense,ai_pattern,gold_min,gold_max,description,image
-E001,이끼 슬라임,Moss Slime,NORMAL,1,40,10,0,ATTACK,12,18,유적의 습기에서 태어난 이끼 덮인 청록 슬라임.,E001_MossSlime.png
-E002,바위 슬라임,Rock Slime,NORMAL,1,55,12,4,DEFEND_ATTACK,15,22,몸에 박힌 바위 조각이 등껍질처럼 단단하다.,E002_RockSlime.png
-E003,독 슬라임,Toxic Slime,NORMAL,1,35,14,0,POISON_ATTACK,14,20,부식성 독을 흘리는 보라빛 산성 슬라임.,E003_ToxicSlime.png
-E101,거대 골렘,Stone Golem,ELITE,1,60,10,5,DEFEND_ATTACK,30,40,튼튼한 엘리트.,
-E102,쌍둥이 도굴꾼,Twin Raiders,ELITE,1,40,8,0,ATTACK,30,40,2체로 등장.,
-E103,어둠의 사제,Dark Priest,ELITE,1,50,7,0,SUMMON_ATTACK,30,40,적을 소환한다.,
-E901,이끼 수호석상,Mossy Guardian,BOSS,1,250,18,6,PHASE_ATTACK,100,100,1챕터 보스. 덩굴에 뒤덮인 거대 석상.,
-E201,사막 도적,Desert Bandit,NORMAL,2,35,10,0,ATTACK,15,22,사막의 도적.,
-E202,모래 전갈,Sand Scorpion,NORMAL,2,28,11,0,POISON_ATTACK,12,18,독을 건다.,
-E203,망령 검사,Wraith Swordsman,NORMAL,2,40,9,3,DEFEND_ATTACK,18,25,유령 검사.,
-E902,피라미드의 왕,Pyramid King,BOSS,2,220,14,8,PHASE_ATTACK,150,150,2챕터 보스.,
-E301,용암 정령,Lava Elemental,NORMAL,3,50,13,0,BURN_ATTACK,20,28,화상을 건다.,
-E302,화산 트롤,Volcanic Troll,NORMAL,3,60,12,5,DEFEND_ATTACK,22,30,재생 능력.,
-E903,화산의 군주,Volcano Lord,BOSS,3,300,16,10,PHASE_ATTACK,200,200,3챕터 보스.,
-E401,심연의 사도,Abyss Cultist,NORMAL,4,70,15,5,SUMMON_ATTACK,28,38,수하를 소환.,
-E402,그림자 용,Shadow Drake,NORMAL,4,80,16,8,FLY_ATTACK,30,40,비행형.,
-E904,태초의 공룡왕,Primal Dino King,BOSS,4,500,20,15,PHASE_ATTACK,300,300,최종 보스.,
+id,name_kr,name_en,enemy_type,chapter,hp,attack,defense,pattern_set_id,phase_set_id,gold_min,gold_max,description,image,passive_ids
+E001,이끼 슬라임,Moss Slime,NORMAL,1,40,10,0,PS_E001,,12,18,유적의 습기에서 태어난 이끼 덮인 청록 슬라임.,E001_MossSlime.png,
+E002,바위 슬라임,Rock Slime,NORMAL,1,55,8,4,PS_E002,,15,22,몸에 박힌 바위 조각이 등껍질처럼 단단하다.,E002_RockSlime.png,
+E003,독 슬라임,Toxic Slime,NORMAL,1,35,6,0,PS_E003,,14,20,부식성 독을 흘리는 보라빛 산성 슬라임.,E003_ToxicSlime.png,
+E004,가시 덩굴,Spike Vine,NORMAL,1,38,3,0,PS_E004,,14,20,사방으로 뻗어 분할 타격하는 덩굴.,E004_SpikeVine.png,P_MULTI_HIT|P_DUAL_ACTION
+E005,발광 버섯,Glow Mushroom,NORMAL,1,25,5,0,PS_E005,,12,18,턴마다 포자를 뿜어 자가 강화한다.,E005_GlowMushroom.png,P_GROW_ATK
+E006,이끼 거머리,Moss Leech,NORMAL,1,30,5,0,PS_E006,,14,20,소환사의 생명력을 빨아들여 자가 회복.,E006_MossLeech.png,
+E007,늪지 두꺼비,Bog Toad,NORMAL,1,35,5,0,PS_E007,,14,20,독 침을 먼저 뱉고 연속 공격한다.,E007_BogToad.png,P_DUAL_ACTION
+E008,뿌리 정령,Root Sprite,NORMAL,1,28,4,0,PS_E008,,14,20,사망한 뿌리를 즉시 다시 소환한다.,E008_RootSprite.png,P_ROOT_REBIRTH|P_ARMOR_REGEN
+E009,짖는 늑대,Howling Wolf,NORMAL,1,32,6,0,PS_E009,,14,20,울음으로 약화·침묵시키고 공격한다.,E009_HowlingWolf.png,P_SILENCE_HOWL
+E010,어둠 박쥐,Shade Bat,NORMAL,1,22,2,0,PS_E010,,12,18,작은 타격을 빠르게 반복한다.,E010_ShadeBat.png,P_MULTI_HIT
+E101,거대 골렘,Stone Golem,ELITE,1,80,8,5,PS_E101,,30,40,자가 방어도와 3턴 카운트다운 강타.,E101_StoneGolem.png,
+E102,이끼 모태,Mossy Brood,ELITE,1,60,6,0,PS_E102,,30,40,2턴마다 덩굴 쫄을 소환. 쫄 생존 시 격노.,E102_MossyBrood.png,
+E103,이끼 쌍둥이,Mossy Twins,ELITE,1,25,6,0,PS_E103,,30,40,2체로 등장. 1체 처치 시 다른 1체가 격노한다.,E103_MossyTwins.png,P_TWIN_RAGE
+E901,이끼 수호석상,Mossy Guardian,BOSS,1,250,12,6,PS_E901_P1,PH_E901,100,100,1챕터 보스. 덩굴에 뒤덮인 거대 석상.,E901_MossyGuardian.png,P_MOSS_SHIELD|P_MOSS_REFILL|P_ABSORB_MOSS|P_TRIPLE_ACTION|P_STEAL_SUMMON
+E201,사막 도적,Desert Bandit,NORMAL,2,35,10,0,PS_E201_TBD,,15,22,사막의 도적.,E201_DesertBandit.png,
+E202,모래 전갈,Sand Scorpion,NORMAL,2,28,11,0,PS_E202_TBD,,12,18,독을 건다.,E202_SandScorpion.png,
+E203,망령 검사,Wraith Swordsman,NORMAL,2,40,9,3,PS_E203_TBD,,18,25,유령 검사.,E203_WraithSwordsman.png,
+E902,피라미드의 왕,Pyramid King,BOSS,2,220,14,8,PS_E902_TBD,PH_E902_TBD,150,150,2챕터 보스.,E902_PyramidKing.png,P_TRIPLE_ACTION
+E301,용암 정령,Lava Elemental,NORMAL,3,50,13,0,PS_E301_TBD,,20,28,화상을 건다.,E301_LavaElemental.png,
+E302,화산 트롤,Volcanic Troll,NORMAL,3,60,12,5,PS_E302_TBD,,22,30,재생 능력.,E302_VolcanicTroll.png,
+E903,화산의 군주,Volcano Lord,BOSS,3,300,16,10,PS_E903_TBD,PH_E903_TBD,200,200,3챕터 보스.,E903_VolcanoLord.png,P_QUAD_ACTION
+E401,심연의 사도,Abyss Cultist,NORMAL,4,70,15,5,PS_E401_TBD,,28,38,수하를 소환.,E401_AbyssCultist.png,
+E402,그림자 용,Shadow Drake,NORMAL,4,80,16,8,PS_E402_TBD,,30,40,비행형.,E402_ShadowDrake.png,
+E904,태초의 공룡왕,Primal Dino King,BOSS,4,500,20,15,PS_E904_TBD,PH_E904_TBD,300,300,최종 보스.,E904_PrimalDinoKing.png,P_QUAD_ACTION

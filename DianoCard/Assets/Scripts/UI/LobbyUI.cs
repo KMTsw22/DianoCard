@@ -195,6 +195,42 @@ public class LobbyUI : MonoBehaviour
         DrawTitle();
         DrawButtons(gsm);
         DrawVersion();
+        DrawDevTools(gsm);
+    }
+
+    // 우측 상단 구석의 소형 개발자 툴 버튼 모음.
+    // 배경이 화려한 로비에서도 눈에 띄되 메인 UI를 가리지 않도록 글자만, 호버 시 강조.
+    private GUIStyle _devBtnStyle;
+    private void DrawDevTools(GameStateManager gsm)
+    {
+        if (_devBtnStyle == null)
+        {
+            _devBtnStyle = new GUIStyle(GUI.skin.button)
+            {
+                fontSize = 12,
+                alignment = TextAnchor.MiddleCenter,
+                fontStyle = FontStyle.Bold,
+                normal = { textColor = new Color(1f, 0.88f, 0.55f), background = null },
+                hover = { textColor = Color.white, background = null },
+                active = { textColor = new Color(1f, 0.95f, 0.7f), background = null },
+            };
+            _devBtnStyle.border = new RectOffset(0, 0, 0, 0);
+            _devBtnStyle.padding = new RectOffset(8, 8, 4, 4);
+        }
+
+        const float w = 130f, h = 26f;
+        var rect = new Rect(RefW - w - 12f, 8f, w, h);
+
+        // 살짝 박스 배경 (클릭 영역 시각화)
+        var prev = GUI.color;
+        GUI.color = new Color(0f, 0f, 0f, 0.35f);
+        GUI.DrawTexture(rect, Texture2D.whiteTexture);
+        GUI.color = prev;
+
+        if (GUI.Button(rect, "[ 애니 테스트 ]", _devBtnStyle))
+        {
+            _pending.Add(() => gsm.EnterAnimationTest());
+        }
     }
 
     // ---------------------------------------------------------
@@ -464,9 +500,11 @@ public class LobbyUI : MonoBehaviour
             _pending.Add(() => gsm.StartNewRun());
         }
 
-        // 2) AI Play — MVP에서는 비활성화
-        DrawImageButton(new Rect(x, startY + spacing * 1, btnW, btnH), _aiPlayTexture, "AI PLAY", false);
-        DrawComingSoonOverlay(new Rect(x, startY + spacing * 1, btnW, btnH));
+        // 2) AI Play 자리를 훈련장으로 대체 (AIPlay는 MVP 밖)
+        if (DrawImageButton(new Rect(x, startY + spacing * 1, btnW, btnH), _aiPlayTexture, "훈련장", true))
+        {
+            _pending.Add(() => gsm.EnterTraining());
+        }
 
         // 3) Settings — MVP에서는 비활성화
         DrawImageButton(new Rect(x, startY + spacing * 2, btnW, btnH), _settingsTexture, "SETTINGS", false);

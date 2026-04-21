@@ -1,0 +1,4 @@
+phase_set_id,phase,enter_hp_ratio,pattern_set_id,on_enter_actions,trigger_text
+PH_E901,1,1.0,PS_E901_P1,SUMMON_MOSS:4|SET_PROTECTED:1,석상이 이끼로 자신을 감싼다
+PH_E901,2,0.7,PS_E901_P2,REFILL_MOSS:4|SET_MOSS_AGGRESSIVE:1|GRACE_TURN:1,석상이 분노한다 — 이끼가 깨어난다!
+PH_E901,3,0.3,PS_E901_P3,ABSORB_MOSS:1|ENABLE_DUAL_ACTION:1|GRACE_TURN:1,이끼가 모여 석상과 하나가 된다 — 거대화!

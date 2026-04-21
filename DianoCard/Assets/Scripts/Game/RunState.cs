@@ -20,6 +20,7 @@ namespace DianoCard.Game
 
         public int currentFloor = 1;
         public string chapterId = "CH01";
+        public string characterId = "CH001";  // 선택된 캐릭터 id — 시작 덱/보상 풀 분기에 사용
 
         // 직전 전투 클리어 시 생성된 보상 (RewardUI가 읽음)
         public BattleReward pendingReward;
