@@ -2,13 +2,14 @@ id,name_kr,name_en,card_type,sub_type,rarity,cost,attack,hp,value,target,descrip
 C001,트리케라톱스,Triceratops,SUMMON,HERBIVORE,COMMON,1,4,20,0,FIELD,Herbivore. Summon directly. High HP.,Triceratops.png,1
 C002,스테고사우루스,Stegosaurus,SUMMON,HERBIVORE,COMMON,1,5,17,0,FIELD,Herbivore. Summon directly. Balanced.,Stegosaurus.png,1
 C003,안킬로사우루스,Ankylosaurus,SUMMON,HERBIVORE,UNCOMMON,2,3,25,0,FIELD,Herbivore tank. Very high HP.,Ankylosaurus.png,1
-C004,랩터,Raptor,SUMMON,CARNIVORE,COMMON,1,7,13,0,FIELD,Carnivore. Costs 1 sacrifice. Fast strike.,Raptor.png,1
-C005,카르노타우루스,Carnotaurus,SUMMON,CARNIVORE,COMMON,1,8,10,0,FIELD,Carnivore. Costs 1 sacrifice. Heavy hitter.,Carnotaurus.png,1
-C006,딜로포사우루스,Dilophosaurus,SUMMON,CARNIVORE,UNCOMMON,2,6,12,0,FIELD,Carnivore. Costs 1 sacrifice. Applies poison.,Dilophosaurus.png,2
-C007,스피노사우루스,Spinosaurus,SUMMON,CARNIVORE,RARE,3,12,18,0,FIELD,Mighty carnivore. Costs 2 sacrifices.,Spinosaurus.png,3
-C008,티렉스,T-Rex,SUMMON,CARNIVORE,RARE,3,15,22,0,FIELD,Apex carnivore. 2 sacrifices. AoE fear.,T-Rex.png,3
+C004,랩터,Raptor,SUMMON,CARNIVORE,COMMON,1,7,13,0,FIELD,Carnivore. Fast strike.,Raptor.png,1
+C005,카르노타우루스,Carnotaurus,SUMMON,CARNIVORE,COMMON,1,8,10,0,FIELD,Carnivore. Heavy hitter.,Carnotaurus.png,1
+C006,딜로포사우루스,Dilophosaurus,SUMMON,CARNIVORE,UNCOMMON,2,6,12,0,FIELD,Carnivore. Applies poison.,Dilophosaurus.png,2
+C007,스피노사우루스,Spinosaurus,SUMMON,CARNIVORE,RARE,3,12,18,0,FIELD,Mighty carnivore.,Spinosaurus.png,3
+C008,티렉스,T-Rex,SUMMON,CARNIVORE,RARE,3,15,22,0,FIELD,Apex carnivore. AoE fear.,T-Rex.png,1
 C009,프테라노돈,Pteranodon,SUMMON,CARNIVORE,UNCOMMON,2,5,8,0,FIELD,Flying. Can strike enemy back row.,Pteranodon.png,2
-C010,콤프소그나투스,Compsognathus,SUMMON,CARNIVORE,COMMON,0,2,5,0,FIELD,Tiny sacrifice fodder. Costs 0 mana.,Compsognathus.png,1
+C010,콤프소그나투스,Compsognathus,SUMMON,CARNIVORE,COMMON,0,2,5,0,FIELD,Smallest carnivore. 0-cost fusion seed (T0).,Compsognathus.png,1
+C011,브라키오사우루스,Brachiosaurus,SUMMON,HERBIVORE,RARE,2,3,40,0,FIELD,Herbivore apex. Massive tank. Unmatched HP.,Brachiosaurus.png,1
 C101,공격 마법,Attack Spell,MAGIC,ATTACK,COMMON,1,5,0,5,ENEMY,Deal 5 damage to an enemy.,AttackSpell.png,1
 C102,방어 마법,Defense Spell,MAGIC,DEFENSE,COMMON,1,0,0,6,SELF,Gain 6 block.,DefenseSpell.png,1
 C103,화염구,Fireball,MAGIC,ATTACK,UNCOMMON,2,0,0,12,ENEMY,Deal 12 damage to an enemy.,Fireball.png,1
@@ -23,7 +24,6 @@ C203,광폭화,Berserk,BUFF,ATTACK_BUFF,UNCOMMON,1,0,0,5,ALLY,+5 ATK this turn. 
 C204,광역 공격,Cleave,BUFF,SPECIAL,UNCOMMON,2,0,0,0,ALLY,Target's attacks become AoE.,Cleave.png,2
 C205,재생,Regenerate,BUFF,HEAL,UNCOMMON,1,0,0,3,ALLY,Ally +3 HP / +1 each turn (3T).,Regenerate.png,2
 C206,분노의 함성,Roar,BUFF,SPECIAL,RARE,2,0,0,0,ALL_ALLY,All allies +2 ATK permanently.,Roar.png,3
-C301,제물 의식,Sacrifice,RITUAL,SACRIFICE,COMMON,0,0,0,0,ALLY,Kill an ally. Gain +2 mana.,Sacrifice.png,1
 C302,카드 드로우,Draw,UTILITY,DRAW,COMMON,1,0,0,2,SELF,Draw 2 cards.,Draw.png,1
 C303,발굴,Excavate,UTILITY,DRAW,UNCOMMON,1,0,0,3,SELF,Draw 3 cards. Discard 1.,Excavate.png,2
 C004_T1,알파 랩터,Alpha Raptor,SUMMON,CARNIVORE,UNCOMMON,1,10,15,0,FIELD,랩터 1차 진화. 빠른 공격 강화.,Raptor_T1.png,1
@@ -51,6 +51,8 @@ C140,뿌리 방벽,Root Wall,MAGIC,DEFENSE,COMMON,1,0,0,5,SELF,Gain 5 block + dr
 C141,화석 폭발,Fossil Burst,MAGIC,ATTACK,UNCOMMON,1,0,0,8,ENEMY,Deal 8 damage. Exhaust (removed from deck permanently).,FossilBurst.png,1
 C142,고대의 외침,Ancient Cry,MAGIC,DEBUFF,UNCOMMON,1,0,0,0,ALL_ENEMY,Apply Vulnerable 1 turn to all enemies.,AncientCry.png,1
 C143,결빙 브레스,Frost Breath,MAGIC,DEBUFF,RARE,2,0,0,6,ENEMY,Deal 6 damage + Bind 1 turn.,FrostBreath.png,2
-C150,진화의 각인 I,Evolution Sigil I,MAGIC,EVOLVE,UNCOMMON,1,0,0,0,ALLY,대상 베이스 육식공룡(T0)을 다음 티어(T1)로 즉시 진화시킨다. HP 비율·누적 버프 승계.,EvolutionSigilI.png,1
-C151,진화의 각인 II,Evolution Sigil II,MAGIC,EVOLVE,RARE,2,0,0,1,ALLY,대상 1차 진화체(T1)를 최종체(T2)로 즉시 진화시킨다. HP 비율·누적 버프 승계.,EvolutionSigilII.png,2
+C152,융합의 각인,Fusion Sigil,MAGIC,FUSION,COMMON,1,0,0,0,ALLY,같은 종·같은 티어 육식공룡 2마리(필드/손 조합)를 합성해 한 단계 위 티어로 진화시킨다. 기본 1코 + 손에 있는 재료의 원래 소환 코스트 추가 지불. HP 비율 유지 + 더 높은 쪽 버프 승계.,FusionSigil.png,1
+C153,생명의 각인,Vitality Sigil,MAGIC,FUSION,UNCOMMON,1,0,0,5,ALLY,융합 실행. 결과체에게 HP +5 (2턴). 기본 코스트·재료 규칙은 C152와 동일.,VitalitySigil.png,1
+C154,격노의 각인,Fury Sigil,MAGIC,FUSION,UNCOMMON,1,0,0,3,ALLY,융합 실행. 결과체에게 ATK +3 (2턴). 기본 코스트·재료 규칙은 C152와 동일.,FurySigil.png,1
+C155,가호의 각인,Guardian Sigil,MAGIC,FUSION,UNCOMMON,1,0,0,8,ALLY,융합 실행. 결과체에게 방어막 8 부여 (2턴). 기본 코스트·재료 규칙은 C152와 동일.,GuardianSigil.png,1
 C901,잡초,Weed,UTILITY,STATUS,COMMON,1,0,0,0,SELF,⚠ 오염 카드 — 적이 강제 삽입. 효과 없음. 사용 시 소진(exhaust).,Weed.png,1

@@ -184,14 +184,10 @@ namespace DianoCard.Battle
 
         private void LateUpdate()
         {
-            // 애니메이션 진행 중이 아니면 idle bob 적용 — 캐릭터의 실제 월드 높이에 비례
+            // idle bob 비활성 — 캐릭터가 지면에 고정돼 있도록
             if (_currentAnim == null && _sr.sprite != null)
             {
-                float worldH = _scaleReferenceHeight > 0f
-                    ? _scaleReferenceHeight * transform.localScale.y
-                    : 1f;
-                float bob = Mathf.Sin(Time.time * _idleBobFreq + _idleBobPhase) * worldH * _idleBobFraction;
-                transform.position = _basePosition + new Vector3(0f, bob, 0f);
+                transform.position = _basePosition;
             }
         }
 

@@ -18,6 +18,25 @@ namespace DianoCard.Battle
     }
 
     /// <summary>
+    /// 융합의 각인(C152) 재료 하나 — 필드 SummonInstance 인덱스 또는 손패 CardInstance 인덱스 중 하나.
+    /// </summary>
+    public struct FusionMaterial
+    {
+        public bool isHand;
+        public int index;
+
+        public static FusionMaterial Field(int idx) => new FusionMaterial { isHand = false, index = idx };
+        public static FusionMaterial Hand(int idx)  => new FusionMaterial { isHand = true,  index = idx };
+    }
+
+    /// <summary>융합 카드 플레이 시 두 재료 지정. 순서는 의미 없음(검증 시 양쪽 동일 취급).</summary>
+    public struct FusionTargets
+    {
+        public FusionMaterial a;
+        public FusionMaterial b;
+    }
+
+    /// <summary>
     /// 전투 중 플레이어(소환사) 런타임 상태.
     /// </summary>
     public class Player

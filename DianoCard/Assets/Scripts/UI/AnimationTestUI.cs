@@ -216,8 +216,8 @@ public class AnimationTestUI : MonoBehaviour
         _previewActive = true;
         _replayTimer = 0f;
 
-        // 전투 맵 기본값: Normal_Battle이 있으면 자동 선택 (실제 전투와 동일 배경)
-        int defaultBg = _bgNames.FindIndex(n => n.StartsWith("Normal_Battle", System.StringComparison.OrdinalIgnoreCase));
+        // 전투 맵 기본값: BG_Ch1_Battle_이 있으면 자동 선택 (실제 전투와 동일 배경)
+        int defaultBg = _bgNames.FindIndex(n => n.StartsWith("BG_Ch1_Battle_", System.StringComparison.OrdinalIgnoreCase));
         if (defaultBg >= 0) SelectBgImage(defaultBg);
 
         // 기본 위치 = 실제 전투 위치. 클립 선택 전이라도 BattlePose 좌표로 고정.

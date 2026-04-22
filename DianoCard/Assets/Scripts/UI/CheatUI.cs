@@ -6,16 +6,23 @@ using UnityEngine;
 public class CheatUI : MonoBehaviour
 {
     private bool _open;
-    private Rect _windowRect = new(20f, 20f, 260f, 620f);
+    private Rect _windowRect = new(20f, 20f, 260f, 720f);
     private GUIStyle _btnStyle;
     private GUIStyle _titleStyle;
     private GUIStyle _stateStyle;
+
+    // 배경 리스트 캐시 — 전투 진입 시 1회만 Resources.LoadAll 수행
+    private string[] _bgNames;
+    private Vector2 _bgScroll;
 
     void Update()
     {
         var kb = UnityEngine.InputSystem.Keyboard.current;
         if (kb != null && kb.backquoteKey.wasPressedThisFrame)
+        {
             _open = !_open;
+            _bgNames = null; // 다음 열 때 배경 목록 재로드
+        }
     }
 
     void OnGUI()
@@ -122,6 +129,30 @@ public class CheatUI : MonoBehaviour
             string invLabel = battle.state.player.cheatInvincible ? "무적 OFF" : "무적 ON";
             if (GUILayout.Button(invLabel, _btnStyle)) battle.Cheat_ToggleInvincible();
             GUILayout.EndHorizontal();
+
+            // ===== 배경 전환 =====
+            GUILayout.Space(8f);
+            GUILayout.Label("— 배경 전환 —", _stateStyle);
+            if (_bgNames == null)
+            {
+                var all = Resources.LoadAll<Texture2D>("Backgrounds");
+                var list = new System.Collections.Generic.List<string>();
+                foreach (var t in all)
+                {
+                    if (t != null) list.Add(t.name);
+                }
+                list.Sort();
+                _bgNames = list.ToArray();
+            }
+
+            var battleUi = Object.FindFirstObjectByType<BattleUI>();
+            _bgScroll = GUILayout.BeginScrollView(_bgScroll, GUILayout.Height(180f));
+            foreach (var name in _bgNames)
+            {
+                if (GUILayout.Button(name, _btnStyle) && battleUi != null)
+                    battleUi.Cheat_SetBackground($"Backgrounds/{name}");
+            }
+            GUILayout.EndScrollView();
         }
 
         GUILayout.Space(12f);

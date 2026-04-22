@@ -8,6 +8,9 @@ public class CheatWindow : EditorWindow
     [MenuItem("Tools/Cheat Panel %#F12")]
     static void Open() => GetWindow<CheatWindow>("Cheat Panel");
 
+    private Vector2 _bgScroll;
+    private string[] _bgNamesCache;
+
     private void OnGUI()
     {
         if (!Application.isPlaying)
@@ -91,6 +94,36 @@ public class CheatWindow : EditorWindow
                 string invLabel = battle.state.player.cheatInvincible ? "무적 OFF" : "무적 ON";
                 if (GUILayout.Button(invLabel)) battle.Cheat_ToggleInvincible();
                 EditorGUILayout.EndHorizontal();
+
+                // ===== 배경 전환 =====
+                EditorGUILayout.Space(8);
+                EditorGUILayout.LabelField("배경 전환", EditorStyles.boldLabel);
+
+                if (_bgNamesCache == null)
+                {
+                    var all = Resources.LoadAll<Texture2D>("Backgrounds");
+                    var list = new System.Collections.Generic.List<string>();
+                    foreach (var t in all)
+                        if (t != null) list.Add(t.name);
+                    list.Sort();
+                    _bgNamesCache = list.ToArray();
+                }
+
+                EditorGUILayout.BeginHorizontal();
+                if (GUILayout.Button("목록 새로고침", GUILayout.Width(120))) _bgNamesCache = null;
+                EditorGUILayout.LabelField($"{(_bgNamesCache?.Length ?? 0)} 장");
+                EditorGUILayout.EndHorizontal();
+
+                _bgScroll = EditorGUILayout.BeginScrollView(_bgScroll, GUILayout.Height(180));
+                if (_bgNamesCache != null && ui != null)
+                {
+                    foreach (var name in _bgNamesCache)
+                    {
+                        if (GUILayout.Button(name, GUILayout.Height(24)))
+                            ui.Cheat_SetBackground($"Backgrounds/{name}");
+                    }
+                }
+                EditorGUILayout.EndScrollView();
             }
         }
 

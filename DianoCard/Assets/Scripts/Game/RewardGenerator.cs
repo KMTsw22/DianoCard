@@ -110,6 +110,10 @@ namespace DianoCard.Game
                     if (isHerb && !matchHerb) continue;
                     if (!isHerb && !matchCarn) continue;
                 }
+                // 힐 계열은 초식 전용 — 육식은 융합 시 maxHp/3 보장으로 체력 관리 축을 담당.
+                // 융합의 각인(C152)은 육식 전용이라 초식 보상에서 제외.
+                if (!isHerb && c.subType == CardSubType.HEAL) continue;
+                if (isHerb && c.subType == CardSubType.FUSION) continue;
                 allEligible.Add(c);
             }
 

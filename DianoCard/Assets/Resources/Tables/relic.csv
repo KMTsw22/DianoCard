@@ -11,7 +11,6 @@ R009,티라노의 이빨,Tyrant Tooth,UNCOMMON,ELITE,KILL,GOLD,3,적 처치 시 
 R010,화산재,Volcanic Ash,UNCOMMON,SHOP,BATTLE_START,BURN,3,전투 시작 시 모든 적에게 화상 3.
 R011,공룡의 심장,Dino Heart,RARE,BOSS,PASSIVE,MAX_HP,25,최대 HP +25.
 R012,태초의 알,Primal Egg,RARE,BOSS,BATTLE_END,CARD,0,전투 승리 시 랜덤 공룡 카드 1장 획득 (일시).
-R013,제물의 단검,Sacrificial Dagger,RARE,BOSS,PASSIVE,SACRIFICE_COST,-1,제물 요구량 -1.
 R014,왕의 왕관,King's Crown,RARE,BOSS,PASSIVE,MANA,1,매 턴 마나 +1.
 R015,영원의 모래시계,Eternal Hourglass,RARE,BOSS,BATTLE_START,DRAW,3,전투 시작 시 3장 추가 드로우.
 R016,광폭의 부적,Rage Amulet,RARE,EVENT,HP_LOW,ATTACK_BUFF,3,HP 50% 이하 시 공격력 +3.

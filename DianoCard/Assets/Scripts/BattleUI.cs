@@ -39,6 +39,12 @@ public class BattleUI : MonoBehaviour
     // 공룡 교체 모드: 필드 꽉 찬 상태에서 SUMMON 카드 클릭 후 교체할 필드 공룡 클릭 대기 중 (-1 = 비활성).
     private int _swapFromCardIndex = -1;
 
+    // 융합 모드: MAGIC/FUSION 카드가 _targetingCardIndex로 지정된 상태에서, 첫 재료를 선택 → 두 번째 선택 → 실행.
+    // _fusionMaterialAPicked == false면 첫 번째 재료 대기 중, true면 두 번째 대기 중.
+    // _fusionMaterialA는 선택된 재료의 (필드/손, 인덱스) 기록.
+    private bool _fusionMaterialAPicked;
+    private DianoCard.Battle.FusionMaterial _fusionMaterialA;
+
     // 패시브 호버 툴팁 — 프레임마다 리셋. 해당 프레임에 마우스가 칩 위에 있으면 채워진다.
     private string _hoveredPassiveTitle;
     private string _hoveredPassiveBody;
@@ -1113,18 +1119,48 @@ public class BattleUI : MonoBehaviour
         gsm.EndBattle(won, hp);
     }
 
+    /// <summary>치트: 런타임에 배경을 특정 파일로 교체.</summary>
+    public void Cheat_SetBackground(string resourcePath)
+    {
+        var tex = Resources.Load<Texture2D>(resourcePath);
+        if (tex == null)
+        {
+            Debug.LogWarning($"[Cheat] Background not found: Resources/{resourcePath}");
+            return;
+        }
+        _backgroundTexture = tex;
+        // 기존 sprite를 다시 만들게끔 강제 — _worldBgSr는 그대로 두고 sprite만 교체됨
+        UpdateWorldBackground();
+    }
+
     private Texture2D LoadBackgroundFor(EnemyData enemy)
     {
-        string path = enemy.enemyType switch
+        if (enemy.enemyType == EnemyType.BOSS)
         {
-            EnemyType.BOSS => "Backgrounds/Boss",
-            EnemyType.ELITE => "Backgrounds/Elite",
-            _ => "Backgrounds/Normal",
-        };
+            var boss = Resources.Load<Texture2D>("Backgrounds/BG_Ch1_Boss_01");
+            if (boss == null) Debug.LogWarning("[BattleUI] Background not found: Resources/Backgrounds/BG_Ch1_Boss_01");
+            return boss;
+        }
+        if (enemy.enemyType == EnemyType.ELITE)
+        {
+            var elite = Resources.Load<Texture2D>("Backgrounds/BG_Ch1_Elite_01");
+            if (elite == null) Debug.LogWarning("[BattleUI] Background not found: Resources/Backgrounds/BG_Ch1_Elite_01");
+            return elite;
+        }
 
-        var tex = Resources.Load<Texture2D>(path);
-        if (tex == null) Debug.LogWarning($"[BattleUI] Background not found: Resources/{path}");
-        return tex;
+        // Normal: BG_Ch1_Battle_NN 중 랜덤 선택
+        var all = Resources.LoadAll<Texture2D>("Backgrounds");
+        var variants = new List<Texture2D>();
+        foreach (var t in all)
+        {
+            if (t != null && t.name.StartsWith("BG_Ch1_Battle_")) variants.Add(t);
+        }
+        if (variants.Count == 0)
+        {
+            Debug.LogWarning("[BattleUI] No BG_Ch1_Battle_NN backgrounds found in Resources/Backgrounds");
+            return Resources.Load<Texture2D>("Backgrounds/BG_Ch1_Battle_02");
+        }
+        return variants[UnityEngine.Random.Range(0, variants.Count)];
     }
 
     // =========================================================
@@ -1247,7 +1283,7 @@ public class BattleUI : MonoBehaviour
 
         if (active)
         {
-            // 우클릭으로 타겟팅 취소 (카드/공룡/교체 모두)
+            // 우클릭으로 타겟팅 취소 (카드/공룡/교체/융합 모두)
             if ((_targetingCardIndex >= 0 || _targetingSummonIndex >= 0 || _swapFromCardIndex >= 0)
                 && Event.current.type == EventType.MouseDown
                 && Event.current.button == 1)
@@ -1255,6 +1291,7 @@ public class BattleUI : MonoBehaviour
                 _targetingCardIndex = -1;
                 _targetingSummonIndex = -1;
                 _swapFromCardIndex = -1;
+                _fusionMaterialAPicked = false;
                 Event.current.Use();
             }
 
@@ -1262,7 +1299,10 @@ public class BattleUI : MonoBehaviour
             if (_targetingCardIndex >= _battle.state.hand.Count)
             {
                 _targetingCardIndex = -1;
+                _fusionMaterialAPicked = false;
             }
+            // 융합 카드가 더 이상 hand에 없으면 융합 상태 리셋
+            if (_targetingCardIndex < 0) _fusionMaterialAPicked = false;
             if (_swapFromCardIndex >= _battle.state.hand.Count)
             {
                 _swapFromCardIndex = -1;
@@ -1444,7 +1484,21 @@ public class BattleUI : MonoBehaviour
     {
         if (_targetingCardIndex < 0 || _targetingCardIndex >= state.hand.Count) return;
         var c = state.hand[_targetingCardIndex].data;
-        string text = $"▶ {c.nameKr} 사용 중 — 적을 클릭하세요  (우클릭: 취소)";
+        string text;
+        if (CardNeedsFusionTargets(c))
+        {
+            text = _fusionMaterialAPicked
+                ? $"▶ {c.nameKr} — 두 번째 재료(같은 종·같은 티어)를 클릭  (우클릭: 취소)"
+                : $"▶ {c.nameKr} — 융합할 육식공룡 두 마리 중 첫 재료를 클릭 (필드/손)  (우클릭: 취소)";
+        }
+        else if (CardNeedsAllyTarget(c))
+        {
+            text = $"▶ {c.nameKr} 사용 중 — 아군 공룡을 클릭하세요  (우클릭: 취소)";
+        }
+        else
+        {
+            text = $"▶ {c.nameKr} 사용 중 — 적을 클릭하세요  (우클릭: 취소)";
+        }
 
         // 살짝 보였다 사라졌다 하는 알파 펄스 (sin 0~1 → 0.35~0.95)
         float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 2.2f);
@@ -1694,7 +1748,7 @@ public class BattleUI : MonoBehaviour
 
     private static bool CardNeedsTarget(CardData c)
     {
-        return CardNeedsEnemyTarget(c) || CardNeedsAllyTarget(c);
+        return CardNeedsEnemyTarget(c) || CardNeedsAllyTarget(c) || CardNeedsFusionTargets(c);
     }
 
     private static bool CardNeedsEnemyTarget(CardData c)
@@ -1704,12 +1758,99 @@ public class BattleUI : MonoBehaviour
             && c.target == TargetType.ENEMY;
     }
 
-    // ALLY 단일 타겟 카드 — 수호 마법(MAGIC/DEFENSE + ALLY) / 진화 촉매(MAGIC/EVOLVE + ALLY)
+    // ALLY 단일 타겟 카드 — 수호 마법(MAGIC/DEFENSE + ALLY)만 해당.
+    // 융합(MAGIC/FUSION)은 2개 재료 지정이 필요해 별도 흐름으로 처리 (CardNeedsFusionTargets).
     private static bool CardNeedsAllyTarget(CardData c)
     {
         if (c.target != TargetType.ALLY) return false;
         if (c.cardType != CardType.MAGIC) return false;
-        return c.subType == CardSubType.DEFENSE || c.subType == CardSubType.EVOLVE;
+        return c.subType == CardSubType.DEFENSE;
+    }
+
+    // 융합 카드 — 재료 2개(필드/손 자유 조합) 지정 필요.
+    private static bool CardNeedsFusionTargets(CardData c)
+    {
+        return c.cardType == CardType.MAGIC && c.subType == CardSubType.FUSION;
+    }
+
+    /// <summary>주어진 후보(필드 SummonInstance 또는 손패 인덱스)가 현재 융합 흐름에서 재료로 선택 가능한지 판정.
+    /// 첫 재료 단계면 "육식 SUMMON + 티어 &lt; 2"만 체크하고, 두 번째 단계면 A와 종/티어가 일치하는지까지 검증한다.</summary>
+    private bool IsFusionMaterialEligible(DianoCard.Battle.SummonInstance s, int index, bool isHand)
+    {
+        if (_targetingCardIndex < 0) return false;
+        var state = _battle?.state;
+        if (state == null) return false;
+
+        CardData candidateData;
+        string candidateBaseId;
+        int candidateTier;
+        if (isHand)
+        {
+            if (index < 0 || index >= state.hand.Count) return false;
+            if (index == _targetingCardIndex) return false; // 촉매 자기 자신 제외
+            candidateData = state.hand[index].data;
+            candidateBaseId = candidateData.id;
+            candidateTier = 0; // 손 카드는 항상 T0 (T1/T2 결과체는 덱/보상 풀에서 제외됨)
+        }
+        else
+        {
+            if (s == null || s.IsDead) return false;
+            candidateData = s.data;
+            candidateBaseId = s.originCardId;
+            candidateTier = GetCarnivoreTierFromCardId(s.data.id);
+        }
+
+        if (candidateData.cardType != CardType.SUMMON) return false;
+        if (candidateData.subType != CardSubType.CARNIVORE) return false;
+        if (candidateTier >= 2) return false; // T2는 더 이상 진화 불가
+
+        if (!_fusionMaterialAPicked) return true;
+
+        // 두 번째 재료 — A와 종/티어 일치해야 함
+        if (_fusionMaterialA.isHand == isHand && _fusionMaterialA.index == index) return false;
+
+        string aBaseId;
+        int aTier;
+        if (_fusionMaterialA.isHand)
+        {
+            if (_fusionMaterialA.index < 0 || _fusionMaterialA.index >= state.hand.Count) return false;
+            aBaseId = state.hand[_fusionMaterialA.index].data.id;
+            aTier = 0;
+        }
+        else
+        {
+            if (_fusionMaterialA.index < 0 || _fusionMaterialA.index >= state.field.Count) return false;
+            var aInst = state.field[_fusionMaterialA.index];
+            aBaseId = aInst.originCardId;
+            aTier = GetCarnivoreTierFromCardId(aInst.data.id);
+        }
+
+        return candidateBaseId == aBaseId && candidateTier == aTier;
+    }
+
+    private void HandleFusionMaterialClick(DianoCard.Battle.FusionMaterial m)
+    {
+        if (!_fusionMaterialAPicked)
+        {
+            _fusionMaterialA = m;
+            _fusionMaterialAPicked = true;
+        }
+        else
+        {
+            int catalystIdx = _targetingCardIndex;
+            var targets = new DianoCard.Battle.FusionTargets { a = _fusionMaterialA, b = m };
+            _targetingCardIndex = -1;
+            _fusionMaterialAPicked = false;
+            _pending.Add(() => { _battle.PlayCard(catalystIdx, -1, -1, -1, targets); });
+        }
+    }
+
+    private static int GetCarnivoreTierFromCardId(string cardId)
+    {
+        if (string.IsNullOrEmpty(cardId)) return 0;
+        if (cardId.EndsWith("_T2")) return 2;
+        if (cardId.EndsWith("_T1")) return 1;
+        return 0;
     }
 
     // 플레이어가 공격 모션(채찍 lunge)을 취해야 하는 카드인지 여부.
@@ -1731,7 +1872,7 @@ public class BattleUI : MonoBehaviour
         const float GroundY = 540f;
 
         _slotPositions.Clear();
-        _slotPositions[state.player] = new Vector2(180, GroundY - 110);
+        _slotPositions[state.player] = new Vector2(230, GroundY - 145);
 
         int fieldCount = state.field.Count;
         for (int i = 0; i < fieldCount; i++)
@@ -1744,11 +1885,20 @@ public class BattleUI : MonoBehaviour
         foreach (var e in state.enemies)
         {
             if (e.IsDead) continue;
-            // 소환수와 같은 톤으로 살짝 대각선 스태거 — 뒤쪽(aliveIdx 큰) 적은 더 멀고 위로
-            _slotPositions[e] = new Vector2(1070 - aliveIdx * 160, GroundY - 100 - aliveIdx * 32);
+            // 적 크기는 타입별로 다름 — 발끝이 GroundY에 닿도록 센터 Y를 h/2만큼 위로.
+            float h = GetEnemyDrawHeight(e);
+            _slotPositions[e] = new Vector2(1070 - aliveIdx * 160, GroundY - h / 2f - aliveIdx * 32);
             aliveIdx++;
         }
     }
+
+    // 적 타입별 드로잉 높이 — 엘리트/보스는 플레이어보다 크게.
+    private static float GetEnemyDrawHeight(EnemyInstance e) => e.data.enemyType switch
+    {
+        EnemyType.BOSS  => 400f,
+        EnemyType.ELITE => 320f,
+        _               => 240f,
+    };
 
     // 필드 소환수 슬롯 레이아웃 — 1마리면 중앙, 2마리 이상은 대각선 스태거로 깊이감.
     // Y 기준은 groundY-55 — 발끝이 지면선 근처에 자연스럽게 닿도록.
@@ -1814,7 +1964,7 @@ public class BattleUI : MonoBehaviour
     private void DrawPlayerNPC(Player p, Vector2 center)
     {
         // 캐릭터 스프라이트는 world-space BattleEntityView가 그림. IMGUI에서는 HP 바만 처리.
-        const float h = 260;
+        const float h = 286;
         if (_playerSprite != null)
         {
             float texAspect = _playerSprite.width / (float)_playerSprite.height;
@@ -2204,6 +2354,10 @@ public class BattleUI : MonoBehaviour
             bool allyTargetMode = _targetingCardIndex >= 0
                 && _targetingCardIndex < _battle.state.hand.Count
                 && CardNeedsAllyTarget(_battle.state.hand[_targetingCardIndex].data);
+            bool fusionMode = _targetingCardIndex >= 0
+                && _targetingCardIndex < _battle.state.hand.Count
+                && CardNeedsFusionTargets(_battle.state.hand[_targetingCardIndex].data);
+            bool fieldMaterialEligible = fusionMode && IsFusionMaterialEligible(s, summonIndex, isHand: false);
 
             if (_swapFromCardIndex >= 0)
             {
@@ -2230,6 +2384,31 @@ public class BattleUI : MonoBehaviour
                     int allyIdx = summonIndex;
                     _targetingCardIndex = -1;
                     _pending.Add(() => { _battle.PlayCard(cardIdx, -1, -1, allyIdx); });
+                }
+            }
+            else if (fusionMode)
+            {
+                bool isFusionA = _fusionMaterialAPicked
+                    && !_fusionMaterialA.isHand
+                    && _fusionMaterialA.index == summonIndex;
+                if (isFusionA)
+                {
+                    // 이미 선택된 재료 A — 글로우 유지, 재클릭으로 선택 해제.
+                    DrawTargetFootGlow(rect, true);
+                    if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && hovered)
+                    {
+                        ev.Use();
+                        _fusionMaterialAPicked = false;
+                    }
+                }
+                else if (fieldMaterialEligible)
+                {
+                    DrawTargetFootGlow(rect, hovered);
+                    if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && hovered)
+                    {
+                        ev.Use();
+                        HandleFusionMaterialClick(DianoCard.Battle.FusionMaterial.Field(summonIndex));
+                    }
                 }
             }
             else if (_targetingCardIndex < 0)
@@ -2259,7 +2438,8 @@ public class BattleUI : MonoBehaviour
 
     private void DrawEnemy(EnemyInstance e, int enemyIndex, Vector2 center)
     {
-        const float w = 200, h = 200;
+        float h = GetEnemyDrawHeight(e);
+        float w = h; // 정사각 rect — 스프라이트는 ScaleToFit으로 aspect 유지
         var rect = new Rect(center.x - w / 2, center.y - h / 2, w, h);
 
         // 적 애니메이션 뷰는 world-space BattleEntityView가 그림. IMGUI는 HP/intent만.
@@ -3133,7 +3313,10 @@ public class BattleUI : MonoBehaviour
 
             GUI.matrix = baseMatrix * RotateAroundPivotMatrix(angle, center);
 
-            if (i == _targetingCardIndex || i == _swapFromCardIndex)
+            bool isFusionFanA = _fusionMaterialAPicked
+                && _fusionMaterialA.isHand
+                && _fusionMaterialA.index == i;
+            if (i == _targetingCardIndex || i == _swapFromCardIndex || isFusionFanA)
             {
                 DrawSoftCardGlow(rect);
             }
@@ -3181,11 +3364,38 @@ public class BattleUI : MonoBehaviour
             // 숨김 진행도에 따라 함께 아래로 슬라이드.
             var hoverRect = new Rect(fanCenter.x - hw * 0.5f, RefH - hh - hoverBottomPad + hideOffset, hw, hh);
 
-            if (i == _targetingCardIndex || i == _swapFromCardIndex)
+            bool isFusionHoverA = _fusionMaterialAPicked
+                && _fusionMaterialA.isHand
+                && _fusionMaterialA.index == i;
+            if (i == _targetingCardIndex || i == _swapFromCardIndex || isFusionHoverA)
             {
                 DrawSoftCardGlow(hoverRect);
             }
             DrawCardFrame(hoverRect, c, canPlay, drawCost: true);
+
+            // 융합 모드에서 손 카드 클릭 — 재료 선택으로 가로챔 (canPlay 무관).
+            bool fusionMode = _targetingCardIndex >= 0
+                && _targetingCardIndex < state.hand.Count
+                && CardNeedsFusionTargets(state.hand[_targetingCardIndex].data);
+            if (fusionMode)
+            {
+                var ev2 = Event.current;
+                if (ev2.type == EventType.MouseDown && ev2.button == 0 && hoverRect.Contains(ev2.mousePosition))
+                {
+                    ev2.Use();
+                    if (i == _targetingCardIndex)
+                    {
+                        // 촉매 카드 재클릭 → 융합 모드 취소
+                        _targetingCardIndex = -1;
+                        _fusionMaterialAPicked = false;
+                    }
+                    else if (IsFusionMaterialEligible(null, i, isHand: true))
+                    {
+                        HandleFusionMaterialClick(DianoCard.Battle.FusionMaterial.Hand(i));
+                    }
+                    return; // 융합 모드에서는 일반 클릭 처리로 내려가지 않음
+                }
+            }
 
             // 클릭 처리: 호버된 카드에서만
             if (canPlay)
@@ -3202,6 +3412,7 @@ public class BattleUI : MonoBehaviour
                     {
                         _targetingCardIndex = captured;
                         _swapFromCardIndex = -1;
+                        _fusionMaterialAPicked = false;
                     }
                     else if (isSummon && fieldFull)
                     {
@@ -3325,7 +3536,38 @@ public class BattleUI : MonoBehaviour
         if (CardNeedsAllyTarget(c) && state.field.Count == 0) return false;
         if (c.cardType == CardType.MAGIC && c.subType == CardSubType.DEFENSE
             && c.target == TargetType.ALL_ALLY && state.field.Count == 0) return false;
+        // 융합 카드: 필드 + 손 조합에 같은 종·같은 티어 육식이 최소 2마리 있어야 재료 확보 가능.
+        if (CardNeedsFusionTargets(c) && !HasAnyFusionPair(state)) return false;
         return true;
+    }
+
+    /// <summary>필드 + 손 조합에 융합 가능한 같은 종·같은 티어 육식 쌍이 하나라도 있는지 판정.
+    /// 엄밀하게는 코스트까지 고려해야 하지만 MVP에선 재료 존재만 체크 — 실제 플레이 시점에 코스트 재검증됨.</summary>
+    private static bool HasAnyFusionPair(BattleState state)
+    {
+        // (originCardId, tier) → 개수
+        var counts = new Dictionary<(string, int), int>();
+        foreach (var s in state.field)
+        {
+            if (s == null || s.IsDead) continue;
+            if (s.data.subType != CardSubType.CARNIVORE) continue;
+            int tier = GetCarnivoreTierFromCardId(s.data.id);
+            if (tier >= 2) continue; // T2는 진화 불가
+            var key = (s.originCardId, tier);
+            counts.TryGetValue(key, out int n);
+            counts[key] = n + 1;
+        }
+        foreach (var inst in state.hand)
+        {
+            var c = inst.data;
+            if (c.cardType != CardType.SUMMON) continue;
+            if (c.subType != CardSubType.CARNIVORE) continue;
+            var key = (c.id, 0); // 손 카드는 항상 T0, originCardId == data.id
+            counts.TryGetValue(key, out int n);
+            counts[key] = n + 1;
+        }
+        foreach (var n in counts.Values) if (n >= 2) return true;
+        return false;
     }
 
     private static Vector2 FanCardCenter(float originX, float originY, float radius, float angleDeg)

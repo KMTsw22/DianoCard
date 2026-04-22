@@ -96,14 +96,26 @@ namespace DianoCard.Battle
 
         /// <param name="targetEnemyIndex">단일 적 타겟 카드의 적 인덱스. -1이면 자동(첫 적).</param>
         /// <param name="swapFieldIndex">SUMMON 카드를 필드 꽉 찬 상태로 플레이할 때 교체 대상 공룡 인덱스. 슬롯 여유 있으면 무시.</param>
-        /// <param name="allyTargetIndex">ALLY 타겟 카드(수호 마법, 먹이 등)의 대상 공룡 인덱스. ALL_ALLY는 무시.</param>
+        /// <param name="allyTargetIndex">ALLY 타겟 카드(수호 마법 등)의 대상 공룡 인덱스. ALL_ALLY는 무시.</param>
+        /// <param name="fusion">융합 카드(MAGIC/FUSION) 플레이 시 재료 2개. 다른 카드는 null.</param>
         /// <returns>성공적으로 사용했으면 true</returns>
-        public bool PlayCard(int handIndex, int targetEnemyIndex = -1, int swapFieldIndex = -1, int allyTargetIndex = -1)
+        public bool PlayCard(int handIndex, int targetEnemyIndex = -1, int swapFieldIndex = -1, int allyTargetIndex = -1, FusionTargets? fusion = null)
         {
             if (handIndex < 0 || handIndex >= state.hand.Count) return false;
 
             var inst = state.hand[handIndex];
             var card = inst.data;
+
+            // 융합 카드는 별도 경로 — 코스트/재료/필드 변형 로직이 전혀 다르다.
+            if (card.cardType == CardType.MAGIC && card.subType == CardSubType.FUSION)
+            {
+                if (!fusion.HasValue)
+                {
+                    Log($"  ! Cannot play {card.nameKr}: fusion targets required");
+                    return false;
+                }
+                return TryPlayFusion(handIndex, inst, card, fusion.Value);
+            }
 
             // SUMMON 카드는 summonCostReduction 적용 (C132 동족 소환 등)
             int effectiveCost = card.cardType == CardType.SUMMON
@@ -116,13 +128,12 @@ namespace DianoCard.Battle
             }
 
             // 덮어쓰기 사전 판정 — 초식만 해당. 같은 id 초식 SUMMON이 필드에 있으면 슬롯 체크 건너뛰고
-            // ResolveCard에서 스택 증가(같은 몸 강화)로 처리. 육식은 더 이상 "합성" 경로가 없고,
-            // 대신 별도 "진화의 각인" (MAGIC/EVOLVE) 카드로 업그레이드한다.
+            // ResolveCard에서 스택 증가(같은 몸 강화)로 처리. 육식은 융합의 각인(C152)으로만 티어업.
             bool isOverwrite = card.cardType == CardType.SUMMON
                 && card.subType == CardSubType.HERBIVORE
                 && FindOverwriteTarget(card.id) != null;
 
-            // 필드 슬롯 제한 — 꽉 차면 swapFieldIndex로 교체 가능. 미지정이면 블록. (덮어쓰기/합성은 슬롯 불필요)
+            // 필드 슬롯 제한 — 꽉 차면 swapFieldIndex로 교체 가능. 미지정이면 블록. (덮어쓰기는 슬롯 불필요)
             bool needsSwap = card.cardType == CardType.SUMMON && !isOverwrite && state.field.Count >= state.maxFieldSize;
             if (needsSwap)
             {
@@ -137,25 +148,15 @@ namespace DianoCard.Battle
                 state.field.RemoveAt(swapFieldIndex);
             }
 
-            // 수호 마법 / 진화 촉매 단일 타겟(MAGIC + ALLY): 대상 필요
+            // 수호 마법 단일 타겟(MAGIC/DEFENSE + ALLY): 대상 필요
             if (card.target == TargetType.ALLY
                 && card.cardType == CardType.MAGIC
-                && (card.subType == CardSubType.DEFENSE || card.subType == CardSubType.EVOLVE))
+                && card.subType == CardSubType.DEFENSE)
             {
                 if (allyTargetIndex < 0 || allyTargetIndex >= state.field.Count)
                 {
                     Log($"  ! Cannot play {card.nameKr}: ally target required");
                     return false;
-                }
-                // 진화 촉매는 대상이 "육식공룡 + 다음 진화 경로 존재 + 대상 rank 일치"여야 함.
-                if (card.subType == CardSubType.EVOLVE)
-                {
-                    var target = state.field[allyTargetIndex];
-                    if (!CanEvolveWithCatalyst(target, card))
-                    {
-                        Log($"  ! Cannot play {card.nameKr}: target is not a valid evolution subject");
-                        return false;
-                    }
                 }
             }
 
@@ -253,22 +254,217 @@ namespace DianoCard.Battle
             }
         }
 
-        /// <summary>대상 공룡을 next 티어로 교체. 스택 누적 보너스와 현재 HP 비율을 보존한다.
-        /// 진화 촉매 카드(MAGIC/EVOLVE) 사용 시 호출된다 — 과거의 스택 임계치 자동 진화 루프는 제거됨.</summary>
-        private void EvolveSummon(SummonInstance s, CardData next)
+        // =========================================================
+        // 융합의 각인 (C152) — 같은 종·같은 티어 육식 2마리 합성
+        // =========================================================
+
+        /// <summary>융합 시도 — 검증 → 코스트 체크 → 재료 소비 → 다음 티어로 변형.
+        /// 실패 시 어떤 상태도 변경하지 않는다 (얼리 리턴으로 원자성 보장).</summary>
+        private bool TryPlayFusion(int catalystHandIndex, CardInstance catalystInst, CardData catalyst, FusionTargets targets)
         {
-            // 진화 전 스택 누적으로 쌓인 보너스(현재 스탯 - 현재 data 기준)를 보존해서 새 형태 위에 얹음.
-            int attackBonus = s.attack - s.data.attack;
-            int maxHpBonus = s.maxHp - s.data.hp;
-            float hpRatio = s.maxHp > 0 ? (float)s.hp / s.maxHp : 1f;
-            var oldName = s.data.nameKr;
+            var a = targets.a;
+            var b = targets.b;
+
+            // 1) 중복 지정 방지
+            if (a.isHand == b.isHand && a.index == b.index)
+            {
+                Log($"  ! {catalyst.nameKr}: 같은 재료 중복 지정 불가");
+                return false;
+            }
+            // 1-b) 촉매 카드 자체를 재료로 지정 방지
+            if ((a.isHand && a.index == catalystHandIndex) || (b.isHand && b.index == catalystHandIndex))
+            {
+                Log($"  ! {catalyst.nameKr}: 촉매 카드 자체는 재료로 쓸 수 없음");
+                return false;
+            }
+
+            // 2) 재료 해석 — 손은 CardData, 필드는 SummonInstance
+            SummonInstance aField = a.isHand ? null : GetFieldSafe(a.index);
+            SummonInstance bField = b.isHand ? null : GetFieldSafe(b.index);
+            CardData aData = a.isHand ? GetHandCardSafe(a.index) : aField?.data;
+            CardData bData = b.isHand ? GetHandCardSafe(b.index) : bField?.data;
+            if (aData == null || bData == null)
+            {
+                Log($"  ! {catalyst.nameKr}: 재료 인덱스 범위 오류");
+                return false;
+            }
+
+            // 3) 둘 다 육식 SUMMON 이어야 함
+            bool aIsCarnivore = aData.cardType == CardType.SUMMON && aData.subType == CardSubType.CARNIVORE;
+            bool bIsCarnivore = bData.cardType == CardType.SUMMON && bData.subType == CardSubType.CARNIVORE;
+            if (!aIsCarnivore || !bIsCarnivore)
+            {
+                Log($"  ! {catalyst.nameKr}: 재료는 육식 SUMMON 카드여야 함");
+                return false;
+            }
+
+            // 4) 종 일치 — 필드는 originCardId(진화 전 베이스), 손은 data.id(애초 T0)
+            string aBase = aField != null ? aField.originCardId : aData.id;
+            string bBase = bField != null ? bField.originCardId : bData.id;
+            if (aBase != bBase)
+            {
+                Log($"  ! {catalyst.nameKr}: 서로 다른 종({aBase} vs {bBase})은 융합 불가");
+                return false;
+            }
+
+            // 5) 티어 일치 — 필드는 현재 data.id 접미사, 손 카드는 항상 T0
+            int aTier = aField != null ? GetCarnivoreRank(aField.data.id) : 0;
+            int bTier = bField != null ? GetCarnivoreRank(bField.data.id) : 0;
+            if (aTier != bTier)
+            {
+                Log($"  ! {catalyst.nameKr}: 혼합 티어(T{aTier}+T{bTier}) 불가");
+                return false;
+            }
+            if (aTier >= 2)
+            {
+                Log($"  ! {catalyst.nameKr}: 최종체(T2)는 더 이상 융합 불가");
+                return false;
+            }
+
+            // 6) 다음 티어 조회
+            string currentId = aField != null ? aField.data.id : aData.id;
+            var evo = DataManager.Instance.GetEvolution(currentId);
+            var nextData = evo != null ? DataManager.Instance.GetCard(evo.resultCardId) : null;
+            if (nextData == null)
+            {
+                Log($"  ! {catalyst.nameKr}: {currentId}의 다음 진화 경로 없음");
+                return false;
+            }
+
+            // 7) 코스트 계산 — 기본(각인) + 손 재료 소환 코스트
+            int aHandCost = a.isHand ? aData.cost : 0;
+            int bHandCost = b.isHand ? bData.cost : 0;
+            int totalCost = catalyst.cost + aHandCost + bHandCost;
+            if (state.player.mana < totalCost)
+            {
+                Log($"  ! {catalyst.nameKr}: 필요 마나 {totalCost} (보유 {state.player.mana})");
+                return false;
+            }
+
+            // 8) 슬롯 체크 — hand+hand는 필드 +1. field+field는 -1, field+hand는 ±0.
+            bool bothHand = a.isHand && b.isHand;
+            if (bothHand && state.field.Count >= state.maxFieldSize)
+            {
+                Log($"  ! {catalyst.nameKr}: 필드 꽉 참 — 손+손 융합은 빈 슬롯 필요");
+                return false;
+            }
+
+            // === 여기서부터 상태 변경 — 이 지점 이전에 모든 검증 완료 ===
+
+            state.player.mana -= totalCost;
+
+            // 각인 카드 제거 → discard
+            state.hand.RemoveAt(catalystHandIndex);
+            state.discard.Add(catalystInst);
+
+            // 손 재료 인덱스 보정 (catalyst 제거로 밀려난 만큼)
+            int ah = a.isHand ? (a.index > catalystHandIndex ? a.index - 1 : a.index) : -1;
+            int bh = b.isHand ? (b.index > catalystHandIndex ? b.index - 1 : b.index) : -1;
+
+            // 손 재료 제거 — 인덱스 큰 쪽부터
+            var handIdxToRemove = new List<int>();
+            if (ah >= 0) handIdxToRemove.Add(ah);
+            if (bh >= 0) handIdxToRemove.Add(bh);
+            handIdxToRemove.Sort((x, y) => y.CompareTo(x));
+            foreach (int hi in handIdxToRemove)
+            {
+                var hc = state.hand[hi];
+                state.hand.RemoveAt(hi);
+                state.discard.Add(hc); // 손 재료는 discard로 (재사용 가능)
+            }
+
+            // 버프 승계 — 더 높은 쪽 기준
+            int maxAtkBonus = 0;
+            int maxHpBonus = 0;
+            int preservedHp = 0;
+            if (aField != null)
+            {
+                maxAtkBonus = Math.Max(maxAtkBonus, aField.attack - aField.data.attack);
+                maxHpBonus  = Math.Max(maxHpBonus,  aField.maxHp - aField.data.hp);
+                preservedHp = Math.Max(preservedHp, aField.hp);
+            }
+            if (bField != null)
+            {
+                maxAtkBonus = Math.Max(maxAtkBonus, bField.attack - bField.data.attack);
+                maxHpBonus  = Math.Max(maxHpBonus,  bField.maxHp - bField.data.hp);
+                preservedHp = Math.Max(preservedHp, bField.hp);
+            }
+
+            // 결과 SummonInstance 결정 — 필드 재료가 하나라도 있으면 그걸 "기본"으로 변형
+            SummonInstance result;
+            if (aField != null)
+            {
+                result = aField;
+                if (bField != null)
+                {
+                    // field+field — 두 번째 재료를 필드에서 제거
+                    ReturnBoundCard(bField);
+                    state.field.Remove(bField);
+                }
+                ApplyFusionResult(result, nextData, aBase, maxAtkBonus, maxHpBonus, preservedHp);
+            }
+            else if (bField != null)
+            {
+                result = bField;
+                ApplyFusionResult(result, nextData, aBase, maxAtkBonus, maxHpBonus, preservedHp);
+            }
+            else
+            {
+                // hand+hand — 신규 SummonInstance 생성, 필드 진입. sourceCardInstance 없음(재료 카드는 discard로 감).
+                result = new SummonInstance(nextData) { originCardId = aBase };
+                // 손 재료는 다치지 않은 상태라 hp=maxHp. 보너스는 0일 수밖에 없지만 정합성 유지.
+                result.attack = nextData.attack + maxAtkBonus;
+                result.maxHp  = nextData.hp + maxHpBonus;
+                result.hp     = result.maxHp;
+                state.field.Add(result);
+            }
+
+            Log($"    🦖 융합! {aBase} T{aTier}+T{bTier} → {nextData.nameKr} (ATK {result.attack} / HP {result.hp}/{result.maxHp}, cost {totalCost})");
+            return true;
+        }
+
+        /// <summary>필드 재료 하나를 다음 티어로 변형 — HP 비율 유지 + minHp/3 보장 + 승계 버프 적용.</summary>
+        private void ApplyFusionResult(SummonInstance s, CardData next, string baseId, int maxAtkBonus, int maxHpBonus, int preservedCurrentHp)
+        {
+            float hpRatio = s.maxHp > 0 ? (float)preservedCurrentHp / s.maxHp : 1f;
             s.data = next;
-            s.attack = next.attack + attackBonus;
-            s.maxHp = next.hp + maxHpBonus;
-            // 진화 후 HP는 기존 비율 유지하되 최소 maxHp/3은 보장 (티어 넘을 때 한방킬 방지)
+            s.originCardId = baseId;
+            s.attack = next.attack + maxAtkBonus;
+            s.maxHp  = next.hp + maxHpBonus;
             int minHp = Math.Max(1, s.maxHp / 3);
-            s.hp = Math.Max(minHp, Mathf.RoundToInt(s.maxHp * hpRatio));
-            Log($"    🌟 {oldName} → {next.nameKr} 진화! (ATK {s.attack} / HP {s.hp}/{s.maxHp})");
+            int scaledHp = Mathf.RoundToInt(s.maxHp * hpRatio);
+            s.hp = Math.Clamp(Math.Max(scaledHp, preservedCurrentHp), minHp, s.maxHp);
+            s.hp = Math.Min(s.hp, s.maxHp);
+        }
+
+        private SummonInstance GetFieldSafe(int idx)
+        {
+            if (idx < 0 || idx >= state.field.Count) return null;
+            return state.field[idx];
+        }
+
+        private CardData GetHandCardSafe(int idx)
+        {
+            if (idx < 0 || idx >= state.hand.Count) return null;
+            return state.hand[idx].data;
+        }
+
+        /// <summary>융합 카드의 실제 코스트 계산 — UI에서 카드 playability 표시에 사용.</summary>
+        public int ComputeFusionCost(CardData catalyst, FusionTargets targets)
+        {
+            int aHandCost = 0;
+            int bHandCost = 0;
+            if (targets.a.isHand)
+            {
+                var ad = GetHandCardSafe(targets.a.index);
+                if (ad != null) aHandCost = ad.cost;
+            }
+            if (targets.b.isHand)
+            {
+                var bd = GetHandCardSafe(targets.b.index);
+                if (bd != null) bHandCost = bd.cost;
+            }
+            return catalyst.cost + aHandCost + bHandCost;
         }
 
         private void ResolveMagic(CardData c, EnemyInstance explicitTarget, int allyTargetIndex)
@@ -392,37 +588,7 @@ namespace DianoCard.Battle
             {
                 ResolvePurify(c);
             }
-            else if (c.subType == CardSubType.EVOLVE)
-            {
-                // 진화 촉매 — 대상 육식공룡을 다음 티어로 교체. PlayCard 단계에서 유효성 검증 완료.
-                if (allyTargetIndex >= 0 && allyTargetIndex < state.field.Count)
-                {
-                    var target = state.field[allyTargetIndex];
-                    var evo = DataManager.Instance.GetEvolution(target.data.id);
-                    var next = evo != null ? DataManager.Instance.GetCard(evo.resultCardId) : null;
-                    if (next != null)
-                    {
-                        EvolveSummon(target, next);
-                    }
-                    else
-                    {
-                        Log($"    [WARN] {target.data.nameKr}의 진화 경로를 찾을 수 없음");
-                    }
-                }
-            }
-        }
-
-        /// <summary>진화 촉매 카드(MAGIC/EVOLVE)가 대상 공룡에게 쓰일 수 있는지 판정.
-        /// 조건: 대상 살아있음 + 육식공룡 + 다음 진화 경로 존재 + 카드 rank와 대상 rank 일치.
-        /// rank는 카드의 value로 지정: 0=T0(베이스)→T1, 1=T1→T2. 대상 rank는 현재 data.id의 접미사로 판정.</summary>
-        private bool CanEvolveWithCatalyst(SummonInstance target, CardData catalyst)
-        {
-            if (target == null || target.IsDead) return false;
-            if (target.data.subType != CardSubType.CARNIVORE) return false;
-            var evo = DataManager.Instance.GetEvolution(target.data.id);
-            if (evo == null) return false;
-            int targetRank = GetCarnivoreRank(target.data.id);
-            return targetRank == catalyst.value;
+            // 융합(FUSION)은 TryPlayFusion에서 전체 처리 — 여기로 오지 않음.
         }
 
         /// <summary>육식공룡 티어 rank 판정 — 베이스=0, _T1=1, _T2=2. 진화 CSV와 카드 id 규칙에 의존.</summary>
