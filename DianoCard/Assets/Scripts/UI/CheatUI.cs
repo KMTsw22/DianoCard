@@ -1,4 +1,7 @@
+using System.Collections.Generic;
+using System.Linq;
 using DianoCard.Battle;
+using DianoCard.Data;
 using DianoCard.Game;
 using UnityEngine;
 
@@ -14,6 +17,13 @@ public class CheatUI : MonoBehaviour
     // 배경 리스트 캐시 — 전투 진입 시 1회만 Resources.LoadAll 수행
     private string[] _bgNames;
     private Vector2 _bgScroll;
+
+    // 카드 프리뷰 (프레임 디자인 확인용)
+    private bool _cardPreviewOpen;
+    private int _cardPreviewIndex;
+    private Rarity _cardPreviewRarity = Rarity.COMMON;
+    private List<CardData> _cardPreviewList;
+    private GUIStyle _previewLabelStyle;
 
     void Update()
     {
@@ -32,6 +42,13 @@ public class CheatUI : MonoBehaviour
         var matrix = GUI.matrix;
         float scale = Screen.width / 1280f;
         GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1f));
+
+        // 프리뷰는 BattleUI보다 위 (depth 낮을수록 앞).
+        if (_cardPreviewOpen)
+        {
+            GUI.depth = -100;
+            DrawCardPreviewOverlay();
+        }
 
         _windowRect = GUI.Window(9999, _windowRect, DrawWindow, "");
         GUI.matrix = matrix;
@@ -164,7 +181,97 @@ public class CheatUI : MonoBehaviour
             gsm.CurrentRun.gold += 500;
         GUILayout.EndHorizontal();
 
+        GUILayout.Space(12f);
+        GUILayout.Label("— 카드 프리뷰 —", _stateStyle);
+        string previewLabel = _cardPreviewOpen ? "프리뷰 닫기" : "카드 프리뷰 열기";
+        if (GUILayout.Button(previewLabel, _btnStyle))
+        {
+            _cardPreviewOpen = !_cardPreviewOpen;
+            if (_cardPreviewOpen) EnsureCardPreviewList();
+        }
+
         GUI.DragWindow();
+    }
+
+    // 모든 카드 한 번 캐시 (id 정렬).
+    private void EnsureCardPreviewList()
+    {
+        if (_cardPreviewList != null) return;
+        if (!DataManager.Instance.IsLoaded) DataManager.Instance.Load();
+        _cardPreviewList = DataManager.Instance.Cards.Values
+            .OrderBy(c => c.id)
+            .ToList();
+        _cardPreviewIndex = Mathf.Clamp(_cardPreviewIndex, 0, Mathf.Max(0, _cardPreviewList.Count - 1));
+    }
+
+    private void DrawCardPreviewOverlay()
+    {
+        if (_cardPreviewList == null || _cardPreviewList.Count == 0) return;
+
+        if (_previewLabelStyle == null)
+        {
+            _previewLabelStyle = new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 18,
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = Color.white },
+            };
+        }
+
+        // 화면 어둡게 깔기.
+        var fullRect = new Rect(0, 0, 1280, 720);
+        var prev = GUI.color;
+        GUI.color = new Color(0f, 0f, 0f, 0.85f);
+        GUI.DrawTexture(fullRect, Texture2D.whiteTexture);
+        GUI.color = prev;
+
+        // 큰 카드 한 장 (3:4 비율).
+        const float cardW = 360f;
+        const float cardH = 504f;
+        var cardRect = new Rect(640f - cardW * 0.5f, 360f - cardH * 0.5f, cardW, cardH);
+
+        var ui = Object.FindFirstObjectByType<BattleUI>();
+        if (ui == null)
+        {
+            GUI.Label(cardRect, "BattleUI not in scene.\n전투 한 번 들어갔다 나오면 OK", _previewLabelStyle);
+        }
+        else
+        {
+            var card = _cardPreviewList[_cardPreviewIndex];
+            ui.DrawCardPreview(cardRect, card, _cardPreviewRarity);
+
+            // 카드 정보 라벨 (카드 위쪽).
+            var infoRect = new Rect(cardRect.x, cardRect.y - 56f, cardRect.width, 24f);
+            GUI.Label(infoRect, $"{card.id}  {card.nameKr}", _previewLabelStyle);
+            var subRect = new Rect(cardRect.x, cardRect.y - 32f, cardRect.width, 24f);
+            GUI.Label(subRect, $"{card.cardType} / {card.subType}  · 원본 {card.rarity} · 표시 {_cardPreviewRarity}", _previewLabelStyle);
+        }
+
+        // 컨트롤 패널 (카드 아래).
+        float btnY = cardRect.yMax + 24f;
+        var prevBtn = new Rect(cardRect.x - 80f, cardRect.center.y - 30f, 70f, 60f);
+        var nextBtn = new Rect(cardRect.xMax + 10f, cardRect.center.y - 30f, 70f, 60f);
+        if (GUI.Button(prevBtn, "◀\nPrev", _btnStyle))
+        {
+            _cardPreviewIndex = (_cardPreviewIndex - 1 + _cardPreviewList.Count) % _cardPreviewList.Count;
+        }
+        if (GUI.Button(nextBtn, "Next\n▶", _btnStyle))
+        {
+            _cardPreviewIndex = (_cardPreviewIndex + 1) % _cardPreviewList.Count;
+        }
+
+        // 등급 토글.
+        float rx = cardRect.x;
+        if (GUI.Button(new Rect(rx,        btnY, 100f, 36f), "COMMON",   _btnStyle)) _cardPreviewRarity = Rarity.COMMON;
+        if (GUI.Button(new Rect(rx + 110f, btnY, 100f, 36f), "UNCOMMON", _btnStyle)) _cardPreviewRarity = Rarity.UNCOMMON;
+        if (GUI.Button(new Rect(rx + 220f, btnY, 100f, 36f), "RARE",     _btnStyle)) _cardPreviewRarity = Rarity.RARE;
+
+        // 닫기.
+        if (GUI.Button(new Rect(640f - 60f, btnY + 48f, 120f, 36f), "닫기", _btnStyle))
+        {
+            _cardPreviewOpen = false;
+        }
     }
 
     /// <summary>현재 씬에 떠있는 BattleUI에서 BattleManager 인스턴스를 획득.</summary>
