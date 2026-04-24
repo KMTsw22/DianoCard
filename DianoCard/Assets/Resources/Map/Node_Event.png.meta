@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: ef091235061811543b906cd5a988676b
+guid: 408527c7404c0b2409ca20d1ffd51a49
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -129,10 +129,10 @@ TextureImporter:
       name: Node_Event_0
       rect:
         serializedVersion: 2
-        x: 21
-        y: 28
-        width: 339
-        height: 345
+        x: 0
+        y: 0
+        width: 1037
+        height: 1008
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

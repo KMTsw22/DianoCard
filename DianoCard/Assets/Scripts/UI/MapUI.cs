@@ -15,6 +15,8 @@ public class MapUI : MonoBehaviour
     // Inspector — 범례 패널 튜닝
     // =========================================================
     [Header("Legend Panel")]
+    [Tooltip("범례 패널 전체 불투명도 — 배경 양피지 + 아이콘 + 라벨 모두에 곱해진다. 0=완전 투명, 1=원본 그대로.")]
+    [SerializeField, Range(0f, 1f)] private float legendPanelAlpha = 1f;
     [Tooltip("패널 우측 가장자리에서 화면 우측까지 여백")]
     [SerializeField] private float legendRightMargin = 18f;
     [Tooltip("패널 상단 Y (1280x720 가상 좌표 기준). HUD 스트립(~74) 아래로 내려야 가려지지 않음.")]
@@ -75,14 +77,14 @@ public class MapUI : MonoBehaviour
     [SerializeField] private Color scrollbarFloorLabelColor = new(0.92f, 0.85f, 0.70f, 1f);
 
     [Header("Node Layout — 가로 퍼짐 폭 (양피지 영역에 맞춰 조정)")]
-    [Tooltip("노드 3개일 때 좌↔우 총 폭 (px). 좁을수록 양피지 안에 촘촘히 모임.")]
-    [SerializeField, Range(200f, 900f)] private float nodeSpan3 = 460f;
+    [Tooltip("노드 3개일 때 좌↔우 총 폭 (px). 높일수록 양옆으로 넓게 퍼짐. 화면 폭 1280, 범례 패널 고려 시 ~900까지 안전.")]
+    [SerializeField, Range(200f, 1100f)] private float nodeSpan3 = 640f;
     [Tooltip("노드 4개일 때 좌↔우 총 폭 (px).")]
-    [SerializeField, Range(200f, 900f)] private float nodeSpan4 = 560f;
+    [SerializeField, Range(200f, 1100f)] private float nodeSpan4 = 780f;
     [Tooltip("노드 5개일 때 좌↔우 총 폭 (px).")]
-    [SerializeField, Range(200f, 900f)] private float nodeSpan5 = 660f;
-    [Tooltip("노드 가로 jitter 배율. 1=기본, 0=jitter 없음 (양피지 넘침 방지).")]
-    [SerializeField, Range(0f, 1.5f)] private float nodeJitterXScale = 0.45f;
+    [SerializeField, Range(200f, 1100f)] private float nodeSpan5 = 900f;
+    [Tooltip("노드 가로 jitter 배율. 1=기본, 0=jitter 없음 (양피지 넘침 방지). 이웃 노드끼리 너무 가까워 보이면 이 값을 낮춰 컬럼 간격을 고르게.")]
+    [SerializeField, Range(0f, 1.5f)] private float nodeJitterXScale = 0.25f;
     [Tooltip("노드 세로 jitter 배율.")]
     [SerializeField, Range(0f, 1.5f)] private float nodeJitterYScale = 1f;
 
@@ -90,9 +92,9 @@ public class MapUI : MonoBehaviour
     private const float RefW = 1280f;
     private const float RefH = 720f;
 
-    private const float NodeSize = 61.56f;
-    private const float BossSize = 89.1f;
-    private const float StartSize = 64.8f;
+    private const float NodeSize = 67.72f;
+    private const float BossSize = 98.01f;
+    private const float StartSize = 71.28f;
     private const float HighlightPad = 20f;
 
     private const float RopeWidth = 6f;       // 얇게 — 시선이 노드에 가게
@@ -156,6 +158,10 @@ public class MapUI : MonoBehaviour
     private List<DecorMark> _decorMarks;
     private List<float> _decorContourYs;
 
+    // 하늘의 별 — 화면 좌표 고정, 스크롤 영향 없음. 각자 위상차로 반짝임.
+    private struct StarMark { public float x, y, size, phase, freq, baseAlpha; public Color tint; }
+    private List<StarMark> _stars;
+
     void Start()
     {
         LoadAssets();
@@ -176,11 +182,11 @@ public class MapUI : MonoBehaviour
 
         _nodeCombatTex   = Resources.Load<Texture2D>("Map/Node_Combat");
         _nodeEliteTex    = Resources.Load<Texture2D>("Map/Node_Elite");
-        _nodeBossTex     = Resources.Load<Texture2D>("Map/Node_Boss");
+        _nodeBossTex     = Resources.Load<Texture2D>("Map/Node_Boss_V2");
         _nodeCampTex     = Resources.Load<Texture2D>("Map/Node_Camp");
         _nodeEventTex    = Resources.Load<Texture2D>("Map/Node_Event");
         _nodeMerchantTex = Resources.Load<Texture2D>("Map/Node_Merchant");
-        _nodeStartTex    = Resources.Load<Texture2D>("Map/Node_Start");
+        _nodeStartTex    = Resources.Load<Texture2D>("Map/Node_Start_V2");
 
         _ropeTex = Resources.Load<Texture2D>("Map/Rope");
         if (_ropeTex != null) _ropeTex.wrapMode = TextureWrapMode.Repeat;
@@ -222,6 +228,86 @@ public class MapUI : MonoBehaviour
         _decorContourYs = new List<float>();
         for (float y = yMin; y < yMax; y += 68f)
             _decorContourYs.Add(y + (float)rng.NextDouble() * 12f);
+
+        GenerateStars();
+    }
+
+    private void GenerateStars()
+    {
+        // 별은 배경 아트의 하늘(상단 ~45%)에 모이게. 아래로 내려올수록 개수·밝기 감소.
+        var rng = new System.Random(5118);
+        _stars = new List<StarMark>(70);
+
+        const int count = 64;
+        for (int i = 0; i < count; i++)
+        {
+            float u = (float)rng.NextDouble();
+            float v = (float)rng.NextDouble();
+            // y 분포: 상단에 몰리게 제곱 바이어스
+            float ny = v * v;
+            float y = ny * (RefH * 0.52f);
+            float x = u * RefW;
+
+            // 크기: 대부분 작고 가끔 큰 별
+            float r = (float)rng.NextDouble();
+            float size = r < 0.82f ? 1.6f + r * 1.8f : 3.2f + (float)rng.NextDouble() * 2.4f;
+
+            // 색: 흰색 ↔ 살짝 따뜻한 크림 ↔ 아주 옅은 블루 — 차콜 하늘에 녹는 톤
+            float warm = (float)rng.NextDouble();
+            Color tint = warm < 0.55f
+                ? new Color(1f, 0.97f, 0.88f)
+                : warm < 0.85f
+                    ? new Color(1f, 1f, 1f)
+                    : new Color(0.82f, 0.88f, 1f);
+
+            // 상단은 진하게, 아래는 흐리게 — 지평선으로 자연스럽게 녹아듬
+            float heightFactor = 1f - ny;            // 1 at top, 0 at horizon
+            float baseAlpha = Mathf.Lerp(0.18f, 0.85f, heightFactor);
+
+            _stars.Add(new StarMark
+            {
+                x = x,
+                y = y,
+                size = size,
+                phase = (float)rng.NextDouble() * Mathf.PI * 2f,
+                freq = 1.2f + (float)rng.NextDouble() * 2.2f,
+                baseAlpha = baseAlpha,
+                tint = tint,
+            });
+        }
+    }
+
+    private void DrawSky()
+    {
+        if (_stars == null || _circleTexture == null) return;
+
+        var prev = GUI.color;
+        float t = Time.time;
+
+        foreach (var s in _stars)
+        {
+            // 숨쉬는 알파 (0.55..1.0) — 너무 깜빡이지 않게 저 진폭
+            float tw = 0.775f + 0.225f * Mathf.Sin(t * s.freq + s.phase);
+            float a = s.baseAlpha * tw;
+
+            // 본체
+            GUI.color = new Color(s.tint.r, s.tint.g, s.tint.b, a);
+            GUI.DrawTexture(
+                new Rect(s.x - s.size * 0.5f, s.y - s.size * 0.5f, s.size, s.size),
+                _circleTexture);
+
+            // 큰 별에만 은은한 glow
+            if (s.size > 3f)
+            {
+                float g = s.size * 2.6f;
+                GUI.color = new Color(s.tint.r, s.tint.g, s.tint.b, a * 0.28f);
+                GUI.DrawTexture(
+                    new Rect(s.x - g * 0.5f, s.y - g * 0.5f, g, g),
+                    _circleTexture);
+            }
+        }
+
+        GUI.color = prev;
     }
 
     private void DrawMapDecor()
@@ -230,16 +316,9 @@ public class MapUI : MonoBehaviour
 
         var prev = GUI.color;
 
-        // 1) 등고선 (옅은 가로선) — 스크롤에 따라 같이 흐름
-        GUI.color = new Color(0.32f, 0.20f, 0.07f, 0.10f);
-        foreach (var cy in _decorContourYs)
-        {
-            float y = cy + _scrollY;
-            if (y < -2f || y > MapAreaH + 2f) continue;
-            GUI.DrawTexture(new Rect(0, y, RefW, 1.4f), Texture2D.whiteTexture);
-        }
+        // 등고선(갈색 가로선)은 양피지 맵 시절 데코 — 현 하늘/폐허 배경과 안 어울려 제거.
 
-        // 2) 화석/먼지 점
+        // 화석/먼지 점
         foreach (var m in _decorMarks)
         {
             float y = m.y + _scrollY;
@@ -299,6 +378,9 @@ public class MapUI : MonoBehaviour
         float scale = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
         GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1));
 
+        // 2.5) 하늘의 별 — 스크롤과 무관. 맵 컨텐츠 뒤에 깔려서 노드/로프를 방해하지 않음.
+        DrawSky();
+
         // 3) 현재 층이 바뀌면 보이는 영역 안으로 자동 정렬
         HandleScrollAutoSnap(map);
 
@@ -314,13 +396,12 @@ public class MapUI : MonoBehaviour
         GUI.EndGroup();
 
         // 6) 헤더/UI는 스크롤과 무관 (스크린 가상 좌표)
-        //    상단 HUD는 전투와 동일한 BattleUI.DrawMapTopBar를 재사용.
+        //    상단 HUD는 배틀/맵/마을 공용 BattleUI.DrawTopBar 사용.
         var battleUI = gsm.GetComponent<BattleUI>();
         if (battleUI != null)
-            battleUI.DrawMapTopBar(gsm.CurrentRun, map.currentFloor, map.totalFloors);
+            battleUI.DrawTopBar(BattleUI.HudContext.Map, gsm.CurrentRun, map.currentFloor, map.totalFloors);
 
         DrawBackButton(gsm);
-        DrawLegend();
         DrawScrollbar(map);
 
         // 덱 뷰어 오버레이 — 상단 덱 버튼 클릭 시 열림. 모든 UI 위에 그려져야 해서 맨 마지막.
@@ -554,11 +635,15 @@ public class MapUI : MonoBehaviour
         float padTop = legendPadTop;
         float padBottom = legendPadBottom;
 
-        // 폰트/색도 인스펙터에서 바꾸면 즉시 반영
+        float a = Mathf.Clamp01(legendPanelAlpha);
+        if (a <= 0.001f) return; // 완전 투명이면 스킵
+
+        // 폰트/색도 인스펙터에서 바꾸면 즉시 반영. 라벨 색에도 패널 알파 곱해줌.
         if (_legendStyle != null)
         {
             _legendStyle.fontSize = legendFontSize;
-            _legendStyle.normal.textColor = legendTextColor;
+            var tc = legendTextColor;
+            _legendStyle.normal.textColor = new Color(tc.r, tc.g, tc.b, tc.a * a);
         }
 
         float contentW = iconSize + iconLabelGap + labelW;
@@ -570,17 +655,18 @@ public class MapUI : MonoBehaviour
 
         var panelRect = new Rect(panelX, panelY, panelW, panelH);
 
+        var savedColor = GUI.color;
+
         // 배경 — 양피지 텍스처. 없으면 fallback으로 반투명 다크 패널.
         if (_legendPanelTex != null)
         {
+            GUI.color = new Color(1f, 1f, 1f, a);
             GUI.DrawTexture(panelRect, _legendPanelTex, ScaleMode.StretchToFill, alphaBlend: true);
         }
         else
         {
-            var prev = GUI.color;
-            GUI.color = new Color(0.08f, 0.06f, 0.04f, 0.72f);
+            GUI.color = new Color(0.08f, 0.06f, 0.04f, 0.72f * a);
             GUI.DrawTexture(panelRect, Texture2D.whiteTexture);
-            GUI.color = prev;
         }
 
         float cy = panelY + padTop;
@@ -590,14 +676,14 @@ public class MapUI : MonoBehaviour
             var iconRect = new Rect(panelX + padX, cy + (rowH - iconSize) * 0.5f, iconSize, iconSize);
             if (tex != null)
             {
+                GUI.color = new Color(1f, 1f, 1f, a);
                 GUI.DrawTexture(iconRect, tex, ScaleMode.ScaleToFit, alphaBlend: true);
             }
             else
             {
-                var pc = GUI.color;
-                GUI.color = GetFallbackColor(kind);
+                var fc = GetFallbackColor(kind);
+                GUI.color = new Color(fc.r, fc.g, fc.b, fc.a * a);
                 GUI.DrawTexture(iconRect, _circleTexture);
-                GUI.color = pc;
             }
 
             var labelRect = new Rect(
@@ -605,10 +691,13 @@ public class MapUI : MonoBehaviour
                 cy,
                 labelW,
                 rowH);
+            GUI.color = Color.white; // 라벨은 스타일의 textColor 사용
             GUI.Label(labelRect, label, _legendStyle);
 
             cy += rowH;
         }
+
+        GUI.color = savedColor;
     }
 
     // ---------------------------------------------------------
@@ -794,23 +883,25 @@ public class MapUI : MonoBehaviour
             Add(fi, t);
         }
 
-        // 결정적 해시로 선택적 대각선 추가 — 교차 방지를 위해 오른쪽 한 칸만 확장.
-        // 단조성 보존: (fi, ti) → (fi, ti+1). ti+1 이 다음 fi 의 primary ti' 이상이면 교차 가능 → 건너뜀.
+        // 머지 포인트 — 인접한 두 from-node가 같은 to-node로 수렴해 Y자 합류 모양을 만든다.
+        // 긴 대각선(시각 지저분)은 차단: fi와 fi+1의 primary target이 정확히 1칸 차이일 때만 추가.
+        //   (fi, myPrimary) + (fi+1, myPrimary+1)  →  여기에 (fi, myPrimary+1) 추가 시 myPrimary+1 에서 합류.
+        // 단조성 유지되므로 교차 없음. 층별 해시로 ~50% 확률.
         for (int fi = 0; fi < fromCount - 1; fi++)
         {
             uint h = (uint)(floor * 374761393) ^ (uint)((fi + 1) * 668265263);
             h ^= h >> 13; h *= 0x85ebca6b; h ^= h >> 16;
-            if ((h % 3) != 1) continue;
+            if ((h & 1u) != 1u) continue;
 
-            int tiPrimary = toCount <= 1 ? 0
+            int myPrimary = toCount <= 1 ? 0
                 : Mathf.Clamp((int)Mathf.Floor((float)fi * (toCount - 1) / Mathf.Max(1, fromCount - 1) + 0.5f), 0, toCount - 1);
-            int tiNextPrimary = toCount <= 1 ? 0
+            int nextPrimary = toCount <= 1 ? 0
                 : Mathf.Clamp((int)Mathf.Floor((float)(fi + 1) * (toCount - 1) / Mathf.Max(1, fromCount - 1) + 0.5f), 0, toCount - 1);
 
-            int extra = tiPrimary + 1;
-            if (extra >= toCount) continue;
-            if (extra > tiNextPrimary) continue;
-            Add(fi, extra);
+            // 1칸 차이일 때만 — 이웃 컬럼 합류만 허용, 큰 점프는 차단
+            if (nextPrimary - myPrimary != 1) continue;
+
+            Add(fi, nextPrimary); // fi → nextPrimary : fi+1의 타겟과 동일, 머지 포인트 생성
         }
 
         return result;
@@ -872,14 +963,23 @@ public class MapUI : MonoBehaviour
         }
         else
         {
-            GUI.color = new Color(0.30f, 0.18f, 0.06f, 0.62f);
+            // 밝은 베이지 본체 + 뒤에 어두운 halo로 배경 어디서든 읽히게
+            Color haloColor = new Color(0f, 0f, 0f, 0.55f);
+            Color dotColor  = new Color(0.94f, 0.86f, 0.68f, 0.85f);
+            float haloSize  = dotSize + 3f;
             for (int i = 0; i < dotCount; i++)
             {
                 float t = (float)i / (dotCount - 1);
                 float px = Mathf.Lerp(start.x, end.x, t);
                 float py = Mathf.Lerp(start.y, end.y, t);
-                var rect = new Rect(px - dotSize * 0.5f, py - dotSize * 0.5f, dotSize, dotSize);
-                GUI.DrawTexture(rect, _circleTexture);
+
+                // 어두운 halo (아우트라인)
+                GUI.color = haloColor;
+                GUI.DrawTexture(new Rect(px - haloSize * 0.5f, py - haloSize * 0.5f, haloSize, haloSize), _circleTexture);
+
+                // 밝은 본체
+                GUI.color = dotColor;
+                GUI.DrawTexture(new Rect(px - dotSize * 0.5f, py - dotSize * 0.5f, dotSize, dotSize), _circleTexture);
             }
         }
 
@@ -962,30 +1062,30 @@ public class MapUI : MonoBehaviour
 
             if (isStart)
             {
-                // 시작 노드: 크기·알파가 함께 숨쉬는 녹색 다중 원 halo
+                // 시작 노드: 크기·알파가 함께 숨쉬는 녹색 다중 원 halo — 노드에 바짝 붙게
                 float pulse01 = 0.5f + 0.5f * Mathf.Sin(Time.time * 2.2f); // 0..1
-                float pulseExtra = Mathf.Lerp(10f, 36f, pulse01);
+                float pulseExtra = Mathf.Lerp(3f, 12f, pulse01);
                 float pulseAlpha = Mathf.Lerp(0.6f, 1f, pulse01);
-                for (int i = 0; i < 5; i++)
+                for (int i = 0; i < 3; i++)
                 {
-                    float r = size + pulseExtra + i * 12f;
+                    float r = size + pulseExtra + i * 6f;
                     var hRect = new Rect(center.x - r / 2f, center.y - r / 2f, r, r);
-                    float a = (0.34f - i * 0.058f) * pulseAlpha;
+                    float a = (0.34f - i * 0.08f) * pulseAlpha;
                     GUI.color = new Color(0.45f, 1f, 0.35f, Mathf.Max(0f, a));
                     GUI.DrawTexture(hRect, _circleTexture);
                 }
             }
             else
             {
-                // 일반/엘리트 등: 크기·알파가 함께 숨쉬는 노란 다중 원 halo
+                // 일반/엘리트 등: 크기·알파가 함께 숨쉬는 노란 다중 원 halo — 노드에 바짝 붙게
                 float pulse01 = 0.5f + 0.5f * Mathf.Sin(Time.time * 2.6f); // 0..1
-                float pulseExtra = Mathf.Lerp(14f, 44f, pulse01);
+                float pulseExtra = Mathf.Lerp(4f, 14f, pulse01);
                 float pulseAlpha = Mathf.Lerp(0.55f, 1f, pulse01);
-                for (int i = 0; i < 5; i++)
+                for (int i = 0; i < 3; i++)
                 {
-                    float r = size + pulseExtra + i * 14f;
+                    float r = size + pulseExtra + i * 7f;
                     var hRect = new Rect(center.x - r / 2f, center.y - r / 2f, r, r);
-                    float a = (0.36f - i * 0.062f) * pulseAlpha;
+                    float a = (0.36f - i * 0.09f) * pulseAlpha;
                     GUI.color = new Color(1f, 0.85f, 0.30f, Mathf.Max(0f, a));
                     GUI.DrawTexture(hRect, _circleTexture);
                 }
@@ -1007,6 +1107,25 @@ public class MapUI : MonoBehaviour
                 var hRect = new Rect(center.x - r / 2f, center.y - r / 2f, r, r);
                 float a = (0.38f - i * 0.072f) * pulseAlpha;
                 GUI.color = new Color(1f, 0.82f, 0.35f, Mathf.Max(0f, a));
+                GUI.DrawTexture(hRect, _circleTexture);
+            }
+            GUI.color = prev;
+        }
+
+        // 앰비언트 글로우 — 미래 노드(아직 진입 불가)에 타입 색으로 아주 옅게 티만.
+        // 현재 층 halo와 혼동되지 않도록 크기·알파 모두 최소화.
+        if (isFuture && !isStart && !isPreviewTarget)
+        {
+            var prev = GUI.color;
+            Color glow = GetNodeGlowColor(node.kind);
+            float pulse01 = 0.5f + 0.5f * Mathf.Sin(Time.time * 1.2f + node.floor * 0.7f + node.column * 0.5f);
+            float alphaMul = Mathf.Lerp(0.88f, 1f, pulse01);
+            for (int i = 0; i < 2; i++)
+            {
+                float r = size + 2f + i * 4f;
+                var hRect = new Rect(center.x - r / 2f, center.y - r / 2f, r, r);
+                float a = (0.10f - i * 0.05f) * alphaMul;
+                GUI.color = new Color(glow.r, glow.g, glow.b, Mathf.Max(0f, a));
                 GUI.DrawTexture(hRect, _circleTexture);
             }
             GUI.color = prev;
@@ -1076,6 +1195,18 @@ public class MapUI : MonoBehaviour
         NodeKind.Event    => new Color(0.9f, 0.85f, 0.2f, 0.95f),
         NodeKind.Merchant => new Color(0.25f, 0.45f, 0.75f, 0.95f),
         _ => Color.gray,
+    };
+
+    // 앰비언트 글로우 색상 — 실제 아이콘 색감에 맞춤
+    private Color GetNodeGlowColor(NodeKind kind) => kind switch
+    {
+        NodeKind.Combat   => new Color(0.40f, 0.60f, 1.00f), // 파랑 (교차 검 아이콘)
+        NodeKind.Elite    => new Color(1.00f, 0.30f, 0.35f), // 붉은 (해골)
+        NodeKind.Boss     => new Color(1.00f, 0.30f, 0.35f), // 붉은 (해골)
+        NodeKind.Camp     => new Color(1.00f, 0.65f, 0.30f), // 주황 (모닥불)
+        NodeKind.Event    => new Color(0.80f, 0.40f, 1.00f), // 보라 (물음표)
+        NodeKind.Merchant => new Color(1.00f, 0.80f, 0.30f), // 금 (돈주머니)
+        _ => Color.white,
     };
 
     // ---------------------------------------------------------

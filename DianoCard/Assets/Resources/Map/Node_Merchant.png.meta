@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 4d9c727137904084ab6047efc8f324a8
+guid: e6cf6bbee4ff97947ae177d9267fd809
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -129,10 +129,10 @@ TextureImporter:
       name: Node_Merchant_0
       rect:
         serializedVersion: 2
-        x: 119
-        y: 101
-        width: 786
-        height: 808
+        x: 90
+        y: 15
+        width: 947
+        height: 917
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

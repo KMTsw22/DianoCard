@@ -626,8 +626,7 @@ public class VillageUI : MonoBehaviour
     }
 
     /// <summary>
-    /// 맵/배틀과 동일한 공통 상단 HUD (HP/Gold/Potion/Relic + Floor/Total).
-    /// 밤 배경 위 가독성 확보를 위해 얇은 다크 스트립을 먼저 깔고 DrawMapTopBar 재사용.
+    /// 배틀/맵/마을 공용 상단 HUD (HP/Gold/Potion/Relic + Floor/Total).
     /// 치트 진입 등으로 CurrentMap이 null이어도 HUD 는 여전히 그려짐 (Floor 정보만 RunState 값 사용).
     /// </summary>
     private void DrawHeader(RunState run)
@@ -641,11 +640,11 @@ public class VillageUI : MonoBehaviour
             return;
         }
 
-        // HUD 스트립 + 구분선은 BattleUI.DrawMapTopBar가 공통 처리 (BattleUI Inspector의 Village 색 사용).
+        // HUD 스트립 + 구분선은 BattleUI.DrawTopBar가 공통 처리 (BattleUI Inspector의 Village 색 사용).
         var map = gsm.CurrentMap;
         int currentFloor = map != null ? map.currentFloor : run.currentFloor;
         int totalFloors = map != null ? map.totalFloors : 15; // fallback — 치트 진입 시 챕터 기본값
-        battleUI.DrawMapTopBar(run, currentFloor, totalFloors, BattleUI.HudContext.Village);
+        battleUI.DrawTopBar(BattleUI.HudContext.Village, run, currentFloor, totalFloors);
 
         // 덱 뷰어 오버레이 — 상단 덱 버튼 클릭 시 열림.
         battleUI.DrawDeckViewerOverlay(gsm);

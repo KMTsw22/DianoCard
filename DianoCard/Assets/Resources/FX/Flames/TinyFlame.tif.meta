@@ -1,0 +1,3523 @@
+fileFormatVersion: 2
+guid: 19fd4ff9cc6b6eb4d8c7827d20eadb2a
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 6546550247857310313
+    second: TinyFlame_0
+  - first:
+      213: 6533903793070731638
+    second: TinyFlame_1
+  - first:
+      213: 5074780694988647598
+    second: TinyFlame_2
+  - first:
+      213: -5258015846215283580
+    second: TinyFlame_3
+  - first:
+      213: 8311539899871861382
+    second: TinyFlame_4
+  - first:
+      213: 3919771449673354740
+    second: TinyFlame_5
+  - first:
+      213: -6930862348198609725
+    second: TinyFlame_6
+  - first:
+      213: 5941879877868163049
+    second: TinyFlame_7
+  - first:
+      213: 8280265001664326161
+    second: TinyFlame_8
+  - first:
+      213: -81357263467803204
+    second: TinyFlame_9
+  - first:
+      213: 8370153610435061590
+    second: TinyFlame_10
+  - first:
+      213: -1651900971844909930
+    second: TinyFlame_11
+  - first:
+      213: -8937911687869591660
+    second: TinyFlame_12
+  - first:
+      213: 3828437237277299223
+    second: TinyFlame_13
+  - first:
+      213: -4490165808358576245
+    second: TinyFlame_14
+  - first:
+      213: 2615504032172417676
+    second: TinyFlame_15
+  - first:
+      213: -2881088253593099876
+    second: TinyFlame_16
+  - first:
+      213: 3641191729570221815
+    second: TinyFlame_17
+  - first:
+      213: 7094794102405372002
+    second: TinyFlame_18
+  - first:
+      213: -7602752263038942682
+    second: TinyFlame_19
+  - first:
+      213: 6113667640699700475
+    second: TinyFlame_20
+  - first:
+      213: 7045951060879126805
+    second: TinyFlame_21
+  - first:
+      213: 448516044742881279
+    second: TinyFlame_22
+  - first:
+      213: 190402270638367503
+    second: TinyFlame_23
+  - first:
+      213: 5636951373386169174
+    second: TinyFlame_24
+  - first:
+      213: -2428501715084416459
+    second: TinyFlame_25
+  - first:
+      213: -3353967065801593486
+    second: TinyFlame_26
+  - first:
+      213: 1820352218328217680
+    second: TinyFlame_27
+  - first:
+      213: -327838999875233582
+    second: TinyFlame_28
+  - first:
+      213: -5095984756139567995
+    second: TinyFlame_29
+  - first:
+      213: -3406896023037578838
+    second: TinyFlame_30
+  - first:
+      213: -5798624791139725069
+    second: TinyFlame_31
+  - first:
+      213: 1062035808801328184
+    second: TinyFlame_32
+  - first:
+      213: -5866864889878046877
+    second: TinyFlame_33
+  - first:
+      213: 5595593740189209979
+    second: TinyFlame_34
+  - first:
+      213: 8982647250355606623
+    second: TinyFlame_35
+  - first:
+      213: 6278798462736471288
+    second: TinyFlame_36
+  - first:
+      213: -3738596586083137931
+    second: TinyFlame_37
+  - first:
+      213: 6592583868964336027
+    second: TinyFlame_38
+  - first:
+      213: -3226189236723001793
+    second: TinyFlame_39
+  - first:
+      213: -8722254113975361104
+    second: TinyFlame_40
+  - first:
+      213: -5788360395767339081
+    second: TinyFlame_41
+  - first:
+      213: 7820504217176752816
+    second: TinyFlame_42
+  - first:
+      213: -3344591161783089318
+    second: TinyFlame_43
+  - first:
+      213: 6392637709127043478
+    second: TinyFlame_44
+  - first:
+      213: 8686328093858726961
+    second: TinyFlame_45
+  - first:
+      213: 848211935644598249
+    second: TinyFlame_46
+  - first:
+      213: -5963775098361564983
+    second: TinyFlame_47
+  - first:
+      213: 7022168039544607552
+    second: TinyFlame_48
+  - first:
+      213: -1823228875376057158
+    second: TinyFlame_49
+  - first:
+      213: -4439933532397271572
+    second: TinyFlame_50
+  - first:
+      213: 4308200728946131281
+    second: TinyFlame_51
+  - first:
+      213: -8541246430139406973
+    second: TinyFlame_52
+  - first:
+      213: -3419966513789998220
+    second: TinyFlame_53
+  - first:
+      213: -9068657742920839930
+    second: TinyFlame_54
+  - first:
+      213: -2858852504433793974
+    second: TinyFlame_55
+  - first:
+      213: 8376304396467462063
+    second: TinyFlame_56
+  - first:
+      213: 5872439899101125686
+    second: TinyFlame_57
+  - first:
+      213: 2425123625346941275
+    second: TinyFlame_58
+  - first:
+      213: 41066928376489038
+    second: TinyFlame_59
+  - first:
+      213: -6240983248209652756
+    second: TinyFlame_60
+  - first:
+      213: -6154659486054382486
+    second: TinyFlame_61
+  - first:
+      213: -5693829241015505352
+    second: TinyFlame_62
+  - first:
+      213: 8631100068970271449
+    second: TinyFlame_63
+  - first:
+      213: -5456364472890838024
+    second: TinyFlame_64
+  - first:
+      213: 3579101472229851806
+    second: TinyFlame_65
+  - first:
+      213: -1722544100503283129
+    second: TinyFlame_66
+  - first:
+      213: -5579019006490851345
+    second: TinyFlame_67
+  - first:
+      213: 7888044958710130274
+    second: TinyFlame_68
+  - first:
+      213: 3267770570383777058
+    second: TinyFlame_69
+  - first:
+      213: 5139664684527714743
+    second: TinyFlame_70
+  - first:
+      213: 3150964634218181740
+    second: TinyFlame_71
+  - first:
+      213: -6983520846047348365
+    second: TinyFlame_72
+  - first:
+      213: 7845403327761480466
+    second: TinyFlame_73
+  - first:
+      213: 1027967647263313186
+    second: TinyFlame_74
+  - first:
+      213: 5249109911058001859
+    second: TinyFlame_75
+  - first:
+      213: -3246053637987700129
+    second: TinyFlame_76
+  - first:
+      213: -5460519447007425002
+    second: TinyFlame_77
+  - first:
+      213: 5910637745553791456
+    second: TinyFlame_78
+  - first:
+      213: -4916087781156639955
+    second: TinyFlame_79
+  - first:
+      213: 3471202192314078588
+    second: TinyFlame_80
+  - first:
+      213: -3753561512559144915
+    second: TinyFlame_81
+  - first:
+      213: 404482183059003412
+    second: TinyFlame_82
+  - first:
+      213: 3089010846280315585
+    second: TinyFlame_83
+  - first:
+      213: -4425389882945299578
+    second: TinyFlame_84
+  - first:
+      213: 296345100822158645
+    second: TinyFlame_85
+  - first:
+      213: 4625784384957878709
+    second: TinyFlame_86
+  - first:
+      213: 3614623162794987637
+    second: TinyFlame_87
+  - first:
+      213: -6191514083947336304
+    second: TinyFlame_88
+  - first:
+      213: 6460649355764998729
+    second: TinyFlame_89
+  - first:
+      213: 4680947007394664242
+    second: TinyFlame_90
+  - first:
+      213: 26606609561574400
+    second: TinyFlame_91
+  - first:
+      213: 1774516346705223675
+    second: TinyFlame_92
+  - first:
+      213: -1708395747879797879
+    second: TinyFlame_93
+  - first:
+      213: 3780443609454927391
+    second: TinyFlame_94
+  - first:
+      213: 1311247237588322487
+    second: TinyFlame_95
+  - first:
+      213: 5974162434549101289
+    second: TinyFlame_96
+  - first:
+      213: -1706637765109990778
+    second: TinyFlame_97
+  - first:
+      213: -3098163725071777014
+    second: TinyFlame_98
+  - first:
+      213: -7352258149234654653
+    second: TinyFlame_99
+  - first:
+      213: -3222739267926925594
+    second: TinyFlame_100
+  - first:
+      213: -1152459529153028949
+    second: TinyFlame_101
+  - first:
+      213: 5090612294537659832
+    second: TinyFlame_102
+  - first:
+      213: -6657243212186025666
+    second: TinyFlame_103
+  - first:
+      213: -9063629901404375593
+    second: TinyFlame_104
+  - first:
+      213: 333138995342901083
+    second: TinyFlame_105
+  - first:
+      213: -819242030267358936
+    second: TinyFlame_106
+  - first:
+      213: 8365032850905581857
+    second: TinyFlame_107
+  - first:
+      213: -1216298132781608293
+    second: TinyFlame_108
+  - first:
+      213: 8367245833526654499
+    second: TinyFlame_109
+  - first:
+      213: -7997870605737390931
+    second: TinyFlame_110
+  - first:
+      213: -350298910506468660
+    second: TinyFlame_111
+  - first:
+      213: -4702532991184530807
+    second: TinyFlame_112
+  - first:
+      213: 2368676066915338994
+    second: TinyFlame_113
+  - first:
+      213: -5650013416342784307
+    second: TinyFlame_114
+  - first:
+      213: 634259798013170830
+    second: TinyFlame_115
+  - first:
+      213: 8765861135542931781
+    second: TinyFlame_116
+  - first:
+      213: 1982842567829548782
+    second: TinyFlame_117
+  - first:
+      213: -6794800130262035091
+    second: TinyFlame_118
+  - first:
+      213: 4961353782354076967
+    second: TinyFlame_119
+  - first:
+      213: 1069560247392483614
+    second: TinyFlame_120
+  - first:
+      213: -9212008472804838953
+    second: TinyFlame_121
+  - first:
+      213: -7494899525044300238
+    second: TinyFlame_122
+  - first:
+      213: -3138280060648491458
+    second: TinyFlame_123
+  - first:
+      213: 4516113159061800145
+    second: TinyFlame_124
+  - first:
+      213: -3801718834538521913
+    second: TinyFlame_125
+  - first:
+      213: -9078154826700585189
+    second: TinyFlame_126
+  - first:
+      213: -3272805967382115923
+    second: TinyFlame_127
+  - first:
+      213: -7410255391066864238
+    second: TinyFlame_128
+  - first:
+      213: -8587275703103990102
+    second: TinyFlame_129
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: TinyFlame_0
+      rect:
+        serializedVersion: 2
+        x: 434
+        y: 1875
+        width: 9
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 96ac7cbe3c40ada50800000000000000
+      internalID: 6546550247857310313
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_1
+      rect:
+        serializedVersion: 2
+        x: 614
+        y: 1873
+        width: 19
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 671fe86b1e61daa50800000000000000
+      internalID: 6533903793070731638
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_2
+      rect:
+        serializedVersion: 2
+        x: 637
+        y: 1875
+        width: 8
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: eaceecd972e3d6640800000000000000
+      internalID: 5074780694988647598
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_3
+      rect:
+        serializedVersion: 2
+        x: 649
+        y: 1874
+        width: 15
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 48c86fe2276c707b0800000000000000
+      internalID: -5258015846215283580
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_4
+      rect:
+        serializedVersion: 2
+        x: 793
+        y: 1871
+        width: 59
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 68a1954a085885370800000000000000
+      internalID: 8311539899871861382
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_5
+      rect:
+        serializedVersion: 2
+        x: 974
+        y: 1871
+        width: 66
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4fd8f7a9d53d56630800000000000000
+      internalID: 3919771449673354740
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_6
+      rect:
+        serializedVersion: 2
+        x: 1158
+        y: 1869
+        width: 69
+        height: 23
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3ccfd746a61a0df90800000000000000
+      internalID: -6930862348198609725
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_7
+      rect:
+        serializedVersion: 2
+        x: 1341
+        y: 1868
+        width: 73
+        height: 27
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9ef8f5a744cc57250800000000000000
+      internalID: 5941879877868163049
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_8
+      rect:
+        serializedVersion: 2
+        x: 1525
+        y: 1867
+        width: 76
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 11a2d46f52969e270800000000000000
+      internalID: 8280265001664326161
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_9
+      rect:
+        serializedVersion: 2
+        x: 1711
+        y: 1867
+        width: 76
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cbd8a1bfff5fedef0800000000000000
+      internalID: -81357263467803204
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_10
+      rect:
+        serializedVersion: 2
+        x: 1888
+        y: 1866
+        width: 86
+        height: 43
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6576f699c52c82470800000000000000
+      internalID: 8370153610435061590
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_11
+      rect:
+        serializedVersion: 2
+        x: 24
+        y: 1680
+        width: 89
+        height: 46
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 694cf0971d44319e0800000000000000
+      internalID: -1651900971844909930
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_12
+      rect:
+        serializedVersion: 2
+        x: 209
+        y: 1679
+        width: 92
+        height: 51
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 49f88bacca826f380800000000000000
+      internalID: -8937911687869591660
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_13
+      rect:
+        serializedVersion: 2
+        x: 394
+        y: 1680
+        width: 95
+        height: 52
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7129ac42267512530800000000000000
+      internalID: 3828437237277299223
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_14
+      rect:
+        serializedVersion: 2
+        x: 580
+        y: 1681
+        width: 97
+        height: 47
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b8fae2abcf9bfa1c0800000000000000
+      internalID: -4490165808358576245
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_15
+      rect:
+        serializedVersion: 2
+        x: 766
+        y: 1680
+        width: 99
+        height: 47
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c822d3a4f032c4420800000000000000
+      internalID: 2615504032172417676
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_16
+      rect:
+        serializedVersion: 2
+        x: 952
+        y: 1680
+        width: 101
+        height: 52
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c91680e7f715408d0800000000000000
+      internalID: -2881088253593099876
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_17
+      rect:
+        serializedVersion: 2
+        x: 1138
+        y: 1680
+        width: 103
+        height: 59
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7fe8f10169c188230800000000000000
+      internalID: 3641191729570221815
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_18
+      rect:
+        serializedVersion: 2
+        x: 1323
+        y: 1680
+        width: 104
+        height: 60
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 268986475a5c57260800000000000000
+      internalID: 7094794102405372002
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_19
+      rect:
+        serializedVersion: 2
+        x: 1509
+        y: 1680
+        width: 104
+        height: 57
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 622444e09199d7690800000000000000
+      internalID: -7602752263038942682
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_20
+      rect:
+        serializedVersion: 2
+        x: 1565
+        y: 1726
+        width: 7
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bf4c4bed35c18d450800000000000000
+      internalID: 6113667640699700475
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_21
+      rect:
+        serializedVersion: 2
+        x: 1695
+        y: 1680
+        width: 105
+        height: 62
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 511bc78a82f38c160800000000000000
+      internalID: 7045951060879126805
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_22
+      rect:
+        serializedVersion: 2
+        x: 1881
+        y: 1680
+        width: 105
+        height: 66
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fff66f267f2793600800000000000000
+      internalID: 448516044742881279
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_23
+      rect:
+        serializedVersion: 2
+        x: 1319
+        y: 1494
+        width: 120
+        height: 88
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f03e3d93bd174a200800000000000000
+      internalID: 190402270638367503
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_24
+      rect:
+        serializedVersion: 2
+        x: 1505
+        y: 1494
+        width: 125
+        height: 91
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 65b35d288697a3e40800000000000000
+      internalID: 5636951373386169174
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_25
+      rect:
+        serializedVersion: 2
+        x: 1691
+        y: 1494
+        width: 129
+        height: 94
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 53a67ff8e8a3c4ed0800000000000000
+      internalID: -2428501715084416459
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_26
+      rect:
+        serializedVersion: 2
+        x: 1978
+        y: 1582
+        width: 16
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 27d698649b05471d0800000000000000
+      internalID: -3353967065801593486
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_27
+      rect:
+        serializedVersion: 2
+        x: 18
+        y: 1494
+        width: 107
+        height: 69
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0583c8ba2b0334910800000000000000
+      internalID: 1820352218328217680
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_28
+      rect:
+        serializedVersion: 2
+        x: 204
+        y: 1494
+        width: 107
+        height: 72
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2d8dae4aa28437bf0800000000000000
+      internalID: -327838999875233582
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_29
+      rect:
+        serializedVersion: 2
+        x: 390
+        y: 1494
+        width: 107
+        height: 75
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 584de7d2ddc6749b0800000000000000
+      internalID: -5095984756139567995
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_30
+      rect:
+        serializedVersion: 2
+        x: 575
+        y: 1494
+        width: 109
+        height: 77
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aa177281e1648b0d0800000000000000
+      internalID: -3406896023037578838
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_31
+      rect:
+        serializedVersion: 2
+        x: 761
+        y: 1494
+        width: 109
+        height: 79
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3f0d7529975278fa0800000000000000
+      internalID: -5798624791139725069
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_32
+      rect:
+        serializedVersion: 2
+        x: 947
+        y: 1494
+        width: 112
+        height: 80
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 83c0952f0fb1dbe00800000000000000
+      internalID: 1062035808801328184
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_33
+      rect:
+        serializedVersion: 2
+        x: 1133
+        y: 1494
+        width: 116
+        height: 84
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3679b957775b49ea0800000000000000
+      internalID: -5866864889878046877
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_34
+      rect:
+        serializedVersion: 2
+        x: 1877
+        y: 1494
+        width: 134
+        height: 86
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b7590672cda87ad40800000000000000
+      internalID: 5595593740189209979
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_35
+      rect:
+        serializedVersion: 2
+        x: 15
+        y: 1307
+        width: 139
+        height: 89
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f54d5140516c8ac70800000000000000
+      internalID: 8982647250355606623
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_36
+      rect:
+        serializedVersion: 2
+        x: 201
+        y: 1307
+        width: 144
+        height: 92
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8f41da37fe5c22750800000000000000
+      internalID: 6278798462736471288
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_37
+      rect:
+        serializedVersion: 2
+        x: 387
+        y: 1307
+        width: 149
+        height: 88
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 576c6008636dd1cc0800000000000000
+      internalID: -3738596586083137931
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_38
+      rect:
+        serializedVersion: 2
+        x: 573
+        y: 1307
+        width: 153
+        height: 93
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b91f69d89109d7b50800000000000000
+      internalID: 6592583868964336027
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_39
+      rect:
+        serializedVersion: 2
+        x: 759
+        y: 1307
+        width: 157
+        height: 98
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f36dfe67bf54a33d0800000000000000
+      internalID: -3226189236723001793
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_40
+      rect:
+        serializedVersion: 2
+        x: 946
+        y: 1307
+        width: 160
+        height: 104
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0b12fc7881454f680800000000000000
+      internalID: -8722254113975361104
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_41
+      rect:
+        serializedVersion: 2
+        x: 1132
+        y: 1307
+        width: 164
+        height: 109
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7b7295a53ec9bafa0800000000000000
+      internalID: -5788360395767339081
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_42
+      rect:
+        serializedVersion: 2
+        x: 1318
+        y: 1307
+        width: 159
+        height: 116
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0b2c3459623088c60800000000000000
+      internalID: 7820504217176752816
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_43
+      rect:
+        serializedVersion: 2
+        x: 1504
+        y: 1307
+        width: 157
+        height: 121
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a57020b0f00a591d0800000000000000
+      internalID: -3344591161783089318
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_44
+      rect:
+        serializedVersion: 2
+        x: 1690
+        y: 1307
+        width: 159
+        height: 122
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 699c846702637b850800000000000000
+      internalID: 6392637709127043478
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_45
+      rect:
+        serializedVersion: 2
+        x: 1876
+        y: 1307
+        width: 157
+        height: 125
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 13402f411690c8870800000000000000
+      internalID: 8686328093858726961
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_46
+      rect:
+        serializedVersion: 2
+        x: 2032
+        y: 1369
+        width: 6
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9efb75ee24475cb00800000000000000
+      internalID: 848211935644598249
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_47
+      rect:
+        serializedVersion: 2
+        x: 13
+        y: 1121
+        width: 158
+        height: 127
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9c0b6dd352a6c3da0800000000000000
+      internalID: -5963775098361564983
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_48
+      rect:
+        serializedVersion: 2
+        x: 199
+        y: 1121
+        width: 160
+        height: 128
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 043582e70a0c37160800000000000000
+      internalID: 7022168039544607552
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_49
+      rect:
+        serializedVersion: 2
+        x: 385
+        y: 1121
+        width: 160
+        height: 135
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ab4a9fa6ff692b6e0800000000000000
+      internalID: -1823228875376057158
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_50
+      rect:
+        serializedVersion: 2
+        x: 570
+        y: 1121
+        width: 149
+        height: 141
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ce58d1fd9ff2262c0800000000000000
+      internalID: -4439933532397271572
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_51
+      rect:
+        serializedVersion: 2
+        x: 756
+        y: 1121
+        width: 141
+        height: 147
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 151c9e5bcbdc9cb30800000000000000
+      internalID: 4308200728946131281
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_52
+      rect:
+        serializedVersion: 2
+        x: 941
+        y: 1121
+        width: 144
+        height: 149
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 385a77010a5677980800000000000000
+      internalID: -8541246430139406973
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_53
+      rect:
+        serializedVersion: 2
+        x: 1127
+        y: 1121
+        width: 146
+        height: 153
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 47be0d15396d980d0800000000000000
+      internalID: -3419966513789998220
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_54
+      rect:
+        serializedVersion: 2
+        x: 1313
+        y: 1121
+        width: 147
+        height: 151
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 60d8b93a4d7a52280800000000000000
+      internalID: -9068657742920839930
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_55
+      rect:
+        serializedVersion: 2
+        x: 1499
+        y: 1121
+        width: 143
+        height: 149
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a44ecf74bc05358d0800000000000000
+      internalID: -2858852504433793974
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_56
+      rect:
+        serializedVersion: 2
+        x: 1685
+        y: 1121
+        width: 135
+        height: 153
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: faf5cf1187c9e3470800000000000000
+      internalID: 8376304396467462063
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_57
+      rect:
+        serializedVersion: 2
+        x: 1871
+        y: 1121
+        width: 134
+        height: 160
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 63cd0c689f81f7150800000000000000
+      internalID: 5872439899101125686
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_58
+      rect:
+        serializedVersion: 2
+        x: 8
+        y: 935
+        width: 137
+        height: 166
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b514631a615c7a120800000000000000
+      internalID: 2425123625346941275
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_59
+      rect:
+        serializedVersion: 2
+        x: 194
+        y: 935
+        width: 139
+        height: 161
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e44a5ed5726e19000800000000000000
+      internalID: 41066928376489038
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_60
+      rect:
+        serializedVersion: 2
+        x: 380
+        y: 935
+        width: 142
+        height: 162
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ce3dc494dc29369a0800000000000000
+      internalID: -6240983248209652756
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_61
+      rect:
+        serializedVersion: 2
+        x: 566
+        y: 935
+        width: 143
+        height: 156
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a648d346ec1469aa0800000000000000
+      internalID: -6154659486054382486
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_62
+      rect:
+        serializedVersion: 2
+        x: 752
+        y: 935
+        width: 138
+        height: 144
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 83ee985f8747bf0b0800000000000000
+      internalID: -5693829241015505352
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_63
+      rect:
+        serializedVersion: 2
+        x: 938
+        y: 935
+        width: 138
+        height: 148
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9d292df78c3d7c770800000000000000
+      internalID: 8631100068970271449
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_64
+      rect:
+        serializedVersion: 2
+        x: 1124
+        y: 935
+        width: 130
+        height: 153
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8f3b744cb691744b0800000000000000
+      internalID: -5456364472890838024
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_65
+      rect:
+        serializedVersion: 2
+        x: 1310
+        y: 935
+        width: 129
+        height: 159
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e92865b73d58ba130800000000000000
+      internalID: 3579101472229851806
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_66
+      rect:
+        serializedVersion: 2
+        x: 1496
+        y: 935
+        width: 128
+        height: 166
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 74a9e8b544b4818e0800000000000000
+      internalID: -1722544100503283129
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_67
+      rect:
+        serializedVersion: 2
+        x: 1682
+        y: 935
+        width: 129
+        height: 172
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: fe7c5f2c5c75392b0800000000000000
+      internalID: -5579019006490851345
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_68
+      rect:
+        serializedVersion: 2
+        x: 1867
+        y: 935
+        width: 131
+        height: 166
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2666a38e817f77d60800000000000000
+      internalID: 7888044958710130274
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_69
+      rect:
+        serializedVersion: 2
+        x: 5
+        y: 749
+        width: 132
+        height: 164
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 22d53373504795d20800000000000000
+      internalID: 3267770570383777058
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_70
+      rect:
+        serializedVersion: 2
+        x: 191
+        y: 749
+        width: 133
+        height: 169
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7b105e9acc1c35740800000000000000
+      internalID: 5139664684527714743
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_71
+      rect:
+        serializedVersion: 2
+        x: 377
+        y: 749
+        width: 133
+        height: 147
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c64b46ae3a97abb20800000000000000
+      internalID: 3150964634218181740
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_72
+      rect:
+        serializedVersion: 2
+        x: 563
+        y: 749
+        width: 134
+        height: 149
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 379ffc17acc851f90800000000000000
+      internalID: -6983520846047348365
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_73
+      rect:
+        serializedVersion: 2
+        x: 749
+        y: 749
+        width: 137
+        height: 141
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 21bf3e682c870ec60800000000000000
+      internalID: 7845403327761480466
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_74
+      rect:
+        serializedVersion: 2
+        x: 934
+        y: 749
+        width: 141
+        height: 144
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 22d49b7f023144e00800000000000000
+      internalID: 1027967647263313186
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_75
+      rect:
+        serializedVersion: 2
+        x: 1120
+        y: 749
+        width: 143
+        height: 127
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3cf289337a598d840800000000000000
+      internalID: 5249109911058001859
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_76
+      rect:
+        serializedVersion: 2
+        x: 1306
+        y: 749
+        width: 145
+        height: 128
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f52f0e12a63b3f2d0800000000000000
+      internalID: -3246053637987700129
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_77
+      rect:
+        serializedVersion: 2
+        x: 1492
+        y: 749
+        width: 147
+        height: 130
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 61e82087e765834b0800000000000000
+      internalID: -5460519447007425002
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_78
+      rect:
+        serializedVersion: 2
+        x: 1678
+        y: 749
+        width: 136
+        height: 135
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0e9dfb3b6bdc60250800000000000000
+      internalID: 5910637745553791456
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_79
+      rect:
+        serializedVersion: 2
+        x: 1814
+        y: 855
+        width: 11
+        height: 19
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d2b2587a53c86cbb0800000000000000
+      internalID: -4916087781156639955
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_80
+      rect:
+        serializedVersion: 2
+        x: 1865
+        y: 749
+        width: 137
+        height: 137
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c751070b0003c2030800000000000000
+      internalID: 3471202192314078588
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_81
+      rect:
+        serializedVersion: 2
+        x: 2
+        y: 563
+        width: 141
+        height: 138
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d20955901bba8ebc0800000000000000
+      internalID: -3753561512559144915
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_82
+      rect:
+        serializedVersion: 2
+        x: 188
+        y: 563
+        width: 144
+        height: 143
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 418d43707620d9500800000000000000
+      internalID: 404482183059003412
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_83
+      rect:
+        serializedVersion: 2
+        x: 374
+        y: 563
+        width: 141
+        height: 135
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1c2fdd79ffe5eda20800000000000000
+      internalID: 3089010846280315585
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_84
+      rect:
+        serializedVersion: 2
+        x: 560
+        y: 563
+        width: 140
+        height: 140
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 68b1072295bd592c0800000000000000
+      internalID: -4425389882945299578
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_85
+      rect:
+        serializedVersion: 2
+        x: 746
+        y: 563
+        width: 140
+        height: 142
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 53d9e619c44dc1400800000000000000
+      internalID: 296345100822158645
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_86
+      rect:
+        serializedVersion: 2
+        x: 932
+        y: 563
+        width: 141
+        height: 140
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5b196f0c366123040800000000000000
+      internalID: 4625784384957878709
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_87
+      rect:
+        serializedVersion: 2
+        x: 1233
+        y: 690
+        width: 7
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5705b4f8d98b92230800000000000000
+      internalID: 3614623162794987637
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_88
+      rect:
+        serializedVersion: 2
+        x: 1677
+        y: 563
+        width: 138
+        height: 137
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 09dad74aeb2531aa0800000000000000
+      internalID: -6191514083947336304
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_89
+      rect:
+        serializedVersion: 2
+        x: 1863
+        y: 563
+        width: 139
+        height: 144
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 942aabceb56d8a950800000000000000
+      internalID: 6460649355764998729
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_90
+      rect:
+        serializedVersion: 2
+        x: 1987
+        y: 696
+        width: 6
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 23fcf24a08016f040800000000000000
+      internalID: 4680947007394664242
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_91
+      rect:
+        serializedVersion: 2
+        x: 1119
+        y: 563
+        width: 137
+        height: 125
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 00c589702968e5000800000000000000
+      internalID: 26606609561574400
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_92
+      rect:
+        serializedVersion: 2
+        x: 1254
+        y: 683
+        width: 6
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bff1d7d273950a810800000000000000
+      internalID: 1774516346705223675
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_93
+      rect:
+        serializedVersion: 2
+        x: 1305
+        y: 563
+        width: 137
+        height: 123
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 98b36d76e1f8a48e0800000000000000
+      internalID: -1708395747879797879
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_94
+      rect:
+        serializedVersion: 2
+        x: 1491
+        y: 563
+        width: 137
+        height: 131
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f1ed4f2ee65d67430800000000000000
+      internalID: 3780443609454927391
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_95
+      rect:
+        serializedVersion: 2
+        x: 373
+        y: 377
+        width: 143
+        height: 134
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7b80a215a6c723210800000000000000
+      internalID: 1311247237588322487
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_96
+      rect:
+        serializedVersion: 2
+        x: 746
+        y: 377
+        width: 146
+        height: 134
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9e238cde41d78e250800000000000000
+      internalID: 5974162434549101289
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_97
+      rect:
+        serializedVersion: 2
+        x: 932
+        y: 377
+        width: 147
+        height: 137
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 68a3a5aaefdc058e0800000000000000
+      internalID: -1706637765109990778
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_98
+      rect:
+        serializedVersion: 2
+        x: 1118
+        y: 377
+        width: 139
+        height: 144
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a03881fb18c1105d0800000000000000
+      internalID: -3098163725071777014
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_99
+      rect:
+        serializedVersion: 2
+        x: 1305
+        y: 377
+        width: 138
+        height: 149
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 342c5edca2887f990800000000000000
+      internalID: -7352258149234654653
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_100
+      rect:
+        serializedVersion: 2
+        x: 1491
+        y: 377
+        width: 138
+        height: 146
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6ee538be5b78643d0800000000000000
+      internalID: -3222739267926925594
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_101
+      rect:
+        serializedVersion: 2
+        x: 1677
+        y: 377
+        width: 138
+        height: 146
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: bacd1da0a24a100f0800000000000000
+      internalID: -1152459529153028949
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_102
+      rect:
+        serializedVersion: 2
+        x: 1863
+        y: 377
+        width: 140
+        height: 137
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8b5472129ec75a640800000000000000
+      internalID: 5090612294537659832
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_103
+      rect:
+        serializedVersion: 2
+        x: 1926
+        y: 510
+        width: 9
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e318542f198bc93a0800000000000000
+      internalID: -6657243212186025666
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_104
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 377
+        width: 140
+        height: 118
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7d5fe2730a4873280800000000000000
+      internalID: -9063629901404375593
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_105
+      rect:
+        serializedVersion: 2
+        x: 187
+        y: 377
+        width: 141
+        height: 127
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b5f7e36b62c8f9400800000000000000
+      internalID: 333138995342901083
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_106
+      rect:
+        serializedVersion: 2
+        x: 560
+        y: 377
+        width: 144
+        height: 130
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 82128d8c6b771a4f0800000000000000
+      internalID: -819242030267358936
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_107
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 190
+        width: 140
+        height: 134
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 12943bcde01961470800000000000000
+      internalID: 8365032850905581857
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_108
+      rect:
+        serializedVersion: 2
+        x: 187
+        y: 190
+        width: 139
+        height: 139
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b92d49eda47de1fe0800000000000000
+      internalID: -1216298132781608293
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_109
+      rect:
+        serializedVersion: 2
+        x: 373
+        y: 190
+        width: 138
+        height: 144
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 32639b701cd6e1470800000000000000
+      internalID: 8367245833526654499
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_110
+      rect:
+        serializedVersion: 2
+        x: 560
+        y: 191
+        width: 138
+        height: 137
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dac0c710f0bd10190800000000000000
+      internalID: -7997870605737390931
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_111
+      rect:
+        serializedVersion: 2
+        x: 745
+        y: 191
+        width: 135
+        height: 140
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cca3e023ffc732bf0800000000000000
+      internalID: -350298910506468660
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_112
+      rect:
+        serializedVersion: 2
+        x: 932
+        y: 191
+        width: 133
+        height: 144
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 98214ebd82f3dbeb0800000000000000
+      internalID: -4702532991184530807
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_113
+      rect:
+        serializedVersion: 2
+        x: 1120
+        y: 191
+        width: 131
+        height: 135
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2fa4574455a3fd020800000000000000
+      internalID: 2368676066915338994
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_114
+      rect:
+        serializedVersion: 2
+        x: 1308
+        y: 191
+        width: 130
+        height: 135
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dc672be9bbe1791b0800000000000000
+      internalID: -5650013416342784307
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_115
+      rect:
+        serializedVersion: 2
+        x: 1497
+        y: 192
+        width: 127
+        height: 141
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e84d2e30de75dc800800000000000000
+      internalID: 634259798013170830
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_116
+      rect:
+        serializedVersion: 2
+        x: 1686
+        y: 193
+        width: 125
+        height: 148
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 541507e524896a970800000000000000
+      internalID: 8765861135542931781
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_117
+      rect:
+        serializedVersion: 2
+        x: 1873
+        y: 194
+        width: 123
+        height: 152
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: eeee0055fc8748b10800000000000000
+      internalID: 1982842567829548782
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_118
+      rect:
+        serializedVersion: 2
+        x: 13
+        y: 8
+        width: 119
+        height: 132
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d6514fb284504b1a0800000000000000
+      internalID: -6794800130262035091
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_119
+      rect:
+        serializedVersion: 2
+        x: 208
+        y: 8
+        width: 108
+        height: 130
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 725614a8af44ad440800000000000000
+      internalID: 4961353782354076967
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_120
+      rect:
+        serializedVersion: 2
+        x: 408
+        y: 8
+        width: 92
+        height: 136
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e1935b3d067d7de00800000000000000
+      internalID: 1069560247392483614
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_121
+      rect:
+        serializedVersion: 2
+        x: 596
+        y: 9
+        width: 92
+        height: 137
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7d1349ee91f582080800000000000000
+      internalID: -9212008472804838953
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_122
+      rect:
+        serializedVersion: 2
+        x: 783
+        y: 9
+        width: 93
+        height: 122
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2369d767794ccf790800000000000000
+      internalID: -7494899525044300238
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_123
+      rect:
+        serializedVersion: 2
+        x: 970
+        y: 9
+        width: 93
+        height: 98
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e36fa5389e69274d0800000000000000
+      internalID: -3138280060648491458
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_124
+      rect:
+        serializedVersion: 2
+        x: 1158
+        y: 9
+        width: 93
+        height: 96
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1d48853adf47cae30800000000000000
+      internalID: 4516113159061800145
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_125
+      rect:
+        serializedVersion: 2
+        x: 1411
+        y: 70
+        width: 28
+        height: 17
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ca5b63ccd49d3bc0800000000000000
+      internalID: -3801718834538521913
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_126
+      rect:
+        serializedVersion: 2
+        x: 1345
+        y: 10
+        width: 43
+        height: 54
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b178382884ae30280800000000000000
+      internalID: -9078154826700585189
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_127
+      rect:
+        serializedVersion: 2
+        x: 1532
+        y: 10
+        width: 40
+        height: 37
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: da9096f0058a492d0800000000000000
+      internalID: -3272805967382115923
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_128
+      rect:
+        serializedVersion: 2
+        x: 1720
+        y: 10
+        width: 36
+        height: 31
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2954988abfb792990800000000000000
+      internalID: -7410255391066864238
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: TinyFlame_129
+      rect:
+        serializedVersion: 2
+        x: 1907
+        y: 11
+        width: 34
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aa6d420de3ed3d880800000000000000
+      internalID: -8587275703103990102
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      TinyFlame_0: 6546550247857310313
+      TinyFlame_1: 6533903793070731638
+      TinyFlame_10: 8370153610435061590
+      TinyFlame_100: -3222739267926925594
+      TinyFlame_101: -1152459529153028949
+      TinyFlame_102: 5090612294537659832
+      TinyFlame_103: -6657243212186025666
+      TinyFlame_104: -9063629901404375593
+      TinyFlame_105: 333138995342901083
+      TinyFlame_106: -819242030267358936
+      TinyFlame_107: 8365032850905581857
+      TinyFlame_108: -1216298132781608293
+      TinyFlame_109: 8367245833526654499
+      TinyFlame_11: -1651900971844909930
+      TinyFlame_110: -7997870605737390931
+      TinyFlame_111: -350298910506468660
+      TinyFlame_112: -4702532991184530807
+      TinyFlame_113: 2368676066915338994
+      TinyFlame_114: -5650013416342784307
+      TinyFlame_115: 634259798013170830
+      TinyFlame_116: 8765861135542931781
+      TinyFlame_117: 1982842567829548782
+      TinyFlame_118: -6794800130262035091
+      TinyFlame_119: 4961353782354076967
+      TinyFlame_12: -8937911687869591660
+      TinyFlame_120: 1069560247392483614
+      TinyFlame_121: -9212008472804838953
+      TinyFlame_122: -7494899525044300238
+      TinyFlame_123: -3138280060648491458
+      TinyFlame_124: 4516113159061800145
+      TinyFlame_125: -3801718834538521913
+      TinyFlame_126: -9078154826700585189
+      TinyFlame_127: -3272805967382115923
+      TinyFlame_128: -7410255391066864238
+      TinyFlame_129: -8587275703103990102
+      TinyFlame_13: 3828437237277299223
+      TinyFlame_14: -4490165808358576245
+      TinyFlame_15: 2615504032172417676
+      TinyFlame_16: -2881088253593099876
+      TinyFlame_17: 3641191729570221815
+      TinyFlame_18: 7094794102405372002
+      TinyFlame_19: -7602752263038942682
+      TinyFlame_2: 5074780694988647598
+      TinyFlame_20: 6113667640699700475
+      TinyFlame_21: 7045951060879126805
+      TinyFlame_22: 448516044742881279
+      TinyFlame_23: 190402270638367503
+      TinyFlame_24: 5636951373386169174
+      TinyFlame_25: -2428501715084416459
+      TinyFlame_26: -3353967065801593486
+      TinyFlame_27: 1820352218328217680
+      TinyFlame_28: -327838999875233582
+      TinyFlame_29: -5095984756139567995
+      TinyFlame_3: -5258015846215283580
+      TinyFlame_30: -3406896023037578838
+      TinyFlame_31: -5798624791139725069
+      TinyFlame_32: 1062035808801328184
+      TinyFlame_33: -5866864889878046877
+      TinyFlame_34: 5595593740189209979
+      TinyFlame_35: 8982647250355606623
+      TinyFlame_36: 6278798462736471288
+      TinyFlame_37: -3738596586083137931
+      TinyFlame_38: 6592583868964336027
+      TinyFlame_39: -3226189236723001793
+      TinyFlame_4: 8311539899871861382
+      TinyFlame_40: -8722254113975361104
+      TinyFlame_41: -5788360395767339081
+      TinyFlame_42: 7820504217176752816
+      TinyFlame_43: -3344591161783089318
+      TinyFlame_44: 6392637709127043478
+      TinyFlame_45: 8686328093858726961
+      TinyFlame_46: 848211935644598249
+      TinyFlame_47: -5963775098361564983
+      TinyFlame_48: 7022168039544607552
+      TinyFlame_49: -1823228875376057158
+      TinyFlame_5: 3919771449673354740
+      TinyFlame_50: -4439933532397271572
+      TinyFlame_51: 4308200728946131281
+      TinyFlame_52: -8541246430139406973
+      TinyFlame_53: -3419966513789998220
+      TinyFlame_54: -9068657742920839930
+      TinyFlame_55: -2858852504433793974
+      TinyFlame_56: 8376304396467462063
+      TinyFlame_57: 5872439899101125686
+      TinyFlame_58: 2425123625346941275
+      TinyFlame_59: 41066928376489038
+      TinyFlame_6: -6930862348198609725
+      TinyFlame_60: -6240983248209652756
+      TinyFlame_61: -6154659486054382486
+      TinyFlame_62: -5693829241015505352
+      TinyFlame_63: 8631100068970271449
+      TinyFlame_64: -5456364472890838024
+      TinyFlame_65: 3579101472229851806
+      TinyFlame_66: -1722544100503283129
+      TinyFlame_67: -5579019006490851345
+      TinyFlame_68: 7888044958710130274
+      TinyFlame_69: 3267770570383777058
+      TinyFlame_7: 5941879877868163049
+      TinyFlame_70: 5139664684527714743
+      TinyFlame_71: 3150964634218181740
+      TinyFlame_72: -6983520846047348365
+      TinyFlame_73: 7845403327761480466
+      TinyFlame_74: 1027967647263313186
+      TinyFlame_75: 5249109911058001859
+      TinyFlame_76: -3246053637987700129
+      TinyFlame_77: -5460519447007425002
+      TinyFlame_78: 5910637745553791456
+      TinyFlame_79: -4916087781156639955
+      TinyFlame_8: 8280265001664326161
+      TinyFlame_80: 3471202192314078588
+      TinyFlame_81: -3753561512559144915
+      TinyFlame_82: 404482183059003412
+      TinyFlame_83: 3089010846280315585
+      TinyFlame_84: -4425389882945299578
+      TinyFlame_85: 296345100822158645
+      TinyFlame_86: 4625784384957878709
+      TinyFlame_87: 3614623162794987637
+      TinyFlame_88: -6191514083947336304
+      TinyFlame_89: 6460649355764998729
+      TinyFlame_9: -81357263467803204
+      TinyFlame_90: 4680947007394664242
+      TinyFlame_91: 26606609561574400
+      TinyFlame_92: 1774516346705223675
+      TinyFlame_93: -1708395747879797879
+      TinyFlame_94: 3780443609454927391
+      TinyFlame_95: 1311247237588322487
+      TinyFlame_96: 5974162434549101289
+      TinyFlame_97: -1706637765109990778
+      TinyFlame_98: -3098163725071777014
+      TinyFlame_99: -7352258149234654653
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

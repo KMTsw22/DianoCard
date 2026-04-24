@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 661eb8f842c85b9468caa66b7f864d17
+guid: 6107c4ea8f77f2d4bb199940250beb69
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -129,10 +129,10 @@ TextureImporter:
       name: Node_Combat_0
       rect:
         serializedVersion: 2
-        x: 16
-        y: 26
-        width: 289
-        height: 295
+        x: 13
+        y: 16
+        width: 1226
+        height: 1238
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

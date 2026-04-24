@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 0fee8dc53f2ac4a46bd177c72696617e
+guid: 896fe4b43ae77ea4a95b069fd7b00e67
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 8354489603389486881
-    second: Using_this_6-Photoroom_0
+      213: -935755088487029134
+    second: CostGem_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,13 +126,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Using_this_6-Photoroom_0
+      name: CostGem_0
       rect:
         serializedVersion: 2
-        x: 305
-        y: 305
-        width: 719
-        height: 719
+        x: 0
+        y: 0
+        width: 896
+        height: 1183
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 12779b1c70c11f370800000000000000
-      internalID: 8354489603389486881
+      spriteID: 27667f174b78303f0800000000000000
+      internalID: -935755088487029134
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Using_this_6-Photoroom_0: 8354489603389486881
+      CostGem_0: -935755088487029134
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

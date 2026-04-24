@@ -158,6 +158,44 @@ public class CheatWindow : EditorWindow
             EditorGUILayout.EndHorizontal();
         }
 
+        EditorGUILayout.Space(12);
+        EditorGUILayout.LabelField("카드 슬롯 프리뷰 (Inspector 튜닝용)", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox(
+            "BattleUI의 Card Layers v2 / cardBgTint / cardBaseTint 를 실시간 조정하면서 카드 프레임 확인.\n" +
+            "BattleUI가 씬에 있어야 함 — 전투를 한 번 거쳤거나 전투 직행 버튼으로 진입해 두면 OK.",
+            MessageType.None);
+
+        var cheatUi = GetOrCreateCheatUI();
+        bool hasBattleUi = Object.FindFirstObjectByType<BattleUI>() != null;
+
+        using (new EditorGUI.DisabledScope(!hasBattleUi))
+        {
+            if (GUILayout.Button("카드 슬롯 프리뷰 (빈 프레임)", GUILayout.Height(28)))
+                cheatUi.OpenCardPreview(slotOnly: true);
+            if (GUILayout.Button("일반 카드 프리뷰", GUILayout.Height(28)))
+                cheatUi.OpenCardPreview(slotOnly: false);
+        }
+        if (!hasBattleUi)
+            EditorGUILayout.HelpBox("BattleUI가 씬에 없음. 전투 한 번 들어가서 BattleUI를 띄운 뒤 사용.", MessageType.Warning);
+
+        using (new EditorGUI.DisabledScope(!cheatUi.IsCardPreviewOpen))
+        {
+            if (GUILayout.Button("프리뷰 닫기", GUILayout.Height(24)))
+                cheatUi.CloseCardPreview();
+        }
+
         Repaint();
+    }
+
+    // 플레이 모드에서 CheatUI MonoBehaviour가 씬에 없으면 지속 GameObject로 자동 스폰한다.
+    // 이래야 에디터 창 버튼이 항상 먹힘 — 사용자가 [~] 단축키로 연 적 없어도 OK.
+    private static CheatUI GetOrCreateCheatUI()
+    {
+        var existing = Object.FindFirstObjectByType<CheatUI>();
+        if (existing != null) return existing;
+
+        var go = new GameObject("[CheatUI]");
+        Object.DontDestroyOnLoad(go);
+        return go.AddComponent<CheatUI>();
     }
 }

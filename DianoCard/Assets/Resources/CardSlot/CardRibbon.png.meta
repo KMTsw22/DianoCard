@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: bf2510614bf523445a4ad6c0587d395f
+guid: 8581478e3d439f84f8987d05acf2e52a
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -3176135425283511464
-    second: Using_this_7-Photoroom_0
+      213: 1242877949845963701
+    second: CardRibbon_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,13 +126,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Using_this_7-Photoroom_0
+      name: CardRibbon_0
       rect:
         serializedVersion: 2
         x: 0
-        y: 0
+        y: 888
         width: 896
-        height: 1171
+        height: 295
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 85b217998a91ce3d0800000000000000
-      internalID: -3176135425283511464
+      spriteID: 5b30cbb09e69f3110800000000000000
+      internalID: 1242877949845963701
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Using_this_7-Photoroom_0: -3176135425283511464
+      CardRibbon_0: 1242877949845963701
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

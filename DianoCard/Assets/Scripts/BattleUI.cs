@@ -158,13 +158,16 @@ public class BattleUI : MonoBehaviour
     private Texture2D _manaFrameTexture;
     private Texture2D _shieldFxTexture;
 
-    // StS-style 카드 레이어 v2 (2026-04-22) — 흰색 PNG + 코드 tint 방식.
-    // 베이스 → 아트 → 리본 → 트림 → 타입 라벨 순서로 그림.
+    // StS-style 카드 레이어 v3 (2026-04-23) — 흰색 PNG + 코드 tint 방식.
+    // CardBg(빨강 풀사이즈) → CardFrameBase(동색 인셋) → CardArtPlate(상단 아트 패널) →
+    //   아트 → CardDescPanel(하단 패널) → CardRibbon → CardTrim → CardTypeLabel → CostGem.
     private Texture2D _cardFrameBaseTexture;
+    private Texture2D _cardArtPlateTexture;
     private Texture2D _cardRibbonTexture;
     private Texture2D _cardTrimTexture;
     private Texture2D _cardTypeLabelTexture;
     private Texture2D _cardCostGemTexture;
+    private Texture2D _cardCostGemInnerTexture;
 
     // 상단 HUD 아이콘
     private Texture2D _iconHP;
@@ -176,7 +179,6 @@ public class BattleUI : MonoBehaviour
     private Texture2D _iconDiscard;
     private Texture2D _iconCardBack;  // 드로우 애니메이션의 뒷면 표시용
     private Texture2D _iconFloor;
-    private Texture2D _iconTurn;
     private Texture2D _iconShield;
     private Texture2D _iconShieldGreen;
     private Texture2D _iconAttack;
@@ -215,12 +217,18 @@ public class BattleUI : MonoBehaviour
     [SerializeField] private bool hudStripEnabled = true;
     [Tooltip("HUD 스트립 높이 (px).")]
     [SerializeField, Range(40f, 300f)] private float hudStripHeight = 74f;
-    [Tooltip("배틀 화면용 HUD 스트립 배경색 + 알파.")]
-    [SerializeField] private Color hudStripBgColorBattle = new(0.03f, 0.05f, 0.08f, 0.88f);
-    [Tooltip("맵 화면용 HUD 스트립 배경색 + 알파. 양피지/원목 톤에 맞춘 진한 다크 브라운 솔리드.")]
-    [SerializeField] private Color hudStripBgColorMap = new(0.102f, 0.102f, 0.102f, 1f);
-    [Tooltip("마을(캠프) 화면용 HUD 스트립 배경색 + 알파. 밤/모닥불 톤에 맞춰 따로 튜닝.")]
-    [SerializeField] private Color hudStripBgColorVillage = new(0.03f, 0.05f, 0.08f, 0.88f);
+    [Tooltip("배틀 화면용 HUD 스트립 배경색. 알파는 아래 Alpha Battle 슬라이더가 최종값을 결정.")]
+    [SerializeField] private Color hudStripBgColorBattle = new(0.059f, 0.043f, 0.137f, 1f);
+    [Tooltip("맵 화면용 HUD 스트립 배경색. 알파는 아래 Alpha Map 슬라이더가 최종값을 결정.")]
+    [SerializeField] private Color hudStripBgColorMap = new(0.059f, 0.043f, 0.137f, 1f);
+    [Tooltip("마을(캠프) 화면용 HUD 스트립 배경색. 알파는 아래 Alpha Village 슬라이더가 최종값을 결정.")]
+    [SerializeField] private Color hudStripBgColorVillage = new(0.03f, 0.05f, 0.08f, 1f);
+    [Tooltip("배틀 HUD 스트립 최종 알파. 0=완전 투명, 1=완전 불투명.")]
+    [SerializeField, Range(0f, 1f)] private float hudStripAlphaBattle = 0.5f;
+    [Tooltip("맵 HUD 스트립 최종 알파. 0=완전 투명, 1=완전 불투명.")]
+    [SerializeField, Range(0f, 1f)] private float hudStripAlphaMap = 0.84f;
+    [Tooltip("마을 HUD 스트립 최종 알파. 0=완전 투명, 1=완전 불투명.")]
+    [SerializeField, Range(0f, 1f)] private float hudStripAlphaVillage = 0.88f;
     [Tooltip("구분선 중심 Y (px). 기본적으로 스트립 하단 경계와 맞춤.")]
     [SerializeField, Range(0f, 400f)] private float hudDividerCenterY = 78f;
     [Tooltip("구분선 높이 (px). 붓자국 두께 느낌.")]
@@ -231,6 +239,10 @@ public class BattleUI : MonoBehaviour
     [SerializeField, Range(0f, 4000f)] private float hudDividerWidth = 0f;
     [Tooltip("구분선 틴트 색 + 알파. 검정-회색 스트립과 어울리는 어두운 회색으로 기본값.")]
     [SerializeField] private Color hudDividerTint = new(0.412f, 0.412f, 0.412f, 1f);
+    [Tooltip("전투 HUD 바 하단 골드 트림 라인 색 + 알파. 시안 A 스타일. 알파 0이면 안 보임.")]
+    [SerializeField] private Color hudBattleBottomLineColor = new(0.82f, 0.68f, 0.38f, 0.55f);
+    [Tooltip("전투 HUD 바 하단 골드 트림 라인 두께 (px). 0이면 안 그림.")]
+    [SerializeField, Range(0f, 12f)] private float hudBattleBottomLineThickness = 3f;
 
     public enum HudContext { Battle, Map, Village }
 
@@ -239,6 +251,32 @@ public class BattleUI : MonoBehaviour
     [SerializeField] private GameObject _vfxHitD;
     [SerializeField] private GameObject _vfxSmokeF;
     [SerializeField] private float _vfxZDistance = 10f;
+
+    [Header("Entity Shadow (플레이어 발밑 그림자)")]
+    [SerializeField, Range(0.02f, 0.4f), Tooltip("캐릭터 높이 대비 그림자 세로 길이 비율.")]
+    private float _entityShadowHeight = 0.10f;
+    [SerializeField, Range(0.3f, 3f), Tooltip("그림자 가로 폭 배수 (텍스처 원본 종횡비 기준).")]
+    private float _entityShadowWidthScale = 1f;
+    [SerializeField, Range(-0.5f, 0.5f), Tooltip("그림자 좌우 오프셋. 캐릭터 높이 대비 비율. 양수=오른쪽.")]
+    private float _entityShadowOffsetX = -0.106f;
+    [SerializeField, Range(-0.5f, 0.5f), Tooltip("그림자 상하 오프셋. 캐릭터 높이 대비 비율. 양수=위쪽.")]
+    private float _entityShadowOffsetY = 0.106f;
+    [SerializeField, Range(0f, 1f), Tooltip("그림자 알파.")]
+    private float _entityShadowAlpha = 1f;
+
+    [Header("Enemy Shadow (몬스터 발밑 그림자)")]
+    [SerializeField, Tooltip("몬스터 발밑 그림자 사용 여부. 스프라이트는 Resources/Monsters/shadow/{이미지이름}_shadow.png 규칙으로 로드.")]
+    private bool _enemyShadowEnabled = true;
+    [SerializeField, Range(0.02f, 0.4f), Tooltip("몬스터 높이 대비 그림자 세로 길이 비율.")]
+    private float _enemyShadowHeight = 0.10f;
+    [SerializeField, Range(0.3f, 3f), Tooltip("그림자 가로 폭 배수 (텍스처 원본 종횡비 기준).")]
+    private float _enemyShadowWidthScale = 1f;
+    [SerializeField, Range(-0.5f, 0.5f), Tooltip("그림자 좌우 오프셋. 몬스터 높이 대비 비율. 양수=오른쪽.")]
+    private float _enemyShadowOffsetX = 0f;
+    [SerializeField, Range(-0.5f, 0.5f), Tooltip("그림자 상하 오프셋. 몬스터 높이 대비 비율. 양수=위쪽.")]
+    private float _enemyShadowOffsetY = 0f;
+    [SerializeField, Range(0f, 1f), Tooltip("그림자 알파.")]
+    private float _enemyShadowAlpha = 1f;
 
     // 전투 배경 앰비언스 VFX (전투 시작 시 스폰, 종료 시 파괴)
     // 각 엔트리는 특정 배경(backgroundName)에만 스폰된다.
@@ -251,6 +289,17 @@ public class BattleUI : MonoBehaviour
         public Vector2 guiPos = new Vector2(640f, 360f);
         [Range(0.05f, 2f)] public float scale = 0.25f;
         [Range(0.05f, 2f)] public float intensity = 0.3f;
+    }
+
+    // 레이어별 볼더(외곽선) 설정 — 색/두께/활성/샘플 개별 조정.
+    [Serializable]
+    public class LayerBorderConfig
+    {
+        [Tooltip("볼더 활성화.")] public bool enabled = true;
+        [Tooltip("볼더 색 — alpha 낮추면 은은하게.")] public Color color = new Color(0.10f, 0.06f, 0.06f, 0.5f);
+        [Tooltip("볼더 두께 (픽셀).")] [Range(0f, 12f)] public float widthPx = 2f;
+        [Tooltip("샘플 개수 — 원 둘레에 균등 배치. 높을수록 부드럽지만 draw call 증가. 8=거침, 16=균형, 24+=매우 부드러움.")]
+        [Range(4, 32)] public int samples = 16;
     }
 
     // ───────── 카드 레이어 rect 튜닝 (Inspector 노출) ─────────
@@ -273,30 +322,155 @@ public class BattleUI : MonoBehaviour
     [SerializeField] private Vector4 cardBodyRectPct = new(0.15f, 0.73f, 0.7f, 0.22f);
     [Tooltip("골드 디바이더 rect (xPct, yPct, widthPct, 절대높이 px). hex 배너 영역 피해서 좌·우 두 조각으로 그려짐.")]
     [SerializeField] private Vector4 cardDividerRectPct = new(0.07f, 0.672f, 0.87f, 1.3f);
-    [SerializeField] private Color cardDividerColor = new(0.75f, 0.58f, 0.25f, 0.75f);
+    [SerializeField] private Color cardDividerColor = new(0.50f, 0.42f, 0.26f, 0.65f);
     [Tooltip("좌상단 마나 코스트 오브 — (centerX, centerY, sizeFrac) 카드 폭 기준 비율.")]
-    [SerializeField] private Vector3 cardCostOrbPct = new(0.127f, 0.086f, 0.235f);
+    [SerializeField] private Vector3 cardCostOrbPct = new(0.127f, 0.086f, 0.18f);
 
-    // ───────── StS 카드 레이어 v2 (2026-04-22) ─────────
-    [Header("Card Layers v2 (StS-style)")]
-    [Tooltip("CardFrameBase — 카드 본체. 보통 전체 rect.")]
+    // ───────── StS 카드 레이어 v3 (2026-04-23) ─────────
+    [Header("Card Layers v3 (StS-style)")]
+    [Tooltip("CardFrameBase — 본체 프레임. 보통 전체 rect.")]
     [SerializeField] private Vector4 cardBaseRectPct = new(0f, 0f, 1f, 1f);
+    [Tooltip("CardArtPlate — 상단 아트 패널 배경. 아트가 올라갈 윗칸.")]
+    [SerializeField] private Vector4 cardArtPlateRectPct = new(0.05f, 0.02f, 0.9f, 0.6f);
     [Tooltip("CardRibbon — 상단 리본. 살짝 위로 튀어나오게.")]
-    [SerializeField] private Vector4 cardRibbonRectPct = new(0.0f, -0.01f, 1.0f, 0.18f);
-    [Tooltip("카드 아트 영역 — 리본 아래, 본체 분할선 위.")]
-    [SerializeField] private Vector4 cardArtRectV2Pct = new(0.07f, 0.13f, 0.86f, 0.45f);
+    [SerializeField] private Vector4 cardRibbonRectPct = new(-0.05f, 0.03f, 1.1f, 0.18f);
+    [Tooltip("카드 아트 영역 — CardArtPlate 위에 얹힘.")]
+    [SerializeField] private Vector4 cardArtRectV2Pct = new(0.05f, 0.04f, 0.9f, 0.58f);
     [Tooltip("CardTrim — 메탈 트림. 보통 전체 rect.")]
     [SerializeField] private Vector4 cardTrimRectPct = new(0f, 0f, 1f, 1f);
+    [Tooltip("CardDescPanel — 본문 텍스트 뒤 어두운 패널 위치/크기.")]
+    [SerializeField] private Vector4 cardDescPanelRectPct = new(0.07f, 0.59f, 0.86f, 0.4f);
     [Tooltip("CardTypeLabel — 하단 육각 타입 라벨 위치/크기.")]
-    [SerializeField] private Vector4 cardTypeLabelPillRectPct = new(0.30f, 0.83f, 0.40f, 0.085f);
+    [SerializeField] private Vector4 cardTypeLabelPillRectPct = new(0.30f, 0.89f, 0.40f, 0.06f);
     [Tooltip("리본 위 카드명 텍스트 영역.")]
     [SerializeField] private Vector4 cardNameOnRibbonRectPct = new(0.16f, 0.015f, 0.68f, 0.12f);
     [Tooltip("하단 패널 본문 영역 (ATK/HP 또는 설명).")]
-    [SerializeField] private Vector4 cardBodyV2RectPct = new(0.10f, 0.60f, 0.80f, 0.20f);
-    [Tooltip("CardFrameBase 본체 색 (어두운 회색).")]
-    [SerializeField] private Color cardBaseTint = new(0.18f, 0.18f, 0.20f, 1f);
-    [Tooltip("코스트 젬 색 (StS는 빨강 고정).")]
-    [SerializeField] private Color cardCostGemTint = new(0.78f, 0.22f, 0.18f, 1f);
+    [SerializeField] private Vector4 cardBodyV2RectPct = new(0.11f, 0.62f, 0.78f, 0.24f);
+    [Tooltip("CardFrameBase 안쪽 플레이트 색 — slotOnly 또는 frameUseTypeColor=false 일 때만 사용.")]
+    [SerializeField] private Color cardBaseTint = new(0.34f, 0.33f, 0.36f, 1f);
+    [Tooltip("CardBg 외곽 프레임 색 — 미드 스톤 그레이 (가장 밝은 레이어, 카드 실루엣이 배경과 분리되게).")]
+    [SerializeField] private Color cardBgTint = new(0.42f, 0.41f, 0.44f, 1f);
+    [Tooltip("CardArtPlate 상단 아트 패널 색 — 아트가 돋보이도록 가장 어두운 레이어.")]
+    [SerializeField] private Color cardArtPlateTint = new(0.20f, 0.19f, 0.22f, 1f);
+    [Tooltip("CardDescPanel 본문 패널 색 — 텍스트 가독성 위해 중간 밝기.")]
+    [SerializeField] private Color cardDescPanelTint = new(0.36f, 0.35f, 0.38f, 1f);
+    [Tooltip("코스트 젬 외곽 링 색 — 에이지드 브라스 (빛바랜 황동).")]
+    [SerializeField] private Color cardCostGemTint = new(0.45f, 0.36f, 0.22f, 1f);
+    [Tooltip("코스트 젬 안쪽 디스크 색 — 잉크 블랙.")]
+    [SerializeField] private Color cardCostGemInnerTint = new(0.08f, 0.08f, 0.10f, 1f);
+    [Tooltip("안쪽 디스크 축소 비율 (orb 기준). 0 = 링과 같은 크기, 양수 = 작게.")]
+    [SerializeField, Range(0f, 0.5f)] private float cardCostGemInnerShrinkPct = 0.22f;
+    [Tooltip("CardTypeLabel 하단 육각 라벨 색 (어두운 회색).")]
+    [SerializeField] private Color cardTypeLabelTint = new(0.18f, 0.18f, 0.20f, 1f);
+
+    // ───────── v3 추가 튜닝 (Inspector 전용 tint/color) ─────────
+    [Header("Card Extra Tints (흰색 = 기본 적용)")]
+    [Tooltip("아트 일러스트에 적용되는 tint 곱셈. 흰색 = 원본.")]
+    [SerializeField] private Color cardArtTint = Color.white;
+    [Tooltip("CardRibbon 추가 tint 곱셈 (타입 색 × 이 값).")]
+    [SerializeField] private Color cardRibbonTintMul = Color.white;
+    [Tooltip("CardTrim 추가 tint 곱셈 (등급 색 × 이 값).")]
+    [SerializeField] private Color cardTrimTintMul = Color.white;
+
+    [Header("Card Border (최외곽 오버레이 — 선택)")]
+    [Tooltip("CardBorder — CardBg 위에 한 번 더 덮는 외곽 테두리. 없으면 비어둠.")]
+    [SerializeField] private Color cardBorderTint = new(0f, 0f, 0f, 0f); // alpha 0 = 그리지 않음
+    [Tooltip("CardBorder 그리기 활성화.")]
+    [SerializeField] private bool cardBorderEnabled = false;
+
+    [Header("Layer Borders (레이어별 볼더 — 기본: 검정 α128, 3pt)")]
+    [Tooltip("CardBg (외곽 프레임) 볼더.")]
+    [SerializeField] private LayerBorderConfig borderCardBg = new() { enabled = true, color = new Color(0f, 0f, 0f, 1f), widthPx = 2f };
+    [Tooltip("CardFrameBase (안쪽 플레이트) 볼더.")]
+    [SerializeField] private LayerBorderConfig borderFrameBase = new() { enabled = true, color = new Color(0f, 0f, 0f, 1f), widthPx = 2f };
+    [Tooltip("CardRibbon (상단 리본) 볼더.")]
+    [SerializeField] private LayerBorderConfig borderRibbon = new() { enabled = true, color = new Color(0f, 0f, 0f, 1f), widthPx = 2f };
+    [Tooltip("CardTrim (등급 트림) 볼더.")]
+    [SerializeField] private LayerBorderConfig borderTrim = new() { enabled = true, color = new Color(0f, 0f, 0f, 1f), widthPx = 2f };
+    [Tooltip("CardTypeLabel (하단 타입 pill) 볼더.")]
+    [SerializeField] private LayerBorderConfig borderTypeLabel = new() { enabled = true, color = new Color(0f, 0f, 0f, 1f), widthPx = 2f };
+    [Tooltip("CostGem (좌상단 마나 외곽 링) 볼더.")]
+    [SerializeField] private LayerBorderConfig borderCostGem = new() { enabled = true, color = new Color(0f, 0f, 0f, 1f), widthPx = 2f };
+    [Tooltip("CostGemInner (마나 안쪽 디스크) 볼더.")]
+    [SerializeField] private LayerBorderConfig borderCostGemInner = new() { enabled = false, color = new Color(0f, 0f, 0f, 1f), widthPx = 1f };
+
+    [Header("Card Ribbon Override")]
+    [Tooltip("리본 색을 타입 색 대신 고정 색으로 오버라이드.")]
+    [SerializeField] private bool cardRibbonUseOverride = false;
+    [Tooltip("오버라이드 시 사용할 리본 색 — 에이지드 파치먼트 (빛바랜 종이).")]
+    [SerializeField] private Color cardRibbonOverrideColor = new(0.62f, 0.55f, 0.45f, 1f);
+
+    [Header("Card Frame Color by Type (CardFrameBase 레이어)")]
+    [Tooltip("안쪽 플레이트 색을 카드 타입에 따라 자동 변경. false 면 cardBaseTint 고정.")]
+    [SerializeField] private bool frameUseTypeColor = false;
+    [Tooltip("SUMMON — 일본 다크판타지 와인/버건디 (빨강 대신).")]
+    [SerializeField] private Color frameColorSummon = new(0.40f, 0.18f, 0.22f, 1f);
+    [Tooltip("MAGIC — 딥 인디고/사파이어 (보라 대신 잉크 네이비).")]
+    [SerializeField] private Color frameColorMagic = new(0.22f, 0.24f, 0.46f, 1f);
+    [Tooltip("BUFF — 에이지드 제이드/티어.")]
+    [SerializeField] private Color frameColorBuff = new(0.18f, 0.36f, 0.32f, 1f);
+    [Tooltip("UTILITY — 거넛메탈 슬레이트.")]
+    [SerializeField] private Color frameColorUtility = new(0.26f, 0.26f, 0.32f, 1f);
+    [Tooltip("RITUAL — 머티드 로즈/마브.")]
+    [SerializeField] private Color frameColorRitual = new(0.50f, 0.30f, 0.38f, 1f);
+    [Tooltip("매치 안 되는 타입 / null — 스톤 그레이.")]
+    [SerializeField] private Color frameColorDefault = new(0.32f, 0.32f, 0.36f, 1f);
+
+    [Header("Card Slot Defaults (카드 데이터 없을 때)")]
+    [Tooltip("슬롯 프리뷰 리본 기본 색.")]
+    [SerializeField] private Color slotDefaultRibbonTint = new(0.45f, 0.45f, 0.45f, 1f);
+    [Tooltip("슬롯 프리뷰 트림 기본 색 (동색).")]
+    [SerializeField] private Color slotDefaultTrimTint = new(0.71f, 0.43f, 0.20f, 1f);
+    [Tooltip("아트 텍스처 없을 때 placeholder fill 색.")]
+    [SerializeField] private Color cardArtPlaceholderTint = new(0.5f, 0.5f, 0.5f, 0.35f);
+
+    [Header("Card State")]
+    [Tooltip("플레이 불가 카드 dim 곱셈 색 (프레임 전체).")]
+    [SerializeField] private Color cardDisabledDim = new(0.55f, 0.55f, 0.55f, 0.9f);
+    [Tooltip("플레이 불가 카드 코스트 젬 dim.")]
+    [SerializeField] private Color cardDisabledDimGem = new(0.7f, 0.7f, 0.7f, 0.95f);
+
+    [Header("Card Text Tints")]
+    [Tooltip("카드명 텍스트 tint 곱셈 (등급 색 × 이 값).")]
+    [SerializeField] private Color cardNameTextTint = Color.white;
+    [Tooltip("카드명 외곽선 색.")]
+    [SerializeField] private Color cardNameOutline = new(0f, 0f, 0f, 0.9f);
+    [Tooltip("카드명 외곽선 두께.")]
+    [SerializeField, Range(0f, 3f)] private float cardNameOutlineThickness = 1.0f;
+    [Tooltip("카테고리 라벨 (소환/마법/버프/유틸) 색.")]
+    [SerializeField] private Color cardTypeTextColor = Color.white;
+    [Tooltip("본문(ATK/HP, 설명) 텍스트 색.")]
+    [SerializeField] private Color cardBodyTextColor = Color.white;
+    [Tooltip("코스트 젬 숫자 색.")]
+    [SerializeField] private Color cardCostTextColor = Color.white;
+    [Tooltip("코스트 젬 숫자 외곽선 색.")]
+    [SerializeField] private Color cardCostOutline = new(0f, 0f, 0f, 0.95f);
+    [Tooltip("코스트 숫자 외곽선 두께.")]
+    [SerializeField, Range(0f, 3f)] private float cardCostOutlineThickness = 1.2f;
+    [Tooltip("플레이 불가 시 카드명 색.")]
+    [SerializeField] private Color cardNameDisabledColor = new(0.75f, 0.75f, 0.75f, 0.9f);
+    [Tooltip("플레이 불가 시 코스트 숫자 색.")]
+    [SerializeField] private Color cardCostDisabledColor = new(0.75f, 0.75f, 0.75f, 0.9f);
+
+    [Header("Card Font Sizes")]
+    [Tooltip("카드명 (리본 위) 폰트 크기 — 호버/프리뷰(큰 카드).")]
+    [SerializeField, Range(6, 48)] private int cardNameFontSize = 16;
+    [Tooltip("카드명 폰트 크기 — 손패 (작은 카드, drawCost=false 경로).")]
+    [SerializeField, Range(6, 32)] private int cardNameFontSizeSmall = 11;
+    [Tooltip("카테고리 라벨 (소환/마법 등, 하단 pill) 폰트 크기.")]
+    [SerializeField, Range(6, 32)] private int cardTypeFontSize = 11;
+    [Tooltip("본문 (ATK/HP, 설명) 폰트 크기.")]
+    [SerializeField, Range(6, 32)] private int cardBodyFontSize = 11;
+    [Tooltip("코스트 젬 숫자 크기 비율 (orb 지름 × 이 비율). 0.55 = 젬의 55%.")]
+    [SerializeField, Range(0.2f, 1.0f)] private float cardCostFontSizeRatio = 0.55f;
+
+    [Header("Card Text Rects (위치/크기 — 배경 레이어와 독립)")]
+    [Tooltip("카테고리 라벨 텍스트 위치 (pill 배경과 독립). 카드 내부 비율.")]
+    [SerializeField] private Vector4 cardTypeTextRectPct = new(0.30f, 0.89f, 0.40f, 0.06f);
+    [Tooltip("코스트 숫자 위치 오프셋 (orb 중심 기준, 카드 폭 대비 비율). X=우측, Y=아래.")]
+    [SerializeField] private Vector2 cardCostTextOffsetPct = new(0f, 0f);
+    [Tooltip("코스트 숫자 크기 오프셋 (orb 크기 대비 비율 추가). 0 = orb 크기 그대로.")]
+    [SerializeField, Range(-0.5f, 0.5f)] private float cardCostTextRectShrinkPct = 0f;
 
     [Header("Battle Background Ambience")]
     [SerializeField] private List<BackgroundAmbienceEntry> _bgFxEntries = new();
@@ -327,6 +501,41 @@ public class BattleUI : MonoBehaviour
     [Header("Battle Background Vines")]
     [SerializeField] private List<BackgroundVineEntry> _bgVineEntries = new();
     private readonly List<GameObject> _spawnedVines = new();
+
+    // ───────── Normal1 전용 바닥 안개 ─────────
+    // LobbyUI의 "Bottom Smoke" 이미터와 같은 느낌. BG_Ch1_Battle_01 배경일 때만 렌더.
+    [Header("Normal1 Bottom Fog (BG_Ch1_Battle_01 전용)")]
+    [Tooltip("normal1 전투 배경에서 바닥 안개 활성화.")]
+    [SerializeField] private bool _normal1FogEnabled = true;
+    [Tooltip("안개 파티클 개수.")]
+    [SerializeField, Range(0, 60)] private int _normal1FogCount = 24;
+    [Tooltip("1280x720 가상 좌표 기준 스폰 영역 (바닥 띠).")]
+    [SerializeField] private Rect _normal1FogSpawnRect = new Rect(0f, 580f, 1280f, 30f);
+    [Tooltip("파티클 크기 범위(px).")]
+    [SerializeField] private Vector2 _normal1FogSizeRange = new Vector2(30f, 55f);
+    [Tooltip("떠오르는 높이(px).")]
+    [SerializeField, Range(20f, 300f)] private float _normal1FogRiseHeight = 120f;
+    [Tooltip("떠오르는 속도.")]
+    [SerializeField, Range(0.05f, 1f)] private float _normal1FogRiseSpeed = 0.15f;
+    [Tooltip("가로 흔들림 폭(px).")]
+    [SerializeField, Range(0f, 60f)] private float _normal1FogSwayAmount = 25f;
+    [Tooltip("가로 흔들림 주기.")]
+    [SerializeField, Range(0.1f, 3f)] private float _normal1FogSwayFrequency = 0.4f;
+    [Tooltip("안개 안쪽 색.")]
+    [SerializeField] private Color _normal1FogInnerColor = new Color(0.6f, 0.55f, 0.55f, 1f);
+    [Tooltip("안개 바깥 글로우 색.")]
+    [SerializeField] private Color _normal1FogOuterColor = new Color(0.35f, 0.32f, 0.32f, 1f);
+    [Tooltip("전체 알파 곱셈.")]
+    [SerializeField, Range(0f, 2f)] private float _normal1FogAlphaMul = 0.35f;
+    [Tooltip("깜빡임 속도.")]
+    [SerializeField, Range(0f, 10f)] private float _normal1FogFlickerSpeed = 2f;
+    [Tooltip("깜빡임 깊이(0=없음).")]
+    [SerializeField, Range(0f, 1f)] private float _normal1FogFlickerDepth = 0.2f;
+    [Tooltip("외곽 블룸 크기 배수.")]
+    [SerializeField, Range(1f, 6f)] private float _normal1FogBloomScale = 4.5f;
+    [Tooltip("외곽 블룸 알파 배수.")]
+    [SerializeField, Range(0f, 1f)] private float _normal1FogBloomAlphaMul = 0.55f;
+    private Texture2D _normal1FogTex;
 
     // HP 변화 감지용 (unit reference → 직전 프레임 hp)
     private readonly Dictionary<object, int> _lastKnownHp = new();
@@ -418,6 +627,9 @@ public class BattleUI : MonoBehaviour
         _cardFrameBaseTexture = Resources.Load<Texture2D>("CardSlot/CardFrameBase");
         if (_cardFrameBaseTexture == null)
             Debug.LogWarning("[BattleUI] CardFrameBase texture not found: Resources/CardSlot/CardFrameBase");
+        _cardArtPlateTexture = Resources.Load<Texture2D>("CardSlot/CardArtPlate");
+        if (_cardArtPlateTexture == null)
+            Debug.LogWarning("[BattleUI] CardArtPlate texture not found: Resources/CardSlot/CardArtPlate");
         _cardRibbonTexture = Resources.Load<Texture2D>("CardSlot/CardRibbon");
         if (_cardRibbonTexture == null)
             Debug.LogWarning("[BattleUI] CardRibbon texture not found: Resources/CardSlot/CardRibbon");
@@ -430,6 +642,9 @@ public class BattleUI : MonoBehaviour
         _cardCostGemTexture = Resources.Load<Texture2D>("CardSlot/CostGem");
         if (_cardCostGemTexture == null)
             Debug.LogWarning("[BattleUI] CostGem texture not found: Resources/CardSlot/CostGem");
+        _cardCostGemInnerTexture = Resources.Load<Texture2D>("CardSlot/CostGemInner");
+        if (_cardCostGemInnerTexture == null)
+            Debug.LogWarning("[BattleUI] CostGemInner texture not found: Resources/CardSlot/CostGemInner");
 
         _shieldFxTexture = Resources.Load<Texture2D>("CardArt/Spell/Effect/ShieldBubble");
         if (_shieldFxTexture == null)
@@ -444,7 +659,6 @@ public class BattleUI : MonoBehaviour
         _iconDiscard = Resources.Load<Texture2D>("InGame/Icon/Discard");
         _iconCardBack = Resources.Load<Texture2D>("InGame/Icon/CardBack");
         _iconFloor   = Resources.Load<Texture2D>("InGame/Icon/Floor");
-        _iconTurn    = Resources.Load<Texture2D>("InGame/Icon/Turn");
         _iconShield       = Resources.Load<Texture2D>("InGame/Icon/Shield");
         _iconShieldGreen  = Resources.Load<Texture2D>("InGame/Icon/ShieldGreen");
         _iconAttack       = Resources.Load<Texture2D>("InGame/Icon/Attack");
@@ -464,7 +678,6 @@ public class BattleUI : MonoBehaviour
         if (_iconDiscard == null) Debug.LogWarning("[BattleUI] Discard icon not found: Resources/InGame/Icon/Discard");
         if (_iconCardBack == null) Debug.LogWarning("[BattleUI] CardBack icon not found: Resources/InGame/Icon/CardBack");
         if (_iconFloor   == null) Debug.LogWarning("[BattleUI] Floor icon not found: Resources/InGame/Icon/Floor");
-        if (_iconTurn    == null) Debug.LogWarning("[BattleUI] Turn icon not found: Resources/InGame/Icon/Turn");
         if (_iconShield       == null) Debug.LogWarning("[BattleUI] Shield icon not found: Resources/InGame/Icon/Shield");
         if (_iconShieldGreen  == null) Debug.LogWarning("[BattleUI] ShieldGreen icon not found: Resources/InGame/Icon/ShieldGreen");
         if (_iconAttack       == null) Debug.LogWarning("[BattleUI] Attack icon not found: Resources/InGame/Icon/Attack");
@@ -615,10 +828,12 @@ public class BattleUI : MonoBehaviour
         if (hitSeq == null || hitSeq.Length == 0)       hitSeq = attackSeq;
         if (summonSeq == null || summonSeq.Length == 0) summonSeq = attackSeq;
 
-        // Idle / 베이스 스프라이트 = 공격 시퀀스 첫 프레임. 시퀀스를 못 불러온 경우에만 기존 Char_Archaeologist_Field 폴백.
-        Sprite baseSprite = (attackSeq != null && attackSeq.Length > 0)
-            ? attackSeq[0]
-            : (_playerSprite != null ? TexToSprite(_playerSprite) : null);
+        // Idle / 베이스 스프라이트 = character_basic/Idle.png. 없으면 공격 시퀀스 첫 프레임 → Char_Archaeologist_Field 폴백.
+        var idleTex = Resources.Load<Texture2D>("Character_infield/character_basic/Idle");
+        Sprite idleSprite = idleTex != null ? TexToSprite(idleTex) : null;
+        Sprite baseSprite = idleSprite
+            ?? (attackSeq != null && attackSeq.Length > 0 ? attackSeq[0] : null)
+            ?? (_playerSprite != null ? TexToSprite(_playerSprite) : null);
 
         if (baseSprite == null)
         {
@@ -665,6 +880,19 @@ public class BattleUI : MonoBehaviour
 
         if (attackSeq == null || attackSeq.Length == 0)
             Debug.LogWarning("[BattleUI] Character_infield/Archaeologist/attack_f## 시퀀스 없음 — 정적 Char_Archaeologist_Field 폴백 사용");
+
+        // 발 밑 그림자 — pivot을 이미지 중앙(0.5, 0.5)으로 잡아 발 위치에 타원 중심이 오도록.
+        var shadowTex = Resources.Load<Texture2D>("Character_infield/character_basic/shadow/character_shadow");
+        if (shadowTex != null)
+        {
+            var shadowSprite = Sprite.Create(
+                shadowTex,
+                new Rect(0, 0, shadowTex.width, shadowTex.height),
+                new Vector2(0.5f, 0.5f),
+                100f);
+            _playerView.SetShadowSprite(shadowSprite, _entityShadowHeight, Vector2.zero, _entityShadowAlpha);
+        }
+        else Debug.LogWarning("[BattleUI] Player shadow not found: Resources/Character_infield/character_basic/shadow/character_shadow.png");
     }
 
     /// <summary>Resources 경로 프리픽스 뒤에 01, 02… 를 붙여가며 연속적으로 로드한다 (끊기는 번호에서 중단, 최대 99).
@@ -695,6 +923,7 @@ public class BattleUI : MonoBehaviour
         if (_playerView != null && _playerView.gameObject != null)
             Destroy(_playerView.gameObject);
         DestroyAllEnemyViews();
+        if (_normal1FogTex != null) Destroy(_normal1FogTex);
     }
 
     private void LoadEnemySprites()
@@ -799,6 +1028,24 @@ public class BattleUI : MonoBehaviour
         view.SetSprite(sprite);
         view.SetSortingOrder(50);
         _enemyViews[e] = view;
+
+        // 발밑 그림자 — 이미지 파일명 규칙(`Monsters/shadow/{이름}_shadow`)으로 로드.
+        // 예: crow.png → Monsters/shadow/crow_shadow, E101_StoneGolem.png → E101_StoneGolem_shadow.
+        // 없으면 조용히 스킵(모든 몬스터에 그림자 에셋이 있어야 하는 건 아님).
+        if (_enemyShadowEnabled && !string.IsNullOrEmpty(e.data.image))
+        {
+            string imgName = Path.GetFileNameWithoutExtension(e.data.image);
+            var shadowTex = Resources.Load<Texture2D>($"Monsters/shadow/{imgName}_shadow");
+            if (shadowTex != null)
+            {
+                var shadowSprite = Sprite.Create(
+                    shadowTex,
+                    new Rect(0, 0, shadowTex.width, shadowTex.height),
+                    new Vector2(0.5f, 0.5f),
+                    100f);
+                view.SetShadowSprite(shadowSprite, _enemyShadowHeight, Vector2.zero, _enemyShadowAlpha);
+            }
+        }
     }
 
     private void CleanupDeadEnemyViews()
@@ -913,7 +1160,8 @@ public class BattleUI : MonoBehaviour
             if (!_enemyViews.TryGetValue(e, out var view)) continue;
             if (!_slotPositions.TryGetValue(e, out var center)) continue;
 
-            const float w = 200f, h = 200f;
+            float h = GetEnemyDrawHeight(e);
+            float w = h;
             var rect = new Rect(center.x - w / 2f, center.y - h / 2f, w, h);
             Vector3 feetWorld = GuiToWorld(new Vector2(center.x, rect.yMax));
             Vector3 topWorld  = GuiToWorld(new Vector2(center.x, rect.y));
@@ -1034,6 +1282,106 @@ public class BattleUI : MonoBehaviour
         for (int i = 0; i < _spawnedBgFx.Count; i++)
             if (_spawnedBgFx[i] != null) Destroy(_spawnedBgFx[i]);
         _spawnedBgFx.Clear();
+    }
+
+    // =========================================================
+    // Normal1 바닥 안개 (IMGUI 파티클) — LobbyUI의 "Bottom Smoke" 포팅
+    // =========================================================
+
+    private void DrawNormal1Fog()
+    {
+        if (!_normal1FogEnabled) return;
+        if (_normal1FogCount <= 0) return;
+        if (_backgroundTexture == null || _backgroundTexture.name != "BG_Ch1_Battle_01") return;
+        if (_normal1FogSpawnRect.width <= 0f || _normal1FogSpawnRect.height <= 0f) return;
+
+        if (_normal1FogTex == null) _normal1FogTex = MakeFogRadialGlow(64);
+        if (_normal1FogTex == null) return;
+
+        float t = Time.unscaledTime;
+        var prevCol = GUI.color;
+        const int seedOffset = 500; // 다른 파티클 시드와 겹치지 않게
+
+        for (int i = 0; i < _normal1FogCount; i++)
+        {
+            int idx = i + seedOffset;
+            float seed = FogHash01(idx * 0.6180339f + 0.13f);
+            float speed = _normal1FogRiseSpeed * (0.75f + seed * 0.6f);
+            float phase = seed * 7.13f;
+            float life = ((t * speed) + phase) % 1f;
+            if (life < 0f) life += 1f;
+
+            float spawnU = FogHash01(idx * 12.9898f);
+            float spawnV = FogHash01(idx * 78.233f);
+            float sway = Mathf.Sin(life * Mathf.PI * 2f * _normal1FogSwayFrequency + seed * 6f) * _normal1FogSwayAmount;
+
+            float centerX = _normal1FogSpawnRect.x + _normal1FogSpawnRect.width * 0.5f;
+            float x = centerX + (spawnU - 0.5f) * _normal1FogSpawnRect.width + sway;
+            float y = _normal1FogSpawnRect.y + spawnV * _normal1FogSpawnRect.height - life * _normal1FogRiseHeight;
+
+            float sizeT = Mathf.Sin(life * Mathf.PI);
+            float baseSize = Mathf.Lerp(_normal1FogSizeRange.x, _normal1FogSizeRange.y, FogHash01(idx * 37.719f));
+            float size = baseSize * (0.45f + 0.55f * sizeT);
+
+            float fade = Mathf.Sin(life * Mathf.PI);
+            float flicker = (1f - _normal1FogFlickerDepth) + _normal1FogFlickerDepth * Mathf.Sin(t * _normal1FogFlickerSpeed + seed * 17f);
+            float alpha = Mathf.Clamp01(fade * flicker) * _normal1FogAlphaMul;
+
+            // 외곽 블룸 (크고 흐리게)
+            float bloomSize = size * _normal1FogBloomScale;
+            GUI.color = new Color(_normal1FogOuterColor.r, _normal1FogOuterColor.g, _normal1FogOuterColor.b,
+                _normal1FogOuterColor.a * alpha * _normal1FogBloomAlphaMul);
+            GUI.DrawTexture(new Rect(x - bloomSize * 0.5f, y - bloomSize * 0.5f, bloomSize, bloomSize),
+                _normal1FogTex, ScaleMode.StretchToFill, alphaBlend: true);
+
+            // 중간 글로우
+            float glowSize = size * 1.6f;
+            GUI.color = new Color(_normal1FogOuterColor.r, _normal1FogOuterColor.g, _normal1FogOuterColor.b,
+                _normal1FogOuterColor.a * alpha * 0.7f);
+            GUI.DrawTexture(new Rect(x - glowSize * 0.5f, y - glowSize * 0.5f, glowSize, glowSize),
+                _normal1FogTex, ScaleMode.StretchToFill, alphaBlend: true);
+
+            // 안쪽 코어
+            GUI.color = new Color(_normal1FogInnerColor.r, _normal1FogInnerColor.g, _normal1FogInnerColor.b,
+                _normal1FogInnerColor.a * alpha);
+            GUI.DrawTexture(new Rect(x - size * 0.5f, y - size * 0.5f, size, size),
+                _normal1FogTex, ScaleMode.StretchToFill, alphaBlend: true);
+        }
+        GUI.color = prevCol;
+    }
+
+    private static float FogHash01(float x)
+    {
+        float s = Mathf.Sin(x) * 43758.5453f;
+        s -= Mathf.Floor(s);
+        return s;
+    }
+
+    private static Texture2D MakeFogRadialGlow(int size)
+    {
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
+        {
+            wrapMode = TextureWrapMode.Clamp,
+            filterMode = FilterMode.Bilinear,
+            hideFlags = HideFlags.HideAndDontSave,
+        };
+        var px = new Color[size * size];
+        float c = (size - 1) * 0.5f;
+        float maxR = size * 0.5f;
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dx = (x - c) / maxR;
+                float dy = (y - c) / maxR;
+                float a = Mathf.Clamp01(1f - Mathf.Sqrt(dx * dx + dy * dy));
+                a = a * a * (3f - 2f * a);
+                px[y * size + x] = new Color(1f, 1f, 1f, a);
+            }
+        }
+        tex.SetPixels(px);
+        tex.Apply();
+        return tex;
     }
 
     // =========================================================
@@ -1373,13 +1721,23 @@ public class BattleUI : MonoBehaviour
         float scale = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
         GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1));
 
+        // Normal1 배경 전용 바닥 안개 — 월드 스프라이트(캐릭터/배경)는 뒤, 손패/HP 바 등 IMGUI는 앞.
+        DrawNormal1Fog();
+
         var state = _battle.state;
 
         ComputeSlotPositions(state);
 
         DrawBattleField(state);
         DrawFloaters();
-        DrawTopBar(state, gsm);
+        var run = gsm.CurrentRun;
+        if (run != null)
+        {
+            var map = gsm.CurrentMap;
+            int totalFloors = map != null ? map.totalFloors : 5;
+            DrawTopBar(HudContext.Battle, run, run.currentFloor, totalFloors,
+                       hpCurrent: state.player.hp, hpMax: state.player.maxHp);
+        }
         DrawTurnInfo(state);
 
         // Reward 상태에서는 상호작용 UI(손패/턴 종료/타겟팅 힌트) 숨김.
@@ -1913,9 +2271,9 @@ public class BattleUI : MonoBehaviour
 
     private void ComputeSlotPositions(BattleState state)
     {
-        // 지면 라인(Y=540)에 발끝이 닿도록 각 유닛 스프라이트 높이의 절반만큼 위로 올려 중심을 잡음.
+        // 지면 라인(Y=550)에 발끝이 닿도록 각 유닛 스프라이트 높이의 절반만큼 위로 올려 중심을 잡음.
         // 플레이어/적 h=220/200, 필드 소환수 h=110 기준.
-        const float GroundY = 540f;
+        const float GroundY = 550f;
 
         _slotPositions.Clear();
         _slotPositions[state.player] = new Vector2(230, GroundY - 145);
@@ -1939,12 +2297,20 @@ public class BattleUI : MonoBehaviour
     }
 
     // 적 타입별 드로잉 높이 — 엘리트/보스는 플레이어보다 크게.
-    private static float GetEnemyDrawHeight(EnemyInstance e) => e.data.enemyType switch
+    private static float GetEnemyDrawHeight(EnemyInstance e)
     {
-        EnemyType.BOSS  => 400f,
-        EnemyType.ELITE => 320f,
-        _               => 240f,
-    };
+        float baseH = e.data.enemyType switch
+        {
+            EnemyType.BOSS  => 400f,
+            EnemyType.ELITE => 320f,
+            _               => 240f,
+        };
+        // crow placeholder는 원본이 커서 30% 축소 후 표시.
+        if (!string.IsNullOrEmpty(e.data.image) &&
+            Path.GetFileNameWithoutExtension(e.data.image).Equals("crow", System.StringComparison.OrdinalIgnoreCase))
+            baseH *= 0.7f;
+        return baseH;
+    }
 
     // 필드 소환수 슬롯 레이아웃 — 1마리면 중앙, 2마리 이상은 대각선 스태거로 깊이감.
     // Y 기준은 groundY-55 — 발끝이 지면선 근처에 자연스럽게 닿도록.
@@ -2037,6 +2403,8 @@ public class BattleUI : MonoBehaviour
                 }
                 _playerView.SetBasePosition(feetWorld + pivotOffset);
                 _playerView.SetWorldHeight(worldHeight);
+                Vector2 shadowOffset = new Vector2(_entityShadowOffsetX, _entityShadowOffsetY) * worldHeight;
+                _playerView.UpdateShadowParams(_entityShadowHeight, _entityShadowWidthScale, shadowOffset, _entityShadowAlpha);
             }
 
             DrawPlayerShieldFx(new Vector2(center.x, rect.center.y), Mathf.Max(w, 160f), h);
@@ -2501,6 +2869,8 @@ public class BattleUI : MonoBehaviour
                 float worldHeight = Mathf.Abs(feetWorld.y - topWorld.y);
                 view.SetBasePosition(feetWorld);
                 view.SetWorldHeight(worldHeight);
+                Vector2 shadowOffset = new Vector2(_enemyShadowOffsetX, _enemyShadowOffsetY) * worldHeight;
+                view.UpdateShadowParams(_enemyShadowHeight, _enemyShadowWidthScale, shadowOffset, _enemyShadowAlpha);
             }
         }
         else if (_enemySprites.TryGetValue(e.data.id, out var tex))
@@ -2804,17 +3174,22 @@ public class BattleUI : MonoBehaviour
             HudContext.Village => hudStripBgColorVillage,
             _                  => hudStripBgColorBattle,
         };
+        // 컨텍스트별 최종 알파 — 색 필드의 알파는 무시하고 슬라이더 값을 직접 사용.
+        bg.a = Mathf.Clamp01(ctx switch
+        {
+            HudContext.Map     => hudStripAlphaMap,
+            HudContext.Village => hudStripAlphaVillage,
+            _                  => hudStripAlphaBattle,
+        });
         Texture2D divTex = ctx switch
         {
-            HudContext.Map     => _hudDividerTexMap,
+            HudContext.Map     => null, // 맵은 노란 디바이더 제거 — 검은 바만 사용
             HudContext.Village => _hudDividerTexVillage,
             _                  => _hudDividerTexBattle,
         };
 
-        // 1) 바 배경 채우기. Map은 디바이더가 갈색으로 비치는 걸 막으려고 한 번 더 덮음.
+        // 1) 바 배경 채우기. 한 번만 — 이중 fill은 알파 반투명을 깨뜨림.
         FillRect(new Rect(0f, 0f, RefW, hudStripHeight), bg);
-        if (ctx == HudContext.Map)
-            FillRect(new Rect(0f, 0f, RefW, hudStripHeight), bg);
 
         // 2) 디바이더는 마지막에 그려서 바 위로 겹치도록. Width가 0이면 오버스캔 기반 자동, >0이면 그 값 직접 사용해 가운데 정렬.
         if (divTex != null)
@@ -2832,87 +3207,31 @@ public class BattleUI : MonoBehaviour
             GUI.color = prev;
         }
         // 텍스처 없으면 아예 선 생략 — 호출 측에서 나중에 따로 붙이도록.
-    }
 
-    private void DrawTopBar(BattleState state, GameStateManager gsm)
-    {
-        var p = state.player;
-        var run = gsm?.CurrentRun;
-
-        const float barX = 10f;
-        const float barY = 8f;
-        const float barW = RefW - 20f;
-        const float barH = 58.14f;
-        var barRect = new Rect(barX, barY, barW, barH);
-
-        DrawHudStripAndDivider(HudContext.Battle);
-
-        const float iconSize = 42.75f;
-        const float iconLabelGap = 5.13f;
-        const float slotGap = 23.94f;
-        const float padX = 17.1f;
-        float iconY = barY + (barH - iconSize) * 0.5f;
-        float cursorX = barX + padX;
-
-        void DrawSlot(Texture2D tex, string label, Color glowTint, float glowIntensity = 1f)
+        // 바 하단 골드 트림 — 전투/맵 공용 (마을은 모닥불 톤 충돌로 제외). 두께 0이거나 알파 0이면 스킵.
+        if ((ctx == HudContext.Battle || ctx == HudContext.Map)
+            && hudBattleBottomLineThickness > 0f && hudBattleBottomLineColor.a > 0f)
         {
-            if (tex != null)
-            {
-                var iconRect = new Rect(cursorX, iconY, iconSize, iconSize);
-                DrawIconGlow(iconRect, glowTint, glowIntensity);
-                GUI.DrawTexture(iconRect, tex, ScaleMode.ScaleToFit);
-                cursorX += iconSize + iconLabelGap;
-            }
-            var size = _labelStyle.CalcSize(new GUIContent(label));
-            var labelRect = new Rect(cursorX, barY + (barH - size.y) * 0.5f, size.x + 2f, size.y);
-            GUI.Label(labelRect, label, _labelStyle);
-            cursorX += size.x + slotGap;
-        }
-
-        DrawSlot(_iconHP, $"{p.hp}/{p.maxHp}", new Color(1f, 0.55f, 0.50f), 1.6f);
-
-        if (run != null)
-        {
-            DrawSlot(_iconGold, $"{run.gold}", new Color(1f, 0.82f, 0.35f));
-            DrawSlot(_iconPotion, $"{run.potions.Count}/{RunState.MaxPotionSlots}", new Color(0.55f, 1f, 0.65f));
-            DrawSlot(_iconRelic, $"{run.relics.Count}", new Color(0.85f, 0.55f, 1f));
-
-            DrawRightSlots(barRect, barY, barH, iconY, iconSize, iconLabelGap,
-                $"{run.currentFloor}/5", $"{state.turn}", run.deck.Count);
-        }
-        else
-        {
-            DrawRightSlots(barRect, barY, barH, iconY, iconSize, iconLabelGap,
-                null, $"{state.turn}", -1);
+            FillRect(new Rect(0f, hudStripHeight - hudBattleBottomLineThickness, RefW, hudBattleBottomLineThickness),
+                     hudBattleBottomLineColor);
         }
     }
 
-    // 우측 정렬 슬롯들 (DeckView + Floor + Turn). 우→좌 순서로 그려서 cursor 계산을 단순화.
+    // 우측 정렬 슬롯들 (DeckView + Floor). 우→좌 순서로 그려서 cursor 계산을 단순화.
     private void DrawRightSlots(
         Rect barRect, float barY, float barH,
         float iconY, float iconSize, float iconLabelGap,
-        string floorLabel, string turnLabel, int deckCount = -1)
+        string floorLabel, int deckCount = -1)
     {
         const float rightPad = 23.94f;    // 화면 우측 가장자리 여백 (padX보다 살짝 크게)
-        const float rightSlotGap = 47.88f;// Floor ↔ Turn 간격 (좌측 slotGap보다 넓게)
+        const float rightSlotGap = 47.88f;// 슬롯 사이 간격 (좌측 slotGap보다 넓게)
 
         float right = barRect.xMax - rightPad;
         bool anyDrawn = false;
 
-        // Turn 슬롯 (가장 오른쪽) — 모래시계는 아주 미세하게 좌우로 기울음
-        // 글로우는 새 따뜻한 모래시계 톤과 어울리도록 골드/앰버 계열로
-        // 맵 화면처럼 턴 개념이 없는 경우 turnLabel=null로 스킵.
-        if (turnLabel != null)
-        {
-            right = DrawRightSlot(right, barY, barH, iconY, iconSize, iconLabelGap,
-                _iconTurn, turnLabel, new Color(1f, 0.78f, 0.35f), wobblePhase: 0f);
-            anyDrawn = true;
-        }
-
-        // Floor 슬롯 — 계단도 동일하게 살짝 기울음 (위상만 다르게)
+        // Floor 슬롯 (가장 오른쪽) — 계단은 아주 미세하게 좌우로 기울음
         if (floorLabel != null)
         {
-            if (anyDrawn) right -= rightSlotGap;
             right = DrawRightSlot(right, barY, barH, iconY, iconSize, iconLabelGap,
                 _iconFloor, floorLabel, new Color(1f, 0.82f, 0.35f), wobblePhase: 2.4f);
             anyDrawn = true;
@@ -2974,10 +3293,12 @@ public class BattleUI : MonoBehaviour
     }
 
     // =========================================================
-    // 맵 화면에서 같은 스타일의 상단 HUD를 재사용.
-    // BattleState가 없으므로 RunState에서 HP/골드/포션/유물을 읽고, 턴은 생략.
+    // 배틀 / 맵 / 마을 공용 상단 HUD — HP/Gold/Potion/Relic + (우측) Deck/Floor.
+    // 전투 중 실시간 HP를 반영하려면 hpCurrent/hpMax 오버라이드를 넘긴다.
+    // 맵·마을에서는 RunState 값을 그대로 쓴다.
     // =========================================================
-    public void DrawMapTopBar(RunState run, int currentFloor, int totalFloors, HudContext ctx = HudContext.Map)
+    public void DrawTopBar(HudContext ctx, RunState run, int currentFloor, int totalFloors,
+                           int? hpCurrent = null, int? hpMax = null)
     {
         if (run == null) return;
         EnsureStyles();
@@ -3012,13 +3333,15 @@ public class BattleUI : MonoBehaviour
             cursorX += size.x + slotGap;
         }
 
-        DrawSlot(_iconHP,     $"{run.playerCurrentHp}/{run.playerMaxHp}", new Color(1f, 0.55f, 0.50f), 1.6f);
+        int hpNow = hpCurrent ?? run.playerCurrentHp;
+        int hpCap = hpMax ?? run.playerMaxHp;
+        DrawSlot(_iconHP,     $"{hpNow}/{hpCap}",                          new Color(1f, 0.55f, 0.50f), 1.6f);
         DrawSlot(_iconGold,   $"{run.gold}",                               new Color(1f, 0.82f, 0.35f));
         DrawSlot(_iconPotion, $"{run.potions.Count}/{RunState.MaxPotionSlots}", new Color(0.55f, 1f, 0.65f));
         DrawSlot(_iconRelic,  $"{run.relics.Count}",                       new Color(0.85f, 0.55f, 1f));
 
         DrawRightSlots(barRect, barY, barH, iconY, iconSize, iconLabelGap,
-            $"{currentFloor}/{totalFloors}", turnLabel: null, deckCount: run.deck.Count);
+            $"{currentFloor}/{totalFloors}", deckCount: run.deck.Count);
     }
 
     // 한 슬롯을 right 기준으로 우→좌로 그리고, 이 슬롯의 left x를 반환
@@ -3648,92 +3971,129 @@ public class BattleUI : MonoBehaviour
     }
 
     /// <summary>
-    /// StS-style 카드 프레임 v2 (2026-04-22).
-    /// 흰색 PNG 5장 + 코드 tint 방식으로 레이어를 쌓는다.
-    /// 순서: CardFrameBase(어두운 회색) → 아트 → CardRibbon(타입 색) → CardTrim(등급 색) →
-    ///       CardTypeLabel(어두운 회색) → 코스트 젬 → 텍스트(이름/카테고리/본문).
+    /// StS-style 카드 프레임 v4 (2026-04-23).
+    /// 흰색 PNG + 코드 tint 방식. 사용자 지정 레이어 순서:
+    ///   1) CardDescPanel → 2) CardArtPlate → 3) Art → 4) CardFrameBase →
+    ///   5) CardBg(동색 외곽 프레임) → 6) CardTrim(등급 색) → 7) CardTypeLabel →
+    ///   8) CardRibbon → 9) CostGem (맨 위).
     /// 등급은 트림 색 + 카드명 텍스트 색으로만 표현 — RARE 글로우/파티클 없음.
     /// </summary>
-    private void DrawCardFrame(Rect rect, CardData c, bool canPlay, bool drawCost)
+    private void DrawCardFrame(Rect rect, CardData c, bool canPlay, bool drawCost, bool slotOnly = false)
     {
         var prevColor = GUI.color;
-        Color dim = canPlay ? Color.white : new Color(0.55f, 0.55f, 0.55f, 0.9f);
+        Color dim = canPlay ? Color.white : cardDisabledDim;
 
-        // 1) 본체 — CardFrameBase PNG가 외곽선만 있고 내부가 투명이라
-        //    먼저 dark gray로 채우고 PNG는 외곽선용으로 위에 얹는다.
-        //    rounded corners 보정: 약 3% 인셋해서 사각 모서리가 안 튀어나오게.
-        var fillRect = new Rect(
-            rect.x + rect.width * 0.03f,
-            rect.y + rect.height * 0.025f,
-            rect.width * 0.94f,
-            rect.height * 0.95f);
-        FillRect(fillRect, MultColor(cardBaseTint, dim));
+        // 1) CardDescPanel — 하단 설명 패널 (맨 뒤, 볼더 없음).
+        DrawLayerWithBorder(_cardDescPanelTexture, RectFromPct(rect, cardDescPanelRectPct), cardDescPanelTint, dim, border: null);
 
-        if (_cardFrameBaseTexture != null)
-        {
-            GUI.color = dim;  // 흰색 영역(투명) 무시, 검은 라인은 그대로 검정.
-            GUI.DrawTexture(RectFromPct(rect, cardBaseRectPct), _cardFrameBaseTexture, ScaleMode.StretchToFill, alphaBlend: true);
-        }
+        // 2) CardArtPlate — 상단 아트 패널 배경 (볼더 없음).
+        DrawLayerWithBorder(_cardArtPlateTexture, RectFromPct(rect, cardArtPlateRectPct), cardArtPlateTint, dim, border: null);
 
-        // 2) 아트 — 본체 위쪽 영역. 디바이더 라인 위에 들어감.
+        // 3) 아트 — ArtPlate 위에 얹는다. slotOnly 모드에선 생략.
         var artRect = RectFromPct(rect, cardArtRectV2Pct);
-        GUI.color = dim;
-        if (_cardSprites.TryGetValue(c.id, out var cardTex))
+        if (!slotOnly)
         {
-            GUI.DrawTexture(artRect, cardTex, ScaleMode.ScaleAndCrop, alphaBlend: true);
+            GUI.color = MultColor(cardArtTint, dim);
+            if (c != null && _cardSprites.TryGetValue(c.id, out var cardTex))
+            {
+                GUI.DrawTexture(artRect, cardTex, ScaleMode.ScaleAndCrop, alphaBlend: true);
+            }
+            else
+            {
+                FillRect(artRect, (c != null ? GetCardRibbonTint(c) : Color.white) * cardArtPlaceholderTint);
+            }
         }
         else
         {
-            FillRect(artRect, GetCardRibbonTint(c) * new Color(1f, 1f, 1f, 0.35f));
+            FillRect(artRect, cardArtPlaceholderTint);
         }
 
-        // 3) 상단 리본 (CardRibbon) — 타입별 색 tint
+        // 4) CardFrameBase — 안쪽 플레이트. 타입별 색 자동 적용 (toggle 로 끌 수 있음).
+        Color baseTint = (frameUseTypeColor && c != null && !slotOnly) ? GetFrameColorByType(c) : cardBaseTint;
+        DrawLayerWithBorder(_cardFrameBaseTexture, RectFromPct(rect, cardBaseRectPct), baseTint, dim, borderFrameBase);
+
+        // 5) CardBg — 외곽 프레임. 카퍼/브론즈 고정 (전 카드 공통).
+        DrawLayerWithBorder(_cardBgTexture, RectFromPct(rect, cardBgRectPct), cardBgTint, dim, borderCardBg);
+
+        // 5b) CardBorder — 최외곽 보더 오버레이 (선택, Inspector에서 enable).
+        if (cardBorderEnabled)
+        {
+            DrawLayerWithBorder(_cardBorderTexture, RectFromPct(rect, cardBorderRectPct), cardBorderTint, dim, border: null);
+        }
+
+        // 6) 트림 (CardTrim) — 등급별 색 tint × trimTintMul.
+        if (_cardTrimTexture != null)
+        {
+            Color trimBase = (c != null && !slotOnly) ? GetRarityTrimColor(c.rarity) : slotDefaultTrimTint;
+            Color trimTint = MultColor(trimBase, cardTrimTintMul);
+            DrawLayerWithBorder(_cardTrimTexture, RectFromPct(rect, cardTrimRectPct), trimTint, dim, borderTrim);
+        }
+
+        // 7) 하단 타입 라벨 pill (CardTypeLabel).
+        DrawLayerWithBorder(_cardTypeLabelTexture, RectFromPct(rect, cardTypeLabelPillRectPct), cardTypeLabelTint, dim, borderTypeLabel);
+
+        // 8) 상단 리본 (CardRibbon) — 오버라이드 색 또는 타입 색.
         if (_cardRibbonTexture != null)
         {
-            GUI.color = MultColor(GetCardRibbonTint(c), dim);
-            GUI.DrawTexture(RectFromPct(rect, cardRibbonRectPct), _cardRibbonTexture, ScaleMode.StretchToFill, alphaBlend: true);
-        }
-
-        // 4) 트림 (CardTrim) — 등급별 색 tint (동/은/금)
-        // NOTE: 현재 트림 PNG가 프레임 베이스와 모양/비율 안 맞아서 임시 비활성.
-        //       재생성 후 다시 켜거나 카드명 텍스트 색만으로 등급 표현.
-        // if (_cardTrimTexture != null)
-        // {
-        //     GUI.color = MultColor(GetRarityTrimColor(c.rarity), dim);
-        //     GUI.DrawTexture(RectFromPct(rect, cardTrimRectPct), _cardTrimTexture, ScaleMode.StretchToFill, alphaBlend: true);
-        // }
-
-        // 5) 하단 타입 라벨 pill (CardTypeLabel) — 어두운 회색
-        if (_cardTypeLabelTexture != null)
-        {
-            GUI.color = MultColor(cardBaseTint, dim);
-            GUI.DrawTexture(RectFromPct(rect, cardTypeLabelPillRectPct), _cardTypeLabelTexture, ScaleMode.StretchToFill, alphaBlend: true);
+            Color ribbonTint;
+            if (cardRibbonUseOverride)
+            {
+                ribbonTint = cardRibbonOverrideColor;
+            }
+            else
+            {
+                Color ribbonBase = (c != null && !slotOnly) ? GetCardRibbonTint(c) : slotDefaultRibbonTint;
+                ribbonTint = MultColor(ribbonBase, cardRibbonTintMul);
+            }
+            DrawLayerWithBorder(_cardRibbonTexture, RectFromPct(rect, cardRibbonRectPct), ribbonTint, dim, borderRibbon);
         }
 
         GUI.color = prevColor;
 
-        // 6) 코스트 젬 (좌상단) — 손패는 별도 패스로 그려서 가림 방지.
-        if (drawCost)
+        if (slotOnly)
+        {
+            // 슬롯 프리뷰: 카드 데이터 텍스트/코스트는 생략. Inspector에서 rect/tint 만 관찰.
+            return;
+        }
+
+        // 9) 코스트 젬 (맨 위) — 좌상단.
+        if (drawCost && c != null)
         {
             DrawCardCost(rect, c, canPlay);
         }
 
-        // 7) 카드명 — 리본 위, 등급 색 텍스트
+        if (c == null) return;
+
+        // 텍스트 — 리본 위 카드명 (등급 색 × cardNameTextTint)
         var nameRect = RectFromPct(rect, cardNameOnRibbonRectPct);
         int prevNameSize = _cardNameStyle.fontSize;
         Color prevNameCol = _cardNameStyle.normal.textColor;
-        _cardNameStyle.fontSize = drawCost ? 16 : 11;
-        Color nameCol = canPlay ? GetRarityTextColor(c.rarity) : new Color(0.75f, 0.75f, 0.75f, 0.9f);
-        DrawTextWithOutline(nameRect, GetCardTypeLabel(c), _cardNameStyle, nameCol, new Color(0f, 0f, 0f, 0.9f), 1.0f);
+        _cardNameStyle.fontSize = drawCost ? cardNameFontSize : cardNameFontSizeSmall;
+        Color nameCol = canPlay
+            ? MultColor(GetRarityTextColor(c.rarity), cardNameTextTint)
+            : cardNameDisabledColor;
+        DrawTextWithOutline(nameRect, GetCardTypeLabel(c), _cardNameStyle, nameCol, cardNameOutline, cardNameOutlineThickness);
         _cardNameStyle.fontSize = prevNameSize;
         _cardNameStyle.normal.textColor = prevNameCol;
 
-        // 8) 카테고리 라벨 — 하단 pill 안 (소환/마법/버프/유틸)
-        var typeRect = RectFromPct(rect, cardTypeLabelPillRectPct);
+        // 카테고리 라벨 — 하단 pill 안 (소환/마법/버프/유틸). 텍스트 rect 는 배경과 독립.
+        var typeRect = RectFromPct(rect, cardTypeTextRectPct);
+        int prevTypeSize = _cardTypeStyle.fontSize;
+        Color prevTypeCol = _cardTypeStyle.normal.textColor;
+        _cardTypeStyle.fontSize = cardTypeFontSize;
+        _cardTypeStyle.normal.textColor = canPlay ? cardTypeTextColor : cardNameDisabledColor;
         GUI.Label(typeRect, GetCardCategoryLabelKr(c), _cardTypeStyle);
+        _cardTypeStyle.fontSize = prevTypeSize;
+        _cardTypeStyle.normal.textColor = prevTypeCol;
 
-        // 9) 본문 — 하단 패널 (ATK/HP 또는 짧은 설명)
+        // 본문 — 하단 패널 (ATK/HP 또는 짧은 설명)
+        int prevBodySize = _cardDescStyle.fontSize;
+        Color prevBodyCol = _cardDescStyle.normal.textColor;
+        _cardDescStyle.fontSize = cardBodyFontSize;
+        _cardDescStyle.normal.textColor = canPlay ? cardBodyTextColor : cardNameDisabledColor;
         GUI.Label(RectFromPct(rect, cardBodyV2RectPct), GetCardBody(c), _cardDescStyle);
+        _cardDescStyle.fontSize = prevBodySize;
+        _cardDescStyle.normal.textColor = prevBodyCol;
     }
 
     private static Color MultColor(Color a, Color b)
@@ -3741,11 +4101,43 @@ public class BattleUI : MonoBehaviour
         return new Color(a.r * b.r, a.g * b.g, a.b * b.b, a.a * b.a);
     }
 
+    /// <summary>
+    /// 레이어 PNG 를 원형 샘플링으로 외곽선을 그리고 위에 fill 을 덮는다.
+    /// Stretching 이 아니라 offset 이라 복잡한 실루엣도 자연스럽게 외곽선이 따라가고,
+    /// 원형 샘플링이라 커브 구간도 균일한 두께로 둘러싼다.
+    /// </summary>
+    private void DrawLayerWithBorder(Texture2D tex, Rect r, Color fillTint, Color dim, LayerBorderConfig border)
+    {
+        if (tex == null) return;
+        if (border != null && border.enabled && border.color.a > 0f && border.widthPx > 0f)
+        {
+            float w = border.widthPx;
+            int n = Mathf.Max(4, border.samples);
+            GUI.color = MultColor(border.color, dim);
+            for (int i = 0; i < n; i++)
+            {
+                float angle = (i * 2f * Mathf.PI) / n;
+                float dx = Mathf.Cos(angle) * w;
+                float dy = Mathf.Sin(angle) * w;
+                var offsetRect = new Rect(r.x + dx, r.y + dy, r.width, r.height);
+                GUI.DrawTexture(offsetRect, tex, ScaleMode.StretchToFill, alphaBlend: true);
+            }
+        }
+        GUI.color = MultColor(fillTint, dim);
+        GUI.DrawTexture(r, tex, ScaleMode.StretchToFill, alphaBlend: true);
+    }
+
     // Cheat: 카드 한 장만 큰 사이즈로 그리기 — 프레임 디자인 확인용.
     // 등급 인자는 c.rarity를 무시하고 강제 적용 (UI 토글로 등급 비교).
-    public void DrawCardPreview(Rect rect, CardData c, Rarity? rarityOverride = null)
+    // slotOnly=true 이면 카드 데이터 생략 — 빈 슬롯(프레임 레이어)만 그려서 rect 튜닝용.
+    public void DrawCardPreview(Rect rect, CardData c, Rarity? rarityOverride = null, bool slotOnly = false)
     {
         EnsureStyles();
+        if (slotOnly)
+        {
+            DrawCardFrame(rect, null, canPlay: true, drawCost: false, slotOnly: true);
+            return;
+        }
         if (rarityOverride.HasValue && c != null)
         {
             var clone = new CardData
@@ -3775,21 +4167,36 @@ public class BattleUI : MonoBehaviour
         float orbCy = rect.y + rect.height * cardCostOrbPct.y;
         var orbRect = new Rect(orbCx - orbSize * 0.5f, orbCy - orbSize * 0.5f, orbSize, orbSize);
 
-        Color dim = canPlay ? Color.white : new Color(0.7f, 0.7f, 0.7f, 0.95f);
+        Color dim = canPlay ? Color.white : cardDisabledDimGem;
 
-        // CostGem (흰색 PNG) → 빨간 tint. StS는 코스트 젬을 타입과 무관하게 단일 색.
-        if (_cardCostGemTexture != null)
+        // 1) 안쪽 디스크 먼저 (링 뒤에 깔림).
+        if (_cardCostGemInnerTexture != null)
         {
-            GUI.color = MultColor(cardCostGemTint, dim);
-            GUI.DrawTexture(orbRect, _cardCostGemTexture, ScaleMode.StretchToFill, alphaBlend: true);
+            float shrink = orbSize * cardCostGemInnerShrinkPct;
+            var innerRect = new Rect(
+                orbRect.x + shrink * 0.5f,
+                orbRect.y + shrink * 0.5f,
+                orbRect.width - shrink,
+                orbRect.height - shrink);
+            DrawLayerWithBorder(_cardCostGemInnerTexture, innerRect, cardCostGemInnerTint, dim, borderCostGemInner);
         }
 
-        // 숫자: 흰 글자 + 검은 외곽선.
-        Color textCol = canPlay ? Color.white : new Color(0.75f, 0.75f, 0.75f, 0.9f);
-        Color outlineCol = new Color(0f, 0f, 0f, canPlay ? 0.95f : 0.7f);
+        // 2) 외곽 링을 위에 덮음.
+        DrawLayerWithBorder(_cardCostGemTexture, orbRect, cardCostGemTint, dim, borderCostGem);
+
+        // 숫자: Inspector 색 + 외곽선. 텍스트 rect 는 orb 기준 오프셋/축소 반영.
+        Color textCol = canPlay ? cardCostTextColor : cardCostDisabledColor;
         int prevFontSize = _cardCostStyle.fontSize;
-        _cardCostStyle.fontSize = Mathf.RoundToInt(orbSize * 0.55f);
-        DrawTextWithOutline(orbRect, c.cost.ToString(), _cardCostStyle, textCol, outlineCol, 1.2f);
+        _cardCostStyle.fontSize = Mathf.RoundToInt(orbSize * cardCostFontSizeRatio);
+        float costTextOffX = rect.width * cardCostTextOffsetPct.x;
+        float costTextOffY = rect.height * cardCostTextOffsetPct.y;
+        float costShrink = orbSize * cardCostTextRectShrinkPct;
+        var costTextRect = new Rect(
+            orbRect.x + costTextOffX + costShrink * 0.5f,
+            orbRect.y + costTextOffY + costShrink * 0.5f,
+            orbRect.width - costShrink,
+            orbRect.height - costShrink);
+        DrawTextWithOutline(costTextRect, c.cost.ToString(), _cardCostStyle, textCol, cardCostOutline, cardCostOutlineThickness);
         _cardCostStyle.fontSize = prevFontSize;
 
         GUI.color = prevColor;
@@ -3819,18 +4226,33 @@ public class BattleUI : MonoBehaviour
         GUI.color = prev;
     }
 
-    // StS-style 리본 색 — 카드 타입별 (2026-04-22 v2 프레임).
-    // 사용자 시안 기준: SUMMON=빨강, MAGIC=보라, BUFF=녹색.
+    // 카드 타입별 프레임 색 — Inspector frameColor* 필드 사용.
+    private Color GetFrameColorByType(CardData c)
+    {
+        if (c == null) return frameColorDefault;
+        return c.cardType switch
+        {
+            CardType.SUMMON => frameColorSummon,
+            CardType.MAGIC => frameColorMagic,
+            CardType.BUFF => frameColorBuff,
+            CardType.UTILITY => frameColorUtility,
+            CardType.RITUAL => frameColorRitual,
+            _ => frameColorDefault,
+        };
+    }
+
+    // 리본 색 — 카드 타입별 (2026-04-24 제팬 다크판타지 팔레트).
+    // 타입 색이 드러나는 유일한 존 = 리본. 프레임/아트플레이트는 다크 잉크 고정.
     private static Color GetCardRibbonTint(CardData c)
     {
         return c.cardType switch
         {
-            CardType.SUMMON => new Color(0.82f, 0.27f, 0.27f),
-            CardType.MAGIC => new Color(0.55f, 0.30f, 0.75f),
-            CardType.BUFF => new Color(0.32f, 0.68f, 0.42f),
-            CardType.UTILITY => new Color(0.55f, 0.50f, 0.42f),
-            CardType.RITUAL => new Color(0.85f, 0.30f, 0.55f),
-            _ => new Color(0.6f, 0.6f, 0.6f),
+            CardType.SUMMON => new Color(0.40f, 0.18f, 0.22f),   // 와인/버건디
+            CardType.MAGIC => new Color(0.22f, 0.24f, 0.46f),    // 딥 인디고
+            CardType.BUFF => new Color(0.18f, 0.36f, 0.32f),     // 에이지드 제이드
+            CardType.UTILITY => new Color(0.26f, 0.26f, 0.32f),  // 거넛메탈
+            CardType.RITUAL => new Color(0.50f, 0.30f, 0.38f),   // 머티드 로즈
+            _ => new Color(0.32f, 0.32f, 0.36f),
         };
     }
 

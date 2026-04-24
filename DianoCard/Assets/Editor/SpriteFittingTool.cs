@@ -27,6 +27,13 @@ public static class SpriteFittingTool
     private const string MenuPath         = "Assets/SpriteFitting";
     private const string MenuPathKeepSize = "Assets/SpriteFitting (Keep Size)";
 
+    // 카드 일러스트는 배경 제거/크롭 대상이 아님 (풀 블리드 아트).
+    // 실수로 SpriteFitting이 돌아가면 원본이 잘려서 덮어써지므로 경로 기반으로 차단.
+    private static readonly string[] ProtectedFolders =
+    {
+        "Assets/Resources/CardArt/",
+    };
+
     // 콘텐츠로 간주할 최소 알파.
     // remove.bg 같은 배경 제거 도구가 가장자리에 알파 1~10 정도의 희미한 잔여물을
     // 남기는 경우가 있어서, 20 정도로 올려야 실제 콘텐츠 바운딩 박스를 찾을 수 있음.
@@ -42,20 +49,20 @@ public static class SpriteFittingTool
     // ---------------------------------------------------------
 
     [MenuItem(MenuPath, true)]
-    private static bool ValidateSelection() => CollectPngPaths().Count > 0;
+    private static bool ValidateSelection() => CollectPngPaths(logSkipped: false).Count > 0;
 
     [MenuItem(MenuPath, false, 20)]
     private static void Run() => RunInternal(crop: true);
 
     [MenuItem(MenuPathKeepSize, true)]
-    private static bool ValidateSelectionKeepSize() => CollectPngPaths().Count > 0;
+    private static bool ValidateSelectionKeepSize() => CollectPngPaths(logSkipped: false).Count > 0;
 
     [MenuItem(MenuPathKeepSize, false, 21)]
     private static void RunKeepSize() => RunInternal(crop: false);
 
     private static void RunInternal(bool crop)
     {
-        var paths = CollectPngPaths();
+        var paths = CollectPngPaths(logSkipped: true);
         if (paths.Count == 0)
         {
             EditorUtility.DisplayDialog("SpriteFitting",
@@ -105,9 +112,10 @@ public static class SpriteFittingTool
     // Selection collection
     // ---------------------------------------------------------
 
-    private static List<string> CollectPngPaths()
+    private static List<string> CollectPngPaths(bool logSkipped)
     {
         var set = new HashSet<string>();
+        var skipped = new List<string>();
         var selection = Selection.GetFiltered<Object>(SelectionMode.Assets | SelectionMode.DeepAssets);
 
         foreach (var obj in selection)
@@ -116,12 +124,30 @@ public static class SpriteFittingTool
             string path = AssetDatabase.GetAssetPath(obj);
             if (string.IsNullOrEmpty(path)) continue;
             if (!path.EndsWith(".png", System.StringComparison.OrdinalIgnoreCase)) continue;
+            if (IsProtectedPath(path)) { skipped.Add(path); continue; }
             set.Add(path);
+        }
+
+        if (logSkipped && skipped.Count > 0)
+        {
+            Debug.LogWarning($"[SpriteFitting] 보호된 경로의 PNG {skipped.Count}개 제외됨 (카드 아트는 크롭 대상이 아님):\n  " +
+                             string.Join("\n  ", skipped));
         }
 
         var list = new List<string>(set);
         list.Sort();
         return list;
+    }
+
+    private static bool IsProtectedPath(string assetPath)
+    {
+        string normalized = assetPath.Replace('\\', '/');
+        foreach (var folder in ProtectedFolders)
+        {
+            if (normalized.StartsWith(folder, System.StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
     }
 
     // ---------------------------------------------------------

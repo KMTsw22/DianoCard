@@ -47,6 +47,13 @@ namespace DianoCard.Battle
         // StrikeExtended 스프라이트 표시 중 적용할 크기 부스트 (프레임 내 캐릭터가 작게 그려진 경우 보정). 기본 1.0
         private float _strikeExtendedScaleBoost = 1.2f;
 
+        // 발 밑 그림자. 캐릭터가 공격/이동으로 움직여도 지면에 고정되도록 별도 GameObject로 관리 (parent는 캐릭터가 아님).
+        private GameObject _shadowGO;
+        private SpriteRenderer _shadowSr;
+        private float _shadowRelativeHeight = 0.10f; // intendedWorldHeight 대비 그림자 세로 길이
+        private float _shadowWidthScale = 1f;        // 가로 폭만 추가 배수 (세로 유지)
+        private Vector2 _shadowWorldOffset = Vector2.zero;
+
         private void Awake()
         {
             _sr = GetComponent<SpriteRenderer>();
@@ -129,6 +136,77 @@ namespace DianoCard.Battle
         public void SetBasePosition(Vector3 pos)
         {
             _basePosition = pos;
+            ApplyShadowTransform();
+        }
+
+        /// <summary>
+        /// 발 밑 그림자 스프라이트 지정. null 전달 시 기존 그림자 제거.
+        /// <paramref name="relativeHeight"/>는 캐릭터 intendedWorldHeight 대비 그림자 세로 길이 비율.
+        /// </summary>
+        /// <summary>
+        /// 그림자 스프라이트는 유지한 채 크기/위치/알파만 런타임 갱신.
+        /// Inspector에서 실시간으로 튜닝할 때 매 프레임 호출해도 된다.
+        /// </summary>
+        public void UpdateShadowParams(float relativeHeight, float widthScale, Vector2 worldOffset, float alpha)
+        {
+            _shadowRelativeHeight = relativeHeight;
+            _shadowWidthScale = widthScale;
+            _shadowWorldOffset = worldOffset;
+            if (_shadowSr != null) _shadowSr.color = new Color(1f, 1f, 1f, Mathf.Clamp01(alpha));
+            ApplyShadowTransform();
+        }
+
+        public void SetShadowSprite(Sprite shadow, float relativeHeight = 0.10f, Vector2 worldOffset = default, float alpha = 1f)
+        {
+            _shadowRelativeHeight = relativeHeight;
+            _shadowWorldOffset = worldOffset;
+
+            if (shadow == null)
+            {
+                if (_shadowGO != null) Destroy(_shadowGO);
+                _shadowGO = null;
+                _shadowSr = null;
+                return;
+            }
+
+            if (_shadowGO == null)
+            {
+                _shadowGO = new GameObject(gameObject.name + "_Shadow");
+                // 부모와 동일한 상위에 붙여서 이 엔티티의 transform 이동(공격/피격)에 그림자가 끌려가지 않도록 함.
+                _shadowGO.transform.SetParent(transform.parent, worldPositionStays: false);
+                _shadowSr = _shadowGO.AddComponent<SpriteRenderer>();
+                _shadowSr.sortingOrder = _sr.sortingOrder - 1;
+            }
+            _shadowSr.sprite = shadow;
+            _shadowSr.color = new Color(1f, 1f, 1f, Mathf.Clamp01(alpha));
+            ApplyShadowTransform();
+        }
+
+        private void ApplyShadowTransform()
+        {
+            if (_shadowGO == null || _shadowSr == null || _shadowSr.sprite == null) return;
+
+            // 캐릭터 스프라이트의 하단 경계 = 실제 발 위치. pivot=Center면 _basePosition은 몸통 중앙이라
+            // 그냥 _basePosition에 그림자를 두면 캐릭터 뒤에 가려진다.
+            // X는 live transform.position을 따라가서 공격/피격으로 캐릭터가 좌우로 움직이면 그림자도 함께 이동.
+            // Y는 _basePosition 기준(+ sprite 하단 offset)으로 지면에 고정 — 점프/바닥 이탈 애니메이션에도 그림자는 바닥에 유지.
+            Vector3 feetPos = new Vector3(transform.position.x, _basePosition.y, _basePosition.z);
+            if (_sr != null && _sr.sprite != null)
+            {
+                float scaleY = transform.localScale.y;
+                feetPos.y += _sr.sprite.bounds.min.y * scaleY;
+            }
+            _shadowGO.transform.position = feetPos + new Vector3(_shadowWorldOffset.x, _shadowWorldOffset.y, 0f);
+
+            if (_intendedWorldHeight > 0f)
+            {
+                float boundsH = _shadowSr.sprite.bounds.size.y;
+                if (boundsH > 0.001f)
+                {
+                    float s = (_intendedWorldHeight * _shadowRelativeHeight) / boundsH;
+                    _shadowGO.transform.localScale = new Vector3(s * _shadowWidthScale, s, 1f);
+                }
+            }
         }
 
         /// <summary>Rescales transform to target world-space height. 현재 스프라이트의 bounds를 기준으로 매번 재계산 → 프레임 스왑 시 보이는 높이 일관.</summary>
@@ -152,6 +230,7 @@ namespace DianoCard.Battle
             if (boundsH <= 0.001f) return;
             float s = (_intendedWorldHeight / boundsH) * _activeScaleMultiplier;
             transform.localScale = new Vector3(s, s, 1f);
+            ApplyShadowTransform();
         }
 
         public void SetStrikeExtendedScaleBoost(float boost) => _strikeExtendedScaleBoost = boost;
@@ -159,6 +238,12 @@ namespace DianoCard.Battle
         public void SetSortingOrder(int order)
         {
             _sr.sortingOrder = order;
+            if (_shadowSr != null) _shadowSr.sortingOrder = order - 1;
+        }
+
+        private void OnDestroy()
+        {
+            if (_shadowGO != null) Destroy(_shadowGO);
         }
 
         public void PlayAttack(Vector3 dir, float distance = 0.7f, float duration = 0.75f)
@@ -189,6 +274,9 @@ namespace DianoCard.Battle
             {
                 transform.position = _basePosition;
             }
+
+            // 그림자는 매 프레임 live 위치 따라가도록 — 공격/피격으로 캐릭터가 움직이면 그림자도 따라옴.
+            ApplyShadowTransform();
         }
 
         private IEnumerator AttackRoutine(Vector3 dir, float distance, float duration)

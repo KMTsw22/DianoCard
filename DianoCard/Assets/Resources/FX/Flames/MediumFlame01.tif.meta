@@ -1,0 +1,4511 @@
+fileFormatVersion: 2
+guid: 6a73e8f7ace76784b91c116c28686fac
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 7951469351871790721
+    second: MediumFlame01_0
+  - first:
+      213: -8100131743113709707
+    second: MediumFlame01_1
+  - first:
+      213: -637667097323041473
+    second: MediumFlame01_2
+  - first:
+      213: -3422067048600926689
+    second: MediumFlame01_3
+  - first:
+      213: -4874788992372279973
+    second: MediumFlame01_4
+  - first:
+      213: 5144292480830978920
+    second: MediumFlame01_5
+  - first:
+      213: -1954177584428851008
+    second: MediumFlame01_6
+  - first:
+      213: -1537313448726501585
+    second: MediumFlame01_7
+  - first:
+      213: -1913662896925402326
+    second: MediumFlame01_8
+  - first:
+      213: 541222888829274883
+    second: MediumFlame01_9
+  - first:
+      213: 8538652410949456374
+    second: MediumFlame01_10
+  - first:
+      213: -6549830429418169683
+    second: MediumFlame01_11
+  - first:
+      213: 7302827348111347533
+    second: MediumFlame01_12
+  - first:
+      213: -954630722260863548
+    second: MediumFlame01_13
+  - first:
+      213: -3694498488088605714
+    second: MediumFlame01_14
+  - first:
+      213: -1078011292447244953
+    second: MediumFlame01_15
+  - first:
+      213: -7331201522451134304
+    second: MediumFlame01_16
+  - first:
+      213: -6679540601929681898
+    second: MediumFlame01_17
+  - first:
+      213: -4701510041517951443
+    second: MediumFlame01_18
+  - first:
+      213: 8922995598491359784
+    second: MediumFlame01_19
+  - first:
+      213: 5905487888015983531
+    second: MediumFlame01_20
+  - first:
+      213: 4973712663449088317
+    second: MediumFlame01_21
+  - first:
+      213: -7964358401261241288
+    second: MediumFlame01_22
+  - first:
+      213: -552554895588079359
+    second: MediumFlame01_23
+  - first:
+      213: 3742342156381405603
+    second: MediumFlame01_24
+  - first:
+      213: 4510480424738381345
+    second: MediumFlame01_25
+  - first:
+      213: -8993023532860886027
+    second: MediumFlame01_26
+  - first:
+      213: 8797221028973140303
+    second: MediumFlame01_27
+  - first:
+      213: -1332961908449896799
+    second: MediumFlame01_28
+  - first:
+      213: -991313930947028351
+    second: MediumFlame01_29
+  - first:
+      213: -6264618911502900581
+    second: MediumFlame01_30
+  - first:
+      213: -8109331953745740697
+    second: MediumFlame01_31
+  - first:
+      213: 6424081290918409491
+    second: MediumFlame01_32
+  - first:
+      213: -3610054654811639255
+    second: MediumFlame01_33
+  - first:
+      213: -2579396030807249679
+    second: MediumFlame01_34
+  - first:
+      213: 4180060596687487037
+    second: MediumFlame01_35
+  - first:
+      213: -7249502212766082668
+    second: MediumFlame01_36
+  - first:
+      213: -4114074206419178989
+    second: MediumFlame01_37
+  - first:
+      213: 5256834285605708078
+    second: MediumFlame01_38
+  - first:
+      213: -3518135475231938219
+    second: MediumFlame01_39
+  - first:
+      213: 7519985760480366624
+    second: MediumFlame01_40
+  - first:
+      213: -1655676262245481853
+    second: MediumFlame01_41
+  - first:
+      213: -2857670640814405433
+    second: MediumFlame01_42
+  - first:
+      213: -5680453267398578416
+    second: MediumFlame01_43
+  - first:
+      213: 1690708665852191596
+    second: MediumFlame01_44
+  - first:
+      213: -4557952804201232212
+    second: MediumFlame01_45
+  - first:
+      213: 8827733470940370030
+    second: MediumFlame01_46
+  - first:
+      213: 3630132073637576769
+    second: MediumFlame01_47
+  - first:
+      213: 337970900052150362
+    second: MediumFlame01_48
+  - first:
+      213: -8726954653266246903
+    second: MediumFlame01_49
+  - first:
+      213: 4660412702475580401
+    second: MediumFlame01_50
+  - first:
+      213: -4594396772468251737
+    second: MediumFlame01_51
+  - first:
+      213: -1975900936065004768
+    second: MediumFlame01_52
+  - first:
+      213: 8065429050746792157
+    second: MediumFlame01_53
+  - first:
+      213: 1578211087074842809
+    second: MediumFlame01_54
+  - first:
+      213: 1082577770073757061
+    second: MediumFlame01_55
+  - first:
+      213: -5680075115133430914
+    second: MediumFlame01_56
+  - first:
+      213: 6174851558736555531
+    second: MediumFlame01_57
+  - first:
+      213: 2436461663896922904
+    second: MediumFlame01_58
+  - first:
+      213: -5324775720676443122
+    second: MediumFlame01_59
+  - first:
+      213: 223031378409301264
+    second: MediumFlame01_60
+  - first:
+      213: -2315930918273764564
+    second: MediumFlame01_61
+  - first:
+      213: 7537589865285286345
+    second: MediumFlame01_62
+  - first:
+      213: -5992705973101920734
+    second: MediumFlame01_63
+  - first:
+      213: 3747264907809475029
+    second: MediumFlame01_64
+  - first:
+      213: 8019463331821624801
+    second: MediumFlame01_65
+  - first:
+      213: -4157714214619595993
+    second: MediumFlame01_66
+  - first:
+      213: 1467773840598745058
+    second: MediumFlame01_67
+  - first:
+      213: 5718926109794881871
+    second: MediumFlame01_68
+  - first:
+      213: 7852427333785544767
+    second: MediumFlame01_69
+  - first:
+      213: -187173941722178872
+    second: MediumFlame01_70
+  - first:
+      213: 2033417196195328808
+    second: MediumFlame01_71
+  - first:
+      213: -3109770552080293776
+    second: MediumFlame01_72
+  - first:
+      213: -1216000683435798495
+    second: MediumFlame01_73
+  - first:
+      213: -5419347826798302174
+    second: MediumFlame01_74
+  - first:
+      213: -5457615376696566806
+    second: MediumFlame01_75
+  - first:
+      213: -3081565390714123291
+    second: MediumFlame01_76
+  - first:
+      213: 405629055613562369
+    second: MediumFlame01_77
+  - first:
+      213: -4122088833135395260
+    second: MediumFlame01_78
+  - first:
+      213: -5600285611887797843
+    second: MediumFlame01_79
+  - first:
+      213: 2625896410644459213
+    second: MediumFlame01_80
+  - first:
+      213: 7558385239898869482
+    second: MediumFlame01_81
+  - first:
+      213: -3761444191528908807
+    second: MediumFlame01_82
+  - first:
+      213: -1804334125781116723
+    second: MediumFlame01_83
+  - first:
+      213: -249034430659177382
+    second: MediumFlame01_84
+  - first:
+      213: -3417718393487817771
+    second: MediumFlame01_85
+  - first:
+      213: 7275709473514662166
+    second: MediumFlame01_86
+  - first:
+      213: -5547721896512986609
+    second: MediumFlame01_87
+  - first:
+      213: 1817407604431046536
+    second: MediumFlame01_88
+  - first:
+      213: -4326794641626925883
+    second: MediumFlame01_89
+  - first:
+      213: 4235470400244641579
+    second: MediumFlame01_90
+  - first:
+      213: -8657942514520126465
+    second: MediumFlame01_91
+  - first:
+      213: 1047608844251563060
+    second: MediumFlame01_92
+  - first:
+      213: -5737514552945897337
+    second: MediumFlame01_93
+  - first:
+      213: -7688518782718909825
+    second: MediumFlame01_94
+  - first:
+      213: -6341220360403215191
+    second: MediumFlame01_95
+  - first:
+      213: -9214364751789147225
+    second: MediumFlame01_96
+  - first:
+      213: 5634718368261636164
+    second: MediumFlame01_97
+  - first:
+      213: -4628755776649311147
+    second: MediumFlame01_98
+  - first:
+      213: -5984407862826179531
+    second: MediumFlame01_99
+  - first:
+      213: 1597170713634817672
+    second: MediumFlame01_100
+  - first:
+      213: 6288476372257478020
+    second: MediumFlame01_101
+  - first:
+      213: -6504264013990087055
+    second: MediumFlame01_102
+  - first:
+      213: -5080750263277548481
+    second: MediumFlame01_103
+  - first:
+      213: 8889596911828436791
+    second: MediumFlame01_104
+  - first:
+      213: -7822673449182749279
+    second: MediumFlame01_105
+  - first:
+      213: -8675357006213094101
+    second: MediumFlame01_106
+  - first:
+      213: -1552934750274136871
+    second: MediumFlame01_107
+  - first:
+      213: 4739953807768327332
+    second: MediumFlame01_108
+  - first:
+      213: -3768892463750973599
+    second: MediumFlame01_109
+  - first:
+      213: 8485330137313857785
+    second: MediumFlame01_110
+  - first:
+      213: 7158331641782789715
+    second: MediumFlame01_111
+  - first:
+      213: -6217148688159898694
+    second: MediumFlame01_112
+  - first:
+      213: -6483977149590667653
+    second: MediumFlame01_113
+  - first:
+      213: 4562198028847843697
+    second: MediumFlame01_114
+  - first:
+      213: -3558018364674114240
+    second: MediumFlame01_115
+  - first:
+      213: -3893713584612482920
+    second: MediumFlame01_116
+  - first:
+      213: -255864418422271905
+    second: MediumFlame01_117
+  - first:
+      213: 7899793613250364158
+    second: MediumFlame01_118
+  - first:
+      213: 1472037943615781550
+    second: MediumFlame01_119
+  - first:
+      213: 900439657485305240
+    second: MediumFlame01_120
+  - first:
+      213: 1121267336803583673
+    second: MediumFlame01_121
+  - first:
+      213: 2260211772680804148
+    second: MediumFlame01_122
+  - first:
+      213: 3893298899375689373
+    second: MediumFlame01_123
+  - first:
+      213: -8672552933484257905
+    second: MediumFlame01_124
+  - first:
+      213: 3078849529345639221
+    second: MediumFlame01_125
+  - first:
+      213: -7167677951760523931
+    second: MediumFlame01_126
+  - first:
+      213: 8008111039319277583
+    second: MediumFlame01_127
+  - first:
+      213: 5187411536468621175
+    second: MediumFlame01_128
+  - first:
+      213: 6652406915796277492
+    second: MediumFlame01_129
+  - first:
+      213: -2706479267229259390
+    second: MediumFlame01_130
+  - first:
+      213: -1439523741160383459
+    second: MediumFlame01_131
+  - first:
+      213: -1045878810288520524
+    second: MediumFlame01_132
+  - first:
+      213: -9201777269384693470
+    second: MediumFlame01_133
+  - first:
+      213: -4637963171661067172
+    second: MediumFlame01_134
+  - first:
+      213: -783714439081690770
+    second: MediumFlame01_135
+  - first:
+      213: 5078142645737263844
+    second: MediumFlame01_136
+  - first:
+      213: 726776728230845684
+    second: MediumFlame01_137
+  - first:
+      213: 3225948918691143834
+    second: MediumFlame01_138
+  - first:
+      213: 6228781959160015939
+    second: MediumFlame01_139
+  - first:
+      213: -4107163738151688202
+    second: MediumFlame01_140
+  - first:
+      213: -3740971592016938605
+    second: MediumFlame01_141
+  - first:
+      213: 2462367419549939207
+    second: MediumFlame01_142
+  - first:
+      213: 7746824306043370988
+    second: MediumFlame01_143
+  - first:
+      213: -4355151379888750271
+    second: MediumFlame01_144
+  - first:
+      213: -1066319953064908697
+    second: MediumFlame01_145
+  - first:
+      213: 8985824273140277664
+    second: MediumFlame01_146
+  - first:
+      213: -8013089073279107694
+    second: MediumFlame01_147
+  - first:
+      213: 1440551897791362252
+    second: MediumFlame01_148
+  - first:
+      213: -1695104387800639329
+    second: MediumFlame01_149
+  - first:
+      213: 7701395132718590481
+    second: MediumFlame01_150
+  - first:
+      213: -829803570760734454
+    second: MediumFlame01_151
+  - first:
+      213: -6357458262712256358
+    second: MediumFlame01_152
+  - first:
+      213: -5020870305517804123
+    second: MediumFlame01_153
+  - first:
+      213: 1393547372965215614
+    second: MediumFlame01_154
+  - first:
+      213: -7702645341569689257
+    second: MediumFlame01_155
+  - first:
+      213: 2692128281013219758
+    second: MediumFlame01_156
+  - first:
+      213: -7398336083229163382
+    second: MediumFlame01_157
+  - first:
+      213: 557720213796580733
+    second: MediumFlame01_158
+  - first:
+      213: -4953741803831586118
+    second: MediumFlame01_159
+  - first:
+      213: 1196234560741858722
+    second: MediumFlame01_160
+  - first:
+      213: 4125197628131206539
+    second: MediumFlame01_161
+  - first:
+      213: 6398193434259600749
+    second: MediumFlame01_162
+  - first:
+      213: 3860936822601082028
+    second: MediumFlame01_163
+  - first:
+      213: -4902299906152782049
+    second: MediumFlame01_164
+  - first:
+      213: -6887583986640628859
+    second: MediumFlame01_165
+  - first:
+      213: -6565096670845763938
+    second: MediumFlame01_166
+  - first:
+      213: -7584452035357116716
+    second: MediumFlame01_167
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: MediumFlame01_0
+      rect:
+        serializedVersion: 2
+        x: 698
+        y: 1856
+        width: 18
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 18e39b03f3b495e60800000000000000
+      internalID: 7951469351871790721
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_1
+      rect:
+        serializedVersion: 2
+        x: 719
+        y: 1856
+        width: 68
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 57777d1981d869f80800000000000000
+      internalID: -8100131743113709707
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_2
+      rect:
+        serializedVersion: 2
+        x: 900
+        y: 1855
+        width: 22
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f3d0b1b472d8627f0800000000000000
+      internalID: -637667097323041473
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_3
+      rect:
+        serializedVersion: 2
+        x: 922
+        y: 1855
+        width: 27
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f16829276206280d0800000000000000
+      internalID: -3422067048600926689
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_4
+      rect:
+        serializedVersion: 2
+        x: 956
+        y: 1856
+        width: 37
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b557aaa3d35495cb0800000000000000
+      internalID: -4874788992372279973
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_5
+      rect:
+        serializedVersion: 2
+        x: 1092
+        y: 1854
+        width: 62
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 86bb4a471c2346740800000000000000
+      internalID: 5144292480830978920
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_6
+      rect:
+        serializedVersion: 2
+        x: 1159
+        y: 1856
+        width: 45
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0c0661437dd51e4e0800000000000000
+      internalID: -1954177584428851008
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_7
+      rect:
+        serializedVersion: 2
+        x: 1296
+        y: 1852
+        width: 64
+        height: 16
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f27e93c309d5aaae0800000000000000
+      internalID: -1537313448726501585
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_8
+      rect:
+        serializedVersion: 2
+        x: 1362
+        y: 1855
+        width: 48
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a2b9ae8fbbd4175e0800000000000000
+      internalID: -1913662896925402326
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_9
+      rect:
+        serializedVersion: 2
+        x: 1471
+        y: 1855
+        width: 12
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 30bcaf0995fc28700800000000000000
+      internalID: 541222888829274883
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_10
+      rect:
+        serializedVersion: 2
+        x: 1498
+        y: 1850
+        width: 69
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6f1dc27c0236f7670800000000000000
+      internalID: 8538652410949456374
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_11
+      rect:
+        serializedVersion: 2
+        x: 1565
+        y: 1854
+        width: 51
+        height: 14
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: daa5c7b4de35a15a0800000000000000
+      internalID: -6549830429418169683
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_12
+      rect:
+        serializedVersion: 2
+        x: 1675
+        y: 1855
+        width: 18
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d4f4f24f7cad85560800000000000000
+      internalID: 7302827348111347533
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_13
+      rect:
+        serializedVersion: 2
+        x: 1702
+        y: 1849
+        width: 119
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4c577fb7a6870c2f0800000000000000
+      internalID: -954630722260863548
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_14
+      rect:
+        serializedVersion: 2
+        x: 1879
+        y: 1854
+        width: 21
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: eebc24a03318abcc0800000000000000
+      internalID: -3694498488088605714
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_15
+      rect:
+        serializedVersion: 2
+        x: 1906
+        y: 1848
+        width: 120
+        height: 26
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 76d72d9e0722a01f0800000000000000
+      internalID: -1078011292447244953
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_16
+      rect:
+        serializedVersion: 2
+        x: 35
+        y: 1649
+        width: 23
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0a84f75ce07524a90800000000000000
+      internalID: -7331201522451134304
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_17
+      rect:
+        serializedVersion: 2
+        x: 62
+        y: 1643
+        width: 121
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 614be2756318d43a0800000000000000
+      internalID: -6679540601929681898
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_18
+      rect:
+        serializedVersion: 2
+        x: 239
+        y: 1649
+        width: 25
+        height: 12
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d26f363e681e0ceb0800000000000000
+      internalID: -4701510041517951443
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_19
+      rect:
+        serializedVersion: 2
+        x: 267
+        y: 1641
+        width: 122
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 82a93748839d4db70800000000000000
+      internalID: 8922995598491359784
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_20
+      rect:
+        serializedVersion: 2
+        x: 443
+        y: 1648
+        width: 27
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ba3809e02f184f150800000000000000
+      internalID: 5905487888015983531
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_21
+      rect:
+        serializedVersion: 2
+        x: 471
+        y: 1644
+        width: 123
+        height: 35
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d31beb7c05d260540800000000000000
+      internalID: 4973712663449088317
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_22
+      rect:
+        serializedVersion: 2
+        x: 647
+        y: 1643
+        width: 153
+        height: 39
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 83cfce42b3ae87190800000000000000
+      internalID: -7964358401261241288
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_23
+      rect:
+        serializedVersion: 2
+        x: 852
+        y: 1642
+        width: 153
+        height: 45
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 109c191004ee458f0800000000000000
+      internalID: -552554895588079359
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_24
+      rect:
+        serializedVersion: 2
+        x: 1053
+        y: 1643
+        width: 158
+        height: 53
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3a1451b0d587fe330800000000000000
+      internalID: 3742342156381405603
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_25
+      rect:
+        serializedVersion: 2
+        x: 1258
+        y: 1642
+        width: 158
+        height: 54
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 12e52ea7c02789e30800000000000000
+      internalID: 4510480424738381345
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_26
+      rect:
+        serializedVersion: 2
+        x: 1462
+        y: 1642
+        width: 159
+        height: 54
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5f339137ebc523380800000000000000
+      internalID: -8993023532860886027
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_27
+      rect:
+        serializedVersion: 2
+        x: 1667
+        y: 1642
+        width: 159
+        height: 57
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f495a8a8ae1061a70800000000000000
+      internalID: 8797221028973140303
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_28
+      rect:
+        serializedVersion: 2
+        x: 1871
+        y: 1641
+        width: 160
+        height: 65
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1a697b3e43e508de0800000000000000
+      internalID: -1332961908449896799
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_29
+      rect:
+        serializedVersion: 2
+        x: 27
+        y: 1435
+        width: 161
+        height: 61
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 18a91056b352e32f0800000000000000
+      internalID: -991313930947028351
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_30
+      rect:
+        serializedVersion: 2
+        x: 223
+        y: 1435
+        width: 170
+        height: 66
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b92eca69a4a9f09a0800000000000000
+      internalID: -6264618911502900581
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_31
+      rect:
+        serializedVersion: 2
+        x: 427
+        y: 1434
+        width: 171
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 76cb24b9d8dd57f80800000000000000
+      internalID: -8109331953745740697
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_32
+      rect:
+        serializedVersion: 2
+        x: 632
+        y: 1432
+        width: 172
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 315bc69d5ebe62950800000000000000
+      internalID: 6424081290918409491
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_33
+      rect:
+        serializedVersion: 2
+        x: 837
+        y: 1432
+        width: 171
+        height: 74
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 922f4381b6286edc0800000000000000
+      internalID: -3610054654811639255
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_34
+      rect:
+        serializedVersion: 2
+        x: 1041
+        y: 1432
+        width: 172
+        height: 76
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1fc6ea8e9f4243cd0800000000000000
+      internalID: -2579396030807249679
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_35
+      rect:
+        serializedVersion: 2
+        x: 1246
+        y: 1435
+        width: 172
+        height: 70
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d304a2d37fe820a30800000000000000
+      internalID: 4180060596687487037
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_36
+      rect:
+        serializedVersion: 2
+        x: 1450
+        y: 1434
+        width: 173
+        height: 74
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4995ba1a528946b90800000000000000
+      internalID: -7249502212766082668
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_37
+      rect:
+        serializedVersion: 2
+        x: 1655
+        y: 1435
+        width: 173
+        height: 74
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 31aa9ca7e4fd7e6c0800000000000000
+      internalID: -4114074206419178989
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_38
+      rect:
+        serializedVersion: 2
+        x: 1859
+        y: 1434
+        width: 174
+        height: 76
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e216f9c4ee604f840800000000000000
+      internalID: 5256834285605708078
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_39
+      rect:
+        serializedVersion: 2
+        x: 16
+        y: 1230
+        width: 174
+        height: 77
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 559a917dc621d2fc0800000000000000
+      internalID: -3518135475231938219
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_40
+      rect:
+        serializedVersion: 2
+        x: 220
+        y: 1230
+        width: 175
+        height: 78
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0209d61e43b5c5860800000000000000
+      internalID: 7519985760480366624
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_41
+      rect:
+        serializedVersion: 2
+        x: 425
+        y: 1230
+        width: 175
+        height: 80
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 382cfcd263bd509e0800000000000000
+      internalID: -1655676262245481853
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_42
+      rect:
+        serializedVersion: 2
+        x: 629
+        y: 1230
+        width: 176
+        height: 86
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7c8c13951b38758d0800000000000000
+      internalID: -2857670640814405433
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_43
+      rect:
+        serializedVersion: 2
+        x: 834
+        y: 1230
+        width: 176
+        height: 85
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 01f208189d9fa21b0800000000000000
+      internalID: -5680453267398578416
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_44
+      rect:
+        serializedVersion: 2
+        x: 1039
+        y: 1230
+        width: 176
+        height: 85
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c636bc6e29a967710800000000000000
+      internalID: 1690708665852191596
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_45
+      rect:
+        serializedVersion: 2
+        x: 1243
+        y: 1230
+        width: 177
+        height: 89
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ca8079ad216eeb0c0800000000000000
+      internalID: -4557952804201232212
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_46
+      rect:
+        serializedVersion: 2
+        x: 1448
+        y: 1230
+        width: 177
+        height: 84
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e641a3b02d8628a70800000000000000
+      internalID: 8827733470940370030
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_47
+      rect:
+        serializedVersion: 2
+        x: 1653
+        y: 1232
+        width: 177
+        height: 86
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1408be043e1d06230800000000000000
+      internalID: 3630132073637576769
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_48
+      rect:
+        serializedVersion: 2
+        x: 1857
+        y: 1230
+        width: 178
+        height: 91
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a5807023eb6b0b400800000000000000
+      internalID: 337970900052150362
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_49
+      rect:
+        serializedVersion: 2
+        x: 422
+        y: 1027
+        width: 185
+        height: 96
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9038f11faf0a3e680800000000000000
+      internalID: -8726954653266246903
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_50
+      rect:
+        serializedVersion: 2
+        x: 627
+        y: 1027
+        width: 185
+        height: 99
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1f376c539ac1da040800000000000000
+      internalID: 4660412702475580401
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_51
+      rect:
+        serializedVersion: 2
+        x: 831
+        y: 1027
+        width: 186
+        height: 102
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7a324d34a7c6d30c0800000000000000
+      internalID: -4594396772468251737
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_52
+      rect:
+        serializedVersion: 2
+        x: 1035
+        y: 1027
+        width: 188
+        height: 113
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 02bcb7241903494e0800000000000000
+      internalID: -1975900936065004768
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_53
+      rect:
+        serializedVersion: 2
+        x: 1239
+        y: 1026
+        width: 189
+        height: 118
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dd8e0ea3df82eef60800000000000000
+      internalID: 8065429050746792157
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_54
+      rect:
+        serializedVersion: 2
+        x: 1444
+        y: 1026
+        width: 189
+        height: 115
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9b8dda93f9ee6e510800000000000000
+      internalID: 1578211087074842809
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_55
+      rect:
+        serializedVersion: 2
+        x: 1643
+        y: 1026
+        width: 188
+        height: 119
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5851bf20fb6160f00800000000000000
+      internalID: 1082577770073757061
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_56
+      rect:
+        serializedVersion: 2
+        x: 1942
+        y: 1123
+        width: 11
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e739fe0f6c15c21b0800000000000000
+      internalID: -5680075115133430914
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_57
+      rect:
+        serializedVersion: 2
+        x: 13
+        y: 1025
+        width: 179
+        height: 97
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b0e6243e6ca71b550800000000000000
+      internalID: 6174851558736555531
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_58
+      rect:
+        serializedVersion: 2
+        x: 218
+        y: 1026
+        width: 184
+        height: 94
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 81bee6179fc00d120800000000000000
+      internalID: 2436461663896922904
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_59
+      rect:
+        serializedVersion: 2
+        x: 1832
+        y: 1038
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e0cb474a1b89a16b0800000000000000
+      internalID: -5324775720676443122
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_60
+      rect:
+        serializedVersion: 2
+        x: 1846
+        y: 1026
+        width: 198
+        height: 94
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0152ad36bdd581300800000000000000
+      internalID: 223031378409301264
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_61
+      rect:
+        serializedVersion: 2
+        x: 3
+        y: 822
+        width: 190
+        height: 98
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c23b2f3a9192cdfd0800000000000000
+      internalID: -2315930918273764564
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_62
+      rect:
+        serializedVersion: 2
+        x: 193
+        y: 833
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9c9f9eeeb06ea9860800000000000000
+      internalID: 7537589865285286345
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_63
+      rect:
+        serializedVersion: 2
+        x: 207
+        y: 822
+        width: 190
+        height: 95
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 22ef5ed0ba1a5dca0800000000000000
+      internalID: -5992705973101920734
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_64
+      rect:
+        serializedVersion: 2
+        x: 398
+        y: 833
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5d9454d6495f00430800000000000000
+      internalID: 3747264907809475029
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_65
+      rect:
+        serializedVersion: 2
+        x: 412
+        y: 822
+        width: 190
+        height: 92
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1ed9f7e496bda4f60800000000000000
+      internalID: 8019463331821624801
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_66
+      rect:
+        serializedVersion: 2
+        x: 603
+        y: 833
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 72bb10843f4dc46c0800000000000000
+      internalID: -4157714214619595993
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_67
+      rect:
+        serializedVersion: 2
+        x: 617
+        y: 822
+        width: 190
+        height: 93
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2efbf7b08849e5410800000000000000
+      internalID: 1467773840598745058
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_68
+      rect:
+        serializedVersion: 2
+        x: 807
+        y: 833
+        width: 8
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f41d7072ff4bd5f40800000000000000
+      internalID: 5718926109794881871
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_69
+      rect:
+        serializedVersion: 2
+        x: 821
+        y: 822
+        width: 191
+        height: 97
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f38eade5e0d69fc60800000000000000
+      internalID: 7852427333785544767
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_70
+      rect:
+        serializedVersion: 2
+        x: 1012
+        y: 833
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8ca907caa46076df0800000000000000
+      internalID: -187173941722178872
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_71
+      rect:
+        serializedVersion: 2
+        x: 1026
+        y: 822
+        width: 191
+        height: 96
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 823b46b9a26283c10800000000000000
+      internalID: 2033417196195328808
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_72
+      rect:
+        serializedVersion: 2
+        x: 1217
+        y: 833
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 070a84eb820e7d4d0800000000000000
+      internalID: -3109770552080293776
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_73
+      rect:
+        serializedVersion: 2
+        x: 1231
+        y: 821
+        width: 191
+        height: 100
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1205d2132d5ef1fe0800000000000000
+      internalID: -1216000683435798495
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_74
+      rect:
+        serializedVersion: 2
+        x: 1422
+        y: 833
+        width: 7
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 22ce66d4ddb9ac4b0800000000000000
+      internalID: -5419347826798302174
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_75
+      rect:
+        serializedVersion: 2
+        x: 1435
+        y: 820
+        width: 191
+        height: 112
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aeb9a470bb7a244b0800000000000000
+      internalID: -5457615376696566806
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_76
+      rect:
+        serializedVersion: 2
+        x: 1627
+        y: 833
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5ebc85e9a941c35d0800000000000000
+      internalID: -3081565390714123291
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_77
+      rect:
+        serializedVersion: 2
+        x: 1640
+        y: 820
+        width: 191
+        height: 108
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 10e6c6a1a7511a500800000000000000
+      internalID: 405629055613562369
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_78
+      rect:
+        serializedVersion: 2
+        x: 1831
+        y: 833
+        width: 8
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 44e3c58cb066bc6c0800000000000000
+      internalID: -4122088833135395260
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_79
+      rect:
+        serializedVersion: 2
+        x: 1844
+        y: 820
+        width: 192
+        height: 111
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: da952b658e9c742b0800000000000000
+      internalID: -5600285611887797843
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_80
+      rect:
+        serializedVersion: 2
+        x: 2036
+        y: 833
+        width: 8
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dceaf657fde017420800000000000000
+      internalID: 2625896410644459213
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_81
+      rect:
+        serializedVersion: 2
+        x: 1025
+        y: 614
+        width: 192
+        height: 131
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: aee4ab36457c4e860800000000000000
+      internalID: 7558385239898869482
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_82
+      rect:
+        serializedVersion: 2
+        x: 1230
+        y: 617
+        width: 192
+        height: 142
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9f78671df6aaccbc0800000000000000
+      internalID: -3761444191528908807
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_83
+      rect:
+        serializedVersion: 2
+        x: 1435
+        y: 617
+        width: 192
+        height: 145
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: dc893b02ca7b5f6e0800000000000000
+      internalID: -1804334125781116723
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_84
+      rect:
+        serializedVersion: 2
+        x: 1640
+        y: 617
+        width: 193
+        height: 134
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a54d7b731804b8cf0800000000000000
+      internalID: -249034430659177382
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_85
+      rect:
+        serializedVersion: 2
+        x: 1734
+        y: 744
+        width: 26
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5d307dd9a33d190d0800000000000000
+      internalID: -3417718393487817771
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_86
+      rect:
+        serializedVersion: 2
+        x: 1845
+        y: 617
+        width: 192
+        height: 132
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 61929c1c73388f460800000000000000
+      internalID: 7275709473514662166
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_87
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 615
+        width: 194
+        height: 108
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f02efa504588203b0800000000000000
+      internalID: -5547721896512986609
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_88
+      rect:
+        serializedVersion: 2
+        x: 193
+        y: 628
+        width: 8
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 887c432569ab83910800000000000000
+      internalID: 1817407604431046536
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_89
+      rect:
+        serializedVersion: 2
+        x: 205
+        y: 614
+        width: 193
+        height: 114
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5c473c1a23324f3c0800000000000000
+      internalID: -4326794641626925883
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_90
+      rect:
+        serializedVersion: 2
+        x: 398
+        y: 628
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b2f634773e967ca30800000000000000
+      internalID: 4235470400244641579
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_91
+      rect:
+        serializedVersion: 2
+        x: 410
+        y: 614
+        width: 193
+        height: 121
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ffb8640a72fc8d780800000000000000
+      internalID: -8657942514520126465
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_92
+      rect:
+        serializedVersion: 2
+        x: 603
+        y: 628
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4340c2181bad98e00800000000000000
+      internalID: 1047608844251563060
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_93
+      rect:
+        serializedVersion: 2
+        x: 616
+        y: 614
+        width: 192
+        height: 125
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 780960aa9e04060b0800000000000000
+      internalID: -5737514552945897337
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_94
+      rect:
+        serializedVersion: 2
+        x: 807
+        y: 628
+        width: 8
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f72ee1317e4ec4590800000000000000
+      internalID: -7688518782718909825
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_95
+      rect:
+        serializedVersion: 2
+        x: 820
+        y: 614
+        width: 193
+        height: 125
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9ac11bfeda57ff7a0800000000000000
+      internalID: -6341220360403215191
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_96
+      rect:
+        serializedVersion: 2
+        x: 1012
+        y: 628
+        width: 8
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7ab3abaf310002080800000000000000
+      internalID: -9214364751789147225
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_97
+      rect:
+        serializedVersion: 2
+        x: 1217
+        y: 628
+        width: 8
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4408a9d708a823e40800000000000000
+      internalID: 5634718368261636164
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_98
+      rect:
+        serializedVersion: 2
+        x: 1422
+        y: 628
+        width: 8
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 55cc7c4352b53cfb0800000000000000
+      internalID: -4628755776649311147
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_99
+      rect:
+        serializedVersion: 2
+        x: 1627
+        y: 628
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 534e03961cc13fca0800000000000000
+      internalID: -5984407862826179531
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_100
+      rect:
+        serializedVersion: 2
+        x: 1831
+        y: 628
+        width: 8
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8864cd74d4a4a2610800000000000000
+      internalID: 1597170713634817672
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_101
+      rect:
+        serializedVersion: 2
+        x: 2036
+        y: 628
+        width: 8
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 48518da51f7254750800000000000000
+      internalID: 6288476372257478020
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_102
+      rect:
+        serializedVersion: 2
+        x: 1
+        y: 413
+        width: 200
+        height: 133
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 176b3c027563cb5a0800000000000000
+      internalID: -6504264013990087055
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_103
+      rect:
+        serializedVersion: 2
+        x: 206
+        y: 414
+        width: 193
+        height: 131
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f3c8ed4fd8c8d79b0800000000000000
+      internalID: -5080750263277548481
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_104
+      rect:
+        serializedVersion: 2
+        x: 411
+        y: 414
+        width: 199
+        height: 132
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 73781fdca413e5b70800000000000000
+      internalID: 8889596911828436791
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_105
+      rect:
+        serializedVersion: 2
+        x: 616
+        y: 413
+        width: 193
+        height: 133
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 1ad159bb1f7407390800000000000000
+      internalID: -7822673449182749279
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_106
+      rect:
+        serializedVersion: 2
+        x: 722
+        y: 541
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b25e8f054c0fa9780800000000000000
+      internalID: -8675357006213094101
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_107
+      rect:
+        serializedVersion: 2
+        x: 724
+        y: 544
+        width: 8
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9d4dc8a821ed27ae0800000000000000
+      internalID: -1552934750274136871
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_108
+      rect:
+        serializedVersion: 2
+        x: 821
+        y: 414
+        width: 192
+        height: 138
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4a49ac3ffd2b7c140800000000000000
+      internalID: 4739953807768327332
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_109
+      rect:
+        serializedVersion: 2
+        x: 1026
+        y: 413
+        width: 192
+        height: 148
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 167f97dc54432bbc0800000000000000
+      internalID: -3768892463750973599
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_110
+      rect:
+        serializedVersion: 2
+        x: 1230
+        y: 413
+        width: 199
+        height: 153
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9f0528c7dc2f1c570800000000000000
+      internalID: 8485330137313857785
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_111
+      rect:
+        serializedVersion: 2
+        x: 1435
+        y: 413
+        width: 199
+        height: 157
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 356e6e4a3b0875360800000000000000
+      internalID: 7158331641782789715
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_112
+      rect:
+        serializedVersion: 2
+        x: 1649
+        y: 412
+        width: 189
+        height: 163
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ab3817e353048b9a0800000000000000
+      internalID: -6217148688159898694
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_113
+      rect:
+        serializedVersion: 2
+        x: 1854
+        y: 412
+        width: 189
+        height: 171
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b7ef5e2d2294406a0800000000000000
+      internalID: -6483977149590667653
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_114
+      rect:
+        serializedVersion: 2
+        x: 398
+        y: 423
+        width: 9
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 17986788fee205f30800000000000000
+      internalID: 4562198028847843697
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_115
+      rect:
+        serializedVersion: 2
+        x: 808
+        y: 424
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 04d784506216f9ec0800000000000000
+      internalID: -3558018364674114240
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_116
+      rect:
+        serializedVersion: 2
+        x: 1013
+        y: 424
+        width: 7
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 8906f04ef10c6f9c0800000000000000
+      internalID: -3893713584612482920
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_117
+      rect:
+        serializedVersion: 2
+        x: 1218
+        y: 424
+        width: 6
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f505745caacf27cf0800000000000000
+      internalID: -255864418422271905
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_118
+      rect:
+        serializedVersion: 2
+        x: 1640
+        y: 424
+        width: 10
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ef200b4bf64b1ad60800000000000000
+      internalID: 7899793613250364158
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_119
+      rect:
+        serializedVersion: 2
+        x: 1845
+        y: 424
+        width: 9
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: eaa7d15e5babd6410800000000000000
+      internalID: 1472037943615781550
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_120
+      rect:
+        serializedVersion: 2
+        x: 2
+        y: 206
+        width: 198
+        height: 180
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 895061609110f7c00800000000000000
+      internalID: 900439657485305240
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_121
+      rect:
+        serializedVersion: 2
+        x: 207
+        y: 206
+        width: 197
+        height: 182
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9b60d6cb3ba8f8f00800000000000000
+      internalID: 1121267336803583673
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_122
+      rect:
+        serializedVersion: 2
+        x: 627
+        y: 204
+        width: 181
+        height: 180
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4379bc3d1a2ed5f10800000000000000
+      internalID: 2260211772680804148
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_123
+      rect:
+        serializedVersion: 2
+        x: 833
+        y: 204
+        width: 179
+        height: 185
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d9e05bda8b6c70630800000000000000
+      internalID: 3893298899375689373
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_124
+      rect:
+        serializedVersion: 2
+        x: 1038
+        y: 205
+        width: 169
+        height: 178
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f8d16ef5e07e4a780800000000000000
+      internalID: -8672552933484257905
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_125
+      rect:
+        serializedVersion: 2
+        x: 1129
+        y: 380
+        width: 6
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5338681a5554aba20800000000000000
+      internalID: 3078849529345639221
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_126
+      rect:
+        serializedVersion: 2
+        x: 1244
+        y: 205
+        width: 167
+        height: 183
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 56d1aecf0ea478c90800000000000000
+      internalID: -7167677951760523931
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_127
+      rect:
+        serializedVersion: 2
+        x: 1450
+        y: 208
+        width: 172
+        height: 180
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f00828cbf86822f60800000000000000
+      internalID: 8008111039319277583
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_128
+      rect:
+        serializedVersion: 2
+        x: 1660
+        y: 210
+        width: 160
+        height: 175
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 777b9feee436df740800000000000000
+      internalID: 5187411536468621175
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_129
+      rect:
+        serializedVersion: 2
+        x: 1923
+        y: 213
+        width: 101
+        height: 183
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4f8936d08d8125c50800000000000000
+      internalID: 6652406915796277492
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_130
+      rect:
+        serializedVersion: 2
+        x: 413
+        y: 205
+        width: 190
+        height: 171
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 28927dc2277a07ad0800000000000000
+      internalID: -2706479267229259390
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_131
+      rect:
+        serializedVersion: 2
+        x: 1206
+        y: 219
+        width: 10
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d1cd46ac8c8c50ce0800000000000000
+      internalID: -1439523741160383459
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_132
+      rect:
+        serializedVersion: 2
+        x: 1412
+        y: 220
+        width: 8
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4b205aa63ca4c71f0800000000000000
+      internalID: -1045878810288520524
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_133
+      rect:
+        serializedVersion: 2
+        x: 1867
+        y: 216
+        width: 58
+        height: 22
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 229bf0c9358bc4080800000000000000
+      internalID: -9201777269384693470
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_134
+      rect:
+        serializedVersion: 2
+        x: 110
+        y: 184
+        width: 7
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: c5c4ccf7115a2afb0800000000000000
+      internalID: -4637963171661067172
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_135
+      rect:
+        serializedVersion: 2
+        x: 83
+        y: 11
+        width: 97
+        height: 162
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e69f035bedfaf15f0800000000000000
+      internalID: -783714439081690770
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_136
+      rect:
+        serializedVersion: 2
+        x: 295
+        y: 11
+        width: 88
+        height: 158
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4e29ee5c4df297640800000000000000
+      internalID: 5078142645737263844
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_137
+      rect:
+        serializedVersion: 2
+        x: 501
+        y: 114
+        width: 12
+        height: 15
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4fc583d6597061a00800000000000000
+      internalID: 726776728230845684
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_138
+      rect:
+        serializedVersion: 2
+        x: 527
+        y: 94
+        width: 11
+        height: 31
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a902422237fd4cc20800000000000000
+      internalID: 3225948918691143834
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_139
+      rect:
+        serializedVersion: 2
+        x: 500
+        y: 11
+        width: 87
+        height: 93
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 34c281bb034117650800000000000000
+      internalID: 6228781959160015939
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_140
+      rect:
+        serializedVersion: 2
+        x: 712
+        y: 91
+        width: 10
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6f76a11475c6007c0800000000000000
+      internalID: -4107163738151688202
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_141
+      rect:
+        serializedVersion: 2
+        x: 723
+        y: 88
+        width: 20
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 399b0075826651cc0800000000000000
+      internalID: -3740971592016938605
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_142
+      rect:
+        serializedVersion: 2
+        x: 24
+        y: 12
+        width: 39
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 706f4c43f161c2220800000000000000
+      internalID: 2462367419549939207
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_143
+      rect:
+        serializedVersion: 2
+        x: 62
+        y: 12
+        width: 19
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cedb31379af328b60800000000000000
+      internalID: 7746824306043370988
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_144
+      rect:
+        serializedVersion: 2
+        x: 231
+        y: 12
+        width: 32
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 141cda205e46f83c0800000000000000
+      internalID: -4355151379888750271
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_145
+      rect:
+        serializedVersion: 2
+        x: 269
+        y: 13
+        width: 15
+        height: 9
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 768a7acf6aba331f0800000000000000
+      internalID: -1066319953064908697
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_146
+      rect:
+        serializedVersion: 2
+        x: 436
+        y: 14
+        width: 20
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 0a1eb96419f04bc70800000000000000
+      internalID: 8985824273140277664
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_147
+      rect:
+        serializedVersion: 2
+        x: 455
+        y: 13
+        width: 13
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 29d72a961f9cbc090800000000000000
+      internalID: -8013089073279107694
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_148
+      rect:
+        serializedVersion: 2
+        x: 474
+        y: 14
+        width: 14
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cc47e54915eddf310800000000000000
+      internalID: 1440551897791362252
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_149
+      rect:
+        serializedVersion: 2
+        x: 643
+        y: 14
+        width: 17
+        height: 6
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f98dfe35a87c978e0800000000000000
+      internalID: -1695104387800639329
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_150
+      rect:
+        serializedVersion: 2
+        x: 660
+        y: 13
+        width: 12
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 11a2d98c11ad0ea60800000000000000
+      internalID: 7701395132718590481
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_151
+      rect:
+        serializedVersion: 2
+        x: 680
+        y: 14
+        width: 8
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a09a4738c02fb74f0800000000000000
+      internalID: -829803570760734454
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_152
+      rect:
+        serializedVersion: 2
+        x: 706
+        y: 12
+        width: 41
+        height: 77
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a98f9a0b465c5c7a0800000000000000
+      internalID: -6357458262712256358
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_153
+      rect:
+        serializedVersion: 2
+        x: 747
+        y: 13
+        width: 40
+        height: 25
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 5a5ed401f09425ab0800000000000000
+      internalID: -5020870305517804123
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_154
+      rect:
+        serializedVersion: 2
+        x: 859
+        y: 12
+        width: 83
+        height: 72
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e7d354fc3ffd65310800000000000000
+      internalID: 1393547372965215614
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_155
+      rect:
+        serializedVersion: 2
+        x: 941
+        y: 13
+        width: 10
+        height: 11
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 759dbe84fd4ba1590800000000000000
+      internalID: -7702645341569689257
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_156
+      rect:
+        serializedVersion: 2
+        x: 953
+        y: 13
+        width: 37
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ea17397786c5c5520800000000000000
+      internalID: 2692128281013219758
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_157
+      rect:
+        serializedVersion: 2
+        x: 1118
+        y: 12
+        width: 27
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: a80cb26c784d35990800000000000000
+      internalID: -7398336083229163382
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_158
+      rect:
+        serializedVersion: 2
+        x: 1146
+        y: 13
+        width: 8
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d7d666b549b6db700800000000000000
+      internalID: 557720213796580733
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_159
+      rect:
+        serializedVersion: 2
+        x: 1160
+        y: 13
+        width: 20
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ab29d915316c04bb0800000000000000
+      internalID: -4953741803831586118
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_160
+      rect:
+        serializedVersion: 2
+        x: 1176
+        y: 13
+        width: 18
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 2ad501dbef0e99010800000000000000
+      internalID: 1196234560741858722
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_161
+      rect:
+        serializedVersion: 2
+        x: 1323
+        y: 12
+        width: 35
+        height: 18
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: b856b05f265af3930800000000000000
+      internalID: 4125197628131206539
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_162
+      rect:
+        serializedVersion: 2
+        x: 1366
+        y: 14
+        width: 32
+        height: 8
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: d65b7458703fac850800000000000000
+      internalID: 6398193434259600749
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_163
+      rect:
+        serializedVersion: 2
+        x: 1529
+        y: 13
+        width: 25
+        height: 13
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ca4ec53859dc49530800000000000000
+      internalID: 3860936822601082028
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_164
+      rect:
+        serializedVersion: 2
+        x: 1573
+        y: 14
+        width: 28
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f172557753887fbb0800000000000000
+      internalID: -4902299906152782049
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_165
+      rect:
+        serializedVersion: 2
+        x: 1735
+        y: 13
+        width: 23
+        height: 10
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 583dd9b2bd26a60a0800000000000000
+      internalID: -6887583986640628859
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_166
+      rect:
+        serializedVersion: 2
+        x: 1779
+        y: 14
+        width: 26
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e9e732a7c5714e4a0800000000000000
+      internalID: -6565096670845763938
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: MediumFlame01_167
+      rect:
+        serializedVersion: 2
+        x: 1949
+        y: 13
+        width: 59
+        height: 7
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4d6fc88de0d9eb690800000000000000
+      internalID: -7584452035357116716
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      MediumFlame01_0: 7951469351871790721
+      MediumFlame01_1: -8100131743113709707
+      MediumFlame01_10: 8538652410949456374
+      MediumFlame01_100: 1597170713634817672
+      MediumFlame01_101: 6288476372257478020
+      MediumFlame01_102: -6504264013990087055
+      MediumFlame01_103: -5080750263277548481
+      MediumFlame01_104: 8889596911828436791
+      MediumFlame01_105: -7822673449182749279
+      MediumFlame01_106: -8675357006213094101
+      MediumFlame01_107: -1552934750274136871
+      MediumFlame01_108: 4739953807768327332
+      MediumFlame01_109: -3768892463750973599
+      MediumFlame01_11: -6549830429418169683
+      MediumFlame01_110: 8485330137313857785
+      MediumFlame01_111: 7158331641782789715
+      MediumFlame01_112: -6217148688159898694
+      MediumFlame01_113: -6483977149590667653
+      MediumFlame01_114: 4562198028847843697
+      MediumFlame01_115: -3558018364674114240
+      MediumFlame01_116: -3893713584612482920
+      MediumFlame01_117: -255864418422271905
+      MediumFlame01_118: 7899793613250364158
+      MediumFlame01_119: 1472037943615781550
+      MediumFlame01_12: 7302827348111347533
+      MediumFlame01_120: 900439657485305240
+      MediumFlame01_121: 1121267336803583673
+      MediumFlame01_122: 2260211772680804148
+      MediumFlame01_123: 3893298899375689373
+      MediumFlame01_124: -8672552933484257905
+      MediumFlame01_125: 3078849529345639221
+      MediumFlame01_126: -7167677951760523931
+      MediumFlame01_127: 8008111039319277583
+      MediumFlame01_128: 5187411536468621175
+      MediumFlame01_129: 6652406915796277492
+      MediumFlame01_13: -954630722260863548
+      MediumFlame01_130: -2706479267229259390
+      MediumFlame01_131: -1439523741160383459
+      MediumFlame01_132: -1045878810288520524
+      MediumFlame01_133: -9201777269384693470
+      MediumFlame01_134: -4637963171661067172
+      MediumFlame01_135: -783714439081690770
+      MediumFlame01_136: 5078142645737263844
+      MediumFlame01_137: 726776728230845684
+      MediumFlame01_138: 3225948918691143834
+      MediumFlame01_139: 6228781959160015939
+      MediumFlame01_14: -3694498488088605714
+      MediumFlame01_140: -4107163738151688202
+      MediumFlame01_141: -3740971592016938605
+      MediumFlame01_142: 2462367419549939207
+      MediumFlame01_143: 7746824306043370988
+      MediumFlame01_144: -4355151379888750271
+      MediumFlame01_145: -1066319953064908697
+      MediumFlame01_146: 8985824273140277664
+      MediumFlame01_147: -8013089073279107694
+      MediumFlame01_148: 1440551897791362252
+      MediumFlame01_149: -1695104387800639329
+      MediumFlame01_15: -1078011292447244953
+      MediumFlame01_150: 7701395132718590481
+      MediumFlame01_151: -829803570760734454
+      MediumFlame01_152: -6357458262712256358
+      MediumFlame01_153: -5020870305517804123
+      MediumFlame01_154: 1393547372965215614
+      MediumFlame01_155: -7702645341569689257
+      MediumFlame01_156: 2692128281013219758
+      MediumFlame01_157: -7398336083229163382
+      MediumFlame01_158: 557720213796580733
+      MediumFlame01_159: -4953741803831586118
+      MediumFlame01_16: -7331201522451134304
+      MediumFlame01_160: 1196234560741858722
+      MediumFlame01_161: 4125197628131206539
+      MediumFlame01_162: 6398193434259600749
+      MediumFlame01_163: 3860936822601082028
+      MediumFlame01_164: -4902299906152782049
+      MediumFlame01_165: -6887583986640628859
+      MediumFlame01_166: -6565096670845763938
+      MediumFlame01_167: -7584452035357116716
+      MediumFlame01_17: -6679540601929681898
+      MediumFlame01_18: -4701510041517951443
+      MediumFlame01_19: 8922995598491359784
+      MediumFlame01_2: -637667097323041473
+      MediumFlame01_20: 5905487888015983531
+      MediumFlame01_21: 4973712663449088317
+      MediumFlame01_22: -7964358401261241288
+      MediumFlame01_23: -552554895588079359
+      MediumFlame01_24: 3742342156381405603
+      MediumFlame01_25: 4510480424738381345
+      MediumFlame01_26: -8993023532860886027
+      MediumFlame01_27: 8797221028973140303
+      MediumFlame01_28: -1332961908449896799
+      MediumFlame01_29: -991313930947028351
+      MediumFlame01_3: -3422067048600926689
+      MediumFlame01_30: -6264618911502900581
+      MediumFlame01_31: -8109331953745740697
+      MediumFlame01_32: 6424081290918409491
+      MediumFlame01_33: -3610054654811639255
+      MediumFlame01_34: -2579396030807249679
+      MediumFlame01_35: 4180060596687487037
+      MediumFlame01_36: -7249502212766082668
+      MediumFlame01_37: -4114074206419178989
+      MediumFlame01_38: 5256834285605708078
+      MediumFlame01_39: -3518135475231938219
+      MediumFlame01_4: -4874788992372279973
+      MediumFlame01_40: 7519985760480366624
+      MediumFlame01_41: -1655676262245481853
+      MediumFlame01_42: -2857670640814405433
+      MediumFlame01_43: -5680453267398578416
+      MediumFlame01_44: 1690708665852191596
+      MediumFlame01_45: -4557952804201232212
+      MediumFlame01_46: 8827733470940370030
+      MediumFlame01_47: 3630132073637576769
+      MediumFlame01_48: 337970900052150362
+      MediumFlame01_49: -8726954653266246903
+      MediumFlame01_5: 5144292480830978920
+      MediumFlame01_50: 4660412702475580401
+      MediumFlame01_51: -4594396772468251737
+      MediumFlame01_52: -1975900936065004768
+      MediumFlame01_53: 8065429050746792157
+      MediumFlame01_54: 1578211087074842809
+      MediumFlame01_55: 1082577770073757061
+      MediumFlame01_56: -5680075115133430914
+      MediumFlame01_57: 6174851558736555531
+      MediumFlame01_58: 2436461663896922904
+      MediumFlame01_59: -5324775720676443122
+      MediumFlame01_6: -1954177584428851008
+      MediumFlame01_60: 223031378409301264
+      MediumFlame01_61: -2315930918273764564
+      MediumFlame01_62: 7537589865285286345
+      MediumFlame01_63: -5992705973101920734
+      MediumFlame01_64: 3747264907809475029
+      MediumFlame01_65: 8019463331821624801
+      MediumFlame01_66: -4157714214619595993
+      MediumFlame01_67: 1467773840598745058
+      MediumFlame01_68: 5718926109794881871
+      MediumFlame01_69: 7852427333785544767
+      MediumFlame01_7: -1537313448726501585
+      MediumFlame01_70: -187173941722178872
+      MediumFlame01_71: 2033417196195328808
+      MediumFlame01_72: -3109770552080293776
+      MediumFlame01_73: -1216000683435798495
+      MediumFlame01_74: -5419347826798302174
+      MediumFlame01_75: -5457615376696566806
+      MediumFlame01_76: -3081565390714123291
+      MediumFlame01_77: 405629055613562369
+      MediumFlame01_78: -4122088833135395260
+      MediumFlame01_79: -5600285611887797843
+      MediumFlame01_8: -1913662896925402326
+      MediumFlame01_80: 2625896410644459213
+      MediumFlame01_81: 7558385239898869482
+      MediumFlame01_82: -3761444191528908807
+      MediumFlame01_83: -1804334125781116723
+      MediumFlame01_84: -249034430659177382
+      MediumFlame01_85: -3417718393487817771
+      MediumFlame01_86: 7275709473514662166
+      MediumFlame01_87: -5547721896512986609
+      MediumFlame01_88: 1817407604431046536
+      MediumFlame01_89: -4326794641626925883
+      MediumFlame01_9: 541222888829274883
+      MediumFlame01_90: 4235470400244641579
+      MediumFlame01_91: -8657942514520126465
+      MediumFlame01_92: 1047608844251563060
+      MediumFlame01_93: -5737514552945897337
+      MediumFlame01_94: -7688518782718909825
+      MediumFlame01_95: -6341220360403215191
+      MediumFlame01_96: -9214364751789147225
+      MediumFlame01_97: 5634718368261636164
+      MediumFlame01_98: -4628755776649311147
+      MediumFlame01_99: -5984407862826179531
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

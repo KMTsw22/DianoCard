@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 0d7f73eb4bf8dc343aa8dc30c35d2599
+guid: b8f01507049e2f44c9554f7768ad1ca4
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -129,10 +129,10 @@ TextureImporter:
       name: Node_Boss_0
       rect:
         serializedVersion: 2
-        x: 70
-        y: 184
-        width: 819
-        height: 800
+        x: 4
+        y: 2
+        width: 1014
+        height: 1016
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

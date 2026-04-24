@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: d2f4bbcb554ef374ca3c20d1205c3fa7
+guid: f750d6e6dcc92834d996663eea5c883b
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 6649307482086737894
-    second: CardBg_0
+      213: -5954244701987154032
+    second: "\u2605\u2605_STRICT_4-Photoroom_0"
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,7 +126,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: CardBg_0
+      name: "\u2605\u2605_STRICT_4-Photoroom_0"
       rect:
         serializedVersion: 2
         x: 0
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 6e78028ece5174c50800000000000000
-      internalID: 6649307482086737894
+      spriteID: 097dd409df54e5da0800000000000000
+      internalID: -5954244701987154032
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      CardBg_0: 6649307482086737894
+      "\u2605\u2605_STRICT_4-Photoroom_0": -5954244701987154032
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

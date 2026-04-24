@@ -5,12 +5,6 @@ TextureImporter:
   - first:
       213: -4805275564853113218
     second: E101_StoneGolem_0
-  - first:
-      213: 5539992511132342272
-    second: E101_StoneGolem_1
-  - first:
-      213: -3565651320158836824
-    second: E101_StoneGolem_2
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -135,10 +129,10 @@ TextureImporter:
       name: E101_StoneGolem_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 57
-        width: 503
-        height: 393
+        x: 31
+        y: 39
+        width: 416
+        height: 405
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -149,50 +143,6 @@ TextureImporter:
       bones: []
       spriteID: e7ec01d455b305db0800000000000000
       internalID: -4805275564853113218
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: E101_StoneGolem_1
-      rect:
-        serializedVersion: 2
-        x: 488
-        y: 184
-        width: 16
-        height: 17
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 0081e5436d102ec40800000000000000
-      internalID: 5539992511132342272
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: E101_StoneGolem_2
-      rect:
-        serializedVersion: 2
-        x: 503
-        y: 201
-        width: 9
-        height: 11
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 8a7a7051403448ec0800000000000000
-      internalID: -3565651320158836824
       vertices: []
       indices: 
       edges: []
@@ -212,8 +162,6 @@ TextureImporter:
       entries: []
     nameFileIdTable:
       E101_StoneGolem_0: -4805275564853113218
-      E101_StoneGolem_1: 5539992511132342272
-      E101_StoneGolem_2: -3565651320158836824
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

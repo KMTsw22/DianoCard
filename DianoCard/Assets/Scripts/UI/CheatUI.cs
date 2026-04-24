@@ -24,6 +24,8 @@ public class CheatUI : MonoBehaviour
     private Rarity _cardPreviewRarity = Rarity.COMMON;
     private List<CardData> _cardPreviewList;
     private GUIStyle _previewLabelStyle;
+    private float _cardPreviewHeight = 540f;   // 카드 세로 픽셀 (1280x720 가상 좌표). 슬라이더로 300~560 확대.
+    private bool  _cardPreviewSlotOnly;        // true = 프레임 레이어만, 카드 데이터 숨김
 
     void Update()
     {
@@ -37,7 +39,8 @@ public class CheatUI : MonoBehaviour
 
     void OnGUI()
     {
-        if (!_open) return;
+        // 카드 프리뷰는 런타임 치트 패널이 닫혀 있어도 동작해야 함 — 에디터 CheatWindow에서도 열 수 있음.
+        if (!_open && !_cardPreviewOpen) return;
 
         var matrix = GUI.matrix;
         float scale = Screen.width / 1280f;
@@ -46,38 +49,46 @@ public class CheatUI : MonoBehaviour
         // 프리뷰는 BattleUI보다 위 (depth 낮을수록 앞).
         if (_cardPreviewOpen)
         {
+            EnsureCheatStyles();          // DrawWindow 호출 안 거쳐도 스타일 확보
             GUI.depth = -100;
             DrawCardPreviewOverlay();
         }
 
-        _windowRect = GUI.Window(9999, _windowRect, DrawWindow, "");
+        if (_open)
+            _windowRect = GUI.Window(9999, _windowRect, DrawWindow, "");
+
         GUI.matrix = matrix;
+    }
+
+    // 스타일 생성을 DrawWindow 밖으로 뺀다 — DrawCardPreviewOverlay 도 _btnStyle 쓰기 때문.
+    // GUI.skin 은 OnGUI 안에서만 안전하게 접근 가능하므로, 스타일 초기화도 OnGUI 경로에서만 호출.
+    private void EnsureCheatStyles()
+    {
+        if (_btnStyle != null) return;
+        _btnStyle = new GUIStyle(GUI.skin.button)
+        {
+            fontSize = 14,
+            fontStyle = FontStyle.Bold,
+            fixedHeight = 30f,
+        };
+        _titleStyle = new GUIStyle(GUI.skin.label)
+        {
+            fontSize = 16,
+            fontStyle = FontStyle.Bold,
+            alignment = TextAnchor.MiddleCenter,
+            normal = { textColor = new Color(1f, 0.85f, 0.4f) },
+        };
+        _stateStyle = new GUIStyle(GUI.skin.label)
+        {
+            fontSize = 12,
+            alignment = TextAnchor.MiddleCenter,
+            normal = { textColor = new Color(0.7f, 0.9f, 1f) },
+        };
     }
 
     private void DrawWindow(int id)
     {
-        if (_btnStyle == null)
-        {
-            _btnStyle = new GUIStyle(GUI.skin.button)
-            {
-                fontSize = 14,
-                fontStyle = FontStyle.Bold,
-                fixedHeight = 30f,
-            };
-            _titleStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 16,
-                fontStyle = FontStyle.Bold,
-                alignment = TextAnchor.MiddleCenter,
-                normal = { textColor = new Color(1f, 0.85f, 0.4f) },
-            };
-            _stateStyle = new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 12,
-                alignment = TextAnchor.MiddleCenter,
-                normal = { textColor = new Color(0.7f, 0.9f, 1f) },
-            };
-        }
+        EnsureCheatStyles();
 
         var gsm = GameStateManager.Instance;
         string state = gsm != null ? gsm.State.ToString() : "N/A";
@@ -189,9 +200,32 @@ public class CheatUI : MonoBehaviour
             _cardPreviewOpen = !_cardPreviewOpen;
             if (_cardPreviewOpen) EnsureCardPreviewList();
         }
+        // 슬롯 프리뷰 — 카드 데이터 없이 프레임 레이어만 큰 화면으로. Inspector rect 튜닝용.
+        string slotLabel = _cardPreviewOpen && _cardPreviewSlotOnly ? "슬롯 모드 ON" : "카드 슬롯 프리뷰 (빈 프레임)";
+        if (GUILayout.Button(slotLabel, _btnStyle))
+        {
+            _cardPreviewSlotOnly = !_cardPreviewSlotOnly;
+            if (!_cardPreviewOpen)
+            {
+                _cardPreviewOpen = true;
+                EnsureCardPreviewList();
+            }
+        }
 
         GUI.DragWindow();
     }
+
+    // Editor CheatWindow에서 호출하는 공개 API — 플레이 모드에서 오버레이 토글.
+    public bool IsCardPreviewOpen => _cardPreviewOpen;
+
+    public void OpenCardPreview(bool slotOnly)
+    {
+        _cardPreviewOpen = true;
+        _cardPreviewSlotOnly = slotOnly;
+        EnsureCardPreviewList();
+    }
+
+    public void CloseCardPreview() => _cardPreviewOpen = false;
 
     // 모든 카드 한 번 캐시 (id 정렬).
     private void EnsureCardPreviewList()
@@ -226,52 +260,70 @@ public class CheatUI : MonoBehaviour
         GUI.DrawTexture(fullRect, Texture2D.whiteTexture);
         GUI.color = prev;
 
-        // 큰 카드 한 장 (3:4 비율).
-        const float cardW = 360f;
-        const float cardH = 504f;
-        var cardRect = new Rect(640f - cardW * 0.5f, 360f - cardH * 0.5f, cardW, cardH);
+        // 카드 크기 — 슬라이더로 조절. 상단 정보 바(56px) + 하단 버튼 바(~96px) 공간을 남긴다.
+        float cardH = Mathf.Clamp(_cardPreviewHeight, 300f, 560f);
+        float cardW = cardH * (3f / 4f);
+        // 세로 중심을 약간 위로 — 하단 버튼 자리 확보.
+        var cardRect = new Rect(640f - cardW * 0.5f, 340f - cardH * 0.5f, cardW, cardH);
 
         var ui = Object.FindFirstObjectByType<BattleUI>();
         if (ui == null)
         {
             GUI.Label(cardRect, "BattleUI not in scene.\n전투 한 번 들어갔다 나오면 OK", _previewLabelStyle);
         }
+        else if (_cardPreviewSlotOnly)
+        {
+            // 빈 슬롯 프리뷰 — 카드 데이터 없음. BattleUI의 Inspector에서 rect/tint 조정하며 실시간 확인.
+            ui.DrawCardPreview(cardRect, null, _cardPreviewRarity, slotOnly: true);
+
+            // 정보 라벨은 화면 최상단 고정 — 카드가 커져도 안 가려짐.
+            GUI.Label(new Rect(0, 8f, 1280f, 24f), "[ 카드 슬롯 프리뷰 — 빈 프레임 ]", _previewLabelStyle);
+            GUI.Label(new Rect(0, 32f, 1280f, 20f),
+                "BattleUI Inspector · Card Layers v2 / cardBgTint / cardBaseTint 실시간 반영", _previewLabelStyle);
+        }
         else
         {
             var card = _cardPreviewList[_cardPreviewIndex];
             ui.DrawCardPreview(cardRect, card, _cardPreviewRarity);
 
-            // 카드 정보 라벨 (카드 위쪽).
-            var infoRect = new Rect(cardRect.x, cardRect.y - 56f, cardRect.width, 24f);
-            GUI.Label(infoRect, $"{card.id}  {card.nameKr}", _previewLabelStyle);
-            var subRect = new Rect(cardRect.x, cardRect.y - 32f, cardRect.width, 24f);
-            GUI.Label(subRect, $"{card.cardType} / {card.subType}  · 원본 {card.rarity} · 표시 {_cardPreviewRarity}", _previewLabelStyle);
+            GUI.Label(new Rect(0, 8f, 1280f, 24f), $"{card.id}  {card.nameKr}", _previewLabelStyle);
+            GUI.Label(new Rect(0, 32f, 1280f, 20f),
+                $"{card.cardType} / {card.subType}  · 원본 {card.rarity} · 표시 {_cardPreviewRarity}",
+                _previewLabelStyle);
         }
 
-        // 컨트롤 패널 (카드 아래).
-        float btnY = cardRect.yMax + 24f;
-        var prevBtn = new Rect(cardRect.x - 80f, cardRect.center.y - 30f, 70f, 60f);
-        var nextBtn = new Rect(cardRect.xMax + 10f, cardRect.center.y - 30f, 70f, 60f);
-        if (GUI.Button(prevBtn, "◀\nPrev", _btnStyle))
+        // 확대 슬라이더 (상단 우측) — 슬롯/카드 모드 공통.
+        GUI.Label(new Rect(1000f, 8f, 240f, 20f), $"확대: {_cardPreviewHeight:0}px", _previewLabelStyle);
+        _cardPreviewHeight = GUI.HorizontalSlider(new Rect(1000f, 32f, 240f, 24f), _cardPreviewHeight, 300f, 560f);
+
+        // 컨트롤 — 캔버스 하단 고정 바. 카드 크기와 무관하게 항상 같은 자리.
+        const float bottomRow = 620f;
+        const float bottomRow2 = 668f;
+
+        if (!_cardPreviewSlotOnly)
         {
-            _cardPreviewIndex = (_cardPreviewIndex - 1 + _cardPreviewList.Count) % _cardPreviewList.Count;
-        }
-        if (GUI.Button(nextBtn, "Next\n▶", _btnStyle))
-        {
-            _cardPreviewIndex = (_cardPreviewIndex + 1) % _cardPreviewList.Count;
+            // 카드 모드: 이전/다음 버튼은 카드 옆에.
+            var prevBtn = new Rect(cardRect.x - 80f, cardRect.center.y - 30f, 70f, 60f);
+            var nextBtn = new Rect(cardRect.xMax + 10f, cardRect.center.y - 30f, 70f, 60f);
+            if (GUI.Button(prevBtn, "◀\nPrev", _btnStyle))
+                _cardPreviewIndex = (_cardPreviewIndex - 1 + _cardPreviewList.Count) % _cardPreviewList.Count;
+            if (GUI.Button(nextBtn, "Next\n▶", _btnStyle))
+                _cardPreviewIndex = (_cardPreviewIndex + 1) % _cardPreviewList.Count;
+
+            // 등급 토글 — 하단 좌측.
+            if (GUI.Button(new Rect(320f, bottomRow, 100f, 36f), "COMMON",   _btnStyle)) _cardPreviewRarity = Rarity.COMMON;
+            if (GUI.Button(new Rect(430f, bottomRow, 100f, 36f), "UNCOMMON", _btnStyle)) _cardPreviewRarity = Rarity.UNCOMMON;
+            if (GUI.Button(new Rect(540f, bottomRow, 100f, 36f), "RARE",     _btnStyle)) _cardPreviewRarity = Rarity.RARE;
         }
 
-        // 등급 토글.
-        float rx = cardRect.x;
-        if (GUI.Button(new Rect(rx,        btnY, 100f, 36f), "COMMON",   _btnStyle)) _cardPreviewRarity = Rarity.COMMON;
-        if (GUI.Button(new Rect(rx + 110f, btnY, 100f, 36f), "UNCOMMON", _btnStyle)) _cardPreviewRarity = Rarity.UNCOMMON;
-        if (GUI.Button(new Rect(rx + 220f, btnY, 100f, 36f), "RARE",     _btnStyle)) _cardPreviewRarity = Rarity.RARE;
+        // 슬롯/카드 모드 토글 — 하단 우측.
+        string modeLabel = _cardPreviewSlotOnly ? "▶ 카드 모드로" : "▶ 슬롯 모드로";
+        if (GUI.Button(new Rect(680f, bottomRow, 180f, 36f), modeLabel, _btnStyle))
+            _cardPreviewSlotOnly = !_cardPreviewSlotOnly;
 
-        // 닫기.
-        if (GUI.Button(new Rect(640f - 60f, btnY + 48f, 120f, 36f), "닫기", _btnStyle))
-        {
+        // 닫기 — 가장 하단 중앙.
+        if (GUI.Button(new Rect(580f, bottomRow2, 120f, 36f), "닫기", _btnStyle))
             _cardPreviewOpen = false;
-        }
     }
 
     /// <summary>현재 씬에 떠있는 BattleUI에서 BattleManager 인스턴스를 획득.</summary>
