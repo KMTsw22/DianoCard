@@ -156,6 +156,7 @@ public class BattleUI : MonoBehaviour
     private Texture2D _cardDescPanelTexture;
     private Texture2D _cardCountBadgeTexture;
     private Texture2D _manaFrameTexture;
+    private Texture2D _manaOrbTexture; // 좌하단 마나 오브 본체 — 다크판타지 톤 디테일 에셋. 없으면 _manaFrameTexture로 폴백.
     private Texture2D _shieldFxTexture;
 
     // StS-style 카드 레이어 v3 (2026-04-23) — 흰색 PNG + 코드 tint 방식.
@@ -301,6 +302,90 @@ public class BattleUI : MonoBehaviour
         [Tooltip("샘플 개수 — 원 둘레에 균등 배치. 높을수록 부드럽지만 draw call 증가. 8=거침, 16=균형, 24+=매우 부드러움.")]
         [Range(4, 32)] public int samples = 16;
     }
+
+    // ───────── 필드 공룡 레이아웃 (Inspector 노출) ─────────
+    [Header("Field Dino Layout")]
+    [Tooltip("필드 공룡 스프라이트 크기 (정사각형).")]
+    [Range(100f, 400f)]
+    [SerializeField] private float dinoSize = 180f;
+
+    // ── 1마리일 때 ──────────────────────────────────────
+    [Tooltip("1마리일 때 공룡의 X 중심. 캐릭터(x=230)에 붙는 정도. 작을수록 캐릭터 가까이.")]
+    [Range(300f, 900f)]
+    [SerializeField] private float dinoSingleX = 430f;
+
+    [Tooltip("1마리일 때 공룡 발끝 Y. GroundY=560(캐릭터 발끝)을 기준으로 +면 캐릭터보다 아래(앞쪽).")]
+    [Range(400f, 700f)]
+    [SerializeField] private float dinoSingleFootY = 575f;
+
+    // ── 2마리일 때 (각 슬롯 독립 컨트롤) ─────────────────────
+    [Tooltip("2마리 시 슬롯 0 (앞쪽 공룡) X 중심. 뒤 공룡은 이 위치에서 자동 패킹됨.")]
+    [Range(300f, 900f)]
+    [SerializeField] private float dinoTwoSlot0X = 420f;
+
+    [Tooltip("2마리 시 슬롯 0 (앞쪽 공룡) 발끝 Y. GroundY=560 기준. 뒤 공룡은 이 발끝에서 절대 픽셀(dinoSize×staggerPct)만큼 위로.")]
+    [Range(400f, 700f)]
+    [SerializeField] private float dinoTwoSlot0FootY = 590f;
+
+    // ── 페어 자동 패킹 (공룡별 크기는 card.csv field_scale에서 로드) ───
+    [Tooltip("2마리 페어의 가로 겹침 비율. 0.55가 기존 dinoTwoSlot1X=500 셋팅과 동일한 느낌. 0=떨어져, 0.7=많이 겹침.")]
+    [Range(0f, 0.7f)]
+    [SerializeField] private float pairOverlapPct = 0.55f;
+
+    [Tooltip("뒤 공룡의 발이 앞 공룡 발보다 위로 올라가는 비율 (앞 공룡 키 기준). 0.28이 기존 dinoTwoSlot1FootY=530과 동일.")]
+    [Range(0f, 0.5f)]
+    [SerializeField] private float pairStaggerYPct = 0.28f;
+
+    [Tooltip("뒤 공룡 중심이 앞 공룡 중심에서 떨어져야 하는 최소 거리 (앞 공룡 너비 비율). 0.4 = 뒤 공룡이 앞 공룡 어깨 바깥에 위치. 큰 앞 공룡 + 작은 뒤 공룡 페어에서 작은 공룡이 안 가려지게.")]
+    [Range(0f, 0.6f)]
+    [SerializeField] private float pairMinSpacingPct = 0.4f;
+
+    [Tooltip("앞 공룡이 뒤 공룡보다 클 때 추가로 뒤 공룡을 위로 올리는 강도. 0=비활성, 1=뒤 공룡 머리가 앞 공룡 머리에 정렬. 기본 0.8.")]
+    [Range(0f, 1.5f)]
+    [SerializeField] private float pairSizeStaggerBoost = 0.8f;
+
+    // CheatPanel에서 라이브 슬라이더로 조작 가능하도록 노출.
+    public float PairOverlapPct { get => pairOverlapPct; set => pairOverlapPct = Mathf.Clamp(value, 0f, 0.7f); }
+    public float PairStaggerYPct { get => pairStaggerYPct; set => pairStaggerYPct = Mathf.Clamp(value, 0f, 0.5f); }
+    public float PairMinSpacingPct { get => pairMinSpacingPct; set => pairMinSpacingPct = Mathf.Clamp(value, 0f, 0.6f); }
+    public float PairSizeStaggerBoost { get => pairSizeStaggerBoost; set => pairSizeStaggerBoost = Mathf.Clamp(value, 0f, 1.5f); }
+
+    // ───────── HP 바 크기 (Inspector 노출) ─────────
+    // 스프라이트 크기에 비례하되 min/max로 차이 폭을 제한.
+    // width = Clamp(spriteWidth × ratio, min, max)
+    [Header("HP Bar")]
+    [Tooltip("스프라이트 너비 대비 HP 바 너비 비율. 0.6이면 너비의 60%.")]
+    [Range(0.2f, 1.2f)]
+    [SerializeField] private float hpBarSpriteRatio = 0.6f;
+
+    [Tooltip("HP 바 최소 너비 — 작은 스프라이트도 이 값 이상.")]
+    [Range(50f, 200f)]
+    [SerializeField] private float hpBarMinWidth = 110f;
+
+    [Tooltip("HP 바 최대 너비 — 큰 스프라이트도 이 값 이하.")]
+    [Range(100f, 300f)]
+    [SerializeField] private float hpBarMaxWidth = 170f;
+
+    [Tooltip("모든 HP 바의 고정 세로 두께.")]
+    [Range(6f, 40f)]
+    [SerializeField] private float hpBarHeight = 18f;
+
+    private float ComputeHpBarWidth(float spriteW)
+        => Mathf.Clamp(spriteW * hpBarSpriteRatio, hpBarMinWidth, hpBarMaxWidth);
+
+    // ───────── 손패 부채꼴 레이아웃 (Inspector 노출) ─────────
+    [Header("Hand Fan Layout")]
+    [Tooltip("손패 카드의 화면 하단 노출 오프셋. 값↑ = 카드가 더 아래로 가려짐. 기본 81")]
+    [Range(0f, 200f)]
+    [SerializeField] private float handBottomOffset = 81f;
+
+    [Tooltip("카드 사이 각도(도). 값↑ = 부채꼴 더 펼쳐짐. 기본 6")]
+    [Range(0f, 20f)]
+    [SerializeField] private float handAnglePerCard = 6f;
+
+    [Tooltip("부채꼴 가상 원 반지름. 값↑ = 곡률 줄어듦(평평해짐). 기본 1100")]
+    [Range(400f, 2500f)]
+    [SerializeField] private float handFanRadius = 1100f;
 
     // ───────── 카드 레이어 rect 튜닝 (Inspector 노출) ─────────
     // 손패/호버/날아가는 카드/덱 뷰어 — 모든 BattleUI 카드 렌더링에 적용.
@@ -462,7 +547,7 @@ public class BattleUI : MonoBehaviour
     [Tooltip("본문 (ATK/HP, 설명) 폰트 크기.")]
     [SerializeField, Range(6, 32)] private int cardBodyFontSize = 11;
     [Tooltip("코스트 젬 숫자 크기 비율 (orb 지름 × 이 비율). 0.55 = 젬의 55%.")]
-    [SerializeField, Range(0.2f, 1.0f)] private float cardCostFontSizeRatio = 0.55f;
+    [SerializeField, Range(0.2f, 1.0f)] private float cardCostFontSizeRatio = 0.72f;
 
     [Header("Card Text Rects (위치/크기 — 배경 레이어와 독립)")]
     [Tooltip("카테고리 라벨 텍스트 위치 (pill 배경과 독립). 카드 내부 비율.")]
@@ -471,6 +556,16 @@ public class BattleUI : MonoBehaviour
     [SerializeField] private Vector2 cardCostTextOffsetPct = new(0f, 0f);
     [Tooltip("코스트 숫자 크기 오프셋 (orb 크기 대비 비율 추가). 0 = orb 크기 그대로.")]
     [SerializeField, Range(-0.5f, 0.5f)] private float cardCostTextRectShrinkPct = 0f;
+
+    [Header("Mana Orb (좌하단)")]
+    [Tooltip("좌하단 마나 오브 지름 (RefH 좌표 기준 px).")]
+    [SerializeField, Range(40f, 240f)] private float manaOrbSize = 105f;
+    [Tooltip("좌하단 마나 오브 중심 X (RefW 좌표 기준 px, 좌측 0).")]
+    [SerializeField, Range(40f, 400f)] private float manaOrbCenterX = 210f;
+    [Tooltip("좌하단 마나 오브 중심이 화면 하단에서 떨어진 거리 (px). 클수록 위로 올라감.")]
+    [SerializeField, Range(20f, 200f)] private float manaOrbBottomOffset = 70f;
+    [Tooltip("마나 텍스트 크기 비율 (orb 지름 × 이 비율).")]
+    [SerializeField, Range(0.10f, 0.50f)] private float manaOrbFontSizeRatio = 0.22f;
 
     [Header("Battle Background Ambience")]
     [SerializeField] private List<BackgroundAmbienceEntry> _bgFxEntries = new();
@@ -622,6 +717,10 @@ public class BattleUI : MonoBehaviour
         _manaFrameTexture = Resources.Load<Texture2D>("CardSlot/ManaFrame");
         if (_manaFrameTexture == null)
             Debug.LogWarning("[BattleUI] ManaFrame texture not found: Resources/CardSlot/ManaFrame");
+
+        _manaOrbTexture = Resources.Load<Texture2D>("CardSlot/ManaOrb");
+        if (_manaOrbTexture == null)
+            Debug.LogWarning("[BattleUI] ManaOrb texture not found: Resources/CardSlot/ManaOrb");
 
         // StS-style v2 레이어 (흰색 PNG, 코드에서 tint).
         _cardFrameBaseTexture = Resources.Load<Texture2D>("CardSlot/CardFrameBase");
@@ -850,6 +949,9 @@ public class BattleUI : MonoBehaviour
         _playerView = go.AddComponent<BattleEntityView>();
         _playerView.SetSprite(_playerWorldSprite);
         _playerView.SetSortingOrder(50);
+        _playerView.breathingEnabled = true; // CharacterSelectUI의 호흡 공식과 동일
+        _playerView.breathingFreq = 0.14f;   // 플레이어 고유 주기 (~7.1s)
+        _playerView.breathingPhase = 1.5f;
 
         if (attackSeq != null && attackSeq.Length > 0)
         {
@@ -1027,6 +1129,14 @@ public class BattleUI : MonoBehaviour
         var view = go.AddComponent<BattleEntityView>();
         view.SetSprite(sprite);
         view.SetSortingOrder(50);
+        view.breathingEnabled = true;
+        // 동시 박자 방지 — 개체별 해시로 주기(freq)와 위상(phase)을 모두 분산.
+        // freq: 0.12 ~ 0.19Hz (~5.3s ~ 8.3s), phase: 0 ~ 2π
+        int hash = e.GetHashCode();
+        float freqNoise = ((hash >> 10) & 0x3FF) / 1024f;        // 0~1
+        float phaseNoise = (hash & 0x3FF) / 1024f;               // 0~1
+        view.breathingFreq = 0.12f + freqNoise * 0.07f;
+        view.breathingPhase = phaseNoise * Mathf.PI * 2f;
         _enemyViews[e] = view;
 
         // 발밑 그림자 — 이미지 파일명 규칙(`Monsters/shadow/{이름}_shadow`)으로 로드.
@@ -1682,6 +1792,7 @@ public class BattleUI : MonoBehaviour
                 && Event.current.type == EventType.MouseDown
                 && Event.current.button == 1)
             {
+                if (_targetingSummonIndex >= 0) ShowToast("공격을 취소합니다");
                 _targetingCardIndex = -1;
                 _targetingSummonIndex = -1;
                 _swapFromCardIndex = -1;
@@ -1748,7 +1859,9 @@ public class BattleUI : MonoBehaviour
             DrawHandHideToggle();
             DrawEndTurn(state);
             DrawTargetingHint(state);
+            DrawSummonAttackHint(state);
         }
+        DrawToast();
 
         // 버린 더미로 날아가는 카드 — reward 상태와 관계없이 위에 그려져야 자연스럽다.
         DrawDiscardFlyingCards();
@@ -1882,6 +1995,42 @@ public class BattleUI : MonoBehaviour
                 normal = { textColor = new Color(0.9f, 0.9f, 0.9f) },
             };
         }
+    }
+
+    // 짧은 토스트 메시지 — 우클릭 취소 등에 사용. 화면 하단에서 1.5초간 페이드 표시.
+    private string _toastText;
+    private float _toastExpireTime;
+    private void ShowToast(string text, float duration = 1.5f)
+    {
+        _toastText = text;
+        _toastExpireTime = Time.time + duration;
+    }
+    private void DrawToast()
+    {
+        if (string.IsNullOrEmpty(_toastText) || Time.time >= _toastExpireTime) return;
+        float remaining = _toastExpireTime - Time.time;
+        float alpha = Mathf.Clamp01(remaining / 0.4f);
+        var prev = GUI.color;
+        GUI.color = new Color(1f, 1f, 1f, alpha);
+        GUI.Label(new Rect(0, 480, RefW, 30), _toastText, _targetHintStyle);
+        GUI.color = prev;
+    }
+
+    // 손패 자동 숨김 — 공룡 공격 타겟팅 중에는 카드를 아래로 내려서 필드를 가림 없이 보이게.
+    // 사용자 수동 토글(_handHidden)과 OR로 합쳐 효과를 결정.
+    private bool EffectiveHandHidden => _handHidden || _targetingSummonIndex >= 0;
+
+    private void DrawSummonAttackHint(BattleState state)
+    {
+        if (_targetingSummonIndex < 0 || _targetingSummonIndex >= state.field.Count) return;
+        var s = state.field[_targetingSummonIndex];
+        string text = $"▶ {s.data.nameKr} 공격 — 적을 클릭하세요  (우클릭: 취소)";
+        float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 2.2f);
+        float alpha = Mathf.Lerp(0.35f, 0.95f, pulse);
+        var prev = GUI.color;
+        GUI.color = new Color(1f, 1f, 1f, alpha);
+        GUI.Label(new Rect(0, 115, RefW, 30), text, _targetHintStyle);
+        GUI.color = prev;
     }
 
     private void DrawTargetingHint(BattleState state)
@@ -2269,20 +2418,23 @@ public class BattleUI : MonoBehaviour
     // Battle field rendering
     // =========================================================
 
+    // 지면 라인 — 플레이어 캐릭터 발끝이 닿는 GUI Y. 카드 상단(≈567) 약간 위로 잡아 HP 바 겹침 방지.
+    // 공룡 발끝 위치는 모두 이 라인 기준으로 계산 (사람 기준).
+    private const float GroundY = 560f;
+
     private void ComputeSlotPositions(BattleState state)
     {
-        // 지면 라인(Y=550)에 발끝이 닿도록 각 유닛 스프라이트 높이의 절반만큼 위로 올려 중심을 잡음.
-        // 플레이어/적 h=220/200, 필드 소환수 h=110 기준.
-        const float GroundY = 550f;
+        // DrawPlayerNPC의 h(=257)와 일치 — h/2여야 발끝이 GroundY에 정확히 닿음.
+        const float PlayerHalfH = 128f;
 
         _slotPositions.Clear();
-        _slotPositions[state.player] = new Vector2(230, GroundY - 145);
+        _slotPositions[state.player] = new Vector2(230, GroundY - PlayerHalfH - 10);
 
         int fieldCount = state.field.Count;
+        CardData front = fieldCount > 0 ? state.field[0].data : null;
+        CardData back = fieldCount > 1 ? state.field[1].data : null;
         for (int i = 0; i < fieldCount; i++)
-        {
-            _slotPositions[state.field[i]] = ComputeFieldSlot(i, fieldCount, GroundY);
-        }
+            _slotPositions[state.field[i]] = ComputeFieldSlot(i, fieldCount, front, back);
         UpdateSummonDisplayPositions(state);
 
         int aliveIdx = 0;
@@ -2290,9 +2442,30 @@ public class BattleUI : MonoBehaviour
         {
             if (e.IsDead) continue;
             // 적 크기는 타입별로 다름 — 발끝이 GroundY에 닿도록 센터 Y를 h/2만큼 위로.
+            // staggerY는 뒤쪽 적이 멀어 보이게 하되, 안개 지평선(40%)으로 밀려나지 않을 정도로만.
             float h = GetEnemyDrawHeight(e);
-            _slotPositions[e] = new Vector2(1070 - aliveIdx * 160, GroundY - h / 2f - aliveIdx * 32);
+            _slotPositions[e] = new Vector2(1070 - aliveIdx * 160, GroundY - h / 2f - aliveIdx * 22);
             aliveIdx++;
+        }
+    }
+
+    // 스프라이트를 컨테이너 rect 내부에 "바닥 정렬"로 그리기 위한 draw rect 계산.
+    // 가로로 긴 스프라이트는 rect 너비에 맞추되 발끝이 rect.yMax에 닿도록 위쪽 여백을 둠.
+    // 세로로 긴 스프라이트는 높이에 맞추고 좌우 중앙 정렬.
+    // 결과: 어떤 스프라이트든 발이 rect.yMax 라인에 닿아서 HP 바 위치가 일관됨.
+    private static Rect ComputeBottomAnchoredDrawRect(Rect container, float texAspect)
+    {
+        if (texAspect <= 0f) return container;
+        float rectAspect = container.width / container.height;
+        if (texAspect >= rectAspect)
+        {
+            float drawH = container.width / texAspect;
+            return new Rect(container.x, container.yMax - drawH, container.width, drawH);
+        }
+        else
+        {
+            float drawW = container.height * texAspect;
+            return new Rect(container.x + (container.width - drawW) * 0.5f, container.y, drawW, container.height);
         }
     }
 
@@ -2305,21 +2478,61 @@ public class BattleUI : MonoBehaviour
             EnemyType.ELITE => 320f,
             _               => 240f,
         };
-        // crow placeholder는 원본이 커서 30% 축소 후 표시.
+        // crow placeholder는 원본이 커서 축소 후 표시 (0.7 × 0.7 = 0.49 → 원본 대비 ~51% 축소).
         if (!string.IsNullOrEmpty(e.data.image) &&
             Path.GetFileNameWithoutExtension(e.data.image).Equals("crow", System.StringComparison.OrdinalIgnoreCase))
-            baseH *= 0.7f;
+            baseH *= 0.49f;
         return baseH;
     }
 
-    // 필드 소환수 슬롯 레이아웃 — 1마리면 중앙, 2마리 이상은 대각선 스태거로 깊이감.
-    // Y 기준은 groundY-55 — 발끝이 지면선 근처에 자연스럽게 닿도록.
-    // 카드 hand와 겹침은 허용(사용자가 카드 숨김 토글로 해결).
-    private static Vector2 ComputeFieldSlot(int index, int total, float groundY)
+    // 필드 소환수 슬롯 레이아웃. fieldScale은 CardData.SafeFieldScale (card.csv field_scale 컬럼).
+    //   1마리: dinoSingleX/FootY 그대로.
+    //   2마리: 앞 공룡(index 0)은 dinoTwoSlot0X/FootY 고정. 뒤 공룡(index 1)은 두 공룡의
+    //          fieldScale을 반영해 자동 패킹 — pairOverlapPct만큼 가로 겹침,
+    //          pairStaggerYPct만큼 발이 위로 올라가 원근감.
+    // halfH에 카드별 fieldScale을 곱해야 DrawSummon에서 footY 복원 시 발이 지면선에 맞음.
+    private Vector2 ComputeFieldSlot(int index, int total, CardData front, CardData back)
     {
         if (total <= 1)
-            return new Vector2(470f, groundY - 55f);
-        return new Vector2(440f + index * 78f, groundY - 55f - index * 48f);
+        {
+            float scale1 = front?.SafeFieldScale ?? 1f;
+            float halfH1 = dinoSize * scale1 * 0.5f;
+            return new Vector2(dinoSingleX, dinoSingleFootY - halfH1);
+        }
+
+        // 2마리 — 앞 공룡 위치는 고정.
+        float frontScale = front?.SafeFieldScale ?? 1f;
+        float frontHalfH = dinoSize * frontScale * 0.5f;
+        float frontW = dinoSize * frontScale;
+
+        if (index == 0)
+            return new Vector2(dinoTwoSlot0X, dinoTwoSlot0FootY - frontHalfH);
+
+        // 뒤 공룡 — 자동 패킹.
+        float backScale = back?.SafeFieldScale ?? 1f;
+        float backHalfH = dinoSize * backScale * 0.5f;
+        float backW = dinoSize * backScale;
+        float frontDrawnH = dinoSize * frontScale;
+        float backDrawnH = dinoSize * backScale;
+
+        // 가로 — 평균 폭 기반 + 사이즈 차 안전 마진.
+        // 자연 spacing: 두 공룡 폭의 절반씩 더한 거리에서 overlapPct만큼 겹침.
+        // 최소 spacing: 앞 공룡 너비의 minSpacingPct만큼 — 작은 뒤 공룡이 큰 앞 공룡 안에 빨려들지 않게.
+        float naturalSpacing = (frontW * 0.5f + backW * 0.5f) * (1f - pairOverlapPct);
+        float minSpacing = frontW * pairMinSpacingPct;
+        float spacingX = Mathf.Max(naturalSpacing, minSpacing);
+
+        // 세로 — 기본 staggerPct(절대 픽셀) + 사이즈 차 보너스.
+        // 기본: dinoSize × staggerPct (앞 공룡 키와 무관 → 큰 공룡 페어도 안 뜸).
+        // 보너스: 앞이 뒤보다 크면 (1 - backH/frontH) × boost만큼 추가로 위로 → 작은 뒤 공룡이 큰 앞 공룡 등 위로.
+        float baseStagger = dinoSize * pairStaggerYPct;
+        float sizeRatio = backDrawnH / Mathf.Max(0.01f, frontDrawnH);
+        float bonusStagger = frontDrawnH * Mathf.Max(0f, 1f - sizeRatio) * pairSizeStaggerBoost;
+        float staggerY = Mathf.Max(baseStagger, bonusStagger);
+        float backFootY = dinoTwoSlot0FootY - staggerY;
+
+        float backCenterX = dinoTwoSlot0X + spacingX;
+        return new Vector2(backCenterX, backFootY - backHalfH);
     }
 
     // 슬롯 타겟 위치로 표시 위치를 프레임마다 lerp.
@@ -2376,7 +2589,7 @@ public class BattleUI : MonoBehaviour
     private void DrawPlayerNPC(Player p, Vector2 center)
     {
         // 캐릭터 스프라이트는 world-space BattleEntityView가 그림. IMGUI에서는 HP 바만 처리.
-        const float h = 286;
+        const float h = 257;
         if (_playerSprite != null)
         {
             float texAspect = _playerSprite.width / (float)_playerSprite.height;
@@ -2409,10 +2622,10 @@ public class BattleUI : MonoBehaviour
 
             DrawPlayerShieldFx(new Vector2(center.x, rect.center.y), Mathf.Max(w, 160f), h);
 
-            // HP 바 — 캐릭터 발 아래에 살짝 더 넓게, 발과 약간 떨어뜨림
-            float barW = Mathf.Max(w + 24f, 110f);
-            var barRect = new Rect(center.x - barW / 2, rect.yMax + 6, barW, 16);
-            DrawHpBar(barRect, p.hp, p.maxHp, new Color(0.85f, 0.2f, 0.2f), p.block > 0, _playerShieldFxStartTime);
+            // HP 바 — 캐릭터 발 아래, 스프라이트 너비에 비례 (min/max 클램프)
+            float playerBarW = ComputeHpBarWidth(w);
+            var barRect = new Rect(center.x - playerBarW / 2, rect.yMax + 6, playerBarW, hpBarHeight);
+            DrawHpBar(barRect, p.hp, p.maxHp, new Color(0.65f, 0.16f, 0.18f), p.block > 0, _playerShieldFxStartTime);
 
             if (p.block > 0)
             {
@@ -2440,8 +2653,9 @@ public class BattleUI : MonoBehaviour
 
             DrawPlayerShieldFx(new Vector2(rect.center.x, rect.center.y), fbW, fbH);
 
-            var fbHpRect = new Rect(rect.x + 6, rect.y + rect.height - 52, rect.width - 12, 18);
-            DrawHpBar(fbHpRect, p.hp, p.maxHp, new Color(0.85f, 0.2f, 0.2f), p.block > 0, _playerShieldFxStartTime);
+            float fbBarW = ComputeHpBarWidth(rect.width);
+            var fbHpRect = new Rect(rect.center.x - fbBarW / 2, rect.y + rect.height - 50, fbBarW, hpBarHeight);
+            DrawHpBar(fbHpRect, p.hp, p.maxHp, new Color(0.65f, 0.16f, 0.18f), p.block > 0, _playerShieldFxStartTime);
 
             if (p.block > 0)
             {
@@ -2671,16 +2885,27 @@ public class BattleUI : MonoBehaviour
             center.x += lunge;
         }
 
-        const float w = 150, h = 150;
+        float scale = s.data.SafeFieldScale;
+        float w = dinoSize * scale, h = dinoSize * scale;
 
-        // Idle bob — 각 공룡 개체마다 위상차를 둬서 동시 움직임 방지
-        const float bobFreq = 1.6f;
-        const float bobFraction = 0.028f;
-        float phase = (s.GetHashCode() & 0x3FF) * (Mathf.PI * 2f / 1024f);
-        float bob = Mathf.Sin(Time.time * bobFreq + phase) * h * bobFraction;
-        center.y += bob;
+        // Idle breathing — Y만 살짝 늘리고 발 위치(rect 바닥)는 고정.
+        // 공식: CharacterSelectUI / BattleEntityView.breathing과 동일 (smoothstep eased sin, Y만 0.9%).
+        // 주기(freq)와 위상(phase)을 개체 해시로 분산 → 여러 공룡이 동시 박자로 움직이지 않음.
+        // freq: 0.12 ~ 0.19Hz (~5.3s ~ 8.3s), phase: 0 ~ 2π
+        const float breathAmp = 0.015f;
+        int sHash = s.GetHashCode();
+        float freqNoise = ((sHash >> 10) & 0x3FF) / 1024f;
+        float phaseNoise = (sHash & 0x3FF) / 1024f;
+        float breathFreq = 0.12f + freqNoise * 0.07f;
+        float phase = phaseNoise * Mathf.PI * 2f;
+        float tBreath = Time.time * Mathf.PI * 2f * breathFreq + phase;
+        float rawSin = Mathf.Sin(tBreath);
+        float eased = rawSin * rawSin * Mathf.Sign(rawSin);
+        float breathY = 1f + eased * breathAmp;
 
-        var rect = new Rect(center.x - w / 2, center.y - h / 2, w, h);
+        float drawH = h * breathY;
+        float footY = center.y + h / 2f;          // 원래 rect의 바닥 — 발 위치로 사용
+        var rect = new Rect(center.x - w / 2f, footY - drawH, w, drawH);
 
         // Reward 상태면 공룡도 world-space overlay와 같은 톤으로 어둡게 tint
         bool inReward = GameStateManager.Instance != null && GameStateManager.Instance.State == GameState.Reward;
@@ -2692,12 +2917,11 @@ public class BattleUI : MonoBehaviour
         else if (dimmed) GUI.color = new Color(0.55f, 0.55f, 0.55f, 1f);
         else if (selected) GUI.color = new Color(1.12f, 1.08f, 0.9f, 1f);
 
-        if (_fieldDinoSprites.TryGetValue(s.data.id, out var tex))
+        if (_fieldDinoSprites.TryGetValue(s.data.id, out var tex) && tex.height > 0)
         {
-            var prevMatrix = GUI.matrix;
-            GUIUtility.ScaleAroundPivot(new Vector2(-1f, 1f), rect.center);
-            GUI.DrawTexture(rect, tex, ScaleMode.ScaleToFit, alphaBlend: true);
-            GUI.matrix = prevMatrix;
+            float aspect = tex.width / (float)tex.height;
+            var drawRect = ComputeBottomAnchoredDrawRect(rect, aspect);
+            GUI.DrawTexture(drawRect, tex, ScaleMode.StretchToFill, alphaBlend: true);
         }
         else
         {
@@ -2708,9 +2932,10 @@ public class BattleUI : MonoBehaviour
 
         GUI.color = prevGuiColor;
 
-        // HP 바 — 적과 동일 스타일, 스프라이트 발 아래로 약간 떨어뜨림
-        var summonHpRect = new Rect(rect.x + 6f, rect.y + rect.height + 6f, rect.width - 12f, 14f);
-        DrawHpBar(summonHpRect, s.hp, s.maxHp, new Color(0.85f, 0.2f, 0.2f));
+        // HP 바 — 적과 동일 규칙: 스프라이트 발(rect.yMax) 바로 아래 통일 오프셋.
+        float summonBarW = ComputeHpBarWidth(rect.width);
+        var summonHpRect = new Rect(rect.center.x - summonBarW / 2, rect.yMax + 4f, summonBarW, hpBarHeight);
+        DrawHpBar(summonHpRect, s.hp, s.maxHp, new Color(0.65f, 0.16f, 0.18f));
 
         // 방어도 뱃지 — HP 바 왼쪽에 겹치게 (플레이어와 동일 스타일)
         if (s.block > 0)
@@ -2743,7 +2968,22 @@ public class BattleUI : MonoBehaviour
         }
 
         // ATK 뱃지 — 머리 위 (적 intent와 미러 대칭). 아군은 검을 +45°로 회전.
-        DrawAttackIconBadge(new Vector2(rect.center.x, rect.y - 12f), s.TotalAttack, +45f, s.tempAttackBonus > 0);
+        // 이 뱃지를 클릭하면 공격 타겟팅 시작 (예전엔 공룡 전체 클릭). 클릭 영역은 시인성보다 살짝 크게.
+        Vector2 badgeCenter = new Vector2(rect.center.x, rect.y - 12f);
+        DrawAttackIconBadge(badgeCenter, s.TotalAttack, +45f, s.tempAttackBonus > 0);
+        var badgeHitRect = new Rect(badgeCenter.x - 36f, badgeCenter.y - 36f, 72f, 72f);
+        bool badgeActive = !inReward && _battle?.state != null && !_battle.state.IsOver
+            && _targetingCardIndex < 0 && _swapFromCardIndex < 0 && s.CanAttack;
+        if (badgeActive)
+        {
+            var ev2 = Event.current;
+            if (ev2 != null && ev2.type == EventType.MouseDown && ev2.button == 0
+                && badgeHitRect.Contains(ev2.mousePosition))
+            {
+                ev2.Use();
+                _targetingSummonIndex = (_targetingSummonIndex == summonIndex) ? -1 : summonIndex;
+            }
+        }
 
         // 상태 라벨 — 우선순위: 도발 > 침묵 > 공격 완료. 스택 인디케이터 아래로 배치.
         string stateLabel = null;
@@ -2825,22 +3065,8 @@ public class BattleUI : MonoBehaviour
                     }
                 }
             }
-            else if (_targetingCardIndex < 0)
-            {
-                if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && hovered)
-                {
-                    if (s.CanAttack)
-                    {
-                        ev.Use();
-                        _targetingSummonIndex = (_targetingSummonIndex == summonIndex) ? -1 : summonIndex;
-                    }
-                    else
-                    {
-                        ev.Use();
-                        _targetingSummonIndex = -1;
-                    }
-                }
-            }
+            // 공룡 본체 클릭은 공격 타겟팅 토글에 사용하지 않음 (검 뱃지로 대체).
+            // 카드 타겟팅이 아닐 때 공룡 영역 클릭은 무시 (이벤트 안 잡음 → 다른 UI에 영향 없음).
         }
 
         // 선택 하이라이트 (발치 글로우) — 적 타겟팅 글로우와 유사한 톤.
@@ -2873,9 +3099,11 @@ public class BattleUI : MonoBehaviour
                 view.UpdateShadowParams(_enemyShadowHeight, _enemyShadowWidthScale, shadowOffset, _enemyShadowAlpha);
             }
         }
-        else if (_enemySprites.TryGetValue(e.data.id, out var tex))
+        else if (_enemySprites.TryGetValue(e.data.id, out var tex) && tex.height > 0)
         {
-            GUI.DrawTexture(rect, tex, ScaleMode.ScaleToFit, alphaBlend: true);
+            float aspect = tex.width / (float)tex.height;
+            var drawRect = ComputeBottomAnchoredDrawRect(rect, aspect);
+            GUI.DrawTexture(drawRect, tex, ScaleMode.StretchToFill, alphaBlend: true);
         }
         else
         {
@@ -2891,7 +3119,8 @@ public class BattleUI : MonoBehaviour
                       e.data.nameKr, _centerStyle);
         }
 
-        DrawEnemyIntent(new Vector2(rect.center.x, rect.y - 14), e);
+        // intent 앵커 — 검 아이콘(56px) + 타겟 힌트 박스(~22px)가 스프라이트 위로 완전히 올라가도록 충분히 띄움.
+        DrawEnemyIntent(new Vector2(rect.center.x, rect.y - 44), e);
 
         // 아트 없는 placeholder 적은 가운데에 이름 라벨 (식별용)
         if (string.IsNullOrEmpty(e.data.image))
@@ -2909,8 +3138,9 @@ public class BattleUI : MonoBehaviour
             GUI.Label(new Rect(rect.xMax - 70, rect.y + 4, 70, 18), sb.ToString().Trim(), _centerStyle);
         }
 
-        var enemyHpRect = new Rect(rect.x + 20, rect.y + rect.height - 8, rect.width - 40, 18);
-        DrawHpBar(enemyHpRect, e.hp, e.data.hp, new Color(0.85f, 0.2f, 0.2f));
+        float enemyBarW = ComputeHpBarWidth(rect.width);
+        var enemyHpRect = new Rect(rect.center.x - enemyBarW / 2, rect.yMax + 4f, enemyBarW, hpBarHeight);
+        DrawHpBar(enemyHpRect, e.hp, e.data.hp, new Color(0.65f, 0.16f, 0.18f));
 
         if (e.block > 0)
         {
@@ -2949,7 +3179,7 @@ public class BattleUI : MonoBehaviour
         {
             var ev = Event.current;
             bool hovered = rect.Contains(ev.mousePosition);
-            DrawTargetFootGlow(rect, hovered);
+            DrawTargetEnemyRing(rect, hovered);
 
             if (ev.type == EventType.MouseDown && ev.button == 0 && hovered)
             {
@@ -2996,6 +3226,49 @@ public class BattleUI : MonoBehaviour
 
     // 타겟팅 가능한 적 발치에 떠 있는 납작한 타원형 글로우.
     // 호버되면 더 밝게 펄스, 아니면 옅게 깔려 있어 "여기 클릭 가능"만 알림.
+    // 공룡 공격 타겟팅 중 적 전체를 감싸는 형광 시안 ring — "여기 클릭" 시그널.
+    // 3겹 단단한 outline(밖→안: 가늘고 옅음→두껍고 진함) + soft inner halo. 펄스 애니메이션. hover 시 더 밝게.
+    private void DrawTargetEnemyRing(Rect enemyRect, bool hovered)
+    {
+        float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 4f);
+
+        // 형광 시안 — 백색에 가까울 정도로 밝게. hover 시 거의 화이트시안.
+        Color baseCol = hovered
+            ? new Color(0.65f, 1.00f, 0.95f)
+            : new Color(0.30f, 0.95f, 0.85f);
+
+        // 3겹 ripple outline — 외곽 → 안쪽으로 갈수록 두껍고 진해짐.
+        float[] paddings = { 24f, 12f, 2f };
+        float[] thicknesses = { 2f, 3f, 4f };
+        float[] alphas = { 0.45f, 0.75f, 1.00f };
+
+        for (int i = 0; i < paddings.Length; i++)
+        {
+            float pad = paddings[i];
+            var r = new Rect(
+                enemyRect.x - pad,
+                enemyRect.y - pad,
+                enemyRect.width + pad * 2f,
+                enemyRect.height + pad * 2f);
+            float a = alphas[i] * (0.7f + 0.3f * pulse);
+            if (hovered) a = Mathf.Min(1f, a * 1.25f);
+            DrawBorder(r, thicknesses[i], new Color(baseCol.r, baseCol.g, baseCol.b, a));
+        }
+
+        // 안쪽 soft fill — 적 스프라이트 전체에 옅은 시안 블룸. _manaFrameTexture 있을 때만.
+        if (_manaFrameTexture != null)
+        {
+            var prev = GUI.color;
+            float fillA = (hovered ? 0.20f : 0.13f) * (0.7f + 0.3f * pulse);
+            GUI.color = new Color(baseCol.r, baseCol.g, baseCol.b, fillA);
+            float w = enemyRect.width * 1.2f;
+            float h = enemyRect.height * 1.2f;
+            var r = new Rect(enemyRect.center.x - w * 0.5f, enemyRect.center.y - h * 0.5f, w, h);
+            GUI.DrawTexture(r, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
+            GUI.color = prev;
+        }
+    }
+
     private void DrawTargetFootGlow(Rect enemyRect, bool hovered)
     {
         if (_manaFrameTexture == null) return;
@@ -3062,16 +3335,16 @@ public class BattleUI : MonoBehaviour
             _hpBarDisplayedFrac[key] = displayed;
         }
 
-        // 1) 배경 인셋 — 어두운 홈 느낌
-        FillRect(rect, new Color(0.08f, 0.05f, 0.05f, 0.92f));
+        // 1) 배경 인셋 — 잉크 차콜
+        FillRect(rect, new Color(0.06f, 0.05f, 0.07f, 0.88f));
 
-        // 2) 딜레이 트레일 — 실제 hp 구간 ~ displayed 구간 사이에만 pale 잔상
+        // 2) 딜레이 트레일 — 실제 hp 구간 ~ displayed 구간 사이에만 머티드 잔상
         if (displayed > realFrac)
         {
             float trailStartX = rect.x + rect.width * realFrac;
             float trailWidth = rect.width * (displayed - realFrac);
             FillRect(new Rect(trailStartX, rect.y, trailWidth, rect.height),
-                     new Color(1f, 0.88f, 0.55f, 0.88f));
+                     new Color(0.78f, 0.62f, 0.30f, 0.72f));
         }
 
         // 3) 본 HP 채움 + 그라디언트 (상단 하이라이트, 하단 섀도)
@@ -3082,29 +3355,32 @@ public class BattleUI : MonoBehaviour
 
             float hiH = Mathf.Max(1f, fillRect.height * 0.38f);
             FillRect(new Rect(fillRect.x, fillRect.y, fillRect.width, hiH),
-                     new Color(1f, 0.60f, 0.50f, 0.45f));
+                     new Color(0.85f, 0.45f, 0.40f, 0.28f));
 
             float shH = Mathf.Max(1f, fillRect.height * 0.28f);
             FillRect(new Rect(fillRect.x, fillRect.yMax - shH, fillRect.width, shH),
-                     new Color(0f, 0f, 0f, 0.32f));
+                     new Color(0f, 0f, 0f, 0.38f));
         }
 
         // 4) 저체력 펄스 — 30% 이하일 때 빨간 발광이 숨쉬듯 박동
         if (realFrac > 0f && realFrac < 0.3f)
         {
             float pulse = (Mathf.Sin(Time.time * 4.5f) + 1f) * 0.5f;
-            float alpha = Mathf.Lerp(0.18f, 0.45f, pulse) * (1f - realFrac / 0.3f);
-            FillRect(rect, new Color(1f, 0.15f, 0.15f, alpha));
+            float alpha = Mathf.Lerp(0.14f, 0.36f, pulse) * (1f - realFrac / 0.3f);
+            FillRect(rect, new Color(0.85f, 0.18f, 0.20f, alpha));
         }
 
-        // 5) 골드 외곽 프레임 + 내부 암색 인셋 라인 — HUD 톤 통일
-        DrawBorder(rect, 1f, new Color(0.86f, 0.66f, 0.28f, 0.95f));
+        // 5) 머티드 차콜 외곽 프레임 + 내부 암색 인셋 라인 — 배경(보라+석조)에 묻히도록 톤 다운
+        DrawBorder(rect, 1f, new Color(0.18f, 0.14f, 0.18f, 0.92f));
         var innerRect = new Rect(rect.x + 1f, rect.y + 1f, rect.width - 2f, rect.height - 2f);
-        DrawBorder(innerRect, 1f, new Color(0f, 0f, 0f, 0.55f));
+        DrawBorder(innerRect, 1f, new Color(0f, 0f, 0f, 0.45f));
 
-        // 6) 외곽선 텍스트 — 흰 글자 + 검정 외곽
+        // 6) 외곽선 텍스트 — 흰 글자 + 검정 외곽. 바 높이에 맞춰 폰트 축소.
+        int prevFs = _centerStyle.fontSize;
+        _centerStyle.fontSize = Mathf.Clamp(Mathf.RoundToInt(rect.height * 0.95f), 9, 14);
         DrawTextWithOutline(rect, $"{curr}/{max}", _centerStyle,
-                            Color.white, new Color(0f, 0f, 0f, 0.95f), 1.2f);
+                            Color.white, new Color(0f, 0f, 0f, 0.95f), 1f);
+        _centerStyle.fontSize = prevFs;
     }
 
     private void DrawFloaters()
@@ -3375,82 +3651,38 @@ public class BattleUI : MonoBehaviour
     {
         var p = state.player;
 
-        // 좌하단 마나 오브 — 다층 글로우 + 펄스 + shimmer 코어로 살아있는 느낌.
-        // 덱이 좌하단 모서리를 차지하므로 오브는 그 우측에 자리한다.
-        const float orbSize = 80f;
-        float orbCx = 175f;
-        float orbCy = RefH - 70f;
+        // 좌하단 마나 오브 — 정적, 잔잔한 주황 글로우만. 위치/크기는 Inspector에서 조정.
+        float orbSize = manaOrbSize;
+        float orbCx = manaOrbCenterX;
+        float orbCy = RefH - manaOrbBottomOffset;
         var orbRect = new Rect(orbCx - orbSize * 0.5f, orbCy - orbSize * 0.5f, orbSize, orbSize);
 
-        if (_manaFrameTexture != null)
+        var orbBodyTex = _manaOrbTexture != null ? _manaOrbTexture : _manaFrameTexture;
+
+        if (orbBodyTex != null)
         {
             var prevColor = GUI.color;
 
-            // 호흡 펄스 — 느린 사인파.
-            float slow = (Mathf.Sin(Time.time * 1.4f) + 1f) * 0.5f;        // 0..1
-            float pulse = Mathf.Lerp(0.85f, 1.0f, slow);
-
-            // 빠른 shimmer — 외곽이 살짝 깜빡이며 살아있는 느낌
-            float shimmer = (Mathf.Sin(Time.time * 3.6f) + 1f) * 0.5f;     // 0..1
-
-            // 글로우 색상이 천천히 청록 ↔ 라벤더로 흐른다
-            Color glowTint = Color.Lerp(
-                new Color(0.50f, 0.88f, 1.00f),
-                new Color(0.72f, 0.72f, 1.00f),
-                (Mathf.Sin(Time.time * 0.55f) + 1f) * 0.5f);
-
-            // 1) 다층 그래디언트 후광
-            const int glowLayers = 8;
-            const float glowMaxScale = 1.65f;
-            const float glowMinScale = 1.05f;
-            const float glowBaseAlpha = 0.16f;
-
-            for (int i = 0; i < glowLayers; i++)
+            // 잔잔한 주황 글로우 — 호흡 펄스만 살짝, 흔들림/다층 후광/코어 하이라이트 모두 제거.
+            // 본체 자체에 디테일이 풍부하므로 generic blob(_manaFrameTexture) 있을 때만 글로우 한 겹.
+            if (_manaFrameTexture != null)
             {
-                float t = i / (float)(glowLayers - 1);
-                float scale = Mathf.Lerp(glowMinScale, glowMaxScale, t) + 0.04f * slow * t;
-                float alpha = glowBaseAlpha * (1f - t) * (1f - t) * pulse;
-                float gs = orbSize * scale;
+                float pulse = 0.85f + 0.15f * (Mathf.Sin(Time.time * 1.4f) + 1f) * 0.5f;
+                float gs = orbSize * 1.35f;
                 var gr = new Rect(orbCx - gs * 0.5f, orbCy - gs * 0.5f, gs, gs);
-                GUI.color = new Color(glowTint.r, glowTint.g, glowTint.b, alpha);
+                GUI.color = new Color(1.00f, 0.55f, 0.20f, 0.28f * pulse);
                 GUI.DrawTexture(gr, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
             }
 
-            // 1-b) Shimmer 링 — 빠르게 깜빡이는 밝은 외곽 빛
-            {
-                float shimmerScale = 1.32f + 0.10f * shimmer;
-                float shimmerAlpha = 0.10f + 0.22f * shimmer;
-                float shs = orbSize * shimmerScale;
-                var shr = new Rect(orbCx - shs * 0.5f, orbCy - shs * 0.5f, shs, shs);
-                GUI.color = new Color(0.92f, 0.97f, 1f, shimmerAlpha);
-                GUI.DrawTexture(shr, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
-            }
-
-            // 2) 본체 오브 — 숨쉬듯 ±3% 스케일링 + 미세한 수직 떨림
-            float bodyScale = 1f + 0.030f * (slow - 0.5f);
-            float bodyBob = Mathf.Sin(Time.time * 2.1f) * 1.4f;
-            float bodySize = orbSize * bodyScale;
-            var bodyRect = new Rect(orbCx - bodySize * 0.5f,
-                                    orbCy - bodySize * 0.5f + bodyBob,
-                                    bodySize, bodySize);
+            // 본체 오브 — 정적, 흔들림 없음.
             GUI.color = Color.white;
-            GUI.DrawTexture(bodyRect, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
-
-            // 3) 안쪽 코어 하이라이트 — 빠른 shimmer에 맞춰 깜빡이는 흰 점
-            {
-                float coreSize = orbSize * (0.32f + 0.05f * shimmer);
-                var coreRect = new Rect(orbCx - coreSize * 0.5f,
-                                        orbCy - coreSize * 0.5f + bodyBob,
-                                        coreSize, coreSize);
-                GUI.color = new Color(1f, 1f, 1f, 0.12f + 0.18f * shimmer);
-                GUI.DrawTexture(coreRect, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
-            }
+            GUI.DrawTexture(orbRect, orbBodyTex, ScaleMode.StretchToFill, alphaBlend: true);
 
             GUI.color = prevColor;
         }
 
         int prevFontSize = _cardCostStyle.fontSize;
-        _cardCostStyle.fontSize = Mathf.RoundToInt(orbSize * 0.34f);
+        _cardCostStyle.fontSize = Mathf.RoundToInt(orbSize * manaOrbFontSizeRatio);
         DrawTextWithOutline(orbRect, $"{p.mana}/{p.maxMana}", _cardCostStyle,
                             Color.white, new Color(0, 0, 0, 0.95f), 1.5f);
         _cardCostStyle.fontSize = prevFontSize;
@@ -3604,8 +3836,9 @@ public class BattleUI : MonoBehaviour
         const float cardW = 150f;
         const float cardH = 209f;
 
-        // 숨김 진행도 업데이트 — 고정 지속시간으로 선형 진행, 표시에는 ease-in-out 적용
-        float hideTarget = _handHidden ? 1f : 0f;
+        // 숨김 진행도 업데이트 — 고정 지속시간으로 선형 진행, 표시에는 ease-in-out 적용.
+        // EffectiveHandHidden = 수동 토글 OR 공룡 공격 타겟팅 중 → 자동 슬라이드 다운.
+        float hideTarget = EffectiveHandHidden ? 1f : 0f;
         _handHideProgress = Mathf.MoveTowards(
             _handHideProgress, hideTarget, Time.deltaTime / HandHideDuration);
 
@@ -3621,13 +3854,13 @@ public class BattleUI : MonoBehaviour
         // 숨김 슬라이드 진행도에 ease-in-out 적용 후 Y 오프셋 계산 — 천천히 시작, 중간은 부드럽게, 끝은 잦아듦.
         float easedHide = EaseInOutCubic(_handHideProgress);
         float hideOffset = easedHide * HandHideDistance;
-        float centerCardY = RefH - cardH * 0.5f + 60f + hideOffset; // 중앙 카드의 y 중심 (상단 ≈ Y 567, 노출 ≈ 160px)
-        float fanRadius   = 1100f;
+        float centerCardY = RefH - cardH * 0.5f + handBottomOffset + hideOffset; // 중앙 카드의 y 중심 (상단 ≈ Y 588, 노출 ≈ 139px)
+        float fanRadius   = handFanRadius;
         float fanOriginX  = RefW * 0.5f;
         float fanOriginY  = centerCardY + fanRadius;
 
         // 카드 간 각도 고정 (좌우 완전 대칭)
-        const float anglePerCard = 6f;
+        float anglePerCard = handAnglePerCard;
         float totalAngle = (n - 1) * anglePerCard;
         float startAngle = -totalAngle * 0.5f;
 
@@ -4169,20 +4402,32 @@ public class BattleUI : MonoBehaviour
 
         Color dim = canPlay ? Color.white : cardDisabledDimGem;
 
-        // 1) 안쪽 디스크 먼저 (링 뒤에 깔림).
-        if (_cardCostGemInnerTexture != null)
+        // ManaOrb(완성형 디자인 에셋) 있으면 단일 레이어로 그려 좌하단 마나 오브와 톤 통일.
+        // 없으면 기존 2레이어 CostGem 폴백.
+        if (_manaOrbTexture != null)
         {
-            float shrink = orbSize * cardCostGemInnerShrinkPct;
-            var innerRect = new Rect(
-                orbRect.x + shrink * 0.5f,
-                orbRect.y + shrink * 0.5f,
-                orbRect.width - shrink,
-                orbRect.height - shrink);
-            DrawLayerWithBorder(_cardCostGemInnerTexture, innerRect, cardCostGemInnerTint, dim, borderCostGemInner);
+            var prev = GUI.color;
+            GUI.color = dim;
+            GUI.DrawTexture(orbRect, _manaOrbTexture, ScaleMode.StretchToFill, alphaBlend: true);
+            GUI.color = prev;
         }
+        else
+        {
+            // 1) 안쪽 디스크 먼저 (링 뒤에 깔림).
+            if (_cardCostGemInnerTexture != null)
+            {
+                float shrink = orbSize * cardCostGemInnerShrinkPct;
+                var innerRect = new Rect(
+                    orbRect.x + shrink * 0.5f,
+                    orbRect.y + shrink * 0.5f,
+                    orbRect.width - shrink,
+                    orbRect.height - shrink);
+                DrawLayerWithBorder(_cardCostGemInnerTexture, innerRect, cardCostGemInnerTint, dim, borderCostGemInner);
+            }
 
-        // 2) 외곽 링을 위에 덮음.
-        DrawLayerWithBorder(_cardCostGemTexture, orbRect, cardCostGemTint, dim, borderCostGem);
+            // 2) 외곽 링을 위에 덮음.
+            DrawLayerWithBorder(_cardCostGemTexture, orbRect, cardCostGemTint, dim, borderCostGem);
+        }
 
         // 숫자: Inspector 색 + 외곽선. 텍스트 rect 는 orb 기준 오프셋/축소 반영.
         Color textCol = canPlay ? cardCostTextColor : cardCostDisabledColor;
@@ -4588,12 +4833,12 @@ public class BattleUI : MonoBehaviour
         // 캡처 시점의 실제 화면 위치에서 카드가 날아가는 것처럼 보이게 함.
         float easedHide = EaseInOutCubic(_handHideProgress);
         float hideOffset = easedHide * HandHideDistance;
-        float centerCardY = RefH - cardH * 0.5f + 60f + hideOffset;
-        float fanRadius = 1100f;
+        float centerCardY = RefH - cardH * 0.5f + handBottomOffset + hideOffset;
+        float fanRadius = handFanRadius;
         float fanOriginX = RefW * 0.5f;
         float fanOriginY = centerCardY + fanRadius;
 
-        const float anglePerCard = 6f;
+        float anglePerCard = handAnglePerCard;
         float totalAngle = (n - 1) * anglePerCard;
         float startAngleDeg = -totalAngle * 0.5f;
 
@@ -4874,12 +5119,12 @@ public class BattleUI : MonoBehaviour
     {
         const float cardH = 209f;
         float hideOffset = EaseInOutCubic(_handHideProgress) * HandHideDistance;
-        float centerCardY = RefH - cardH * 0.5f + 60f + hideOffset;
-        float fanRadius = 1100f;
+        float centerCardY = RefH - cardH * 0.5f + handBottomOffset + hideOffset;
+        float fanRadius = handFanRadius;
         float fanOriginX = RefW * 0.5f;
         float fanOriginY = centerCardY + fanRadius;
 
-        const float anglePerCard = 6f;
+        float anglePerCard = handAnglePerCard;
         float totalAngle = (handCount - 1) * anglePerCard;
         float startAngle = -totalAngle * 0.5f;
 

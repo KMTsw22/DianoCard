@@ -1,3 +1,3 @@
 id,name_kr,name_en,max_hp,start_gold,description,passive_name,passive_description,card_portrait,field_portrait,unlocked,archetype
-CH001,초식 조련사,THE HERB TAMER,70,99,초식 공룡을 기르는 조련사.\n같은 공룡을 덮어씌워 점점 강하게 키운다.,Overwrite Growth,"같은 초식 공룡 카드가 필드 위에 쌓일 때마다 스택이 누적되어 진화한다.",Char_Archaeologist_Card,Char_Archaeologist_Field,TRUE,HERB
-CH002,육식 사냥꾼,THE CARNI HUNTER,70,99,육식 공룡의 무리를 이끄는 사냥꾼.\n같은 종을 합성해 거대한 포식자로 키운다.,Fusion Hunt,"같은 육식 공룡을 합성하면 더 강한 진화체로 변모한다.",akane_card,akane_field,TRUE,CARN
+CH001,초식 조련사,THE HERB TAMER,70,99,"A tamer who raises herbivorous dinosaurs.\nOverwrites the same beasts to grow them ever stronger.",Overwrite Growth,"Whenever the same herbivore card stacks on the field, the stack grows and evolves.",Char_Archaeologist_Card,Char_Archaeologist_Field,TRUE,HERB
+CH002,아케네,ARKANE,70,99,"A tamer who commands both carnivorous and herbivorous dinosaurs.\nFuses kindred beasts into mightier apex forms.",Apex Fusion,"Fusing dinosaurs of the same species transforms them into a stronger evolution.",akane_card,akane_field,TRUE,CARN

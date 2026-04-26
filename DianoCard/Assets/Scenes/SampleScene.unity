@@ -410,6 +410,20 @@ MonoBehaviour:
   _entityShadowOffsetX: -0.106
   _entityShadowOffsetY: 0.106
   _entityShadowAlpha: 1
+  dinoSize: 180
+  dinoSingleX: 530
+  dinoSingleFootY: 542
+  dinoTwoSlot0X: 420
+  dinoTwoSlot0FootY: 580
+  dinoTwoSlot1X: 500
+  dinoTwoSlot1FootY: 530
+  hpBarSpriteRatio: 0.6
+  hpBarMinWidth: 110
+  hpBarMaxWidth: 170
+  hpBarHeight: 18
+  handBottomOffset: 81
+  handAnglePerCard: 6
+  handFanRadius: 1100
   cardBgRectPct: {x: 0.045, y: 0.03, z: 0.91, w: 0.94}
   cardArtRectPct: {x: 0.06, y: 0.045, z: 0.88, w: 0.63}
   cardArtFrameRectPct: {x: 0.15, y: 0.63, z: 0.7, w: 0.09}

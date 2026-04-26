@@ -10,6 +10,7 @@ public class CheatUI : MonoBehaviour
 {
     private bool _open;
     private Rect _windowRect = new(20f, 20f, 260f, 720f);
+    private Vector2 _windowScroll;
     private GUIStyle _btnStyle;
     private GUIStyle _titleStyle;
     private GUIStyle _stateStyle;
@@ -17,6 +18,10 @@ public class CheatUI : MonoBehaviour
     // 배경 리스트 캐시 — 전투 진입 시 1회만 Resources.LoadAll 수행
     private string[] _bgNames;
     private Vector2 _bgScroll;
+
+    // 슬롯 강제 소환용 캐시 — SUMMON 카드 전체 목록.
+    private List<CardData> _summonCards;
+    private Vector2 _summonScroll;
 
     // 카드 프리뷰 (프레임 디자인 확인용)
     private bool _cardPreviewOpen;
@@ -34,6 +39,7 @@ public class CheatUI : MonoBehaviour
         {
             _open = !_open;
             _bgNames = null; // 다음 열 때 배경 목록 재로드
+            _summonCards = null;
         }
     }
 
@@ -104,6 +110,9 @@ public class CheatUI : MonoBehaviour
             GUI.DragWindow();
             return;
         }
+
+        // 창 본체는 헤더(약 60px) 아래로 스크롤. 항목 늘어나도 화면 밖으로 잘리지 않도록.
+        _windowScroll = GUILayout.BeginScrollView(_windowScroll, GUILayout.Height(_windowRect.height - 70f));
 
         if (GUILayout.Button("Lobby", _btnStyle))
             gsm.ReturnToLobby();
@@ -181,6 +190,64 @@ public class CheatUI : MonoBehaviour
                     battleUi.Cheat_SetBackground($"Backgrounds/{name}");
             }
             GUILayout.EndScrollView();
+
+            // ===== 공룡 슬롯 강제 지정 =====
+            GUILayout.Space(8f);
+            GUILayout.Label("— 공룡 슬롯 강제 지정 —", _stateStyle);
+
+            // 현재 슬롯 상태 표시 + 비우기 버튼.
+            string slot1 = battle.state.field.Count > 0 ? battle.state.field[0].data.nameKr : "(비어있음)";
+            string slot2 = battle.state.field.Count > 1 ? battle.state.field[1].data.nameKr : "(비어있음)";
+            GUILayout.BeginHorizontal();
+            GUILayout.Label($"1번: {slot1}", _stateStyle);
+            if (GUILayout.Button("X", _btnStyle, GUILayout.Width(30f))) battle.Cheat_ClearFieldSlot(0);
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
+            GUILayout.Label($"2번: {slot2}", _stateStyle);
+            if (GUILayout.Button("X", _btnStyle, GUILayout.Width(30f))) battle.Cheat_ClearFieldSlot(1);
+            GUILayout.EndHorizontal();
+
+            // SUMMON 카드 전체 캐시 — 카드 데이터는 전투 중 바뀌지 않으므로 한 번만 로드.
+            if (_summonCards == null)
+            {
+                if (!DataManager.Instance.IsLoaded) DataManager.Instance.Load();
+                _summonCards = DataManager.Instance.Cards.Values
+                    .Where(c => c.cardType == CardType.SUMMON)
+                    .OrderBy(c => c.subType)
+                    .ThenBy(c => c.id)
+                    .ToList();
+            }
+
+            _summonScroll = GUILayout.BeginScrollView(_summonScroll, GUILayout.Height(220f));
+            foreach (var c in _summonCards)
+            {
+                GUILayout.BeginHorizontal();
+                string label = $"{c.nameKr}";
+                GUILayout.Label(label, GUILayout.Width(140f));
+                if (GUILayout.Button("→1", _btnStyle, GUILayout.Width(40f))) battle.Cheat_SetFieldSlot(0, c.id);
+                if (GUILayout.Button("→2", _btnStyle, GUILayout.Width(40f))) battle.Cheat_SetFieldSlot(1, c.id);
+                GUILayout.EndHorizontal();
+            }
+            GUILayout.EndScrollView();
+
+            // ===== 페어 자동 패킹 슬라이더 — 2마리 배치일 때 가로 겹침·세로 스태거 라이브 튜닝.
+            if (battleUi != null)
+            {
+                GUILayout.Space(8f);
+                GUILayout.Label("— 페어 패킹 (2마리 배치) —", _stateStyle);
+
+                GUILayout.Label($"가로 겹침: {battleUi.PairOverlapPct:F2}");
+                battleUi.PairOverlapPct = GUILayout.HorizontalSlider(battleUi.PairOverlapPct, 0f, 0.7f);
+
+                GUILayout.Label($"세로 스태거: {battleUi.PairStaggerYPct:F2}");
+                battleUi.PairStaggerYPct = GUILayout.HorizontalSlider(battleUi.PairStaggerYPct, 0f, 0.5f);
+
+                GUILayout.Label($"가로 최소 간격: {battleUi.PairMinSpacingPct:F2}");
+                battleUi.PairMinSpacingPct = GUILayout.HorizontalSlider(battleUi.PairMinSpacingPct, 0f, 0.6f);
+
+                GUILayout.Label($"사이즈차 Y 부스트: {battleUi.PairSizeStaggerBoost:F2}");
+                battleUi.PairSizeStaggerBoost = GUILayout.HorizontalSlider(battleUi.PairSizeStaggerBoost, 0f, 1.5f);
+            }
         }
 
         GUILayout.Space(12f);
@@ -211,6 +278,8 @@ public class CheatUI : MonoBehaviour
                 EnsureCardPreviewList();
             }
         }
+
+        GUILayout.EndScrollView();
 
         GUI.DragWindow();
     }

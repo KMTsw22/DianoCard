@@ -54,6 +54,13 @@ namespace DianoCard.Battle
         private float _shadowWidthScale = 1f;        // 가로 폭만 추가 배수 (세로 유지)
         private Vector2 _shadowWorldOffset = Vector2.zero;
 
+        // Idle breathing — CharacterSelectUI의 캐릭터 호흡과 동일 공식(Y만 소폭, smoothstep eased).
+        // 공격/피격/소환 코루틴 동안은 자동 off (_currentAnim != null).
+        public bool breathingEnabled = false;
+        public float breathingAmp = 0.015f;   // 1.5% Y
+        public float breathingFreq = 0.15f;   // ~6.7s 주기
+        public float breathingPhase = 1.5f;
+
         private void Awake()
         {
             _sr = GetComponent<SpriteRenderer>();
@@ -273,6 +280,24 @@ namespace DianoCard.Battle
             if (_currentAnim == null && _sr.sprite != null)
             {
                 transform.position = _basePosition;
+
+                // Idle breathing — Y만 살짝 늘리고 발 위치는 pivot 보정으로 지면에 고정.
+                if (breathingEnabled && _intendedWorldHeight > 0f)
+                {
+                    float boundsH = _sr.sprite.bounds.size.y;
+                    if (boundsH > 0.001f)
+                    {
+                        float t = Time.time * Mathf.PI * 2f * breathingFreq + breathingPhase;
+                        float rawSin = Mathf.Sin(t);
+                        float eased = rawSin * rawSin * Mathf.Sign(rawSin);
+                        float breathY = 1f + eased * breathingAmp;
+                        float s = (_intendedWorldHeight / boundsH) * _activeScaleMultiplier;
+                        transform.localScale = new Vector3(s, s * breathY, 1f);
+                        // center pivot이면 bounds.min.y가 음수 → Y 스케일 증가분만큼 position을 올려 발 위치를 고정
+                        float minY = _sr.sprite.bounds.min.y;
+                        transform.position = _basePosition + new Vector3(0f, -minY * s * (breathY - 1f), 0f);
+                    }
+                }
             }
 
             // 그림자는 매 프레임 live 위치 따라가도록 — 공격/피격으로 캐릭터가 움직이면 그림자도 따라옴.

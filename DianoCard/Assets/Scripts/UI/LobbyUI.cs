@@ -55,6 +55,8 @@ public class LobbyUI : MonoBehaviour
         public Color haloColor = new Color(1f, 0.55f, 0.15f, 1f);
         [Range(0f, 5f), Tooltip("헤일로 맥동 속도. 0이면 고정.")] public float haloPulseSpeed = 2.2f;
         [Range(0.3f, 3f), Tooltip("헤일로 세로/가로 비율. 1=원, >1=세로 타원(불덩어리 형태).")] public float haloAspect = 1f;
+        [Tooltip("헤일로 중심 오프셋 (1280x720 가상 좌표, spawnRect 중심 기준). X+ 오른쪽, Y+ 아래.")]
+        public Vector2 haloOffset = Vector2.zero;
 
         [Header("Shape")]
         [Range(0.1f, 1f), Tooltip("파티클이 위로 올라갈수록 중앙으로 수렴하는 비율. 1=폭 유지, 0.3=상단 폭 30%.")] public float topWidthRatio = 1f;
@@ -68,6 +70,16 @@ public class LobbyUI : MonoBehaviour
         [Header("Seed")]
         public int seedOffset = 0;
     }
+
+    [Header("Fire Hand Glow (빠른 조정)")]
+    [SerializeField, Tooltip("체크 시 아래 값으로 '손의 불덩어리' glow 위치/크기를 실시간 오버라이드.")]
+    private bool _overrideFireHandGlow = true;
+    [SerializeField, Tooltip("손 glow 중심 좌표 (1280x720 기준).")]
+    private Vector2 _fireHandGlowCenter = new Vector2(190f, 275f);
+    [SerializeField, Range(0f, 600f), Tooltip("손 glow 크기 (0이면 끔).")]
+    private float _fireHandGlowSize = 300f;
+    [SerializeField, Range(0f, 1f)]
+    private float _fireHandGlowAlpha = 0.5f;
 
     [Header("Fire Ember Emitters")]
     [SerializeField]
@@ -96,8 +108,8 @@ public class LobbyUI : MonoBehaviour
             riseSpeed = 0.15f,
             swayAmount = 25f,
             swayFrequency = 0.4f,
-            innerColor = new Color(0.6f, 0.55f, 0.55f, 1f),
-            outerColor = new Color(0.35f, 0.32f, 0.32f, 1f),
+            innerColor = new Color(0.72f, 0.73f, 0.76f, 1f),
+            outerColor = new Color(0.4f, 0.41f, 0.44f, 1f),
             alphaMul = 0.35f,
             flickerSpeed = 2f,
             flickerDepth = 0.2f,
@@ -239,11 +251,25 @@ public class LobbyUI : MonoBehaviour
         if (em == null || !em.enabled) return;
         if (em.spawnRect.width <= 0f || em.spawnRect.height <= 0f) return;
 
+        // Fire Hand 이미터는 LobbyUI 최상단 오버라이드 필드로 빠르게 조정
+        bool isFireHand = em.name == "Fire Hand";
+        float effHaloSize = isFireHand && _overrideFireHandGlow ? _fireHandGlowSize : em.haloSize;
+        float effHaloAlpha = isFireHand && _overrideFireHandGlow ? _fireHandGlowAlpha : em.haloAlpha;
+
         // 이미터 중심의 고정 헤일로 — 손의 불덩어리처럼 상시 빛을 발산
-        if (em.haloSize > 0f && em.haloAlpha > 0f)
+        if (effHaloSize > 0f && effHaloAlpha > 0f)
         {
-            float haloCx = em.spawnRect.x + em.spawnRect.width * 0.5f;
-            float haloCy = em.spawnRect.y + em.spawnRect.height * 0.5f;
+            float haloCx, haloCy;
+            if (isFireHand && _overrideFireHandGlow)
+            {
+                haloCx = _fireHandGlowCenter.x;
+                haloCy = _fireHandGlowCenter.y;
+            }
+            else
+            {
+                haloCx = em.spawnRect.x + em.spawnRect.width * 0.5f + em.haloOffset.x;
+                haloCy = em.spawnRect.y + em.spawnRect.height * 0.5f + em.haloOffset.y;
+            }
             // 두 개의 사인파를 섞어 자연스러운 숨쉬기 — 깊이 0.7로 크게 피었다 사그라들게
             float haloPulse = 1f;
             float sizePulse = 1f;
@@ -256,19 +282,19 @@ public class LobbyUI : MonoBehaviour
                 haloPulse = Mathf.Lerp(0.2f, 1.25f, haloPulse);    // 꺼졌다 ~ 피크
                 sizePulse = 1f + combined * 0.1f;                   // ±10% 크기 숨쉬기
             }
-            float haloS = em.haloSize * sizePulse;
+            float haloS = effHaloSize * sizePulse;
             float haloW = haloS;
             float haloH = haloS * em.haloAspect;
             // 외곽 soft halo
             GUI.color = new Color(em.haloColor.r, em.haloColor.g, em.haloColor.b,
-                em.haloColor.a * em.haloAlpha * 0.55f * haloPulse);
+                em.haloColor.a * effHaloAlpha * 0.55f * haloPulse);
             GUI.DrawTexture(
                 new Rect(haloCx - haloW * 0.5f, haloCy - haloH * 0.5f, haloW, haloH),
                 _emberTex, ScaleMode.StretchToFill, alphaBlend: true);
             // 안쪽 집중 글로우 (더 작고 진하게)
             float innerW = haloW * 0.55f;
             float innerH = haloH * 0.55f;
-            GUI.color = new Color(1f, 0.85f, 0.5f, em.haloAlpha * 0.85f * haloPulse);
+            GUI.color = new Color(1f, 0.85f, 0.5f, effHaloAlpha * 0.85f * haloPulse);
             GUI.DrawTexture(
                 new Rect(haloCx - innerW * 0.5f, haloCy - innerH * 0.5f, innerW, innerH),
                 _emberTex, ScaleMode.StretchToFill, alphaBlend: true);

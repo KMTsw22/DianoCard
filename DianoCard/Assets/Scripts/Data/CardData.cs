@@ -22,6 +22,8 @@ namespace DianoCard.Data
         public string description;
         public string image;
         public int chapter;
+        // 필드 그릴 때 dinoSize에 곱하는 배율. SUMMON 카드만 의미 있음. CSV 비어있거나 0이면 1.0으로 처리.
+        public float fieldScale;
 
         public static CardData FromRow(Dictionary<string, string> row)
         {
@@ -41,7 +43,11 @@ namespace DianoCard.Data
                 description = CSVUtil.GetString(row, "description"),
                 image = CSVUtil.GetString(row, "image"),
                 chapter = CSVUtil.GetInt(row, "chapter"),
+                fieldScale = CSVUtil.GetFloat(row, "field_scale", 1f),
             };
         }
+
+        // CSV의 field_scale이 비어있거나 0이면 1.0으로 보정 — 그릴 때 안전하게 사용.
+        public float SafeFieldScale => fieldScale > 0.01f ? fieldScale : 1f;
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using DianoCard.Data;
 using DianoCard.Game;
 using UnityEngine;
@@ -43,7 +44,7 @@ public class CharacterSelectUI : MonoBehaviour
     private float _frameScale = 1.06f;
 
     [SerializeField, Tooltip("프레임 황금 틴트 색상.")]
-    private Color _frameTint = new Color(1f, 0.82f, 0.35f, 1f);
+    private Color _frameTint = new Color(0.62f, 0.52f, 0.32f, 1f);
 
     [SerializeField, Tooltip("프레임 외곽 볼더(검정 아웃라인) 색상.")]
     private Color _frameOutlineColor = new Color(0f, 0f, 0f, 1f);
@@ -118,10 +119,10 @@ public class CharacterSelectUI : MonoBehaviour
     [SerializeField, Range(0f, 1f), Tooltip("강조 색상이 나올 확률.")] private float _fireflyAccentChance = 0.3f;
     [SerializeField, Range(1f, 4f), Tooltip("외곽 글로우 크기 배수.")] private float _fireflyGlowSize = 3.0f;
 
-    [Header("FX • Mist (바닥 안개)")]
+    [Header("FX • Mist (중앙 안개)")]
     [SerializeField] private bool _enableMist = false;
     [SerializeField, Range(0, 20), Tooltip("안개 블롭 개수.")] private int _mistBlobCount = 5;
-    [SerializeField, Tooltip("Y 위치 범위 (0=상단, 1=하단). 캐릭터 다리 ~ 바닥 영역.")] private Vector2 _mistYRange = new Vector2(0.58f, 0.9f);
+    [SerializeField, Tooltip("Y 위치 범위 (0=상단, 1=하단). 화면 중앙대 영역.")] private Vector2 _mistYRange = new Vector2(0.4f, 0.7f);
     [SerializeField, Tooltip("폭 범위 (화면폭 비율).")] private Vector2 _mistWidthRatio = new Vector2(0.35f, 0.7f);
     [SerializeField, Tooltip("높이 범위 (px).")] private Vector2 _mistHeight = new Vector2(80f, 150f);
     [SerializeField, Tooltip("알파 범위.")] private Vector2 _mistAlpha = new Vector2(0.1f, 0.22f);
@@ -173,19 +174,27 @@ public class CharacterSelectUI : MonoBehaviour
 
     [Header("FX • Character Breathing (캐릭터 호흡)")]
     [SerializeField] private bool _enableCharBreathing = true;
-    [SerializeField, Range(0f, 0.03f), Tooltip("캐릭터 Y축 호흡 진폭. 0.006=0.6% 늘림. 0.012 넘으면 머리가 너무 들썩임.")] private float _charBreathingAmp = 0.006f;
+    [SerializeField, Range(0f, 0.03f), Tooltip("캐릭터 Y축 호흡 진폭. 0.009=0.9% 늘림. 0.012 넘으면 머리가 너무 들썩임.")] private float _charBreathingAmp = 0.009f;
     [SerializeField, Range(0.05f, 1f), Tooltip("캐릭터 맥동 주파수 (Hz). 0.15=약 6.7초 주기.")] private float _charBreathingFreq = 0.15f;
     [SerializeField, Range(0f, 6.28f), Tooltip("배경 호흡과 박자 어긋나게 하려면 0.5~3 정도.")] private float _charBreathingPhase = 1.5f;
 
-    [Header("FX • Dust (바닥 흔들리는 먼지)")]
-    [SerializeField] private bool _enableDust = false;
-    [SerializeField, Range(0, 40), Tooltip("먼지 입자 개수.")] private int _dustCount = 18;
-    [SerializeField, Tooltip("Y 위치 범위 (0=상단, 1=하단).")] private Vector2 _dustYRange = new Vector2(0.78f, 0.96f);
-    [SerializeField, Tooltip("좌우 흔들림 폭 (px).")] private Vector2 _dustSwayAmp = new Vector2(8f, 20f);
-    [SerializeField, Tooltip("흔들림 주파수 (Hz). 낮을수록 느리게 흔들림.")] private Vector2 _dustSwayFreq = new Vector2(0.2f, 0.6f);
-    [SerializeField, Tooltip("크기 범위 (px).")] private Vector2 _dustSize = new Vector2(2.5f, 5f);
-    [SerializeField, Tooltip("알파 범위.")] private Vector2 _dustAlpha = new Vector2(0.2f, 0.45f);
-    [SerializeField, Tooltip("먼지 색상.")] private Color _dustTint = new Color(0.8f, 0.8f, 0.75f);
+    [Header("FX • Dust (바닥에서 올라오는 먼지 — LobbyUI Bottom Smoke와 동일 공식)")]
+    [SerializeField] private bool _enableDust = true;
+    [SerializeField, Range(0, 40), Tooltip("먼지 입자 개수.")] private int _dustCount = 14;
+    [SerializeField, Tooltip("스폰 Y 위치 범위 (0=상단, 1=하단). 화면 하단 얇은 띠.")] private Vector2 _dustYRange = new Vector2(0.965f, 1.0f);
+    [SerializeField, Range(20f, 600f), Tooltip("올라가는 높이 (px).")] private float _dustRiseHeight = 70f;
+    [SerializeField, Range(0.02f, 1f), Tooltip("상승 속도 (life/sec). 작을수록 천천히.")] private float _dustRiseSpeed = 0.15f;
+    [SerializeField, Range(0f, 80f), Tooltip("좌우 흔들림 폭 (px).")] private float _dustSwayAmount = 25f;
+    [SerializeField, Range(0.1f, 3f), Tooltip("흔들림 주파수.")] private float _dustSwayFrequency = 0.4f;
+    [SerializeField, Tooltip("크기 범위 (px).")] private Vector2 _dustSize = new Vector2(30f, 55f);
+    [SerializeField, Range(0f, 1f), Tooltip("전체 알파 배수.")] private float _dustAlphaMul = 0.2f;
+    [SerializeField, Range(0f, 30f), Tooltip("플리커(반짝임) 속도.")] private float _dustFlickerSpeed = 2f;
+    [SerializeField, Range(0f, 1f), Tooltip("플리커 깊이.")] private float _dustFlickerDepth = 0.2f;
+    [SerializeField, Tooltip("코어 색상 (안쪽 — 시멘트 톤 중립 회색).")] private Color _dustTint = new Color(0.72f, 0.73f, 0.76f);
+    [SerializeField, Tooltip("바깥 색상 (외곽 블룸 — 시멘트 톤 중립 회색).")] private Color _dustOuterTint = new Color(0.4f, 0.41f, 0.44f);
+    [SerializeField, Range(1f, 6f), Tooltip("바깥 블룸 크기 (코어 대비 배수).")] private float _dustBloomScale = 4.5f;
+    [SerializeField, Range(0f, 1f), Tooltip("바깥 블룸 알파 배수.")] private float _dustBloomAlphaMul = 0.55f;
+    [SerializeField, Tooltip("스폰 X 위치 범위 (화면 폭 비율). (-0.1, 1.1)=살짝 화면 밖까지.")] private Vector2 _dustXRange = new Vector2(-0.1f, 1.1f);
 
     [Header("Card Hover (카드 호버)")]
     [SerializeField, Range(1f, 1.3f), Tooltip("카드 마우스 오버 시 확대 배율 (1=동일).")]
@@ -197,6 +206,8 @@ public class CharacterSelectUI : MonoBehaviour
 
     private Texture2D _backgroundTexture;
     private Texture2D _characterTexture;
+    private Texture2D[] _characterFrames;      // 캐릭터 애니메이션 프레임 시퀀스 (있으면 정적 _characterTexture 대신 사용)
+    private float _characterFps = 10f;         // GIF 원본과 동일 (10fps, 5초 루프)
     private Texture2D _characterShadowTexture;
     private Texture2D _cloudsTexture;
     private float _cloudOffset;
@@ -204,6 +215,7 @@ public class CharacterSelectUI : MonoBehaviour
     // 절차 생성 텍스처 — Start에서 1회 생성
     private Texture2D _glowDot;      // 반딧불이/잿가루용 부드러운 원형 글로우
     private Texture2D _mistBlob;     // 안개용 가로로 늘어진 부드러운 블롭
+    private Texture2D _dustBlob;     // 먼지용 — LobbyUI MakeRadialGlow와 동일 smoothstep falloff
     private Texture2D _skyGradient;  // 번개용 세로 그라데이션 (위 불투명 → 아래 투명)
     private Texture2D _emptySlotGradient; // 비어있는 카드 슬롯 배경 (위 살짝 밝음 → 아래 어두움)
 
@@ -211,11 +223,10 @@ public class CharacterSelectUI : MonoBehaviour
     private struct Firefly { public Vector2 pos; public float driftX; public float bobAmp; public float bobFreq; public float phase; public float size; public float baseAlpha; public Color tint; }
     private struct Ash { public Vector2 pos; public float fallSpeed; public float driftX; public float driftFreq; public float phase; public float size; public float alpha; }
     private struct MistBlob { public float x; public float y; public float baseY; public float w; public float h; public float speed; public float alpha; public float bobFreq; public float bobPhase; public float bobAmp; }
-    private struct Dust { public float baseX; public float baseY; public float swayAmp; public float swayFreq; public float phase; public float size; public float alpha; }
     private Firefly[] _fireflies;
     private Ash[] _ashes;
     private MistBlob[] _mistBlobs;
-    private Dust[] _dusts;
+    private bool _dustReady;
 
     // Parallax smoothed offset (-1 ~ 1 정규화)
     private Vector2 _parallaxOffset;
@@ -289,6 +300,7 @@ public class CharacterSelectUI : MonoBehaviour
     {
         if (_glowDot != null) Destroy(_glowDot);
         if (_mistBlob != null) Destroy(_mistBlob);
+        if (_dustBlob != null) Destroy(_dustBlob);
         if (_skyGradient != null) Destroy(_skyGradient);
         if (_emptySlotGradient != null) Destroy(_emptySlotGradient);
     }
@@ -299,6 +311,7 @@ public class CharacterSelectUI : MonoBehaviour
 
         _glowDot = GenerateGlowTexture(64, isElongated: false);
         _mistBlob = GenerateGlowTexture(96, isElongated: true);
+        _dustBlob = GenerateDustBlob(64);
         _skyGradient = GenerateVerticalGradient(256);
 
         // 반딧불이 — 화면 전역에 분산, 따뜻한 황색 글로우
@@ -313,9 +326,8 @@ public class CharacterSelectUI : MonoBehaviour
         _mistBlobs = new MistBlob[_mistBlobCount];
         for (int i = 0; i < _mistBlobs.Length; i++) _mistBlobs[i] = SpawnMistBlob();
 
-        // 바닥 먼지 — 고정 위치에서 좌우로 흔들림
-        _dusts = new Dust[_dustCount];
-        for (int i = 0; i < _dusts.Length; i++) _dusts[i] = SpawnDust();
+        // 바닥에서 올라오는 먼지 — Hash01 기반 인덱스 공식 (LobbyUI Bottom Smoke 동일)
+        _dustReady = true;
 
         _nextLightningTime = Time.time + UnityEngine.Random.Range(_lightningInterval.x, _lightningInterval.y);
         _fxInitialized = true;
@@ -446,18 +458,39 @@ public class CharacterSelectUI : MonoBehaviour
         };
     }
 
-    private Dust SpawnDust()
+    private static float DustHash01(float x)
     {
-        return new Dust
+        float s = Mathf.Sin(x) * 43758.5453f;
+        s -= Mathf.Floor(s);
+        return s;
+    }
+
+    // LobbyUI.MakeRadialGlow와 동일한 smoothstep 방사형 falloff — 부드러운 스모크용.
+    private static Texture2D GenerateDustBlob(int size)
+    {
+        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
         {
-            baseX = UnityEngine.Random.Range(0f, Screen.width),
-            baseY = Screen.height * UnityEngine.Random.Range(_dustYRange.x, _dustYRange.y),
-            swayAmp = UnityEngine.Random.Range(_dustSwayAmp.x, _dustSwayAmp.y),
-            swayFreq = UnityEngine.Random.Range(_dustSwayFreq.x, _dustSwayFreq.y),
-            phase = UnityEngine.Random.Range(0f, Mathf.PI * 2f),
-            size = UnityEngine.Random.Range(_dustSize.x, _dustSize.y),
-            alpha = UnityEngine.Random.Range(_dustAlpha.x, _dustAlpha.y),
+            wrapMode = TextureWrapMode.Clamp,
+            filterMode = FilterMode.Bilinear,
+            hideFlags = HideFlags.HideAndDontSave,
         };
+        var px = new Color[size * size];
+        float c = (size - 1) * 0.5f;
+        float maxR = size * 0.5f;
+        for (int y = 0; y < size; y++)
+        {
+            for (int x = 0; x < size; x++)
+            {
+                float dx = (x - c) / maxR;
+                float dy = (y - c) / maxR;
+                float a = Mathf.Clamp01(1f - Mathf.Sqrt(dx * dx + dy * dy));
+                a = a * a * (3f - 2f * a); // smoothstep
+                px[y * size + x] = new Color(1f, 1f, 1f, a);
+            }
+        }
+        tex.SetPixels(px);
+        tex.Apply();
+        return tex;
     }
 
     private MistBlob SpawnMistBlob()
@@ -568,13 +601,17 @@ public class CharacterSelectUI : MonoBehaviour
         _bodyFont    = Resources.Load<Font>("Fonts/NotoSansKR-VariableFont_wght");
 
         // 배경 — CharSelect/Background/akane_select_bg.png (캐릭터 빠진 빈 배경).
-        // 캐릭터는 별도 _characterTexture로 위에 오버레이 — 추후 본 리깅으로 살짝 흔들리게 할 예정.
-        // 나중에 캐릭터별 분기 필요 시 character.csv에 select_background 컬럼 추가.
         _backgroundTexture = Resources.Load<Texture2D>("CharSelect/Background/akane_select_bg")
                           ?? Resources.Load<Texture2D>("CharSelect/Background/akane_select")
                           ?? Resources.Load<Texture2D>("CharSelect/Background/CharSelect_Background")
                           ?? Resources.Load<Texture2D>("Lobby/Main_Background");
 
+        // 캐릭터 — 애니메이션 시퀀스(akane_select_char_anim/) 우선, 없으면 정적 PNG 폴백.
+        // 추후 캐릭터별 분기 필요 시 character.csv에 select_character_anim 컬럼 추가.
+        var charFrames = Resources.LoadAll<Texture2D>("CharSelect/Background/akane_select_char_anim");
+        _characterFrames = charFrames != null && charFrames.Length > 0
+            ? charFrames.OrderBy(t => t.name, StringComparer.Ordinal).ToArray()
+            : null;
         _characterTexture = Resources.Load<Texture2D>("CharSelect/Background/akane_select_char");
         _characterShadowTexture = Resources.Load<Texture2D>("Character_infield/character_basic/shadow/character_shadow");
         _cloudsTexture = Resources.Load<Texture2D>("CharSelect/Background/akane_select_clouds");
@@ -1045,18 +1082,61 @@ public class CharacterSelectUI : MonoBehaviour
             GUI.color = prev;
         }
 
-        // 3-b) 바닥 먼지 — 각자 고정 baseX/baseY에서 sin 웨이브로 좌우 흔들림
-        if (_enableDust && _dusts != null)
+        // 3-b) 바닥에서 올라오는 먼지 — LobbyUI Bottom Smoke와 동일 공식 (Hash01 기반 인덱스, 3단 레이어)
+        // LobbyUI는 1280x720 가상 좌표계에서 그리고 matrix로 스케일하므로, 동일 비율을 위해 scale 팩터를 곱함.
+        if (_enableDust && _dustReady && _dustCount > 0)
         {
             var prev = GUI.color;
-            float t = Time.time;
-            for (int i = 0; i < _dusts.Length; i++)
+            float t = Time.unscaledTime;
+            float dustScale = Mathf.Min(Screen.width / 1280f, Screen.height / 720f);
+            int seedOffset = 500; // LobbyUI Bottom Smoke seedOffset
+            float spawnX = Screen.width * _dustXRange.x;
+            float spawnW = Screen.width * (_dustXRange.y - _dustXRange.x);
+            float spawnY = Screen.height * _dustYRange.x;
+            float spawnH = Screen.height * (_dustYRange.y - _dustYRange.x);
+            for (int i = 0; i < _dustCount; i++)
             {
-                var d = _dusts[i];
-                float px = d.baseX + Mathf.Sin(t * d.swayFreq * Mathf.PI * 2f + d.phase) * d.swayAmp;
-                GUI.color = new Color(_dustTint.r, _dustTint.g, _dustTint.b, d.alpha);
-                GUI.DrawTexture(new Rect(px - d.size * 0.5f, d.baseY - d.size * 0.5f, d.size, d.size),
-                    _glowDot, ScaleMode.StretchToFill, alphaBlend: true);
+                int idx = i + seedOffset;
+                float seed = DustHash01(idx * 0.6180339f + 0.13f);
+                float speed = _dustRiseSpeed * (0.75f + seed * 0.6f);
+                float phase = seed * 7.13f;
+                float life = ((t * speed) + phase) % 1f;
+                if (life < 0f) life += 1f;
+
+                float spawnU = DustHash01(idx * 12.9898f);
+                float spawnV = DustHash01(idx * 78.233f);
+                float sway = Mathf.Sin(life * Mathf.PI * 2f * _dustSwayFrequency + seed * 6f) * _dustSwayAmount * dustScale;
+
+                float centerX = spawnX + spawnW * 0.5f;
+                float px = centerX + (spawnU - 0.5f) * spawnW + sway;
+                float py = spawnY + spawnV * spawnH - life * _dustRiseHeight * dustScale;
+
+                float sizeT = Mathf.Sin(life * Mathf.PI);
+                float baseSize = Mathf.Lerp(_dustSize.x, _dustSize.y, DustHash01(idx * 37.719f));
+                float size = baseSize * (0.45f + 0.55f * sizeT) * dustScale;
+
+                float fade = Mathf.Sin(life * Mathf.PI);
+                float flicker = (1f - _dustFlickerDepth) + _dustFlickerDepth * Mathf.Sin(t * _dustFlickerSpeed + seed * 17f);
+                float a = Mathf.Clamp01(fade * flicker) * _dustAlphaMul;
+
+                // 1) 바깥 블룸 — 크고 흐리게
+                float bloomSize = size * _dustBloomScale;
+                GUI.color = new Color(_dustOuterTint.r, _dustOuterTint.g, _dustOuterTint.b,
+                    _dustOuterTint.a * a * _dustBloomAlphaMul);
+                GUI.DrawTexture(new Rect(px - bloomSize * 0.5f, py - bloomSize * 0.5f, bloomSize, bloomSize),
+                    _dustBlob, ScaleMode.StretchToFill, alphaBlend: true);
+
+                // 2) 미드 글로우 (아웃터 컬러)
+                float glowSize = size * 1.6f;
+                GUI.color = new Color(_dustOuterTint.r, _dustOuterTint.g, _dustOuterTint.b,
+                    _dustOuterTint.a * a * 0.7f);
+                GUI.DrawTexture(new Rect(px - glowSize * 0.5f, py - glowSize * 0.5f, glowSize, glowSize),
+                    _dustBlob, ScaleMode.StretchToFill, alphaBlend: true);
+
+                // 3) 안쪽 코어 (이너 컬러)
+                GUI.color = new Color(_dustTint.r, _dustTint.g, _dustTint.b, _dustTint.a * a);
+                GUI.DrawTexture(new Rect(px - size * 0.5f, py - size * 0.5f, size, size),
+                    _dustBlob, ScaleMode.StretchToFill, alphaBlend: true);
             }
             GUI.color = prev;
         }
@@ -1192,9 +1272,18 @@ public class CharacterSelectUI : MonoBehaviour
     /// </summary>
     private void DrawCharacterOverlay()
     {
-        if (_characterTexture == null) return;
+        // 시퀀스가 있으면 시간 기반으로 프레임 선택, 없으면 정적 텍스처
+        Texture2D charTex = null;
+        if (_characterFrames != null && _characterFrames.Length > 0)
+        {
+            int idx = Mathf.FloorToInt(Time.time * _characterFps) % _characterFrames.Length;
+            if (idx < 0) idx += _characterFrames.Length;
+            charTex = _characterFrames[idx];
+        }
+        if (charTex == null) charTex = _characterTexture;
+        if (charTex == null) return;
 
-        float texAspect = (float)_characterTexture.width / _characterTexture.height;
+        float texAspect = (float)charTex.width / charTex.height;
 
         // 호흡 — Y만 살짝 늘림(가슴이 위로 부푸는 느낌). 가로는 고정해야 균일 스케일의 "부풀어오름"이 안 생김.
         // ease curve로 들숨/날숨이 천천히 머무르게 → 펌핑이 아닌 호흡 리듬.
@@ -1246,7 +1335,7 @@ public class CharacterSelectUI : MonoBehaviour
 
         GUI.DrawTexture(
             new Rect(leftX, topY, drawW, drawH),
-            _characterTexture,
+            charTex,
             ScaleMode.StretchToFill,
             alphaBlend: true);
     }
@@ -1515,10 +1604,10 @@ public class CharacterSelectUI : MonoBehaviour
         GUI.DrawTexture(new Rect(lineX, labelRect.y - 8 + floatOffset, lineW, 1f), Texture2D.whiteTexture);
         GUI.DrawTexture(new Rect(lineX, labelRect.y + labelRect.height + 6 + floatOffset, lineW, 1f), Texture2D.whiteTexture);
 
-        // 부제 — 한국어로 작게
+        // 부제
         var subRect = new Rect(RefW / 2 - 240, labelRect.y + labelRect.height + 14 + floatOffset, 480, 22);
         GUI.color = new Color(0.78f, 0.78f, 0.78f, alpha * 0.75f);
-        GUI.Label(subRect, "아직 봉인이 풀리지 않았다", _slotLabelStyle);
+        GUI.Label(subRect, "The seal has yet to be broken", _slotLabelStyle);
 
         GUI.color = prev;
     }

@@ -1565,6 +1565,47 @@ namespace DianoCard.Battle
             Log($"[CHEAT] 무적 {(state.player.cheatInvincible ? "ON" : "OFF")}");
         }
 
+        /// <summary>치트: 지정 슬롯(0=1번, 1=2번)에 cardId의 SummonInstance를 강제 배치.
+        /// 이미 차 있으면 덮어쓰기(바인딩 카드 복귀), 비어있고 maxFieldSize 미만이면 추가.
+        /// 슬롯이 field.Count보다 클 경우엔 다음 빈 자리에 추가.</summary>
+        public void Cheat_SetFieldSlot(int slotIndex, string cardId)
+        {
+            if (state == null) return;
+            var data = DataManager.Instance.GetCard(cardId);
+            if (data == null) { Log($"[CHEAT] {cardId} 카드 없음"); return; }
+            if (data.cardType != CardType.SUMMON) { Log($"[CHEAT] {cardId}는 SUMMON 카드가 아님"); return; }
+
+            int target = Mathf.Clamp(slotIndex, 0, state.maxFieldSize - 1);
+            var summon = new SummonInstance(data); // sourceCardInstance = null → 죽어도 카드 복귀 없음
+
+            if (target < state.field.Count)
+            {
+                ReturnBoundCard(state.field[target]);
+                state.field[target] = summon;
+                Log($"[CHEAT] 슬롯 {target + 1} → {data.nameKr} (덮어쓰기)");
+            }
+            else if (state.field.Count < state.maxFieldSize)
+            {
+                state.field.Add(summon);
+                Log($"[CHEAT] 슬롯 {state.field.Count} → {data.nameKr} (추가)");
+            }
+            else
+            {
+                Log($"[CHEAT] 필드 꽉 참 — 추가 불가");
+            }
+        }
+
+        /// <summary>치트: 지정 슬롯의 소환수를 제거. 바인딩 카드는 discard로 복귀.</summary>
+        public void Cheat_ClearFieldSlot(int slotIndex)
+        {
+            if (state == null) return;
+            if (slotIndex < 0 || slotIndex >= state.field.Count) return;
+            var s = state.field[slotIndex];
+            ReturnBoundCard(s);
+            state.field.RemoveAt(slotIndex);
+            Log($"[CHEAT] 슬롯 {slotIndex + 1} 비움 ({s.data.nameKr})");
+        }
+
         public void LogState()
         {
             var sb = new StringBuilder();
