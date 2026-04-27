@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 267fb5e6935c82f4ba9b6dbea696d549
+guid: 7e09860ff2ef56649a7c4cc426daf3e5
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -7675016864516331882
-    second: image-Photoroom (5)_0
+      213: -4892913961125402824
+    second: T-Rex_T2___0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,13 +126,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: image-Photoroom (5)_0
+      name: T-Rex_T2___0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 1563
-        height: 1006
+        width: 1225
+        height: 864
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 6962f5163dcdc7590800000000000000
-      internalID: -7675016864516331882
+      spriteID: 83722961da0e81cb0800000000000000
+      internalID: -4892913961125402824
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      image-Photoroom (5)_0: -7675016864516331882
+      T-Rex_T2___0: -4892913961125402824
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

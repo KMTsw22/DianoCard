@@ -65,12 +65,13 @@ namespace DianoCard.Battle
             state.player.block = 0;
             state.player.summonCostReduction = 0;
 
-            // 소환수 상태 리셋 — 한 턴 버프 / 공격 가능 플래그 / 방어도
+            // 소환수 상태 리셋 — 한 턴 버프 / 공격 가능 플래그 / 방어도 / 스킬 쿨다운 틱
             foreach (var s in state.field)
             {
                 s.tempAttackBonus = 0;
                 s.hasAttackedThisTurn = false;
                 s.block = 0;
+                if (s.skillCooldownRemaining > 0) s.skillCooldownRemaining--;
             }
 
             // 적 인텐트(이번 턴 행동) 결정 + 보스 페이즈 체크 + 적 방어도 리셋
@@ -764,6 +765,188 @@ namespace DianoCard.Battle
             return dmg;
         }
 
+        // =========================================================
+        // 시그니처 스킬 (T1+ 진화 공룡)
+        // =========================================================
+
+        /// <summary>해당 인덱스의 소환수가 갖고 있는 시그니처 스킬 정보. 스킬 없거나 인덱스 invalid면 null.</summary>
+        public DinoSkillData GetSkillForSummon(int summonIndex)
+        {
+            if (summonIndex < 0 || summonIndex >= state.field.Count) return null;
+            return DataManager.Instance.GetSkill(state.field[summonIndex].data.id);
+        }
+
+        /// <summary>UI가 스킬 버튼 활성/비활성 결정에 사용. 스킬 없거나, 사망/침묵/쿨다운 중이면 false.</summary>
+        public bool CanUseSkill(int summonIndex)
+        {
+            if (summonIndex < 0 || summonIndex >= state.field.Count) return false;
+            var s = state.field[summonIndex];
+            if (s.IsDead || s.silencedTurns > 0) return false;
+            var skill = DataManager.Instance.GetSkill(s.data.id);
+            if (skill == null) return false;
+            if (skill.isOnceBattle) return !s.skillUsedThisBattle;
+            return s.skillCooldownRemaining <= 0;
+        }
+
+        /// <summary>
+        /// 소환수에게 시그니처 스킬 사용 명령. 일반 공격(CommandSummonAttack)과 별개 자원이라 같은 턴에 둘 다 가능.
+        /// targetEnemyIndex는 ENEMY 타겟에서만 의미; -1이면 자동 선정(첫 타게터블 적).
+        /// </summary>
+        public bool CommandSummonSkill(int summonIndex, int targetEnemyIndex = -1)
+        {
+            if (summonIndex < 0 || summonIndex >= state.field.Count) return false;
+            var summon = state.field[summonIndex];
+            var skill = DataManager.Instance.GetSkill(summon.data.id);
+            if (skill == null)
+            {
+                Log($"  ! {summon.data.nameKr}: 스킬 없음 (T0 또는 비진화 공룡)");
+                return false;
+            }
+            if (summon.IsDead || summon.silencedTurns > 0)
+            {
+                Log($"  ! {summon.data.nameKr}: 스킬 사용 불가 (사망/침묵)");
+                return false;
+            }
+            if (skill.isOnceBattle)
+            {
+                if (summon.skillUsedThisBattle)
+                {
+                    Log($"  ! {summon.data.nameKr}: 이미 이번 전투에 {skill.nameKr} 사용함");
+                    return false;
+                }
+            }
+            else if (summon.skillCooldownRemaining > 0)
+            {
+                Log($"  ! {summon.data.nameKr}: {skill.nameKr} 쿨다운 {summon.skillCooldownRemaining}T 남음");
+                return false;
+            }
+
+            Log($"  [Skill] {summon.data.nameKr} → {skill.nameKr}");
+
+            // 데미지 타겟 결정
+            var damageTargets = ResolveSkillDamageTargets(skill, targetEnemyIndex);
+
+            // 데미지 적용 (히트 수만큼 반복)
+            if (skill.damage > 0 && damageTargets.Count > 0)
+            {
+                for (int h = 0; h < skill.hits; h++)
+                {
+                    foreach (var t in damageTargets)
+                    {
+                        if (t.IsDead) continue;
+                        int dmg = ApplyPlayerWeak(skill.damage);
+                        t.TakeDamage(dmg);
+                        Log($"    -> {t.data.nameKr} -{dmg} (HP {t.hp})");
+                        if (t.IsDead) Log($"    x {t.data.nameKr} defeated");
+                        CheckBossPhaseTransition(t);
+                        CheckPartnerDeathTrigger(t);
+                    }
+                }
+            }
+
+            // 부가 효과 적용
+            ApplySkillEffects(summon, skill, damageTargets);
+
+            // 쿨다운 갱신
+            if (skill.isOnceBattle) summon.skillUsedThisBattle = true;
+            else summon.skillCooldownRemaining = skill.cooldownTurns;
+
+            return true;
+        }
+
+        private List<EnemyInstance> ResolveSkillDamageTargets(DinoSkillData skill, int targetEnemyIndex)
+        {
+            var list = new List<EnemyInstance>();
+            switch (skill.target)
+            {
+                case TargetType.ENEMY:
+                {
+                    EnemyInstance target = null;
+                    if (targetEnemyIndex >= 0 && targetEnemyIndex < state.enemies.Count)
+                    {
+                        var t = state.enemies[targetEnemyIndex];
+                        if (t != null && !t.IsDead) target = t;
+                    }
+                    if (target == null) target = FirstTargetableEnemy();
+                    // 이끼 보호 중이면 이끼로 리다이렉트
+                    if (target != null && IsProtectedByMoss(target))
+                    {
+                        var moss = FirstTargetableEnemy();
+                        if (moss != null) target = moss;
+                    }
+                    if (target != null) list.Add(target);
+                    break;
+                }
+                case TargetType.ALL_ENEMY:
+                {
+                    foreach (var e in state.enemies)
+                    {
+                        if (e == null || e.IsDead) continue;
+                        if (IsProtectedByMoss(e)) continue;
+                        list.Add(e);
+                    }
+                    break;
+                }
+                case TargetType.SELF:
+                    // damage 적용 대상 없음 — effects만 동작
+                    break;
+            }
+            return list;
+        }
+
+        private void ApplySkillEffects(SummonInstance summon, DinoSkillData skill, List<EnemyInstance> damageTargets)
+        {
+            foreach (var (key, value) in skill.effects)
+            {
+                switch (key)
+                {
+                    case "bleed":
+                        foreach (var t in damageTargets)
+                        {
+                            if (t.IsDead) continue;
+                            t.bleedStacks += value;
+                            Log($"    -> {t.data.nameKr} 출혈 +{value} (총 {t.bleedStacks})");
+                        }
+                        break;
+                    case "vulnerable":
+                        foreach (var t in damageTargets)
+                        {
+                            if (t.IsDead) continue;
+                            t.vulnerableTurns += value;
+                            Log($"    -> {t.data.nameKr} 취약 +{value}T (총 {t.vulnerableTurns}T)");
+                        }
+                        break;
+                    case "weak":
+                        foreach (var t in damageTargets)
+                        {
+                            if (t.IsDead) continue;
+                            t.weakTurns += value;
+                            Log($"    -> {t.data.nameKr} 약화 +{value}T (총 {t.weakTurns}T)");
+                        }
+                        break;
+                    case "stun":
+                        foreach (var t in damageTargets)
+                        {
+                            if (t.IsDead) continue;
+                            t.stunTurns += value;
+                            Log($"    -> {t.data.nameKr} 기절 +{value}T (총 {t.stunTurns}T)");
+                        }
+                        break;
+                    case "draw":
+                        Draw(value);
+                        Log($"    -> 카드 {value}장 드로우");
+                        break;
+                    case "self_block":
+                        summon.block += value;
+                        Log($"    -> {summon.data.nameKr} 보호막 +{value} (총 {summon.block})");
+                        break;
+                    default:
+                        Log($"    ? unknown skill effect '{key}:{value}'");
+                        break;
+                }
+            }
+        }
+
         /// <summary>보스 페이즈 전환 체크 — HP 비율이 다음 페이즈 임계 아래로 내려가면 패턴셋 교체 + on_enter 액션.</summary>
         private void CheckBossPhaseTransition(EnemyInstance e)
         {
@@ -912,6 +1095,13 @@ namespace DianoCard.Battle
             {
                 e.graceTurnsRemaining--;
                 Log($"  {e.data.nameKr}: 각성 중… (grace {e.graceTurnsRemaining} 남음)");
+                return;
+            }
+
+            // 기절: 행동 스킵. 감소는 TickStatuses에서.
+            if (e.stunTurns > 0)
+            {
+                Log($"  {e.data.nameKr}: 기절 ({e.stunTurns}T 남음)");
                 return;
             }
 
@@ -1107,6 +1297,8 @@ namespace DianoCard.Battle
                 defense = 0,
                 patternSetId = aggressive ? "PS_MOSS_ATTACK" : "PS_MOSS_PASSIVE",
                 phaseSetId = "",
+                image = "E901_Moss_L.png", // 기본값 — 실제 스프라이트는 BattleUI.ComputeSlotPositions에서 코너에 따라 L/R로 스왑
+
             };
             var moss = new EnemyInstance(mossData);
             moss.isMoss = true;

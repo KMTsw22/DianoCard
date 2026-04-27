@@ -1,18 +1,19 @@
-id,name_kr,name_en,enemy_type,chapter,hp,attack,defense,pattern_set_id,phase_set_id,gold_min,gold_max,description,image,passive_ids
-E001,이끼 슬라임,Moss Slime,NORMAL,1,40,10,0,PS_E001,,12,18,유적의 습기에서 태어난 이끼 덮인 청록 슬라임.,crow.png,
-E002,바위 슬라임,Rock Slime,NORMAL,1,55,8,4,PS_E002,,15,22,몸에 박힌 바위 조각이 등껍질처럼 단단하다.,crow.png,
-E003,독 슬라임,Toxic Slime,NORMAL,1,35,6,0,PS_E003,,14,20,부식성 독을 흘리는 보라빛 산성 슬라임.,crow.png,
-E004,가시 덩굴,Spike Vine,NORMAL,1,38,3,0,PS_E004,,14,20,사방으로 뻗어 분할 타격하는 덩굴.,crow.png,P_MULTI_HIT|P_DUAL_ACTION
-E005,발광 버섯,Glow Mushroom,NORMAL,1,25,5,0,PS_E005,,12,18,턴마다 포자를 뿜어 자가 강화한다.,crow.png,P_GROW_ATK
-E006,이끼 거머리,Moss Leech,NORMAL,1,30,5,0,PS_E006,,14,20,소환사의 생명력을 빨아들여 자가 회복.,crow.png,
-E007,늪지 두꺼비,Bog Toad,NORMAL,1,35,5,0,PS_E007,,14,20,독 침을 먼저 뱉고 연속 공격한다.,crow.png,P_DUAL_ACTION
-E008,뿌리 정령,Root Sprite,NORMAL,1,28,4,0,PS_E008,,14,20,사망한 뿌리를 즉시 다시 소환한다.,crow.png,P_ROOT_REBIRTH|P_ARMOR_REGEN
-E009,짖는 늑대,Howling Wolf,NORMAL,1,32,6,0,PS_E009,,14,20,울음으로 약화·침묵시키고 공격한다.,crow.png,P_SILENCE_HOWL
-E010,어둠 박쥐,Shade Bat,NORMAL,1,22,2,0,PS_E010,,12,18,작은 타격을 빠르게 반복한다.,crow.png,P_MULTI_HIT
-E101,거대 골렘,Stone Golem,ELITE,1,80,8,5,PS_E101,,30,40,자가 방어도와 3턴 카운트다운 강타.,E101_StoneGolem.png,
-E102,이끼 모태,Mossy Brood,ELITE,1,60,6,0,PS_E102,,30,40,2턴마다 덩굴 쫄을 소환. 쫄 생존 시 격노.,crow.png,
-E103,이끼 쌍둥이,Mossy Twins,ELITE,1,25,6,0,PS_E103,,30,40,2체로 등장. 1체 처치 시 다른 1체가 격노한다.,crow.png,P_TWIN_RAGE
-E901,이끼 수호석상,Mossy Guardian,BOSS,1,250,12,6,PS_E901_P1,PH_E901,100,100,1챕터 보스. 덩굴에 뒤덮인 거대 석상.,crow.png,P_MOSS_SHIELD|P_MOSS_REFILL|P_ABSORB_MOSS|P_TRIPLE_ACTION|P_STEAL_SUMMON
+id,name_kr,name_en,enemy_type,chapter,hp,attack,defense,pattern_set_id,phase_set_id,gold_min,gold_max,description,image,passive_ids,field_scale
+E001,이끼 슬라임,Moss Slime,NORMAL,1,52,11,0,PS_E001,,12,18,유적의 습기에서 태어난 이끼 덮인 청록 슬라임.,E001_MossSlime.png,,0.7
+E002,바위 슬라임,Rock Slime,NORMAL,1,72,9,6,PS_E002,,15,22,몸에 박힌 바위 조각이 등껍질처럼 단단하다.,E002_RockSlime.png,,0.7
+E003,독 슬라임,Toxic Slime,NORMAL,1,46,7,0,PS_E003,,14,20,부식성 독을 흘리는 보라빛 산성 슬라임.,E003_ToxicSlime.png,,0.7
+E004,가시 덩굴,Spike Vine,NORMAL,1,50,4,0,PS_E004,,14,20,사방으로 뻗어 분할 타격하는 덩굴.,E004_SpikeVine.png,P_MULTI_HIT|P_DUAL_ACTION
+E005,발광 버섯,Glow Mushroom,NORMAL,1,34,6,0,PS_E005,,12,18,턴마다 포자를 뿜어 자가 강화한다.,E005_GlowMushroom.png,P_GROW_ATK
+E006,이끼 거머리,Moss Leech,NORMAL,1,40,6,0,PS_E006,,14,20,소환사의 생명력을 빨아들여 자가 회복.,E006_MossLeech.png,
+E007,파편 가고일,Shard Gargoyle,NORMAL,1,48,7,3,PS_E007,,14,20,부서진 석상에서 떨어진 잔해. 두 발톱이 좌우로 분할 타격한다.,E007_ShardGargoyle.png,P_DUAL_ACTION
+E008,뿌리 정령,Root Sprite,NORMAL,1,38,5,0,PS_E008,,14,20,사망한 뿌리를 즉시 다시 소환한다.,E008_RootSprite.png,P_ROOT_REBIRTH|P_ARMOR_REGEN
+E009,유적 망령,Ruin Wraith,NORMAL,1,45,7,0,PS_E009,,14,20,보랏빛 안개를 두른 유적 망령. 울부짖음으로 약화·침묵시킨다.,E009_RuinWraith.png,P_SILENCE_HOWL
+E010,어둠 박쥐,Shade Bat,NORMAL,1,32,3,0,PS_E010,,12,18,작은 타격을 빠르게 반복한다.,E010_ShadeBat.png,P_MULTI_HIT
+E011,폐허의 까마귀,Ruin Crow,NORMAL,1,30,5,0,PS_E011,,12,18,보랏빛 안개를 머금은 폐허의 까마귀. 부리로 쪼아 시야를 흐린다.,E011_RuinCrow.png,
+E101,거대 골렘,Stone Golem,ELITE,1,105,10,7,PS_E101,,30,40,자가 방어도와 3턴 카운트다운 강타.,E101_StoneGolem.png,
+E102,봉인의 사제,Wraith Sealer,ELITE,1,80,8,2,PS_E102,,30,40,후드 입은 망령 사제. 2턴마다 영혼 호위병을 소환하며 호위병 생존 시 격노한다.,E102_WraithSealer.png,
+E103,망령 기사 쌍둥이,Wraith Knight Twins,ELITE,1,34,7,0,PS_E103,,30,40,저주받은 망령 기사 쌍둥이. 2체 등장하며 1체 처치 시 다른 1체가 격노한다.,E103_WraithKnightTwins.png,P_TWIN_RAGE
+E901,폐허의 군주,Ruin Lord,BOSS,1,320,14,8,PS_E901_P1,PH_E901,100,100,1챕터 보스. 폐허에 봉인된 어둠의 군주. 보랏빛 안개에 휘감긴 거대 기사.,E901_RuinLord.png,P_MOSS_SHIELD|P_MOSS_REFILL|P_ABSORB_MOSS|P_TRIPLE_ACTION|P_STEAL_SUMMON
 E201,사막 도적,Desert Bandit,NORMAL,2,35,10,0,PS_E201_TBD,,15,22,사막의 도적.,crow.png,
 E202,모래 전갈,Sand Scorpion,NORMAL,2,28,11,0,PS_E202_TBD,,12,18,독을 건다.,crow.png,
 E203,망령 검사,Wraith Swordsman,NORMAL,2,40,9,3,PS_E203_TBD,,18,25,유령 검사.,crow.png,

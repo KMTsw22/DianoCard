@@ -20,6 +20,11 @@ namespace DianoCard.Data
         public string description;
         public string image;
         public List<string> passiveIds = new(); // enemy_passive.csv 참조. 여러 개면 "|" 구분.
+        // 적 드로우 높이에 곱하는 배율. 비어있거나 0이면 1.0으로 처리(SafeFieldScale).
+        // CardData.fieldScale과 같은 패턴 — 종별 비주얼 크기 미세 조정용.
+        public float fieldScale;
+
+        public float SafeFieldScale => fieldScale > 0.01f ? fieldScale : 1f;
 
         public static EnemyData FromRow(Dictionary<string, string> row)
         {
@@ -39,6 +44,7 @@ namespace DianoCard.Data
                 goldMax = CSVUtil.GetInt(row, "gold_max"),
                 description = CSVUtil.GetString(row, "description"),
                 image = CSVUtil.GetString(row, "image"),
+                fieldScale = CSVUtil.GetFloat(row, "field_scale", 1f),
             };
 
             // passive_ids 는 "|" 구분 문자열 (콤마가 리스트 구분자로 이미 사용 중이라 분리)

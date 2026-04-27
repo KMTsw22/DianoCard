@@ -1,0 +1,9 @@
+card_id,skill_name_kr,skill_name_en,target,damage,hits,cooldown,effects,description
+C004_T1,연격,Pack Slash,ENEMY,6,2,2,bleed:1,단일 적 2회 타격(각 6) + 출혈 1
+C004_T2,연격,Pack Slash,ENEMY,9,2,2,bleed:2,단일 적 2회 타격(각 9) + 출혈 2
+C005_T1,돌진 박치기,Charge Ram,ENEMY,15,1,3,vulnerable:2,단일 적 큰 피해 + 취약 2턴
+C005_T2,돌진 박치기,Charge Ram,ENEMY,22,1,3,vulnerable:2;stun:1,단일 적 큰 피해 + 취약 2턴 + 기절 1턴
+C008_T1,패왕의 포효,Apex Roar,ALL_ENEMY,12,1,BATTLE,weak:2;self_block:8,전체 12 피해 + 약화 2턴 + 자신 보호막 8
+C008_T2,패왕의 포효,Apex Roar,ALL_ENEMY,18,1,BATTLE,weak:2;vulnerable:1;self_block:12,전체 18 피해 + 약화 2턴 + 취약 1턴 + 자신 보호막 12
+C010_T1,정찰 드론,Recon Drone,ENEMY,3,1,1,draw:1,가장 약한 적에 3 피해 + 카드 1장 드로우
+C010_T2,정찰 드론,Recon Drone,ENEMY,5,1,1,draw:2,가장 약한 적에 5 피해 + 카드 2장 드로우

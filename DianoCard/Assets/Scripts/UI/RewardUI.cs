@@ -87,18 +87,6 @@ public class RewardUI : MonoBehaviour
     [SerializeField, Range(1f, 1.2f)] private float cardHoverScale = 1.05f;
     [Tooltip("카드 피커 전체 Y 오프셋 (양수 = 아래로)")]
     [SerializeField] private float cardPickerYOffset = 0f;
-    [Tooltip("카드 프레임(브론즈+리본) 알파 — 낮출수록 리본에 아트가 비침")]
-    [SerializeField, Range(0.5f, 1f)] private float cardFrameAlpha = 0.88f;
-    [Tooltip("Panel 인셋 (Left, Top, Right, Bottom) — Frame 안쪽 여백에 딱 맞추기")]
-    [SerializeField] private Vector4 cardPanelInset = new(0.07f, 0.04f, 0.048f, 0.04f);
-    [Tooltip("카드 아트 영역 (xPct, yPct, widthPct, heightPct)")]
-    [SerializeField] private Vector4 cardArtRectPct = new(0.06f, 0.045f, 0.88f, 0.63f);
-    [Tooltip("CardArtFrame 오버레이 (골드 사각 + 육각 배너)가 카드 rect 안에서 차지하는 영역. (x, y, w, h) 비율.")]
-    [SerializeField] private Vector4 cardArtFrameRectPct = new(0.15f, 0.63f, 0.7f, 0.09f);
-    [Tooltip("CardDescPanel (하단 설명 박스)이 카드 rect 안에서 차지하는 영역.")]
-    [SerializeField] private Vector4 cardDescPanelRectPct = new(0.07f, 0.69f, 0.86f, 0.24f);
-    [Tooltip("CardBorder (외곽 테두리)가 카드 rect 안에서 차지하는 영역. 기본은 전체.")]
-    [SerializeField] private Vector4 cardBorderRectPct = new(0f, 0f, 1f, 1f);
 
     [Header("Card Picker — Title Area")]
     [Tooltip("타이틀/부제 전체에 더해지는 베이스 y 오프셋")]
@@ -112,26 +100,7 @@ public class RewardUI : MonoBehaviour
     [Tooltip("카드 하단 ~ Skip 버튼 간격")]
     [SerializeField] private float skipButtonTopMargin = 36f;
 
-    [Header("Card Picker — Inner Layout (rect 비율)")]
-    [Tooltip("희귀도 rect (xPct, yPct, widthPct, heightPct)")]
-    [UnityEngine.Serialization.FormerlySerializedAs("cardMetaRectPct")]
-    [SerializeField] private Vector4 cardRarityRectPct = new(0.06f, 0.06f, 0.88f, 0.07f);
-    [Tooltip("카드 종류(Herbivore/Spell/Buff 등) rect (xPct, yPct, widthPct, heightPct)")]
-    [SerializeField] private Vector4 cardTypeRectPct = new(0.06f, 0.72f, 0.87f, 0.07f);
-    [Tooltip("본문 스탯/설명 rect (xPct, yPct, widthPct, heightPct)")]
-    [SerializeField] private Vector4 cardBodyRectPct = new(0.15f, 0.78f, 0.7f, 0.15f);
-    [Tooltip("골드 디바이더 rect (xPct, yPct, widthPct, 절대높이 px)")]
-    [SerializeField] private Vector4 cardDividerRectPct = new(0.07f, 0.672f, 0.87f, 1.3f);
-    [SerializeField] private Color cardDividerColor = new(0.75f, 0.58f, 0.25f, 0.75f);
-    [Tooltip("카드 종류 라벨 색 (희귀도와 구분)")]
-    [SerializeField] private Color cardTypeColor = new(0.55f, 0.85f, 0.55f);
-
     [Header("Card Picker — Font Sizes")]
-    [SerializeField, Range(8, 28)] private int cardNameFontSize = 14;
-    [UnityEngine.Serialization.FormerlySerializedAs("cardMetaFontSize")]
-    [SerializeField, Range(8, 24)] private int cardRarityFontSize = 16;
-    [SerializeField, Range(8, 24)] private int cardTypeFontSize = 15;
-    [SerializeField, Range(8, 24)] private int cardBodyFontSize = 12;
     [SerializeField, Range(12, 36)] private int skipButtonFontSize = 24;
 
     [Header("Card Picker — Card Glow")]
@@ -140,24 +109,6 @@ public class RewardUI : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float cardGlowAlphaNormal = 0.38f;
     [SerializeField, Range(0f, 1f)] private float cardGlowAlphaHover = 0.65f;
     [SerializeField] private Color cardGlowColor = new(1f, 0.82f, 0.42f);
-
-    [Header("Card Picker — Ribbon")]
-    [Tooltip("리본 중심 Y 위치 (rect.height 비율) — 0 = 카드 맨 위")]
-    [SerializeField, Range(-0.1f, 0.3f)] private float cardRibbonYPct = -0.041f;
-    [Tooltip("리본 폭 (rect.width 비율)")]
-    [SerializeField, Range(0.5f, 3f)] private float cardRibbonWidthPct = 3f;
-    [Tooltip("리본 높이 (rect.height 비율)")]
-    [SerializeField, Range(0.05f, 0.3f)] private float cardRibbonHeightPct = 0.235f;
-    [Tooltip("리본 안 이름 텍스트 인셋 (xPct, yPct, widthPct, heightPct) — 리본 rect 기준")]
-    [SerializeField] private Vector4 cardNameInRibbonPct = new(0.08f, 0.15f, 0.84f, 1f);
-
-    [Header("Card Picker — Cost Bubble")]
-    [Tooltip("코스트 버블 중심 위치 (rect 기준 xPct, yPct)")]
-    [SerializeField] private Vector2 cardCostBubbleCenter = new(0.03f, 0.04f);
-    [Tooltip("코스트 버블 크기 — rect.width × 이 값")]
-    [SerializeField, Range(0.1f, 0.4f)] private float cardCostBubbleSize = 0.24f;
-    [Tooltip("버블 안 숫자 폰트 배율 — 버블 크기 × 이 값")]
-    [SerializeField, Range(0.3f, 0.9f)] private float cardCostBubbleFontScale = 0.5f;
 
     private enum View { List, CardPicker }
     private enum RowKind { Gold, Card, Potion, Relic }
@@ -193,18 +144,10 @@ public class RewardUI : MonoBehaviour
     private Texture2D _iconPotion;
     private Texture2D _iconRelic;
 
-    // Sprites (Card picker view) — 전투 UI와 동일한 CardSlot/* 5레이어 스택 사용
-    private Texture2D _cardPanelTex;      // CardSlot/CardBg — 배경 판
-    private Texture2D _cardArtFrameTex;   // CardSlot/CardArtFrame — 아트 테두리 + 육각 타입 배너
-    private Texture2D _cardDescPanelTex;  // CardSlot/CardDescPanel — 하단 설명 박스
-    private Texture2D _cardFrameTex;      // CardSlot/CardBorder — 외곽 테두리
+    // Sprites (Card picker view) — 카드 본체는 BattleUI에 위임하므로 타이틀/스킵 자산만 보유
     private Texture2D _skipButtonTex;
     private Texture2D _textChooseCardTex;
     private Texture2D _titleDividerTex;
-    private Texture2D _manaFrameTex;      // CardSlot/ManaFrame — 코스트 버블
-
-    // CardArt 캐시 — BattleUI와 동일 경로 규칙 (Resources/CardArt/{Summon|Spell|Utility}/{filename})
-    private readonly Dictionary<string, Texture2D> _cardArtCache = new();
 
     // Fonts
     private Font _displayFont;
@@ -213,11 +156,7 @@ public class RewardUI : MonoBehaviour
     private GUIStyle _rowLabelStyle;
     private GUIStyle _pickerTitleStyle;
     private GUIStyle _pickerSubStyle;
-    private GUIStyle _cardNameStyle;
-    private GUIStyle _cardMetaStyle;
-    private GUIStyle _cardBodyStyle;
     private GUIStyle _skipButtonStyle;
-    private GUIStyle _cardCostStyle;
     private bool _stylesReady;
 
     void Update()
@@ -640,9 +579,11 @@ public class RewardUI : MonoBehaviour
         }
     }
 
+    private BattleUI _battleUICache;
+
     private void DrawCardChoice(Rect rect, CardData card, bool hover)
     {
-        // [Layer 1] 카드 뒤쪽 warm glow
+        // 카드 뒤쪽 warm glow — 호버 강조용
         if (_glowTex != null)
         {
             float pad = hover ? cardGlowPadHover : cardGlowPadNormal;
@@ -653,153 +594,16 @@ public class RewardUI : MonoBehaviour
             GUI.color = prevGuiColor;
         }
 
-        // [Layer 2] Panel — 네이비 파치먼트 배경 (Frame 인테리어에 맞춰 인셋)
-        var panelRect = new Rect(
-            rect.x + rect.width * cardPanelInset.x,
-            rect.y + rect.height * cardPanelInset.y,
-            rect.width * (1f - cardPanelInset.x - cardPanelInset.z),
-            rect.height * (1f - cardPanelInset.y - cardPanelInset.w));
-        if (_cardPanelTex != null)
-            GUI.DrawTexture(panelRect, _cardPanelTex, ScaleMode.StretchToFill);
+        // 카드 본체는 인게임 손패와 동일한 BattleUI 슬롯 비주얼로 통일.
+        if (_battleUICache == null) _battleUICache = UnityEngine.Object.FindFirstObjectByType<BattleUI>();
+        if (_battleUICache != null)
+        {
+            _battleUICache.DrawCardPreview(rect, card);
+        }
         else
-            DrawFilledRect(panelRect, new Color(0.10f, 0.14f, 0.20f, 0.96f));
-
-        // [Layer 3] 카드 아트 — Panel 위, Frame 아래. 리본 위치까지 덮도록 y 상단 확장
-        var artRect = new Rect(
-            rect.x + rect.width * cardArtRectPct.x,
-            rect.y + rect.height * cardArtRectPct.y,
-            rect.width * cardArtRectPct.z,
-            rect.height * cardArtRectPct.w);
-        var art = GetCardArt(card);
-        if (art != null)
-            GUI.DrawTexture(artRect, art, ScaleMode.ScaleToFit);
-
-        // [Layer 3.3] 골드 디바이더 — 좌·우 두 조각으로 나눠 그려서 hex 배너 영역은
-        //              아예 그리지 않음. (ArtFrame이 반투명이라 선이 비치는 문제 방지)
         {
-            float divL = rect.x + rect.width * cardDividerRectPct.x;
-            float divR = divL + rect.width * cardDividerRectPct.z;
-            float hexL = rect.x + rect.width * cardArtFrameRectPct.x;
-            float hexR = hexL + rect.width * cardArtFrameRectPct.z;
-            float divY = rect.y + rect.height * cardDividerRectPct.y;
-            float divH = cardDividerRectPct.w;
-
-            // 좌측 조각 (디바이더 시작 ~ hex 시작)
-            if (divL < hexL)
-                DrawFilledRect(new Rect(divL, divY, hexL - divL, divH), cardDividerColor);
-            // 우측 조각 (hex 끝 ~ 디바이더 끝)
-            if (divR > hexR)
-                DrawFilledRect(new Rect(hexR, divY, divR - hexR, divH), cardDividerColor);
+            DrawFilledRect(rect, new Color(0.10f, 0.14f, 0.20f, 0.96f));
         }
-
-        // [Layer 3.5] ArtFrame — 골드 사각 테두리 + 육각 타입 배너 (아트 위에 오버레이)
-        var artFrameRect = new Rect(
-            rect.x + rect.width  * cardArtFrameRectPct.x,
-            rect.y + rect.height * cardArtFrameRectPct.y,
-            rect.width  * cardArtFrameRectPct.z,
-            rect.height * cardArtFrameRectPct.w);
-        if (_cardArtFrameTex != null)
-        {
-            // hex 배너(카드 이름 패널)는 완전 불투명 — 뒤가 비치면 안 됨
-            GUI.DrawTexture(artFrameRect, _cardArtFrameTex, ScaleMode.StretchToFill);
-        }
-
-        // [Layer 4] Frame — 외곽 테두리 (가운데 투명)
-        var borderRect = new Rect(
-            rect.x + rect.width  * cardBorderRectPct.x,
-            rect.y + rect.height * cardBorderRectPct.y,
-            rect.width  * cardBorderRectPct.z,
-            rect.height * cardBorderRectPct.w);
-        if (_cardFrameTex != null)
-        {
-            var prevColor = GUI.color;
-            GUI.color = new Color(1f, 1f, 1f, cardFrameAlpha);
-            GUI.DrawTexture(borderRect, _cardFrameTex, ScaleMode.StretchToFill);
-            GUI.color = prevColor;
-        }
-
-        // 이름 라벨 위치를 육각 배너 위에 오도록 가상 rect 계산 (기존 ribbonRect 자리에 대응)
-        float ribbonW = rect.width * 0.46f;
-        float ribbonH = rect.height * 0.07f;
-        float ribbonX = rect.x + (rect.width - ribbonW) * 0.5f;
-        float ribbonY = rect.y + rect.height * 0.63f;
-        var ribbonRect = new Rect(ribbonX, ribbonY, ribbonW, ribbonH);
-
-        // [Layer 4.5] Cost Bubble — 인게임 마나 오브 재사용
-        if (_manaFrameTex != null)
-        {
-            float orbSize = rect.width * cardCostBubbleSize;
-            float orbCx = rect.x + rect.width * cardCostBubbleCenter.x;
-            float orbCy = rect.y + rect.height * cardCostBubbleCenter.y;
-            var orbRect = new Rect(orbCx - orbSize * 0.5f, orbCy - orbSize * 0.5f, orbSize, orbSize);
-
-            var prevC = GUI.color;
-            GUI.color = Color.white;
-            GUI.DrawTexture(orbRect, _manaFrameTex, ScaleMode.StretchToFill, true);
-            GUI.color = prevC;
-
-            int prevFontSize = _cardCostStyle.fontSize;
-            _cardCostStyle.fontSize = Mathf.RoundToInt(orbSize * cardCostBubbleFontScale);
-            DrawOutlinedLabel(orbRect, card.cost.ToString(), _cardCostStyle,
-                              Color.white, new Color(0f, 0f, 0f, 0.95f), 1.2f);
-            _cardCostStyle.fontSize = prevFontSize;
-        }
-
-        // [Layer 6] 텍스트 — 이름은 리본 rect 위에 얹힘, 나머지는 비율 기반
-        var nameRect = new Rect(
-            ribbonRect.x + ribbonRect.width * cardNameInRibbonPct.x,
-            ribbonRect.y + ribbonRect.height * cardNameInRibbonPct.y,
-            ribbonRect.width * cardNameInRibbonPct.z,
-            ribbonRect.height * cardNameInRibbonPct.w);
-        GUI.Label(nameRect, EnName(card.nameEn, card.nameKr), _cardNameStyle);
-
-        // 희귀도 (크림 기본 색)
-        var rarityRect = new Rect(
-            rect.x + rect.width * cardRarityRectPct.x,
-            rect.y + rect.height * cardRarityRectPct.y,
-            rect.width * cardRarityRectPct.z,
-            rect.height * cardRarityRectPct.w);
-        int prevMetaSize = _cardMetaStyle.fontSize;
-        var prevMetaColor = _cardMetaStyle.normal.textColor;
-        _cardMetaStyle.fontSize = cardRarityFontSize;
-        GUI.Label(rarityRect, $"[{card.rarity}]", _cardMetaStyle);
-
-        // 카드 종류 (색 분리)
-        var typeRect = new Rect(
-            rect.x + rect.width * cardTypeRectPct.x,
-            rect.y + rect.height * cardTypeRectPct.y,
-            rect.width * cardTypeRectPct.z,
-            rect.height * cardTypeRectPct.w);
-        _cardMetaStyle.fontSize = cardTypeFontSize;
-        _cardMetaStyle.normal.textColor = cardTypeColor;
-        GUI.Label(typeRect, GetCardTypeLabel(card), _cardMetaStyle);
-        _cardMetaStyle.fontSize = prevMetaSize;
-        _cardMetaStyle.normal.textColor = prevMetaColor;
-
-        // 본문 스탯/설명
-        var bodyRect = new Rect(
-            rect.x + rect.width * cardBodyRectPct.x,
-            rect.y + rect.height * cardBodyRectPct.y,
-            rect.width * cardBodyRectPct.z,
-            rect.height * cardBodyRectPct.w);
-        GUI.Label(bodyRect, BuildCardBody(card), _cardBodyStyle);
-    }
-
-    private Texture2D GetCardArt(CardData card)
-    {
-        if (card == null || string.IsNullOrEmpty(card.image)) return null;
-        if (_cardArtCache.TryGetValue(card.id, out var cached)) return cached;
-
-        string filename = System.IO.Path.GetFileNameWithoutExtension(card.image);
-        string subfolder = card.cardType switch
-        {
-            CardType.SUMMON => "Summon",
-            CardType.MAGIC  => "Spell",
-            _               => "Utility",
-        };
-        var tex = Resources.Load<Texture2D>($"CardArt/{subfolder}/{filename}");
-        _cardArtCache[card.id] = tex; // null도 캐싱 (재시도 방지)
-        return tex;
     }
 
     // =========================================================
@@ -811,30 +615,6 @@ public class RewardUI : MonoBehaviour
         var prev = GUI.color;
         GUI.color = color;
         GUI.DrawTexture(rect, Texture2D.whiteTexture);
-        GUI.color = prev;
-    }
-
-    private static void DrawOutlinedLabel(Rect rect, string text, GUIStyle style,
-                                          Color textColor, Color outlineColor, float thickness)
-    {
-        var prev = GUI.color;
-        var prevTextColor = style.normal.textColor;
-
-        style.normal.textColor = outlineColor;
-        GUI.color = outlineColor;
-        for (int dx = -1; dx <= 1; dx++)
-            for (int dy = -1; dy <= 1; dy++)
-            {
-                if (dx == 0 && dy == 0) continue;
-                var r = new Rect(rect.x + dx * thickness, rect.y + dy * thickness, rect.width, rect.height);
-                GUI.Label(r, text, style);
-            }
-
-        style.normal.textColor = textColor;
-        GUI.color = textColor;
-        GUI.Label(rect, text, style);
-
-        style.normal.textColor = prevTextColor;
         GUI.color = prev;
     }
 
@@ -888,39 +668,9 @@ public class RewardUI : MonoBehaviour
         return 0f;
     }
 
-    private static string GetCardTypeLabel(CardData c)
-    {
-        return DataManager.Instance.GetCardTypeLabel(c.cardType, c.subType);
-    }
-
-    private string BuildCardBody(CardData c)
-    {
-        var dm = DataManager.Instance;
-        switch (c.cardType)
-        {
-            case CardType.SUMMON:
-                return $"{dm.GetStatLabel("ATK")}: {c.attack}\n{dm.GetStatLabel("HP")}: {c.hp}";
-            case CardType.MAGIC:
-                return c.subType == CardSubType.ATTACK
-                    ? $"{dm.GetStatLabel("DMG")}: {c.value}"
-                    : $"{dm.GetStatLabel("BLOCK")}: {c.value}";
-            case CardType.BUFF:
-            case CardType.UTILITY:
-                return Short(c.description);
-            default:
-                return Short(c.description);
-        }
-    }
-
     private static string EnName(string en, string kr)
     {
         return string.IsNullOrWhiteSpace(en) ? kr : en;
-    }
-
-    private string Short(string s)
-    {
-        if (string.IsNullOrEmpty(s)) return "";
-        return s.Length > 32 ? s.Substring(0, 32) + "..." : s;
     }
 
     private void SyncStyleFontSizes()
@@ -931,9 +681,6 @@ public class RewardUI : MonoBehaviour
         _rowLabelStyle.normal.textColor = rowLabelColor;
         _pickerSubStyle.normal.textColor = rowLabelColor;
 
-        _cardNameStyle.fontSize = cardNameFontSize;
-        _cardMetaStyle.fontSize = cardRarityFontSize; // DrawCardChoice에서 타입용으로 다시 스왑됨
-        _cardBodyStyle.fontSize = cardBodyFontSize;
         _skipButtonStyle.fontSize = skipButtonFontSize;
     }
 
@@ -951,15 +698,9 @@ public class RewardUI : MonoBehaviour
         _iconPotion = Resources.Load<Texture2D>("Reward/Potion_Bottle");
         _iconRelic = Resources.Load<Texture2D>("Reward/RelicIcon");
 
-        // 새 CardSlot/* 5레이어 에셋으로 통합 — BattleUI.DrawCardFrame과 동일한 비주얼 스택
-        _cardPanelTex = Resources.Load<Texture2D>("CardSlot/CardBg");
-        _cardArtFrameTex = Resources.Load<Texture2D>("CardSlot/CardArtFrame");
-        _cardDescPanelTex = Resources.Load<Texture2D>("CardSlot/CardDescPanel");
-        _cardFrameTex = Resources.Load<Texture2D>("CardSlot/CardBorder");
         _skipButtonTex = Resources.Load<Texture2D>("Reward/CardPicker/SkipButton");
         _textChooseCardTex = Resources.Load<Texture2D>("Reward/CardPicker/TextChooseCard");
         _titleDividerTex = Resources.Load<Texture2D>("Reward/CardPicker/TitleDivider");
-        _manaFrameTex = Resources.Load<Texture2D>("CardSlot/ManaFrame");
 
         _displayFont = Resources.Load<Font>("Fonts/Cinzel-VariableFont_wght");
 
@@ -1007,36 +748,6 @@ public class RewardUI : MonoBehaviour
             onActive = { textColor = rowLabelColor },
             onFocused= { textColor = rowLabelColor },
         };
-        // 카드 이름 — 어두운 아트/배경 위에 얹히므로 크림 색상으로 대비 확보
-        _cardNameStyle = new GUIStyle(GUI.skin.label)
-        {
-            font = _displayFont,
-            fontSize = 15,
-            alignment = TextAnchor.MiddleCenter,
-            fontStyle = FontStyle.Bold,
-            wordWrap = false,
-            clipping = TextClipping.Overflow,
-            normal = { textColor = new Color(0.99f, 0.93f, 0.74f) },
-        };
-        _cardMetaStyle = new GUIStyle(GUI.skin.label)
-        {
-            font = _displayFont,
-            fontSize = 12,
-            alignment = TextAnchor.MiddleCenter,
-            fontStyle = FontStyle.Bold,
-            wordWrap = true,
-            // 희귀도 기본 색 — 더 밝은 골드로 가독성 ↑ (타입은 그리기 전 cardTypeColor로 덮어씀)
-            normal = { textColor = new Color(1.0f, 0.90f, 0.55f) },
-        };
-        _cardBodyStyle = new GUIStyle(GUI.skin.label)
-        {
-            font = _displayFont,
-            fontSize = 13,
-            alignment = TextAnchor.UpperCenter,
-            fontStyle = FontStyle.Bold,
-            wordWrap = true,
-            normal = { textColor = new Color(0.96f, 0.92f, 0.74f) },
-        };
         // SKIP 라벨 — 크림 파치먼트 스크롤 위에 얹히므로 다크 브라운
         _skipButtonStyle = new GUIStyle(GUI.skin.label)
         {
@@ -1046,24 +757,11 @@ public class RewardUI : MonoBehaviour
             fontStyle = FontStyle.Bold,
             normal = { textColor = new Color(0.22f, 0.13f, 0.05f) },
         };
-        // 코스트 버블 안 숫자 — 흰색, 외곽선은 DrawOutlinedLabel에서 처리
-        _cardCostStyle = new GUIStyle(GUI.skin.label)
-        {
-            font = _displayFont,
-            fontSize = 18,
-            alignment = TextAnchor.MiddleCenter,
-            fontStyle = FontStyle.Bold,
-            normal = { textColor = Color.white },
-        };
         // 모든 라벨 스타일의 hover/active 등 state 색을 normal과 동일하게 고정 (호버 색 변화 방지)
         LockStateColors(_rowLabelStyle);
         LockStateColors(_pickerTitleStyle);
         LockStateColors(_pickerSubStyle);
-        LockStateColors(_cardNameStyle);
-        LockStateColors(_cardMetaStyle);
-        LockStateColors(_cardBodyStyle);
         LockStateColors(_skipButtonStyle);
-        LockStateColors(_cardCostStyle);
 
         _stylesReady = true;
     }

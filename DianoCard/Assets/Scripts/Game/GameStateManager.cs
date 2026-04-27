@@ -843,9 +843,16 @@ namespace DianoCard.Game
                 return;
             }
 
+            // 이미 Battle 상태일 때 BattleUI가 재초기화하도록 플래그 ON.
+            // BattleUI.Update가 다음 프레임에 이 플래그 보고 강제로 _battleInitialized=false 처리한 뒤 InitBattle 재실행.
+            bool wasBattle = State == GameState.Battle;
             State = GameState.Battle;
-            Debug.Log($"[GSM] Cheat_StartBattleWith: [{string.Join(",", enemyIds)}] → Battle");
+            if (wasBattle) CheatBattleReinitRequested = true;
+            Debug.Log($"[GSM] Cheat_StartBattleWith: [{string.Join(",", enemyIds)}] → Battle (reinit={wasBattle})");
         }
+
+        /// <summary>치트로 전투 중에 적을 갈아탈 때 BattleUI 재초기화 신호. BattleUI가 소비 후 false로 되돌림.</summary>
+        public bool CheatBattleReinitRequested { get; set; }
 
         /// <summary>치트 편의 메서드 — 1챕터 보스(E901) 전투 시작.</summary>
         public void Cheat_StartBossBattle() => Cheat_StartBattleWith("E901");

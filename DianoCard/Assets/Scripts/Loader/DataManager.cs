@@ -27,6 +27,7 @@ namespace DianoCard.Data
         public IReadOnlyDictionary<string, StatLabelData> StatLabels => _statLabels;
         public IReadOnlyDictionary<string, DinoEvolutionData> DinoEvolutions => _dinoEvolutions;
         public HashSet<string> EvolutionResultIds => _evolutionResultIds;
+        public IReadOnlyDictionary<string, DinoSkillData> DinoSkills => _dinoSkills;
 
         // 패턴/페이즈/인텐트 (적 AI용)
         public IReadOnlyDictionary<string, List<EnemyPatternData>> EnemyPatterns => _enemyPatterns;
@@ -52,6 +53,8 @@ namespace DianoCard.Data
         // 진화 테이블 — baseCardId(현재 카드) → 다음 진화 정보. 링크드 리스트처럼 연속 조회 가능.
         private Dictionary<string, DinoEvolutionData> _dinoEvolutions = new();
         private HashSet<string> _evolutionResultIds = new();
+        // 진화 공룡 스킬 — cardId(C004_T1 등) → DinoSkillData. T0에는 행 없음.
+        private Dictionary<string, DinoSkillData> _dinoSkills = new();
 
         public bool IsLoaded { get; private set; }
 
@@ -84,6 +87,7 @@ namespace DianoCard.Data
             _evolutionResultIds = new HashSet<string>();
             foreach (var evo in _dinoEvolutions.Values)
                 if (!string.IsNullOrEmpty(evo.resultCardId)) _evolutionResultIds.Add(evo.resultCardId);
+            _dinoSkills = LoadTable("dino_skill", DinoSkillData.FromRow, d => d.cardId);
 
             IsLoaded = true;
 
@@ -175,6 +179,8 @@ namespace DianoCard.Data
             => _enemyPassives.TryGetValue(id, out var d) ? d : null;
         public DinoEvolutionData GetEvolution(string cardId)
             => _dinoEvolutions.TryGetValue(cardId, out var d) ? d : null;
+        public DinoSkillData GetSkill(string cardId)
+            => _dinoSkills.TryGetValue(cardId, out var d) ? d : null;
 
         // === UI / Label accessors ===
 

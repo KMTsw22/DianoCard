@@ -130,16 +130,27 @@ public class CheatUI : MonoBehaviour
             gsm.Cheat_EnterVillage();
 
         GUILayout.Space(8f);
-        GUILayout.Label("— 훈련장 입장 —", _stateStyle);
+        GUILayout.Label("— 훈련장 입장 (BG 자동) —", _stateStyle);
 
-        if (GUILayout.Button("E901 이끼 수호석상 (보스)", _btnStyle))
-            gsm.Cheat_StartBossBattle();
-
+        // 일반 적 — 첫 적이 NORMAL이면 랜덤 Battle BG 자동 로드
         GUILayout.BeginHorizontal();
-        if (GUILayout.Button("E001", _btnStyle)) gsm.Cheat_StartBattleWith("E001");
-        if (GUILayout.Button("E008", _btnStyle)) gsm.Cheat_StartBattleWith("E008");
-        if (GUILayout.Button("E101", _btnStyle)) gsm.Cheat_StartBattleWith("E101");
+        if (GUILayout.Button("E001 슬라임", _btnStyle)) gsm.Cheat_StartBattleWith("E001");
+        if (GUILayout.Button("E008 정령",   _btnStyle)) gsm.Cheat_StartBattleWith("E008");
         GUILayout.EndHorizontal();
+
+        // 엘리트 — 첫 적이 ELITE이면 Elite BG 자동 로드
+        GUILayout.Label("엘리트", _stateStyle);
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("E101 골렘", _btnStyle)) gsm.Cheat_StartBattleWith("E101");
+        if (GUILayout.Button("E102 사제", _btnStyle)) gsm.Cheat_StartBattleWith("E102");
+        GUILayout.EndHorizontal();
+        if (GUILayout.Button("E103 쌍둥이 (2체)", _btnStyle))
+            gsm.Cheat_StartBattleWith("E103", "E103");
+
+        // 보스 — Boss BG 자동 로드
+        GUILayout.Label("보스", _stateStyle);
+        if (GUILayout.Button("E901 폐허의 군주", _btnStyle))
+            gsm.Cheat_StartBossBattle();
 
         // ===== 전투 중에만 보이는 제어 =====
         var battle = GetActiveBattle();

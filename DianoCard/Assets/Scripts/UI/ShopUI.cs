@@ -46,31 +46,8 @@ public class ShopUI : MonoBehaviour
     private Texture2D _cardsBannerTex;
     private Texture2D _rowBannerTex;
 
-    // 카드 미니뷰용 (Reward/CardPicker)
-    // CardSlot/* 5레이어 스택 — 전투 UI와 동일
-    private Texture2D _cardPanelTex;      // CardSlot/CardBg
-    private Texture2D _cardArtFrameTex;   // CardSlot/CardArtFrame (골드 사각 + 육각 배너)
-    private Texture2D _cardDescPanelTex;  // CardSlot/CardDescPanel
-    private Texture2D _cardFrameTex;      // CardSlot/CardBorder (외곽)
-    private Texture2D _manaFrameTex;
+    // 카드 본체는 BattleUI.DrawCardPreview에 위임 — 가격 배지만 ShopUI 자체 자산
     private Texture2D _priceBadgeTex;     // CardSlot/CardCountBadge — 우상단 가격 배너 재활용
-
-    // Inspector에서 카드 레이어 위치/크기 조절
-    [Header("Card Layers (rect 비율)")]
-    [SerializeField, Range(0.5f, 1f)] private float cardFrameAlpha = 0.88f;
-    [Tooltip("CardBg 뒤 패널 영역 (rect 비율).")]
-    [SerializeField] private Vector4 cardPanelRectPct = new(0.07f, 0.04f, 0.86f, 0.92f);
-    [Tooltip("아트(일러스트) 영역.")]
-    [SerializeField] private Vector4 cardArtRectPct = new(0.06f, 0.045f, 0.88f, 0.63f);
-    [Tooltip("CardArtFrame 오버레이 (골드 사각 + 육각 배너) 영역.")]
-    [SerializeField] private Vector4 cardArtFrameRectPct = new(0.15f, 0.63f, 0.7f, 0.09f);
-    [Tooltip("CardBorder (외곽 테두리) 영역. 기본은 전체.")]
-    [SerializeField] private Vector4 cardBorderRectPct = new(0f, 0f, 1f, 1f);
-    [Tooltip("이름 라벨이 얹힐 육각 배너 영역.")]
-    [SerializeField] private Vector4 cardNameRectPct = new(0.15f, 0.63f, 0.7f, 0.09f);
-    [Tooltip("골드 디바이더 rect (xPct, yPct, widthPct, 절대높이 px).")]
-    [SerializeField] private Vector4 cardDividerRectPct = new(0.07f, 0.672f, 0.87f, 1.3f);
-    [SerializeField] private Color cardDividerColor = new(0.75f, 0.58f, 0.25f, 0.75f);
 
     [Header("Background")]
     [Tooltip("배경 이미지 위에 덮는 디밍 색상 (UI 가독성).")]
@@ -181,19 +158,7 @@ public class ShopUI : MonoBehaviour
     [SerializeField, Range(8, 30)] private int sectionHeaderFontSize = 17;
     [SerializeField, Range(8, 24)] private int rowLabelFontSize = 15;
     [SerializeField, Range(8, 24)] private int rowPriceFontSize = 17;
-    [SerializeField, Range(8, 20)] private int cardNameFontSize = 13;
     [SerializeField, Range(8, 24)] private int cardCostBaseFontSize = 18;
-    [SerializeField, Range(6, 18)] private int cardBodyFontSize = 11;
-
-    [Header("Card Mana Cost Orb")]
-    [Tooltip("카드 좌상단 마나 오브 크기 (카드 폭 대비 비율).")]
-    [SerializeField, Range(0.1f, 0.4f)] private float cardCostOrbScale = 0.219f;
-    [Tooltip("오브 중심의 가로 위치 (카드 폭 대비 비율, 0=왼쪽 끝).")]
-    [SerializeField, Range(-0.1f, 0.4f)] private float cardCostOrbXPct = 0.065f;
-    [Tooltip("오브 중심의 세로 위치 (카드 높이 대비 비율, 0=위쪽 끝).")]
-    [SerializeField, Range(-0.1f, 0.4f)] private float cardCostOrbYPct = 0.048f;
-    [Tooltip("마나 코스트 숫자 폰트 크기 (오브 크기 대비 비율).")]
-    [SerializeField, Range(0.3f, 0.9f)] private float cardCostFontScale = 0.55f;
 
     [Header("Cards Banner Text (카드 배너 글씨)")]
     [SerializeField, Range(8, 30)] private int cardsBannerFontSize = 25;
@@ -228,13 +193,6 @@ public class ShopUI : MonoBehaviour
     [SerializeField, Range(1f, 3f)] private float medallionGlowScale = 1.8f;
     [Tooltip("글로우 색상.")]
     [SerializeField] private Color medallionGlowColor = new(1f, 0.85f, 0.4f, 0.35f);
-    [Tooltip("마나 코스트 오브 뒤 글로우 활성화.")]
-    [SerializeField] private bool manaCostGlowEnabled = true;
-    [Tooltip("글로우 크기 (오브 대비 배율).")]
-    [SerializeField, Range(1f, 3f)] private float manaCostGlowScale = 1.6f;
-    [Tooltip("글로우 색상.")]
-    [SerializeField] private Color manaCostGlowColor = new(0.3f, 0.6f, 1f, 0.4f);
-
     [Header("Row Price Badge (아이템 행 가격 배지)")]
     [Tooltip("행 가격 배지 가로 크기 (px).")]
     [SerializeField, Range(40f, 140f)] private float rowPriceBadgeWidth = 71f;
@@ -251,7 +209,7 @@ public class ShopUI : MonoBehaviour
     [Tooltip("가격 숫자 좌측 시작 위치 (배지 폭 대비 비율).")]
     [SerializeField, Range(0.2f, 0.7f)] private float rowPriceBadgeTextXPct = 0.43f;
 
-    private readonly Dictionary<string, Texture2D> _cardArtCache = new();
+    private BattleUI _battleUICache;
 
     private Font _displayFont;
 
@@ -262,9 +220,7 @@ public class ShopUI : MonoBehaviour
     private GUIStyle _rowLabelStyle;
     private GUIStyle _priceStyle;
     private GUIStyle _priceExpensiveStyle;
-    private GUIStyle _cardNameStyle;
     private GUIStyle _cardCostStyle;
-    private GUIStyle _cardBodyStyle;
     private GUIStyle _leaveStyle;
     private GUIStyle _cancelStyle;
     private bool _stylesReady;
@@ -745,78 +701,15 @@ public class ShopUI : MonoBehaviour
             GUI.color = prev;
         }
 
-        // Panel (CardBg)
-        var panelRect = RectFromPct(rect, cardPanelRectPct);
-        if (_cardPanelTex != null) GUI.DrawTexture(panelRect, _cardPanelTex, ScaleMode.StretchToFill);
-        else DrawFilledRect(panelRect, new Color(0.10f, 0.14f, 0.20f, 0.96f));
-
-        // Art
-        var artRect = RectFromPct(rect, cardArtRectPct);
-        var art = GetCardArt(card);
-        if (art != null) GUI.DrawTexture(artRect, art, ScaleMode.ScaleToFit);
-
-        // Divider (hex 영역 피해서 좌·우 두 조각)
+        // 카드 본체 — 인게임 손패와 동일한 BattleUI 슬롯 비주얼로 통일.
+        if (_battleUICache == null) _battleUICache = UnityEngine.Object.FindFirstObjectByType<BattleUI>();
+        if (_battleUICache != null)
         {
-            float divL = rect.x + rect.width * cardDividerRectPct.x;
-            float divR = divL + rect.width * cardDividerRectPct.z;
-            float hexL = rect.x + rect.width * cardArtFrameRectPct.x;
-            float hexR = hexL + rect.width * cardArtFrameRectPct.z;
-            float divY = rect.y + rect.height * cardDividerRectPct.y;
-            float divH = cardDividerRectPct.w;
-            if (divL < hexL) DrawFilledRect(new Rect(divL, divY, hexL - divL, divH), cardDividerColor);
-            if (divR > hexR) DrawFilledRect(new Rect(hexR, divY, divR - hexR, divH), cardDividerColor);
+            _battleUICache.DrawCardPreview(rect, card);
         }
-
-        // ArtFrame — hex 배너(카드 이름 패널)는 완전 불투명
-        if (_cardArtFrameTex != null)
+        else
         {
-            GUI.DrawTexture(RectFromPct(rect, cardArtFrameRectPct), _cardArtFrameTex, ScaleMode.StretchToFill);
-        }
-
-        // Border
-        if (_cardFrameTex != null)
-        {
-            var prev = GUI.color;
-            GUI.color = new Color(1f, 1f, 1f, cardFrameAlpha);
-            GUI.DrawTexture(RectFromPct(rect, cardBorderRectPct), _cardFrameTex, ScaleMode.StretchToFill);
-            GUI.color = prev;
-        }
-
-        // 이름 — 육각 배너 위에 얹힘
-        var nameRect = RectFromPct(rect, cardNameRectPct);
-        GUI.Label(nameRect, EnName(card.nameEn, card.nameKr), _cardNameStyle);
-
-        // 설명/스탯 본문 — hex 배너 아래
-        var bodyRect = new Rect(
-            rect.x + rect.width * 0.1f,
-            rect.y + rect.height * 0.73f,
-            rect.width * 0.8f,
-            rect.height * 0.22f);
-        GUI.Label(bodyRect, BuildCardBody(card), _cardBodyStyle);
-
-        // Cost bubble
-        if (_manaFrameTex != null)
-        {
-            float orbSize = rect.width * cardCostOrbScale;
-            var orbRect = new Rect(rect.x + rect.width * cardCostOrbXPct - orbSize * 0.5f,
-                                   rect.y + rect.height * cardCostOrbYPct - orbSize * 0.5f,
-                                   orbSize, orbSize);
-            if (manaCostGlowEnabled && _glowTex != null && !entry.sold)
-            {
-                var prevC = GUI.color;
-                GUI.color = manaCostGlowColor;
-                float glowS = orbSize * manaCostGlowScale;
-                float gcx = orbRect.x + orbSize * 0.5f;
-                float gcy = orbRect.y + orbSize * 0.5f;
-                GUI.DrawTexture(new Rect(gcx - glowS * 0.5f, gcy - glowS * 0.5f, glowS, glowS), _glowTex, ScaleMode.StretchToFill);
-                GUI.color = prevC;
-            }
-            GUI.DrawTexture(orbRect, _manaFrameTex, ScaleMode.StretchToFill);
-            int prevSize = _cardCostStyle.fontSize;
-            _cardCostStyle.fontSize = Mathf.RoundToInt(orbSize * cardCostFontScale);
-            DrawOutlinedLabel(orbRect, card.cost.ToString(), _cardCostStyle,
-                              Color.white, new Color(0f, 0f, 0f, 0.95f), 1.2f);
-            _cardCostStyle.fontSize = prevSize;
+            DrawFilledRect(rect, new Color(0.10f, 0.14f, 0.20f, 0.96f));
         }
 
         // 가격 배지 — 우상단 (마나 코스트와 좌우 대칭). CardCountBadge 텍스처(왼쪽 V-notch) 재활용.
@@ -1088,42 +981,16 @@ public class ShopUI : MonoBehaviour
 
     private void DrawRemoveCardOption(Rect rect, CardData card)
     {
-        // 미니 카드 — 아트 + 이름 + REMOVE 라벨. Inspector 값 재사용.
-        var panelRect = RectFromPct(rect, cardPanelRectPct);
-        if (_cardPanelTex != null) GUI.DrawTexture(panelRect, _cardPanelTex, ScaleMode.StretchToFill);
-        else DrawFilledRect(panelRect, new Color(0.10f, 0.14f, 0.20f, 0.96f));
-
-        var artRect = RectFromPct(rect, cardArtRectPct);
-        var art = GetCardArt(card);
-        if (art != null) GUI.DrawTexture(artRect, art, ScaleMode.ScaleToFit);
-
-        // Divider (hex 영역 피해서 좌·우 두 조각)
+        // 미니 카드 — 인게임 손패와 동일한 BattleUI 슬롯 비주얼로 통일.
+        if (_battleUICache == null) _battleUICache = UnityEngine.Object.FindFirstObjectByType<BattleUI>();
+        if (_battleUICache != null)
         {
-            float divL = rect.x + rect.width * cardDividerRectPct.x;
-            float divR = divL + rect.width * cardDividerRectPct.z;
-            float hexL = rect.x + rect.width * cardArtFrameRectPct.x;
-            float hexR = hexL + rect.width * cardArtFrameRectPct.z;
-            float divY = rect.y + rect.height * cardDividerRectPct.y;
-            float divH = cardDividerRectPct.w;
-            if (divL < hexL) DrawFilledRect(new Rect(divL, divY, hexL - divL, divH), cardDividerColor);
-            if (divR > hexR) DrawFilledRect(new Rect(hexR, divY, divR - hexR, divH), cardDividerColor);
+            _battleUICache.DrawCardPreview(rect, card);
         }
-
-        // hex 배너 완전 불투명
-        if (_cardArtFrameTex != null)
+        else
         {
-            GUI.DrawTexture(RectFromPct(rect, cardArtFrameRectPct), _cardArtFrameTex, ScaleMode.StretchToFill);
+            DrawFilledRect(rect, new Color(0.10f, 0.14f, 0.20f, 0.96f));
         }
-        if (_cardFrameTex != null)
-        {
-            var prev = GUI.color;
-            GUI.color = new Color(1f, 1f, 1f, cardFrameAlpha);
-            GUI.DrawTexture(RectFromPct(rect, cardBorderRectPct), _cardFrameTex, ScaleMode.StretchToFill);
-            GUI.color = prev;
-        }
-
-        var nameRect = RectFromPct(rect, cardNameRectPct);
-        GUI.Label(nameRect, EnName(card.nameEn, card.nameKr), _cardNameStyle);
 
         // 바닥: REMOVE 라벨
         var pill = new Rect(rect.x + 8f, rect.yMax - 38f, rect.width - 16f, 28f);
@@ -1134,22 +1001,6 @@ public class ShopUI : MonoBehaviour
     // =========================================================
     // 리소스 / 스타일
     // =========================================================
-
-    private Texture2D GetCardArt(CardData card)
-    {
-        if (card == null || string.IsNullOrEmpty(card.image)) return null;
-        if (_cardArtCache.TryGetValue(card.id, out var cached)) return cached;
-        string filename = System.IO.Path.GetFileNameWithoutExtension(card.image);
-        string subfolder = card.cardType switch
-        {
-            CardType.SUMMON => "Summon",
-            CardType.MAGIC  => "Spell",
-            _               => "Utility",
-        };
-        var tex = Resources.Load<Texture2D>($"CardArt/{subfolder}/{filename}");
-        _cardArtCache[card.id] = tex;
-        return tex;
-    }
 
     private void EnsureStyles()
     {
@@ -1169,12 +1020,6 @@ public class ShopUI : MonoBehaviour
         _merchantIconTex = Resources.Load<Texture2D>("ShopUI/Node_Merchant");
         _bgTex           = Resources.Load<Texture2D>("ShopUI/BackGround");
 
-        // 카드 레이어 5종 — ShopUI 전용 사본
-        _cardPanelTex     = Resources.Load<Texture2D>("ShopUI/CardBg");
-        _cardArtFrameTex  = Resources.Load<Texture2D>("ShopUI/CardArtFrame");
-        _cardDescPanelTex = Resources.Load<Texture2D>("ShopUI/CardDescPanel");
-        _cardFrameTex     = Resources.Load<Texture2D>("ShopUI/CardBorder");
-        _manaFrameTex     = Resources.Load<Texture2D>("ShopUI/ManaFrame");
         _priceBadgeTex    = Resources.Load<Texture2D>("CardSlot/CardCountBadge");
 
         _displayFont = Resources.Load<Font>("Fonts/Cinzel-VariableFont_wght");
@@ -1215,22 +1060,10 @@ public class ShopUI : MonoBehaviour
             fontStyle = FontStyle.Bold, normal = { textColor = new Color(1f, 0.85f, 0.45f) },
         };
         _priceExpensiveStyle = new GUIStyle(_priceStyle) { normal = { textColor = new Color(0.85f, 0.40f, 0.40f) } };
-        _cardNameStyle = new GUIStyle(GUI.skin.label)
-        {
-            font = _displayFont, fontSize = cardNameFontSize, alignment = TextAnchor.MiddleCenter,
-            fontStyle = FontStyle.Bold, wordWrap = false, clipping = TextClipping.Overflow,
-            normal = { textColor = darkBrown },
-        };
         _cardCostStyle = new GUIStyle(GUI.skin.label)
         {
             font = _displayFont, fontSize = cardCostBaseFontSize, alignment = TextAnchor.MiddleCenter,
             fontStyle = FontStyle.Bold, normal = { textColor = Color.white },
-        };
-        _cardBodyStyle = new GUIStyle(GUI.skin.label)
-        {
-            font = _displayFont, fontSize = cardBodyFontSize, alignment = TextAnchor.UpperCenter,
-            fontStyle = FontStyle.Bold, wordWrap = true,
-            normal = { textColor = new Color(0.96f, 0.92f, 0.74f) },
         };
         _leaveStyle = new GUIStyle(GUI.skin.label)
         {
@@ -1247,9 +1080,7 @@ public class ShopUI : MonoBehaviour
         LockStateColors(_rowLabelStyle);
         LockStateColors(_priceStyle);
         LockStateColors(_priceExpensiveStyle);
-        LockStateColors(_cardNameStyle);
         LockStateColors(_cardCostStyle);
-        LockStateColors(_cardBodyStyle);
         LockStateColors(_leaveStyle);
         LockStateColors(_cancelStyle);
 
@@ -1265,9 +1096,7 @@ public class ShopUI : MonoBehaviour
         if (_rowLabelStyle != null) _rowLabelStyle.fontSize = rowLabelFontSize;
         if (_priceStyle != null) _priceStyle.fontSize = rowPriceFontSize;
         if (_priceExpensiveStyle != null) _priceExpensiveStyle.fontSize = rowPriceFontSize;
-        if (_cardNameStyle != null) _cardNameStyle.fontSize = cardNameFontSize;
         if (_cardCostStyle != null) _cardCostStyle.fontSize = cardCostBaseFontSize;
-        if (_cardBodyStyle != null) _cardBodyStyle.fontSize = cardBodyFontSize;
     }
 
     private static void LockStateColors(GUIStyle s)
@@ -1422,16 +1251,6 @@ public class ShopUI : MonoBehaviour
         _sectionStyle.fontSize = prevFS;
     }
 
-    // (x, y, w, h) 비율 Vector4를 주어진 rect 안의 실제 Rect로 변환.
-    private static Rect RectFromPct(Rect rect, Vector4 pct)
-    {
-        return new Rect(
-            rect.x + rect.width  * pct.x,
-            rect.y + rect.height * pct.y,
-            rect.width  * pct.z,
-            rect.height * pct.w);
-    }
-
     private static void DrawOutlinedLabel(Rect rect, string text, GUIStyle style,
                                           Color textColor, Color outlineColor, float thickness)
     {
@@ -1476,27 +1295,4 @@ public class ShopUI : MonoBehaviour
 
     private static string EnName(string en, string kr) =>
         string.IsNullOrWhiteSpace(en) ? kr : en;
-
-    // 카드 본문 — 타입별 스탯/설명. RewardUI.BuildCardBody와 동일 로직.
-    private static string BuildCardBody(CardData c)
-    {
-        var dm = DataManager.Instance;
-        switch (c.cardType)
-        {
-            case CardType.SUMMON:
-                return $"{dm.GetStatLabel("ATK")}: {c.attack}\n{dm.GetStatLabel("HP")}: {c.hp}";
-            case CardType.MAGIC:
-                return c.subType == CardSubType.ATTACK
-                    ? $"{dm.GetStatLabel("DMG")}: {c.value}"
-                    : $"{dm.GetStatLabel("BLOCK")}: {c.value}";
-            default:
-                return ShortDesc(c.description);
-        }
-    }
-
-    private static string ShortDesc(string desc)
-    {
-        if (string.IsNullOrEmpty(desc)) return "";
-        return desc.Length > 40 ? desc.Substring(0, 40) + "…" : desc;
-    }
 }

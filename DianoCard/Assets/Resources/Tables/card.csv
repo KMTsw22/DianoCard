@@ -26,14 +26,14 @@ C205,재생,Regenerate,BUFF,HEAL,UNCOMMON,1,0,0,3,ALLY,Ally +3 HP / +1 each turn
 C206,분노의 함성,Roar,BUFF,SPECIAL,RARE,2,0,0,0,ALL_ALLY,All allies +2 ATK permanently.,Roar.png,3,1.0
 C302,카드 드로우,Draw,UTILITY,DRAW,COMMON,1,0,0,2,SELF,Draw 2 cards.,Draw.png,1,1.0
 C303,발굴,Excavate,UTILITY,DRAW,UNCOMMON,1,0,0,3,SELF,Draw 3 cards. Discard 1.,Excavate.png,2,1.0
-C004_T1,알파 랩터,Alpha Raptor,SUMMON,CARNIVORE,UNCOMMON,1,10,15,0,FIELD,랩터 1차 진화. 빠른 공격 강화.,Raptor_T1.png,1,0.95
-C004_T2,절멸 랩터,Apex Raptor,SUMMON,CARNIVORE,RARE,1,13,18,0,FIELD,랩터 최종체. 압도적 속공.,Raptor_T2.png,1,1.05
-C005_T1,폭풍 카르노타우루스,Storm Carnotaurus,SUMMON,CARNIVORE,UNCOMMON,1,11,12,0,FIELD,카르노타우루스 1차 진화. 극공격형.,Carnotaurus_T1.png,1,1.15
-C005_T2,심연 카르노타우루스,Abyss Carnotaurus,SUMMON,CARNIVORE,RARE,1,15,14,0,FIELD,카르노타우루스 최종체. 글래스 캐논의 극치.,Carnotaurus_T2.png,1,1.25
-C010_T1,영리한 콤프소그나투스,Clever Compsognathus,SUMMON,CARNIVORE,UNCOMMON,0,3,8,0,FIELD,콤프소그나투스 1차 진화. 더 단단해진 소형.,Compsognathus_T1.png,1,0.70
-C010_T2,무리의 콤프소그나투스,Pack Compsognathus,SUMMON,CARNIVORE,RARE,0,4,12,0,FIELD,콤프소그나투스 최종체. 0코스트 최강 소형.,Compsognathus_T2.png,1,0.80
-C008_T1,폭군 티렉스,Tyrant T-Rex,SUMMON,CARNIVORE,RARE,3,20,28,0,FIELD,티렉스 1차 진화. 압도적 기세로 전장을 짓누른다.,T-Rex_T1.png,1,1.45
-C008_T2,종말 티렉스,Doom T-Rex,SUMMON,CARNIVORE,RARE,3,26,36,0,FIELD,티렉스 최종체. 적이 무릎 꿇는다.,T-Rex_T2.png,1,1.55
+C004_T1,알파 랩터,Alpha Raptor,SUMMON,CARNIVORE,UNCOMMON,1,10,15,0,FIELD,랩터 1차 진화. 빠른 공격 강화.,Raptor_T1.png,1,0.85
+C004_T2,절멸 랩터,Apex Raptor,SUMMON,CARNIVORE,RARE,1,13,18,0,FIELD,랩터 최종체. 압도적 속공.,Raptor_T2.png,1,0.85
+C005_T1,폭풍 카르노타우루스,Storm Carnotaurus,SUMMON,CARNIVORE,UNCOMMON,1,11,12,0,FIELD,카르노타우루스 1차 진화. 극공격형.,Carnotaurus_T1.png,1,1.05
+C005_T2,심연 카르노타우루스,Abyss Carnotaurus,SUMMON,CARNIVORE,RARE,1,15,14,0,FIELD,카르노타우루스 최종체. 글래스 캐논의 극치.,Carnotaurus_T2.png,1,1.05
+C010_T1,영리한 콤프소그나투스,Clever Compsognathus,SUMMON,CARNIVORE,UNCOMMON,0,3,8,0,FIELD,콤프소그나투스 1차 진화. 더 단단해진 소형.,Compsognathus_T1.png,1,0.60
+C010_T2,무리의 콤프소그나투스,Pack Compsognathus,SUMMON,CARNIVORE,RARE,0,4,12,0,FIELD,콤프소그나투스 최종체. 0코스트 최강 소형.,Compsognathus_T2.png,1,0.60
+C008_T1,폭군 티렉스,Tyrant T-Rex,SUMMON,CARNIVORE,RARE,3,20,28,0,FIELD,티렉스 1차 진화. 압도적 기세로 전장을 짓누른다.,T-Rex_T1.png,1,1.35
+C008_T2,종말 티렉스,Doom T-Rex,SUMMON,CARNIVORE,RARE,3,26,36,0,FIELD,티렉스 최종체. 적이 무릎 꿇는다.,T-Rex_T2.png,1,1.35
 C111,수호의 바람,Guardian Wind,MAGIC,DEFENSE,COMMON,1,0,0,7,ALLY,Grant 7 block to a target dinosaur.,GuardianWind.png,1,1.0
 C112,무리의 방패,Herd Shield,MAGIC,DEFENSE,UNCOMMON,2,0,0,5,ALL_ALLY,Grant 5 block to all dinosaurs on field.,HerdShield.png,1,1.0
 C114,대지의 결계,Earthen Barrier,MAGIC,DEFENSE,RARE,2,0,0,12,ALLY,Grant 12 block to a target dinosaur. Massive single-target shield.,EarthenBarrier.png,1,1.0

@@ -1,4 +1,7 @@
+using System.Collections.Generic;
+using System.Linq;
 using DianoCard.Battle;
+using DianoCard.Data;
 using DianoCard.Game;
 using UnityEditor;
 using UnityEngine;
@@ -10,6 +13,10 @@ public class CheatWindow : EditorWindow
 
     private Vector2 _bgScroll;
     private string[] _bgNamesCache;
+
+    // 전투 직행 — 적 리스트 토글 + 스크롤
+    private bool _enemyListExpanded;
+    private Vector2 _enemyListScroll;
 
     private void OnGUI()
     {
@@ -57,14 +64,28 @@ public class CheatWindow : EditorWindow
         EditorGUILayout.Space(12);
         EditorGUILayout.LabelField("전투 직행 (디버그)", EditorStyles.boldLabel);
 
-        if (GUILayout.Button("Battle: E901 이끼 수호석상 (1챕터 보스)", GUILayout.Height(28)))
+        // 엘리트/보스 빠른 진입 — 첫 적의 enemy_type 기준 BG 자동 선택됨
+        // (BattleUI.LoadBackgroundFor: BOSS→Boss BG, ELITE→Elite BG, NORMAL→random Battle BG)
+        EditorGUILayout.LabelField("엘리트 (엘리트 BG 자동 로드)", EditorStyles.miniBoldLabel);
+        EditorGUILayout.BeginHorizontal();
+        if (GUILayout.Button("E101 골렘", GUILayout.Height(26)))
+            gsm.Cheat_StartBattleWith("E101");
+        if (GUILayout.Button("E102 사제", GUILayout.Height(26)))
+            gsm.Cheat_StartBattleWith("E102");
+        if (GUILayout.Button("E103 쌍둥이", GUILayout.Height(26)))
+            gsm.Cheat_StartBattleWith("E103", "E103");
+        EditorGUILayout.EndHorizontal();
+
+        EditorGUILayout.LabelField("보스 (보스 BG 자동 로드)", EditorStyles.miniBoldLabel);
+        if (GUILayout.Button("E901 폐허의 군주 (1챕터 보스)", GUILayout.Height(28)))
             gsm.Cheat_StartBossBattle();
 
-        EditorGUILayout.BeginHorizontal();
-        if (GUILayout.Button("vs E001 이끼 슬라임")) gsm.Cheat_StartBattleWith("E001");
-        if (GUILayout.Button("vs E008 뿌리 정령"))   gsm.Cheat_StartBattleWith("E008");
-        if (GUILayout.Button("vs E101 거대 골렘"))   gsm.Cheat_StartBattleWith("E101");
-        EditorGUILayout.EndHorizontal();
+        // 전체 적 리스트 — 토글 펼치기/접기. 데이터에서 동적 로드.
+        _enemyListExpanded = EditorGUILayout.Foldout(_enemyListExpanded, "vs 단일 적 (전체 목록)", true);
+        if (_enemyListExpanded)
+        {
+            DrawEnemyList(gsm);
+        }
 
         // 전투 중에만 활성 — 런타임 BattleManager 제어
         if (gsm.State == GameState.Battle)
@@ -185,6 +206,48 @@ public class CheatWindow : EditorWindow
         }
 
         Repaint();
+    }
+
+    // 적 전체 리스트 — DataManager.Enemies에서 동적 로드. id 정렬 + 챕터/타입별 그룹 표시.
+    // 각 행 클릭 시 gsm.Cheat_StartBattleWith(id) 호출.
+    private void DrawEnemyList(GameStateManager gsm)
+    {
+        if (!DataManager.Instance.IsLoaded) DataManager.Instance.Load();
+        var all = DataManager.Instance.Enemies.Values
+            .OrderBy(e => e.chapter)
+            .ThenBy(e => e.enemyType)
+            .ThenBy(e => e.id)
+            .ToList();
+
+        EditorGUILayout.LabelField($"총 {all.Count}체", EditorStyles.miniLabel);
+
+        _enemyListScroll = EditorGUILayout.BeginScrollView(_enemyListScroll, GUILayout.Height(220));
+
+        int currentChapter = -1;
+        EnemyType currentType = (EnemyType)(-1);
+        foreach (var e in all)
+        {
+            // 챕터 헤더
+            if (e.chapter != currentChapter)
+            {
+                currentChapter = e.chapter;
+                currentType = (EnemyType)(-1);
+                EditorGUILayout.Space(4);
+                EditorGUILayout.LabelField($"— {e.chapter}챕터 —", EditorStyles.boldLabel);
+            }
+            // 타입 서브 헤더
+            if (e.enemyType != currentType)
+            {
+                currentType = e.enemyType;
+                EditorGUILayout.LabelField(e.enemyType.ToString(), EditorStyles.miniBoldLabel);
+            }
+
+            string label = $"{e.id} · {e.nameKr} (HP {e.hp} / ATK {e.attack})";
+            if (GUILayout.Button(label, GUILayout.Height(22)))
+                gsm.Cheat_StartBattleWith(e.id);
+        }
+
+        EditorGUILayout.EndScrollView();
     }
 
     // 플레이 모드에서 CheatUI MonoBehaviour가 씬에 없으면 지속 GameObject로 자동 스폰한다.

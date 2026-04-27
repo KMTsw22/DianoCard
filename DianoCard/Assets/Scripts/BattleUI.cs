@@ -36,6 +36,9 @@ public class BattleUI : MonoBehaviour
     // 소환수 공격 타겟팅: 공룡 클릭 후 적 클릭 대기 중 (-1 = 비활성).
     // _targetingCardIndex와 상호 배타적 — 하나가 활성이면 다른 하나는 자동 해제.
     private int _targetingSummonIndex = -1;
+    // 공룡 스킬 타겟팅: 스킬 핀 클릭 후 적 클릭 대기 중 (-1 = 비활성). target=ENEMY 스킬에서만 사용.
+    // _targetingSummonIndex / _targetingCardIndex와 상호 배타적.
+    private int _targetingSummonSkillIndex = -1;
     // 공룡 교체 모드: 필드 꽉 찬 상태에서 SUMMON 카드 클릭 후 교체할 필드 공룡 클릭 대기 중 (-1 = 비활성).
     private int _swapFromCardIndex = -1;
 
@@ -210,6 +213,12 @@ public class BattleUI : MonoBehaviour
     // 적 애니메이션 뷰 (적 id → world Sprite, EnemyInstance → view)
     private readonly Dictionary<string, Sprite> _enemyWorldSprites = new();
     private readonly Dictionary<EnemyInstance, BattleEntityView> _enemyViews = new();
+
+    // E901 이끼 잡몹 — 좌/우 코너용 변형 스프라이트 + 코너별 원근 스케일.
+    // ComputeSlotPositions에서 코너 인덱스에 따라 L/R 스왑하고 스케일 dict에 기록 → GetEnemyDrawHeight가 읽음.
+    private Sprite _mossWorldSpriteL;
+    private Sprite _mossWorldSpriteR;
+    private readonly Dictionary<EnemyInstance, float> _mossDepthScale = new();
 
     // 데미지 시 스폰되는 VFX 프리팹 (Inspector에서 할당)
     // 기본값으로 Resources 또는 AssetDatabase로는 못 불러오므로 SerializeField로 노출.
@@ -807,6 +816,7 @@ public class BattleUI : MonoBehaviour
                 _floaters.Clear();
                 _targetingCardIndex = -1;
                 _targetingSummonIndex = -1;
+                _targetingSummonSkillIndex = -1;
                 _swapFromCardIndex = -1;
                 _endTurnAnimating = false;
                 _attackingUnit = null;
@@ -834,6 +844,32 @@ public class BattleUI : MonoBehaviour
         {
             // Reward에서 빠져나왔을 때 복구 (보통 Map으로 가면 뷰가 파괴되지만 안전장치)
             RestoreRewardDimming();
+        }
+
+        // 치트로 전투 중 적 갈아타기 — GSM의 신호 받으면 강제 재초기화
+        if (gsm.CheatBattleReinitRequested && _battleInitialized)
+        {
+            gsm.CheatBattleReinitRequested = false;
+            _battleInitialized = false;
+            _battleEndQueued = false;
+            _battle = null;
+            _lastKnownHp.Clear();
+            _hpBarDisplayedFrac.Clear();
+            _floaters.Clear();
+            _targetingCardIndex = -1;
+            _targetingSummonIndex = -1;
+            _targetingSummonSkillIndex = -1;
+            _swapFromCardIndex = -1;
+            _endTurnAnimating = false;
+            _attackingUnit = null;
+            _attackProgress = 0;
+            _prevPlayerBlock = 0;
+            _playerShieldFxStartTime = -1f;
+            StopAllCoroutines();
+            DespawnBackgroundFX();
+            DespawnBackgroundVines();
+            DestroyWorldBackground();
+            DestroyAllEnemyViews();
         }
 
         // Battle 상태로 진입한 첫 프레임 → 초기화
@@ -1047,6 +1083,19 @@ public class BattleUI : MonoBehaviour
             _enemySprites[enemy.id] = tex;
             _enemyWorldSprites[enemy.id] = TexToSprite(tex);
         }
+
+        // E901 보스가 인라인으로 소환하는 이끼 잡몹 — DataManager.Enemies엔 없으니 별도 등록.
+        // 좌/우 변형 두 종 — 보스 좌측 코너엔 L(불꽃이 좌상단으로 흩날림), 우측 코너엔 R(우상단으로 흩날림) 스프라이트를 ComputeSlotPositions에서 코너별로 스왑.
+        // _enemySprites/_enemyWorldSprites["MOSS_E901"] 기본값은 L — 첫 프레임에 view 생성 시 폴백.
+        var mossTexL = Resources.Load<Texture2D>("Monsters/E901_Moss_L");
+        var mossTexR = Resources.Load<Texture2D>("Monsters/E901_Moss_R");
+        if (mossTexL != null)
+        {
+            _mossWorldSpriteL = TexToSprite(mossTexL);
+            _enemySprites["MOSS_E901"] = mossTexL;
+            _enemyWorldSprites["MOSS_E901"] = _mossWorldSpriteL;
+        }
+        if (mossTexR != null) _mossWorldSpriteR = TexToSprite(mossTexR);
     }
 
     /// <summary>
@@ -1137,6 +1186,8 @@ public class BattleUI : MonoBehaviour
         float phaseNoise = (hash & 0x3FF) / 1024f;               // 0~1
         view.breathingFreq = 0.12f + freqNoise * 0.07f;
         view.breathingPhase = phaseNoise * Mathf.PI * 2f;
+        // 이끼 잡몹은 도깨비불처럼 살짝 투명하게 — 보스 BG 톤에 묻혀 들어가게.
+        if (e.isMoss) view.SetBaseColor(new Color(1f, 1f, 1f, 0.7f));
         _enemyViews[e] = view;
 
         // 발밑 그림자 — 이미지 파일명 규칙(`Monsters/shadow/{이름}_shadow`)으로 로드.
@@ -1209,6 +1260,7 @@ public class BattleUI : MonoBehaviour
         _battleEndQueued = false;
         _targetingCardIndex = -1;
         _targetingSummonIndex = -1;
+        _targetingSummonSkillIndex = -1;
         _swapFromCardIndex = -1;
 
         var chapter = DataManager.Instance.GetChapter(run.chapterId);
@@ -1787,14 +1839,16 @@ public class BattleUI : MonoBehaviour
 
         if (active)
         {
-            // 우클릭으로 타겟팅 취소 (카드/공룡/교체/융합 모두)
-            if ((_targetingCardIndex >= 0 || _targetingSummonIndex >= 0 || _swapFromCardIndex >= 0)
+            // 우클릭으로 타겟팅 취소 (카드/공룡/공룡스킬/교체/융합 모두)
+            if ((_targetingCardIndex >= 0 || _targetingSummonIndex >= 0 || _targetingSummonSkillIndex >= 0 || _swapFromCardIndex >= 0)
                 && Event.current.type == EventType.MouseDown
                 && Event.current.button == 1)
             {
                 if (_targetingSummonIndex >= 0) ShowToast("공격을 취소합니다");
+                else if (_targetingSummonSkillIndex >= 0) ShowToast("스킬을 취소합니다");
                 _targetingCardIndex = -1;
                 _targetingSummonIndex = -1;
+                _targetingSummonSkillIndex = -1;
                 _swapFromCardIndex = -1;
                 _fusionMaterialAPicked = false;
                 Event.current.Use();
@@ -1820,8 +1874,22 @@ public class BattleUI : MonoBehaviour
             {
                 _targetingSummonIndex = -1;
             }
-            // 카드 타겟팅과 공룡 타겟팅은 상호 배타 — 카드 선택되면 공룡 해제
-            if (_targetingCardIndex >= 0 || _swapFromCardIndex >= 0) _targetingSummonIndex = -1;
+            // 스킬 타겟팅 — 필드 인덱스 invalid 또는 스킬 사용 불가 상태로 변하면 리셋
+            if (_targetingSummonSkillIndex >= _battle.state.field.Count
+                || (_targetingSummonSkillIndex >= 0
+                    && !_battle.CanUseSkill(_targetingSummonSkillIndex)))
+            {
+                _targetingSummonSkillIndex = -1;
+            }
+            // 카드 타겟팅과 공룡 타겟팅은 상호 배타 — 카드 선택되면 공룡/스킬 해제
+            if (_targetingCardIndex >= 0 || _swapFromCardIndex >= 0)
+            {
+                _targetingSummonIndex = -1;
+                _targetingSummonSkillIndex = -1;
+            }
+            // 공룡 공격 타겟팅과 스킬 타겟팅도 상호 배타
+            if (_targetingSummonIndex >= 0) _targetingSummonSkillIndex = -1;
+            if (_targetingSummonSkillIndex >= 0) _targetingSummonIndex = -1;
         }
 
         // 1) 배경은 스크린 원본 좌표로 꽉 채움
@@ -1860,6 +1928,7 @@ public class BattleUI : MonoBehaviour
             DrawEndTurn(state);
             DrawTargetingHint(state);
             DrawSummonAttackHint(state);
+            DrawSummonSkillHint(state);
         }
         DrawToast();
 
@@ -2018,7 +2087,7 @@ public class BattleUI : MonoBehaviour
 
     // 손패 자동 숨김 — 공룡 공격 타겟팅 중에는 카드를 아래로 내려서 필드를 가림 없이 보이게.
     // 사용자 수동 토글(_handHidden)과 OR로 합쳐 효과를 결정.
-    private bool EffectiveHandHidden => _handHidden || _targetingSummonIndex >= 0;
+    private bool EffectiveHandHidden => _handHidden || _targetingSummonIndex >= 0 || _targetingSummonSkillIndex >= 0;
 
     private void DrawSummonAttackHint(BattleState state)
     {
@@ -2029,6 +2098,21 @@ public class BattleUI : MonoBehaviour
         float alpha = Mathf.Lerp(0.35f, 0.95f, pulse);
         var prev = GUI.color;
         GUI.color = new Color(1f, 1f, 1f, alpha);
+        GUI.Label(new Rect(0, 115, RefW, 30), text, _targetHintStyle);
+        GUI.color = prev;
+    }
+
+    private void DrawSummonSkillHint(BattleState state)
+    {
+        if (_targetingSummonSkillIndex < 0 || _targetingSummonSkillIndex >= state.field.Count) return;
+        var s = state.field[_targetingSummonSkillIndex];
+        var skill = DianoCard.Data.DataManager.Instance.GetSkill(s.data.id);
+        if (skill == null) return;
+        string text = $"✦ {s.data.nameKr} {skill.nameKr} — 적을 클릭하세요  (우클릭: 취소)";
+        float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 2.2f);
+        float alpha = Mathf.Lerp(0.35f, 0.95f, pulse);
+        var prev = GUI.color;
+        GUI.color = new Color(0.85f, 1f, 0.95f, alpha);
         GUI.Label(new Rect(0, 115, RefW, 30), text, _targetHintStyle);
         GUI.color = prev;
     }
@@ -2428,6 +2512,7 @@ public class BattleUI : MonoBehaviour
         const float PlayerHalfH = 128f;
 
         _slotPositions.Clear();
+        _mossDepthScale.Clear();
         _slotPositions[state.player] = new Vector2(230, GroundY - PlayerHalfH - 10);
 
         int fieldCount = state.field.Count;
@@ -2437,15 +2522,64 @@ public class BattleUI : MonoBehaviour
             _slotPositions[state.field[i]] = ComputeFieldSlot(i, fieldCount, front, back);
         UpdateSummonDisplayPositions(state);
 
+        // 1) 본체 적들(이끼 잡몹 제외)을 기존 일렬 레이아웃으로 배치.
+        //    이끼는 보스 4코너에 따로 둬야 하므로 별도 처리.
         int aliveIdx = 0;
+        EnemyInstance bossRef = null;
+        var mossAlive = new List<EnemyInstance>();
         foreach (var e in state.enemies)
         {
             if (e.IsDead) continue;
+            if (e.isMoss) { mossAlive.Add(e); continue; }
             // 적 크기는 타입별로 다름 — 발끝이 GroundY에 닿도록 센터 Y를 h/2만큼 위로.
             // staggerY는 뒤쪽 적이 멀어 보이게 하되, 안개 지평선(40%)으로 밀려나지 않을 정도로만.
             float h = GetEnemyDrawHeight(e);
-            _slotPositions[e] = new Vector2(1070 - aliveIdx * 160, GroundY - h / 2f - aliveIdx * 22);
+            // 보스는 검·갑옷 실루엣이 우측 끝을 벗어나지 않게 살짝 안쪽으로.
+            float baseX = (e.data.enemyType == EnemyType.BOSS) ? 970f : 1070f;
+            _slotPositions[e] = new Vector2(baseX - aliveIdx * 160, GroundY - h / 2f - aliveIdx * 22);
+            if (bossRef == null && e.data.enemyType == EnemyType.BOSS) bossRef = e;
             aliveIdx++;
+        }
+
+        // 2) 이끼 잡몹은 보스 주변 4코너(위-좌/위-우/아래-좌/아래-우)에 배치.
+        //    보스가 없으면(이론상 안 일어남) 폴백으로 일렬.
+        if (mossAlive.Count > 0 && bossRef != null && _slotPositions.TryGetValue(bossRef, out var bossPos))
+        {
+            float bossH = GetEnemyDrawHeight(bossRef);
+            // 보스 실루엣 옆+위/아래로 적당히 떨어진 4개 슬롯. 좌측 슬롯은 보스 몸통 왼쪽으로 더 멀리 —
+            // 보스 망토·검 폭이 크고, 또 도깨비불이 좌측 빈 공간에 더 잘 보임.
+            // 코너별 원근 스케일: 위 한 쌍은 살짝 작게(멀리), 아래 한 쌍은 살짝 크게(가까이).
+            Vector2[] corners =
+            {
+                new Vector2(-220f, -bossH * 0.30f),  // 0: 위-좌
+                new Vector2(+170f, -bossH * 0.30f),  // 1: 위-우
+                new Vector2(-220f, +bossH * 0.22f),  // 2: 아래-좌
+                new Vector2(+170f, +bossH * 0.22f),  // 3: 아래-우
+            };
+            float[] cornerScale = { 0.85f, 0.85f, 1.05f, 1.05f }; // 위 작게, 아래 크게
+            for (int i = 0; i < mossAlive.Count; i++)
+            {
+                int cornerIdx = i % 4;
+                var m = mossAlive[i];
+                _slotPositions[m] = bossPos + corners[cornerIdx];
+                _mossDepthScale[m] = cornerScale[cornerIdx];
+
+                // 좌측 코너(0,2) = L 스프라이트(불꽃 좌상단 흩날림), 우측(1,3) = R(우상단 흩날림).
+                bool isLeft = (cornerIdx == 0 || cornerIdx == 2);
+                Sprite target = isLeft ? _mossWorldSpriteL : _mossWorldSpriteR;
+                if (target != null && _enemyViews.TryGetValue(m, out var mview))
+                    mview.SetSprite(target);
+            }
+        }
+        else
+        {
+            // 폴백: 보스 못 찾으면 기존 방식대로 좌측 일렬.
+            foreach (var m in mossAlive)
+            {
+                float h = GetEnemyDrawHeight(m);
+                _slotPositions[m] = new Vector2(1070f - aliveIdx * 160, GroundY - h / 2f - aliveIdx * 22);
+                aliveIdx++;
+            }
         }
     }
 
@@ -2470,19 +2604,23 @@ public class BattleUI : MonoBehaviour
     }
 
     // 적 타입별 드로잉 높이 — 엘리트/보스는 플레이어보다 크게.
-    private static float GetEnemyDrawHeight(EnemyInstance e)
+    // enemy.csv의 field_scale 컬럼으로 종별 미세 조정 (비어있으면 1.0).
+    // 이끼 잡몹은 코너별 원근 스케일도 추가 적용 (ComputeSlotPositions에서 _mossDepthScale에 기록).
+    private float GetEnemyDrawHeight(EnemyInstance e)
     {
+        // 이끼 쫄: 보호막 시각화이지 본체가 아니므로 보스를 가리지 않게 작게.
+        if (e.isMoss)
+        {
+            float depth = _mossDepthScale.TryGetValue(e, out var d) ? d : 1f;
+            return 95f * e.data.SafeFieldScale * depth;
+        }
         float baseH = e.data.enemyType switch
         {
             EnemyType.BOSS  => 400f,
             EnemyType.ELITE => 320f,
             _               => 240f,
         };
-        // crow placeholder는 원본이 커서 축소 후 표시 (0.7 × 0.7 = 0.49 → 원본 대비 ~51% 축소).
-        if (!string.IsNullOrEmpty(e.data.image) &&
-            Path.GetFileNameWithoutExtension(e.data.image).Equals("crow", System.StringComparison.OrdinalIgnoreCase))
-            baseH *= 0.49f;
-        return baseH;
+        return baseH * e.data.SafeFieldScale;
     }
 
     // 필드 소환수 슬롯 레이아웃. fieldScale은 CardData.SafeFieldScale (card.csv field_scale 컬럼).
@@ -2996,6 +3134,14 @@ public class BattleUI : MonoBehaviour
                       stateLabel, _centerStyle);
         }
 
+        // 스킬 핀 — T1+ 진화 공룡만 (DinoSkillData 존재 시). 평타와 별개 자원.
+        // 위치: HP 바 + 상태라벨 아래 (rect.x, summonHpRect.yMax + 42f).
+        var skillData = DianoCard.Data.DataManager.Instance.GetSkill(s.data.id);
+        if (skillData != null)
+        {
+            DrawSummonSkillBadge(s, summonIndex, skillData, rect, summonHpRect, inReward);
+        }
+
         // 클릭 처리 우선순위:
         //   1) 교체 모드 (swap) — 필드 꽉 찬 상태에서 SUMMON 카드 플레이 시
         //   2) 아군 타겟 카드 모드 — 수호 마법/먹이 단일 타겟 카드
@@ -3076,6 +3222,113 @@ public class BattleUI : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// 진화 공룡(T1+)의 스킬 핀 — 평타와 별개 자원, 턴 단위 쿨다운.
+    /// 위치: HP 바 + 상태 라벨 아래. 가운데 정렬 알약 모양.
+    /// 상태:
+    ///  - READY: 청록 글로우 + 클릭 가능. ENEMY 타겟이면 _targetingSummonSkillIndex 세팅, AOE/SELF면 즉시 발동.
+    ///  - 쿨다운 중: 어두운 회색 + "{n}T" 표시, 비활성.
+    ///  - 전투당 1회 사용 후: 어두운 회색 + "✓" 표시, 비활성.
+    /// </summary>
+    private void DrawSummonSkillBadge(SummonInstance s, int summonIndex, DianoCard.Data.DinoSkillData skill,
+                                       Rect summonRect, Rect summonHpRect, bool inReward)
+    {
+        if (_battle?.state == null) return;
+
+        bool ready = _battle.CanUseSkill(summonIndex);
+        bool onCooldown = !ready && skill.cooldownTurns > 0 && s.skillCooldownRemaining > 0;
+        bool used = !ready && skill.isOnceBattle && s.skillUsedThisBattle;
+
+        // 알약 — 폭은 공룡 박스 폭 - padding, 높이 22.
+        float pillW = Mathf.Max(60f, summonRect.width - 8f);
+        float pillH = 22f;
+        var pill = new Rect(summonRect.center.x - pillW / 2f, summonHpRect.yMax + 42f, pillW, pillH);
+
+        // 상태별 색
+        Color bg, border, textCol;
+        if (ready)
+        {
+            float pulse = 0.7f + 0.3f * Mathf.Sin(Time.time * 4f);
+            bg = new Color(0.10f, 0.40f, 0.40f, 0.85f);
+            border = new Color(0.35f, 0.95f, 0.85f, pulse);
+            textCol = new Color(0.85f, 1f, 0.95f);
+        }
+        else
+        {
+            bg = new Color(0.10f, 0.10f, 0.12f, 0.78f);
+            border = new Color(0.35f, 0.35f, 0.40f, 0.85f);
+            textCol = new Color(0.62f, 0.62f, 0.66f);
+        }
+
+        FillRect(pill, bg);
+        DrawBorder(pill, ready ? 2 : 1, border);
+
+        // 라벨
+        string label;
+        if (ready)
+        {
+            label = $"✦ {skill.nameKr}";
+        }
+        else if (used)
+        {
+            label = $"✦ {skill.nameKr} ✓";
+        }
+        else if (onCooldown)
+        {
+            label = $"✦ {skill.nameKr} {s.skillCooldownRemaining}T";
+        }
+        else
+        {
+            label = $"✦ {skill.nameKr}";
+        }
+
+        var prevCol = _centerStyle.normal.textColor;
+        int prevSize = _centerStyle.fontSize;
+        _centerStyle.normal.textColor = new Color(0f, 0f, 0f, 0.75f);
+        _centerStyle.fontSize = 12;
+        GUI.Label(new Rect(pill.x + 1, pill.y + 1, pill.width, pill.height), label, _centerStyle);
+        _centerStyle.normal.textColor = textCol;
+        GUI.Label(pill, label, _centerStyle);
+        _centerStyle.normal.textColor = prevCol;
+        _centerStyle.fontSize = prevSize;
+
+        // 클릭 — 다른 타겟팅이 진행 중이면 무시. 발동 분기:
+        //   - 이미 _targetingSummonSkillIndex가 이 공룡: 토글로 해제
+        //   - target=ENEMY: _targetingSummonSkillIndex 세팅 (공격 타겟팅 해제)
+        //   - target=ALL_ENEMY / SELF: 즉시 발동 (-1 = AOE/SELF)
+        if (inReward) return;
+        if (_battle.state.IsOver) return;
+        if (!ready) return;
+        if (_targetingCardIndex >= 0 || _swapFromCardIndex >= 0) return;
+
+        var ev = Event.current;
+        if (ev == null) return;
+        if (ev.type != EventType.MouseDown || ev.button != 0) return;
+        if (!pill.Contains(ev.mousePosition)) return;
+        ev.Use();
+
+        // 같은 공룡 스킬 재클릭 → 타겟팅 해제
+        if (_targetingSummonSkillIndex == summonIndex)
+        {
+            _targetingSummonSkillIndex = -1;
+            return;
+        }
+
+        _targetingSummonIndex = -1; // 공격 타겟팅과 상호 배타
+        if (skill.target == DianoCard.Data.TargetType.ENEMY)
+        {
+            _targetingSummonSkillIndex = summonIndex;
+        }
+        else
+        {
+            // AOE / SELF — 즉시 발동
+            _targetingSummonSkillIndex = -1;
+            int sIdx = summonIndex;
+            var summon = s;
+            _pending.Add(() => StartCoroutine(ManualSummonSkillCoroutine(summon, -1)));
+        }
+    }
+
     private void DrawEnemy(EnemyInstance e, int enemyIndex, Vector2 center)
     {
         float h = GetEnemyDrawHeight(e);
@@ -3138,8 +3391,10 @@ public class BattleUI : MonoBehaviour
             GUI.Label(new Rect(rect.xMax - 70, rect.y + 4, 70, 18), sb.ToString().Trim(), _centerStyle);
         }
 
-        float enemyBarW = ComputeHpBarWidth(rect.width);
-        var enemyHpRect = new Rect(rect.center.x - enemyBarW / 2, rect.yMax + 4f, enemyBarW, hpBarHeight);
+        // 이끼 잡몹은 본체 적보다 작으니 HP바도 비례 축소 — min clamp 우회 + 두께도 얇게.
+        float enemyBarW = e.isMoss ? rect.width * 0.65f : ComputeHpBarWidth(rect.width);
+        float enemyBarH = e.isMoss ? 8f : hpBarHeight;
+        var enemyHpRect = new Rect(rect.center.x - enemyBarW / 2, rect.yMax + 4f, enemyBarW, enemyBarH);
         DrawHpBar(enemyHpRect, e.hp, e.data.hp, new Color(0.65f, 0.16f, 0.18f));
 
         if (e.block > 0)
@@ -3191,6 +3446,23 @@ public class BattleUI : MonoBehaviour
                 _pending.Add(() => StartCoroutine(ManualSummonAttackCoroutine(summon, eIdx)));
             }
         }
+        // 스킬 타겟팅 모드 (target=ENEMY 스킬): 선택된 공룡이 이 적에게 스킬 시전
+        else if (_targetingSummonSkillIndex >= 0)
+        {
+            var ev = Event.current;
+            bool hovered = rect.Contains(ev.mousePosition);
+            DrawTargetEnemyRing(rect, hovered);
+
+            if (ev.type == EventType.MouseDown && ev.button == 0 && hovered)
+            {
+                ev.Use();
+                int sIdx = _targetingSummonSkillIndex;
+                int eIdx = enemyIndex;
+                var summon = (sIdx >= 0 && sIdx < _battle.state.field.Count) ? _battle.state.field[sIdx] : null;
+                _targetingSummonSkillIndex = -1;
+                _pending.Add(() => StartCoroutine(ManualSummonSkillCoroutine(summon, eIdx)));
+            }
+        }
     }
 
     /// <summary>수동 소환수 공격 — lunge 애니메이션 후 데미지 적용.</summary>
@@ -3202,6 +3474,17 @@ public class BattleUI : MonoBehaviour
         if (currentIdx < 0) yield break;
         yield return AnimateLunge(summon, isSummon: true);
         _battle.CommandSummonAttack(currentIdx, enemyIndex);
+    }
+
+    /// <summary>수동 소환수 스킬 — lunge 애니메이션 후 스킬 발동. enemyIndex는 ENEMY 타겟에서만 사용 (-1 = AOE/SELF).</summary>
+    private IEnumerator ManualSummonSkillCoroutine(SummonInstance summon, int enemyIndex)
+    {
+        if (summon == null || _battle?.state == null) yield break;
+        int currentIdx = _battle.state.field.IndexOf(summon);
+        if (currentIdx < 0) yield break;
+        if (!_battle.CanUseSkill(currentIdx)) yield break;
+        yield return AnimateLunge(summon, isSummon: true);
+        _battle.CommandSummonSkill(currentIdx, enemyIndex);
     }
 
     // 타겟팅 모드에서 선택된 카드 외곽에 부드럽게 빛나는 글로우.
@@ -3755,80 +4038,29 @@ public class BattleUI : MonoBehaviour
             DrawBorder(rect, 2f, new Color(0.7f, 0.55f, 0.3f, 1f));
         }
 
-        if (badgeColor.HasValue)
-        {
-            // 둥근 카운트 뱃지 — 우하단에 살짝 걸친 위치
-            Color baseTint = badgeColor.Value;
-            // 본체는 옅게 (alpha 낮춤), glow는 거의 안 보일 정도
-            Color body = new Color(baseTint.r, baseTint.g, baseTint.b, 0.55f);
-            Color glow = new Color(
-                Mathf.Lerp(baseTint.r, 1f, 0.6f),
-                Mathf.Lerp(baseTint.g, 1f, 0.6f),
-                Mathf.Lerp(baseTint.b, 1f, 0.6f));
-            // 카드 착지 펄스 — 뱃지가 잠깐 커지면서 glow가 밝아진다.
-            float pulse = Mathf.Clamp01(badgePulse);
-            float scale = 1f + 0.45f * pulse;
-            float bSize = rect.height * 0.40f * scale;
-            if (pulse > 0f)
-            {
-                float gBoost = 0.35f * pulse;
-                glow = new Color(
-                    Mathf.Clamp01(glow.r + gBoost),
-                    Mathf.Clamp01(glow.g + gBoost),
-                    Mathf.Clamp01(glow.b + gBoost));
-                body = new Color(body.r, body.g, body.b, Mathf.Clamp01(body.a + 0.3f * pulse));
-            }
-            var center = new Vector2(rect.xMax - rect.height * 0.40f * 0.35f, rect.yMax - rect.height * 0.40f * 0.35f);
-            DrawCountBadge(center, count, body, glow, bSize);
-        }
-        else
-        {
-            // 카운트 텍스트 — 아이콘 중앙 위에 외곽선 텍스트.
-            int prevFontSize = _centerStyle.fontSize;
-            _centerStyle.fontSize = Mathf.RoundToInt(rect.height * 0.26f);
-            DrawTextWithOutline(rect, count.ToString(), _centerStyle,
-                                Color.white, new Color(0, 0, 0, 0.95f), 1.6f);
-            _centerStyle.fontSize = prevFontSize;
-        }
-    }
+        // 카운트 — 아이콘 위에 외곽선 텍스트만. 프레임/오브 없이 다크판타지 톤에 자연스럽게 얹힘.
+        // 착지 펄스: 짧게 살짝 커지고, badgeColor 톤의 부드러운 빛이 깜빡인다.
+        float pulse = Mathf.Clamp01(badgePulse);
+        float scale = 1f + 0.20f * pulse;
 
-    // 둥근 카운트 뱃지 — _manaFrameTexture를 색상 틴트로 재활용 + 글로우 + 숫자.
-    // ATK 뱃지와 동일한 형태, 색상만 파라미터화.
-    private void DrawCountBadge(Vector2 center, int count, Color bodyColor, Color glowColor, float size)
-    {
-        var rect = new Rect(center.x - size / 2f, center.y - size / 2f, size, size);
-
-        if (_manaFrameTexture != null)
+        if (pulse > 0.01f && badgeColor.HasValue && _manaFrameTexture != null)
         {
+            Color tint = badgeColor.Value;
+            float glowSize = rect.height * 0.70f * scale;
+            var gr = new Rect(rect.center.x - glowSize * 0.5f,
+                              rect.center.y - glowSize * 0.5f,
+                              glowSize, glowSize);
             var prev = GUI.color;
-
-            const int layers = 4;
-            for (int i = 0; i < layers; i++)
-            {
-                float t = i / (float)(layers - 1);
-                float scale = Mathf.Lerp(1.10f, 1.55f, t);
-                float alpha = 0.12f * (1f - t) * (1f - t);
-                float gs = size * scale;
-                var gr = new Rect(rect.center.x - gs * 0.5f, rect.center.y - gs * 0.5f, gs, gs);
-                GUI.color = new Color(glowColor.r, glowColor.g, glowColor.b, alpha);
-                GUI.DrawTexture(gr, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
-            }
-
-            GUI.color = bodyColor;
-            GUI.DrawTexture(rect, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
+            GUI.color = new Color(tint.r, tint.g, tint.b, 0.32f * pulse);
+            GUI.DrawTexture(gr, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
             GUI.color = prev;
         }
-        else
-        {
-            FillRect(rect, bodyColor);
-            DrawBorder(rect, 1f, new Color(0.85f, 0.66f, 0.28f, 0.95f));
-        }
 
-        int prevFontSize = _cardCostStyle.fontSize;
-        _cardCostStyle.fontSize = Mathf.RoundToInt(size * 0.50f);
-        DrawTextWithOutline(rect, count.ToString(), _cardCostStyle,
-                            Color.white, new Color(0f, 0f, 0f, 0.95f), 1.4f);
-        _cardCostStyle.fontSize = prevFontSize;
+        int prevFontSize = _centerStyle.fontSize;
+        _centerStyle.fontSize = Mathf.RoundToInt(rect.height * 0.34f * scale);
+        DrawTextWithOutline(rect, count.ToString(), _centerStyle,
+                            Color.white, new Color(0f, 0f, 0f, 0.95f), 1.8f);
+        _centerStyle.fontSize = prevFontSize;
     }
 
     private void DrawHand(BattleState state)

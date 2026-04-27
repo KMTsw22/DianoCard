@@ -133,6 +133,11 @@ namespace DianoCard.Battle
         public int silencedTurns;
         // 도발: >0이면 적의 모든 공격이 이 공룡으로 집중됨. 매 턴 종료 시 1 감소.
         public int tauntTurns;
+        // 시그니처 스킬 쿨다운 — >0이면 사용 불가. StartTurn에서 1씩 감소(0 도달 시 사용 가능).
+        // 사용 직후 cooldownTurns로 세팅. T0(스킬 없음)는 항상 0.
+        public int skillCooldownRemaining;
+        // BATTLE 쿨다운 스킬을 이번 전투에서 이미 썼는지 — 한 번 true면 이 전투 동안 재사용 불가.
+        public bool skillUsedThisBattle;
 
         public bool CanAttack => !IsDead && !hasAttackedThisTurn && silencedTurns <= 0;
         public bool IsTaunting => !IsDead && tauntTurns > 0;
@@ -194,6 +199,12 @@ namespace DianoCard.Battle
         // === 디버프 (rough MVP) ===
         public int poisonStacks;
         public int weakTurns;
+        // 출혈 스택 — 매 턴 종료 시 stacks만큼 피해, 1 감소. 독과 별도 필드(향후 분기 가능).
+        public int bleedStacks;
+        // 취약: >0이면 받는 피해 +50% (TakeDamage에서 적용).
+        public int vulnerableTurns;
+        // 기절: >0이면 행동 스킵. ExecuteIntent에서 체크, TickStatuses에서 감소.
+        public int stunTurns;
 
         // === 페이즈 전환 추적 (보스용) ===
         // 0이면 phase 1 on_enter도 배틀 시작 시 1회 실행됨.
@@ -255,9 +266,11 @@ namespace DianoCard.Battle
 
         public void TakeDamage(int dmg)
         {
-            int absorbed = Math.Min(block, dmg);
+            // 취약 시 raw dmg가 먼저 증폭된 뒤 block으로 흡수 (STS 방식).
+            int adjusted = vulnerableTurns > 0 ? (int)Math.Round(dmg * 1.5f) : dmg;
+            int absorbed = Math.Min(block, adjusted);
             block -= absorbed;
-            int remaining = dmg - absorbed;
+            int remaining = adjusted - absorbed;
             hp = Math.Max(0, hp - remaining);
         }
 
@@ -268,7 +281,14 @@ namespace DianoCard.Battle
                 hp = Math.Max(0, hp - poisonStacks);
                 poisonStacks--;
             }
+            if (bleedStacks > 0)
+            {
+                hp = Math.Max(0, hp - bleedStacks);
+                bleedStacks--;
+            }
             if (weakTurns > 0) weakTurns--;
+            if (vulnerableTurns > 0) vulnerableTurns--;
+            if (stunTurns > 0) stunTurns--;
         }
     }
 }
