@@ -258,6 +258,75 @@ public class CheatUI : MonoBehaviour
                 GUILayout.Label($"사이즈차 Y 부스트: {battleUi.PairSizeStaggerBoost:F2}");
                 battleUi.PairSizeStaggerBoost = GUILayout.HorizontalSlider(battleUi.PairSizeStaggerBoost, 0f, 1.5f);
             }
+
+            // ===== 보스 부메랑 튜닝 — 색/투명도/크기/Y비율 라이브 조정 + 테스트 발사.
+            if (battleUi != null)
+            {
+                GUILayout.Space(8f);
+                GUILayout.Label("— 보스 부메랑 튜닝 —", _stateStyle);
+
+                var c = BossProjectile.TintColor;
+                GUILayout.Label($"R: {c.r:F2}");
+                c.r = GUILayout.HorizontalSlider(c.r, 0f, 1f);
+                GUILayout.Label($"G: {c.g:F2}");
+                c.g = GUILayout.HorizontalSlider(c.g, 0f, 1f);
+                GUILayout.Label($"B: {c.b:F2}");
+                c.b = GUILayout.HorizontalSlider(c.b, 0f, 1f);
+                GUILayout.Label($"투명도(A): {c.a:F2}");
+                c.a = GUILayout.HorizontalSlider(c.a, 0f, 1f);
+                BossProjectile.TintColor = c;
+
+                // 색 프리셋 — 자주 쓸 만한 톤 빠르게 적용.
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("잉크차콜", _btnStyle))
+                    BossProjectile.TintColor = new Color(0.085f, 0.062f, 0.110f, 1f);
+                if (GUILayout.Button("순흑", _btnStyle))
+                    BossProjectile.TintColor = new Color(0f, 0f, 0f, 1f);
+                if (GUILayout.Button("보라", _btnStyle))
+                    BossProjectile.TintColor = new Color(0.30f, 0.10f, 0.45f, 1f);
+                GUILayout.EndHorizontal();
+
+                GUILayout.Label($"전체 크기 배율: {BossProjectile.SizeMultiplier:F2}");
+                BossProjectile.SizeMultiplier = GUILayout.HorizontalSlider(BossProjectile.SizeMultiplier, 0.3f, 3f);
+
+                GUILayout.Label($"Y 비율(양 뿔 길이): {BossProjectile.YScaleMultiplier:F2}");
+                BossProjectile.YScaleMultiplier = GUILayout.HorizontalSlider(BossProjectile.YScaleMultiplier, 0.5f, 3f);
+
+                // 그라데이션 — 텍스처 자체에 적용. 값 바뀌면 다음 발사에서 재생성.
+                GUILayout.Label($"양 뿔 페이드: {BossProjectile.TipFadePower:F2}  (↑일수록 끝이 빨리 사라짐)");
+                BossProjectile.TipFadePower = GUILayout.HorizontalSlider(BossProjectile.TipFadePower, 0.5f, 4f);
+                GUILayout.Label($"가장자리 노이즈: {BossProjectile.NoiseStrength:F2}  (천 찢김 거침)");
+                BossProjectile.NoiseStrength = GUILayout.HorizontalSlider(BossProjectile.NoiseStrength, 0f, 0.6f);
+
+                // 휘날림 — 매 프레임 sin 흔들림 + 잔상 사본.
+                GUILayout.Label($"휘날림 강도: {BossProjectile.WobbleIntensity:F2}");
+                BossProjectile.WobbleIntensity = GUILayout.HorizontalSlider(BossProjectile.WobbleIntensity, 0f, 1.5f);
+                GUILayout.Label($"잔상 개수: {BossProjectile.AfterimageCount}");
+                BossProjectile.AfterimageCount = Mathf.RoundToInt(GUILayout.HorizontalSlider(BossProjectile.AfterimageCount, 0f, 5f));
+                if (BossProjectile.AfterimageCount > 0)
+                {
+                    GUILayout.Label($"잔상 간격: {BossProjectile.AfterimageSpacing:F2}");
+                    BossProjectile.AfterimageSpacing = GUILayout.HorizontalSlider(BossProjectile.AfterimageSpacing, 0f, 0.4f);
+                    GUILayout.Label($"잔상 알파: {BossProjectile.AfterimageAlpha:F2}");
+                    BossProjectile.AfterimageAlpha = GUILayout.HorizontalSlider(BossProjectile.AfterimageAlpha, 0f, 1f);
+                }
+
+                GUILayout.BeginHorizontal();
+                string trailLabel = BossProjectile.TrailEnabled ? "트레일 ON" : "트레일 OFF";
+                if (GUILayout.Button(trailLabel, _btnStyle))
+                    BossProjectile.TrailEnabled = !BossProjectile.TrailEnabled;
+                if (GUILayout.Button("테스트 발사", _btnStyle))
+                    battleUi.Cheat_FireBossCrescent();
+                GUILayout.EndHorizontal();
+
+                if (BossProjectile.TrailEnabled)
+                {
+                    GUILayout.Label($"트레일 두께: {BossProjectile.TrailWidthRatio:F2}");
+                    BossProjectile.TrailWidthRatio = GUILayout.HorizontalSlider(BossProjectile.TrailWidthRatio, 0f, 1.5f);
+                    GUILayout.Label($"트레일 시간: {BossProjectile.TrailTime:F2}");
+                    BossProjectile.TrailTime = GUILayout.HorizontalSlider(BossProjectile.TrailTime, 0f, 1f);
+                }
+            }
         }
 
         GUILayout.Space(12f);

@@ -422,10 +422,10 @@ public class BattleUI : MonoBehaviour
     [SerializeField, Range(0f, 3f)] private float cardNameOutlineThickness = 1.0f;
     [Tooltip("본문(ATK/HP, 설명) 텍스트 색 — 명판 베이지 위 최대 가독성.")]
     [SerializeField] private Color cardBodyTextColor = Color.black;
-    [Tooltip("본문 외곽선 색 — 텍스트와 같은 검정으로 살짝 굵기 강조.")]
+    [Tooltip("본문 외곽선 색 — 필요 시 사용.")]
     [SerializeField] private Color cardBodyOutline = new(0f, 0f, 0f, 0.7f);
-    [Tooltip("본문 외곽선 두께 — 0 = 외곽선 없음, 0.5 = 살짝 굵게, 1.0 = 또렷한 외곽선.")]
-    [SerializeField, Range(0f, 2f)] private float cardBodyOutlineThickness = 0.5f;
+    [Tooltip("본문 외곽선 두께 — 0 = 외곽선 없음(기본), 0.5 = 살짝 굵게, 1.0 = 또렷한 외곽선.")]
+    [SerializeField, Range(0f, 2f)] private float cardBodyOutlineThickness = 0f;
     [Tooltip("코스트 젬 숫자 색.")]
     [SerializeField] private Color cardCostTextColor = Color.white;
     [Tooltip("코스트 젬 숫자 외곽선 색.")]
@@ -1591,6 +1591,85 @@ public class BattleUI : MonoBehaviour
         UpdateWorldBackground();
     }
 
+    /// CheatUI 라이브 튜닝용 — 실전 시퀀스 그대로 재생: 보스 swing → strike 정점 spawn → 명중 시 PlayHit.
+    /// HP 데미지는 적용하지 않음 (시각 확인 전용). 보스가 없으면 화면 좌→우 폴백.
+    public void Cheat_FireBossCrescent()
+    {
+        StartCoroutine(CheatFireBossCrescentRoutine());
+    }
+
+    private IEnumerator CheatFireBossCrescentRoutine()
+    {
+        Vector3 spawnPos;
+        Vector3 hitPos;
+        Vector3 dir = Vector3.right;
+        float distToTarget = 6f;
+
+        BattleEntityView bossView = null;
+        foreach (var kv in _enemyViews)
+        {
+            if (kv.Value != null) { bossView = kv.Value; break; }
+        }
+
+        const float swingDuration = 1.5f;
+
+        if (bossView != null && _playerView != null)
+        {
+            Vector3 toTarget = _playerView.transform.position - bossView.transform.position;
+            if (toTarget.sqrMagnitude > 0.01f)
+            {
+                dir = toTarget.normalized;
+                distToTarget = toTarget.magnitude;
+            }
+            // 보스 swing 모션 재생.
+            bossView.PlayAttack(dir, distance: 0.30f, duration: swingDuration);
+
+            // strike 페이즈 끝(swing의 45%)까지 대기 → 검이 정점 찍은 순간 spawn.
+            yield return new WaitForSeconds(swingDuration * 0.45f);
+
+            var bossSr = bossView.GetComponent<SpriteRenderer>();
+            float bossH = (bossSr != null && bossSr.bounds.size.y > 0.001f) ? bossSr.bounds.size.y : 2.0f;
+            // 검 끝 — 보스 어깨~머리 사이(70%) → 완만한 위→아래 각도.
+            spawnPos = bossView.transform.position + Vector3.up * (bossH * 0.70f) + dir * (bossH * 0.50f);
+
+            var psr = _playerView.GetComponent<SpriteRenderer>();
+            if (psr != null && psr.sprite != null)
+            {
+                Bounds b = psr.bounds;
+                hitPos = b.center + Vector3.up * (b.size.y * 0.15f);
+            }
+            else hitPos = _playerView.transform.position;
+        }
+        else if (Camera.main != null)
+        {
+            var cam = Camera.main;
+            float z = -cam.transform.position.z;
+            // 위→아래 각도 — 좌상에서 우중으로.
+            spawnPos = cam.ViewportToWorldPoint(new Vector3(0.20f, 0.75f, z));
+            hitPos   = cam.ViewportToWorldPoint(new Vector3(0.75f, 0.45f, z));
+            dir = (hitPos - spawnPos).normalized;
+            distToTarget = (hitPos - spawnPos).magnitude;
+        }
+        else
+        {
+            yield break;
+        }
+
+        float projHeight = Mathf.Clamp(distToTarget * 0.32f, 1.8f, 2.8f);
+        float flightTime = Mathf.Clamp(distToTarget * 0.09f, 0.35f, 0.55f);
+
+        // 명중 시 플레이어 PlayHit — 실전에선 DealAttack 경로로 자동 트리거되지만 치트는 데미지 없으니 직접.
+        DianoCard.Battle.BossProjectile.SpawnCrescent(
+            spawnPos, hitPos,
+            duration: flightTime,
+            worldHeight: projHeight,
+            sortingOrder: 110,
+            onHit: () =>
+            {
+                if (_playerView != null) _playerView.PlayHit();
+            });
+    }
+
     private Texture2D LoadBackgroundFor(EnemyData enemy)
     {
         if (enemy.enemyType == EnemyType.BOSS)
@@ -2212,9 +2291,9 @@ public class BattleUI : MonoBehaviour
             fontStyle = FontStyle.Normal,
             normal = { textColor = new Color(1f, 0.96f, 0.85f) },
         };
-        // 카드 텍스트용 폰트 — 다크판타지 톤. 제목은 Cinzel(영문 세리프), 본문은 NotoSansKR(한/영 혼용).
+        // 카드 텍스트용 폰트 — 다크판타지 톤. 제목은 Cinzel(영문 세리프), 본문은 IM Fell English(고서체).
         var fontTitle = Resources.Load<Font>("Fonts/Cinzel-VariableFont_wght");
-        var fontBody  = Resources.Load<Font>("Fonts/NotoSansKR-VariableFont_wght");
+        var fontBody  = Resources.Load<Font>("Fonts/IMFellEnglish-Regular");
         _cardCostStyle = new GUIStyle(GUI.skin.label)
         {
             font = fontTitle,
@@ -4780,14 +4859,59 @@ public class BattleUI : MonoBehaviour
                 }
             }
 
-            // E901 P1: 영상 안 좌측 대쉬 + Unity transform 이동으로 적 근처까지 빠른 lunge.
-            // distance = 적과의 거리 × 0.72 (적정 거리 유지, 28% 여유). duration 0.9 — 짧게 압축해 lunge 속도감 ↑.
+            // E901 P1/P2: 제자리 스윙 + 검은 초승달 투사체(라인하르트 화염강타 톤).
+            // 보스가 플레이어에게 다가가지 않음 — 발만 살짝 디딘 swing 모션(distance 0.3).
+            // strike 페이즈 진입 시점에 BossProjectile.SpawnCrescent로 검은 초승달을 발사하고,
+            // 투사체 비행 시간만큼 추가 대기 → DealAttack(피격) 시점이 명중 시점과 일치.
             bool isE901P1 = e.data.id == "E901" && e.currentPhase < 3;
             if (isE901P1)
             {
-                float dashDistance = Mathf.Max(distToTarget * 0.72f, 1.2f);
-                view.PlayAttack(dir, distance: dashDistance, duration: 0.9f);
-                yield return new WaitForSeconds(0.85f);
+                // 묵직한 스윙 — duration 1.5s. windup(~0.45s)에서 검을 뒤로 충분히 당기는 시간 확보.
+                const float swingDuration = 1.5f;
+                view.PlayAttack(dir, distance: 0.30f, duration: swingDuration);
+
+                // strike 페이즈 끝(duration의 45%) — 검이 가장 앞쪽에 도달해 정점 찍은 순간 발사.
+                // BattleEntityView 페이즈: 0~30 windup, 30~45 strike, 45~80 extended, 80~100 return.
+                yield return new WaitForSeconds(swingDuration * 0.45f);
+
+                // 검 끝 위치 추정 — 보스 sprite bounds 기반: 위쪽 55% + 앞쪽 50%.
+                var bossSr = view.GetComponent<SpriteRenderer>();
+                float bossH = (bossSr != null && bossSr.bounds.size.y > 0.001f)
+                    ? bossSr.bounds.size.y
+                    : 2.0f;
+                // 검 끝 — 보스 어깨~머리 사이(높이 70%) → 살짝만 위에서 내려오는 완만한 각도.
+                Vector3 spawnPos = view.transform.position
+                                 + Vector3.up * (bossH * 0.70f)
+                                 + dir * (bossH * 0.50f);
+                Vector3 hitPos;
+                if (_playerView != null)
+                {
+                    var psr = _playerView.GetComponent<SpriteRenderer>();
+                    if (psr != null && psr.sprite != null)
+                    {
+                        // sprite 중심에서 +15% 위 ≈ 가슴/얼굴 부근(전체 높이의 65% 위치).
+                        Bounds b = psr.bounds;
+                        hitPos = b.center + Vector3.up * (b.size.y * 0.15f);
+                    }
+                    else hitPos = _playerView.transform.position;
+                }
+                else
+                {
+                    hitPos = view.transform.position + dir * Mathf.Max(distToTarget, 1.5f);
+                }
+
+                // 라인하르트 화염강타 톤 — 큰 초승달이 화면을 가로지름. 캐릭터보다 큰 범위감.
+                float projHeight = Mathf.Clamp(distToTarget * 0.32f, 1.8f, 2.8f);
+                // 빠른 비행 — 화염강타 속도감.
+                float flightTime = Mathf.Clamp(distToTarget * 0.09f, 0.35f, 0.55f);
+                DianoCard.Battle.BossProjectile.SpawnCrescent(
+                    spawnPos, hitPos,
+                    duration: flightTime,
+                    worldHeight: projHeight,
+                    sortingOrder: 110);
+
+                // 투사체 도착 직후 yield 종료 → DoEnemyAction → DealAttack → PlayHit.
+                yield return new WaitForSeconds(flightTime + 0.05f);
             }
             else
             {

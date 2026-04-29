@@ -207,7 +207,7 @@ public class CharacterSelectUI : MonoBehaviour
     private Texture2D _backgroundTexture;
     private Texture2D _characterTexture;
     private Texture2D[] _characterFrames;      // 캐릭터 애니메이션 프레임 시퀀스 (있으면 정적 _characterTexture 대신 사용)
-    private float _characterFps = 10f;         // GIF 원본과 동일 (10fps, 5초 루프)
+    private float _characterFps = 12f;         // KLING 원본의 절반 속도 (122프레임 ÷ 12fps ≈ 10.2s 루프)
     private Texture2D _characterShadowTexture;
     private Texture2D _cloudsTexture;
     private float _cloudOffset;

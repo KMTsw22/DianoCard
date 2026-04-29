@@ -1,60 +1,60 @@
 id,name_kr,name_en,card_type,sub_type,rarity,cost,attack,hp,value,target,description,image,chapter,field_scale
-C001,Triceratops,Triceratops,SUMMON,HERBIVORE,COMMON,1,4,20,0,FIELD,Herbivore. Direct summon. High HP.,Triceratops.png,1,1.0
-C002,Stegosaurus,Stegosaurus,SUMMON,HERBIVORE,COMMON,1,5,17,0,FIELD,Herbivore. Direct summon. Balanced.,Stegosaurus.png,1,1.0
-C003,Ankylosaurus,Ankylosaurus,SUMMON,HERBIVORE,UNCOMMON,2,3,25,0,FIELD,Herbivore tank. Massive HP.,Ankylosaurus.png,1,1.0
-C004,Raptor,Raptor,SUMMON,CARNIVORE,COMMON,1,7,13,0,FIELD,Carnivore. Fast strike.,Raptor.png,1,0.85
-C005,Carno,Carno,SUMMON,CARNIVORE,COMMON,1,8,10,0,FIELD,Carnivore. Heavy hitter.,Carnotaurus.png,1,1.05
-C006,Dilophosaurus,Dilophosaurus,SUMMON,CARNIVORE,UNCOMMON,2,6,12,0,FIELD,Carnivore. Applies poison.,Dilophosaurus.png,2,1.0
+C001,Triceratops,Triceratops,SUMMON,HERBIVORE,COMMON,1,4,20,0,FIELD,Herbivore. Tank.,Triceratops.png,1,1.0
+C002,Stegosaurus,Stegosaurus,SUMMON,HERBIVORE,COMMON,1,5,17,0,FIELD,Herbivore. Balanced.,Stegosaurus.png,1,1.0
+C003,Ankylosaurus,Ankylosaurus,SUMMON,HERBIVORE,UNCOMMON,2,3,25,0,FIELD,Herbivore. Heavy tank.,Ankylosaurus.png,1,1.0
+C004,Raptor,Raptor,SUMMON,CARNIVORE,COMMON,1,7,13,0,FIELD,Carnivore. Fast.,Raptor.png,1,0.85
+C005,Carno,Carno,SUMMON,CARNIVORE,COMMON,1,8,10,0,FIELD,Carnivore. Hard hitter.,Carnotaurus.png,1,1.05
+C006,Dilophosaurus,Dilophosaurus,SUMMON,CARNIVORE,UNCOMMON,2,6,12,0,FIELD,Carnivore. Poisons.,Dilophosaurus.png,2,1.0
 C007,Spinosaurus,Spinosaurus,SUMMON,CARNIVORE,RARE,3,12,18,0,FIELD,Mighty carnivore.,Spinosaurus.png,3,1.0
-C008,T-Rex,T-Rex,SUMMON,CARNIVORE,RARE,3,15,22,0,FIELD,Apex carnivore. AoE fear.,T-Rex.png,1,1.35
-C009,Pteranodon,Pteranodon,SUMMON,CARNIVORE,UNCOMMON,2,5,8,0,FIELD,Flying. Strikes back row.,Pteranodon.png,2,1.0
-C010,Compy,Compy,SUMMON,CARNIVORE,COMMON,0,2,5,0,FIELD,Tiny carnivore. 0-cost fusion seed.,Compsognathus.png,1,0.60
-C011,Brachiosaurus,Brachiosaurus,SUMMON,HERBIVORE,RARE,2,3,40,0,FIELD,Herbivore apex. Massive tank.,Brachiosaurus.png,1,1.0
-C101,Spark,Spark,MAGIC,ATTACK,COMMON,1,5,0,5,ENEMY,Deal 5 damage.,AttackSpell.png,1,1.0
-C102,Guard,Guard,MAGIC,DEFENSE,COMMON,1,0,0,6,SELF,Gain 6 block.,DefenseSpell.png,1,1.0
-C103,Fireball,Fireball,MAGIC,ATTACK,UNCOMMON,2,0,0,12,ENEMY,Deal 12 damage.,Fireball.png,1,1.0
-C104,Ward,Ward,MAGIC,DEFENSE,UNCOMMON,2,0,0,10,SELF,Gain 10 block. +5 next turn.,Ward.png,1,1.0
-C105,Lightning,Lightning,MAGIC,ATTACK,RARE,1,0,0,8,RANDOM,Deal 8 to random enemy.,Lightning.png,2,1.0
-C106,Meteor,Meteor,MAGIC,ATTACK,RARE,3,0,0,10,ALL_ENEMY,Deal 10 to all enemies.,Meteor.png,3,1.0
-C107,Purify,Purify,MAGIC,PURIFY,UNCOMMON,1,0,0,0,SELF,Free stolen dinos. Clear debuffs.,Purify.png,1,1.0
-C108,Taunt,Taunt,BUFF,TAUNT,COMMON,1,0,0,2,ALL_ALLY,All summons gain Taunt 2T.,Taunt.png,1,1.0
-C201,Power Up,Power Up,BUFF,ATTACK_BUFF,COMMON,1,0,0,3,ALLY,+3 ATK to herbivore this turn.,PowerUp.png,1,1.0
-C202,Heal,Heal,BUFF,HEAL,COMMON,1,0,0,2,ALL_ALLY,Heal +2 HP to all.,HealAll.png,1,1.0
-C203,Berserk,Berserk,BUFF,ATTACK_BUFF,UNCOMMON,1,0,0,5,ALLY,+5 ATK this turn. Lose 1 HP.,Berserk.png,1,1.0
-C204,Cleave,Cleave,BUFF,SPECIAL,UNCOMMON,2,0,0,0,ALLY,Target's attacks become AoE.,Cleave.png,2,1.0
-C205,Regenerate,Regenerate,BUFF,HEAL,UNCOMMON,1,0,0,3,ALLY,+3 HP / +1 each turn (3T).,Regenerate.png,2,1.0
-C206,Roar,Roar,BUFF,SPECIAL,RARE,2,0,0,0,ALL_ALLY,All allies +2 ATK permanently.,Roar.png,3,1.0
-C302,Draw,Draw,UTILITY,DRAW,COMMON,1,0,0,2,SELF,Draw 2 cards.,Draw.png,1,1.0
+C008,T-Rex,T-Rex,SUMMON,CARNIVORE,RARE,3,15,22,0,FIELD,Apex. AoE Fear.,T-Rex.png,1,1.35
+C009,Pteranodon,Pteranodon,SUMMON,CARNIVORE,UNCOMMON,2,5,8,0,FIELD,Flying. Hits back row.,Pteranodon.png,2,1.0
+C010,Compy,Compy,SUMMON,CARNIVORE,COMMON,0,2,5,0,FIELD,Tiny. 0-cost. Fusion seed.,Compsognathus.png,1,0.60
+C011,Brachiosaurus,Brachiosaurus,SUMMON,HERBIVORE,RARE,2,3,40,0,FIELD,Apex herbivore. Massive.,Brachiosaurus.png,1,1.0
+C101,Spark,Spark,MAGIC,ATTACK,COMMON,1,5,0,5,ENEMY,Deal 5.,AttackSpell.png,1,1.0
+C102,Guard,Guard,MAGIC,DEFENSE,COMMON,1,0,0,6,SELF,+6 block.,DefenseSpell.png,1,1.0
+C103,Fireball,Fireball,MAGIC,ATTACK,UNCOMMON,2,0,0,12,ENEMY,Deal 12.,Fireball.png,1,1.0
+C104,Ward,Ward,MAGIC,DEFENSE,UNCOMMON,2,0,0,10,SELF,+10 block. +5 next T.,Ward.png,1,1.0
+C105,Lightning,Lightning,MAGIC,ATTACK,RARE,1,0,0,8,RANDOM,Deal 8 to random.,Lightning.png,2,1.0
+C106,Meteor,Meteor,MAGIC,ATTACK,RARE,3,0,0,10,ALL_ENEMY,Deal 10 to all.,Meteor.png,3,1.0
+C107,Purify,Purify,MAGIC,PURIFY,UNCOMMON,1,0,0,0,SELF,Free stolen. Clear debuffs.,Purify.png,1,1.0
+C108,Taunt,Taunt,BUFF,TAUNT,COMMON,1,0,0,2,ALL_ALLY,All Taunt (2T).,Taunt.png,1,1.0
+C201,Power Up,Power Up,BUFF,ATTACK_BUFF,COMMON,1,0,0,3,ALLY,+3 ATK (1T).,PowerUp.png,1,1.0
+C202,Heal,Heal,BUFF,HEAL,COMMON,1,0,0,2,ALL_ALLY,+2 HP to all.,HealAll.png,1,1.0
+C203,Berserk,Berserk,BUFF,ATTACK_BUFF,UNCOMMON,1,0,0,5,ALLY,+5 ATK (1T). -1 HP.,Berserk.png,1,1.0
+C204,Cleave,Cleave,BUFF,SPECIAL,UNCOMMON,2,0,0,0,ALLY,Attacks become AoE.,Cleave.png,2,1.0
+C205,Regenerate,Regenerate,BUFF,HEAL,UNCOMMON,1,0,0,3,ALLY,+3 HP. +1/T (3T).,Regenerate.png,2,1.0
+C206,Roar,Roar,BUFF,SPECIAL,RARE,2,0,0,0,ALL_ALLY,All +2 ATK (forever).,Roar.png,3,1.0
+C302,Draw,Draw,UTILITY,DRAW,COMMON,1,0,0,2,SELF,Draw 2.,Draw.png,1,1.0
 C303,Excavate,Excavate,UTILITY,DRAW,UNCOMMON,1,0,0,3,SELF,Draw 3. Discard 1.,Excavate.png,2,1.0
-C004_T1,Alpha Raptor,Alpha Raptor,SUMMON,CARNIVORE,UNCOMMON,1,10,15,0,FIELD,Raptor T1. Faster strike.,Raptor_T1.png,1,0.85
-C004_T2,Apex Raptor,Apex Raptor,SUMMON,CARNIVORE,RARE,1,13,18,0,FIELD,Raptor T2. Devastating speed.,Raptor_T2.png,1,0.85
+C004_T1,Alpha Raptor,Alpha Raptor,SUMMON,CARNIVORE,UNCOMMON,1,10,15,0,FIELD,Raptor T1. Faster.,Raptor_T1.png,1,0.85
+C004_T2,Apex Raptor,Apex Raptor,SUMMON,CARNIVORE,RARE,1,13,18,0,FIELD,Raptor T2. Apex speed.,Raptor_T2.png,1,0.85
 C005_T1,Storm Carno,Storm Carno,SUMMON,CARNIVORE,UNCOMMON,1,11,12,0,FIELD,Carno T1. Pure offense.,Carnotaurus_T1.png,1,1.05
 C005_T2,Abyss Carno,Abyss Carno,SUMMON,CARNIVORE,RARE,1,15,14,0,FIELD,Carno T2. Glass cannon.,Carnotaurus_T2.png,1,1.05
-C010_T1,Clever Compy,Clever Compy,SUMMON,CARNIVORE,UNCOMMON,0,3,8,0,FIELD,Compy T1. Tougher pup.,Compsognathus_T1.png,1,0.60
+C010_T1,Clever Compy,Clever Compy,SUMMON,CARNIVORE,UNCOMMON,0,3,8,0,FIELD,Compy T1. Tougher.,Compsognathus_T1.png,1,0.60
 C010_T2,Pack Compy,Pack Compy,SUMMON,CARNIVORE,RARE,0,4,12,0,FIELD,Compy T2. 0-cost beast.,Compsognathus_T2.png,1,0.60
-C008_T1,Tyrant T-Rex,Tyrant T-Rex,SUMMON,CARNIVORE,RARE,3,20,28,0,FIELD,T-Rex T1. Crushes the field.,T-Rex_T1.png,1,1.35
+C008_T1,Tyrant T-Rex,Tyrant T-Rex,SUMMON,CARNIVORE,RARE,3,20,28,0,FIELD,T-Rex T1. Field crusher.,T-Rex_T1.png,1,1.35
 C008_T2,Doom T-Rex,Doom T-Rex,SUMMON,CARNIVORE,RARE,3,26,36,0,FIELD,T-Rex T2. Apex of apex.,T-Rex_T2.png,1,1.35
-C111,Aegis,Aegis,MAGIC,DEFENSE,COMMON,1,0,0,7,ALLY,Grant 7 block to ally dino.,GuardianWind.png,1,1.0
-C112,Bulwark,Bulwark,MAGIC,DEFENSE,UNCOMMON,2,0,0,5,ALL_ALLY,Grant 5 block to all dinos.,HerdShield.png,1,1.0
-C114,Bedrock,Bedrock,MAGIC,DEFENSE,RARE,2,0,0,12,ALLY,Grant 12 block. Massive shield.,EarthenBarrier.png,1,1.0
-C121,Charge,Charge,MAGIC,ATTACK,UNCOMMON,2,0,0,7,ENEMY,Deal 7 + summoner gains 5 block.,Charge.png,1,1.0
-C124,Fury,Fury,MAGIC,ATTACK,UNCOMMON,1,0,0,5,ENEMY,"Deal 5. If summoner is at half HP or less, deal 10.",FuryStrike.png,1,1.0
-C129,Roar,Roar,MAGIC,ATTACK,UNCOMMON,2,0,0,4,ALL_ENEMY,Deal 4 to all + Weak 1T.,Roar.png,1,1.0
-C131,Claw,Claw,MAGIC,ATTACK,UNCOMMON,1,0,0,0,ENEMY,Deal damage equal to total field ATK.,ClawThrow.png,1,1.0
-C132,Pack,Pack,BUFF,SPECIAL,UNCOMMON,2,0,0,1,SELF,All SUMMON cards -1 cost this turn.,PackCall.png,1,1.0
-C133,Vine,Vine,MAGIC,DEBUFF,UNCOMMON,1,0,0,1,ENEMY,Bind enemy 1T. No attack.,BindingVine.png,1,1.0
-C134,Chain,Chain,MAGIC,DEBUFF,RARE,2,0,0,2,ENEMY,Bind enemy 2T.,SealingChain.png,2,1.0
-C135,Gale,Gale,MAGIC,DEBUFF,COMMON,1,0,0,3,ENEMY,Deal 3 + Vulnerable 1T.,GaleForce.png,1,1.0
-C136,Venom,Venom,MAGIC,DEBUFF,UNCOMMON,1,0,0,3,ENEMY,Apply 3 Poison.,VenomThorn.png,1,1.0
-C137,Bone,Bone,MAGIC,ATTACK,COMMON,0,0,0,3,ENEMY,Deal 3. 0-cost basic.,BoneArrow.png,1,1.0
-C138,Primal,Primal,MAGIC,ATTACK,UNCOMMON,0,0,0,5,ENEMY,Deal 5. Adds copy to discard.,PrimalFury.png,1,1.0
+C111,Aegis,Aegis,MAGIC,DEFENSE,COMMON,1,0,0,7,ALLY,+7 block to ally.,GuardianWind.png,1,1.0
+C112,Bulwark,Bulwark,MAGIC,DEFENSE,UNCOMMON,2,0,0,5,ALL_ALLY,+5 block to all.,HerdShield.png,1,1.0
+C114,Bedrock,Bedrock,MAGIC,DEFENSE,RARE,2,0,0,12,ALLY,+12 block (single).,EarthenBarrier.png,1,1.0
+C121,Charge,Charge,MAGIC,ATTACK,UNCOMMON,2,0,0,7,ENEMY,Deal 7. Self +5 block.,Charge.png,1,1.0
+C124,Fury,Fury,MAGIC,ATTACK,UNCOMMON,1,0,0,5,ENEMY,Deal 5. Half HP: deal 10.,FuryStrike.png,1,1.0
+C129,Roar,Roar,MAGIC,ATTACK,UNCOMMON,2,0,0,4,ALL_ENEMY,Deal 4 all. Weak (1T).,Roar.png,1,1.0
+C131,Claw,Claw,MAGIC,ATTACK,UNCOMMON,1,0,0,0,ENEMY,Deal field total ATK.,ClawThrow.png,1,1.0
+C132,Pack,Pack,BUFF,SPECIAL,UNCOMMON,2,0,0,1,SELF,SUMMON -1 cost (1T).,PackCall.png,1,1.0
+C133,Vine,Vine,MAGIC,DEBUFF,UNCOMMON,1,0,0,1,ENEMY,Bind (1T).,BindingVine.png,1,1.0
+C134,Chain,Chain,MAGIC,DEBUFF,RARE,2,0,0,2,ENEMY,Bind (2T).,SealingChain.png,2,1.0
+C135,Gale,Gale,MAGIC,DEBUFF,COMMON,1,0,0,3,ENEMY,Deal 3. Vulnerable (1T).,GaleForce.png,1,1.0
+C136,Venom,Venom,MAGIC,DEBUFF,UNCOMMON,1,0,0,3,ENEMY,+3 Poison.,VenomThorn.png,1,1.0
+C137,Bone,Bone,MAGIC,ATTACK,COMMON,0,0,0,3,ENEMY,Deal 3. 0-cost.,BoneArrow.png,1,1.0
+C138,Primal,Primal,MAGIC,ATTACK,UNCOMMON,0,0,0,5,ENEMY,Deal 5. +copy to discard.,PrimalFury.png,1,1.0
 C139,Shock,Shock,MAGIC,ATTACK,COMMON,1,0,0,4,ENEMY,Deal 4. Draw 1.,ShockStrike.png,1,1.0
-C140,Root,Root,MAGIC,DEFENSE,COMMON,1,0,0,5,SELF,Gain 5 block. Draw 1.,RootWall.png,1,1.0
+C140,Root,Root,MAGIC,DEFENSE,COMMON,1,0,0,5,SELF,+5 block. Draw 1.,RootWall.png,1,1.0
 C141,Fossil,Fossil,MAGIC,ATTACK,UNCOMMON,1,0,0,8,ENEMY,Deal 8. Exhaust.,FossilBurst.png,1,1.0
-C142,Ancient,Ancient,MAGIC,DEBUFF,UNCOMMON,1,0,0,0,ALL_ENEMY,Vulnerable 1T to all enemies.,AncientCry.png,1,1.0
-C143,Frost,Frost,MAGIC,DEBUFF,RARE,2,0,0,6,ENEMY,Deal 6. Bind 1T.,FrostBreath.png,2,1.0
-C152,Fusion,Fusion,UTILITY,FUSION,COMMON,1,0,0,0,ALLY,Fuse 2 same-tier carnivores into next tier. 1 cost + ingredient cost.,FusionSigil.png,1,1.0
-C153,Vitality,Vitality,UTILITY,FUSION,UNCOMMON,1,0,0,5,ALLY,Fusion. Result +5 HP for 2T.,VitalitySigil.png,1,1.0
-C154,Fervor,Fervor,UTILITY,FUSION,UNCOMMON,1,0,0,3,ALLY,Fusion. Result +3 ATK for 2T.,FurySigil.png,1,1.0
-C155,Bastion,Bastion,UTILITY,FUSION,UNCOMMON,1,0,0,8,ALLY,Fusion. Result 8 block for 2T.,GuardianSigil.png,1,1.0
+C142,Ancient,Ancient,MAGIC,DEBUFF,UNCOMMON,1,0,0,0,ALL_ENEMY,All Vulnerable (1T).,AncientCry.png,1,1.0
+C143,Frost,Frost,MAGIC,DEBUFF,RARE,2,0,0,6,ENEMY,Deal 6. Bind (1T).,FrostBreath.png,2,1.0
+C152,Fusion,Fusion,UTILITY,FUSION,COMMON,1,0,0,0,ALLY,Fuse 2 same-tier carnivores.,FusionSigil.png,1,1.0
+C153,Vitality,Vitality,UTILITY,FUSION,UNCOMMON,1,0,0,5,ALLY,Fuse. Result +5 HP (2T).,VitalitySigil.png,1,1.0
+C154,Fervor,Fervor,UTILITY,FUSION,UNCOMMON,1,0,0,3,ALLY,Fuse. Result +3 ATK (2T).,FurySigil.png,1,1.0
+C155,Bastion,Bastion,UTILITY,FUSION,UNCOMMON,1,0,0,8,ALLY,Fuse. Result +8 block (2T).,GuardianSigil.png,1,1.0
 C901,Weed,Weed,UTILITY,STATUS,COMMON,1,0,0,0,SELF,Curse. No effect. Exhaust.,Weed.png,1,1.0
