@@ -5,9 +5,6 @@ TextureImporter:
   - first:
       213: 750690633338732365
     second: attack_f06_0
-  - first:
-      213: -2117231845377760473
-    second: attack_f06_1
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -132,10 +129,10 @@ TextureImporter:
       name: attack_f06_0
       rect:
         serializedVersion: 2
-        x: 366
-        y: 26
-        width: 669
-        height: 482
+        x: 0
+        y: 0
+        width: 1440
+        height: 1440
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -146,28 +143,6 @@ TextureImporter:
       bones: []
       spriteID: d4f3e58572dfa6a00800000000000000
       internalID: 750690633338732365
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: attack_f06_1
-      rect:
-        serializedVersion: 2
-        x: 1037
-        y: 199
-        width: 86
-        height: 195
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 7232d1daad41e92e0800000000000000
-      internalID: -2117231845377760473
       vertices: []
       indices: 
       edges: []
@@ -187,7 +162,6 @@ TextureImporter:
       entries: []
     nameFileIdTable:
       attack_f06_0: 750690633338732365
-      attack_f06_1: -2117231845377760473
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

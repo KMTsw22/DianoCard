@@ -5,12 +5,6 @@ TextureImporter:
   - first:
       213: 6389892574208199546
     second: attack_f08_0
-  - first:
-      213: -5766020627261332845
-    second: attack_f08_1
-  - first:
-      213: -7914150711247985447
-    second: attack_f08_2
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -135,10 +129,10 @@ TextureImporter:
       name: attack_f08_0
       rect:
         serializedVersion: 2
-        x: 206
-        y: 34
-        width: 758
-        height: 558
+        x: 0
+        y: 0
+        width: 1440
+        height: 1440
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -149,50 +143,6 @@ TextureImporter:
       bones: []
       spriteID: a7b069ee0757da850800000000000000
       internalID: 6389892574208199546
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: attack_f08_1
-      rect:
-        serializedVersion: 2
-        x: 992
-        y: 409
-        width: 25
-        height: 30
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 39263880acafaffa0800000000000000
-      internalID: -5766020627261332845
-      vertices: []
-      indices: 
-      edges: []
-      weights: []
-    - serializedVersion: 2
-      name: attack_f08_2
-      rect:
-        serializedVersion: 2
-        x: 1004
-        y: 345
-        width: 39
-        height: 60
-      alignment: 0
-      pivot: {x: 0, y: 0}
-      border: {x: 0, y: 0, z: 0, w: 0}
-      customData: 
-      outline: []
-      physicsShape: []
-      tessellationDetail: -1
-      bones: []
-      spriteID: 9d4a82debd94b2290800000000000000
-      internalID: -7914150711247985447
       vertices: []
       indices: 
       edges: []
@@ -212,8 +162,6 @@ TextureImporter:
       entries: []
     nameFileIdTable:
       attack_f08_0: 6389892574208199546
-      attack_f08_1: -5766020627261332845
-      attack_f08_2: -7914150711247985447
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -98,7 +98,7 @@ namespace DianoCard.Battle
         /// <param name="targetEnemyIndex">단일 적 타겟 카드의 적 인덱스. -1이면 자동(첫 적).</param>
         /// <param name="swapFieldIndex">SUMMON 카드를 필드 꽉 찬 상태로 플레이할 때 교체 대상 공룡 인덱스. 슬롯 여유 있으면 무시.</param>
         /// <param name="allyTargetIndex">ALLY 타겟 카드(수호 마법 등)의 대상 공룡 인덱스. ALL_ALLY는 무시.</param>
-        /// <param name="fusion">융합 카드(MAGIC/FUSION) 플레이 시 재료 2개. 다른 카드는 null.</param>
+        /// <param name="fusion">융합 카드(UTILITY/FUSION) 플레이 시 재료 2개. 다른 카드는 null.</param>
         /// <returns>성공적으로 사용했으면 true</returns>
         public bool PlayCard(int handIndex, int targetEnemyIndex = -1, int swapFieldIndex = -1, int allyTargetIndex = -1, FusionTargets? fusion = null)
         {
@@ -108,7 +108,7 @@ namespace DianoCard.Battle
             var card = inst.data;
 
             // 융합 카드는 별도 경로 — 코스트/재료/필드 변형 로직이 전혀 다르다.
-            if (card.cardType == CardType.MAGIC && card.subType == CardSubType.FUSION)
+            if (card.cardType == CardType.UTILITY && card.subType == CardSubType.FUSION)
             {
                 if (!fusion.HasValue)
                 {
@@ -1142,11 +1142,13 @@ namespace DianoCard.Battle
                     break;
 
                 case EnemyAction.DRAIN:
+                {
                     state.player.TakeDamage(e.intentValue);
                     int healed = Math.Min(e.intentValue, e.data.hp - e.hp);
                     e.hp += healed;
                     Log($"  {e.data.nameKr} drains {e.intentValue} from PLAYER, heals self +{healed}");
                     break;
+                }
 
                 case EnemyAction.SUMMON:
                     for (int i = 0; i < e.intentValue; i++) SpawnAdd(e);
@@ -1220,6 +1222,40 @@ namespace DianoCard.Battle
                     // 이끼 수호 상태 등 — 행동하지 않음
                     break;
 
+                case EnemyAction.HEAL_BOSS:
+                {
+                    var boss = GetMossSummoner(e);
+                    if (boss != null && !boss.IsDead)
+                    {
+                        int healed = Math.Min(e.intentValue, boss.data.hp - boss.hp);
+                        boss.hp += healed;
+                        Log($"  🟢 {e.data.nameKr} → {boss.data.nameKr} HP +{healed} (이제 {boss.hp}/{boss.data.hp})");
+                    }
+                    break;
+                }
+
+                case EnemyAction.EMPOWER_BOSS:
+                {
+                    var boss = GetMossSummoner(e);
+                    if (boss != null && !boss.IsDead)
+                    {
+                        boss.extraAttack += e.intentValue;
+                        Log($"  🟣 {e.data.nameKr} → {boss.data.nameKr} 다음 어택 +{e.intentValue} (총 +{boss.extraAttack})");
+                    }
+                    break;
+                }
+
+                case EnemyAction.BLOCK_BOSS:
+                {
+                    var boss = GetMossSummoner(e);
+                    if (boss != null && !boss.IsDead)
+                    {
+                        boss.block += e.intentValue;
+                        Log($"  🟡 {e.data.nameKr} → {boss.data.nameKr} 블록 +{e.intentValue} (총 {boss.block})");
+                    }
+                    break;
+                }
+
                 default:
                     Log($"  {e.data.nameKr}: unknown action {e.intentAction}");
                     break;
@@ -1281,10 +1317,9 @@ namespace DianoCard.Battle
             Log($"  {summoner.data.nameKr} summons {addData.nameKr} (HP {addData.hp}/ATK {addData.attack})");
         }
 
-        /// <summary>이끼 쫄 1체 소환. summoner.isMossAggressive에 따라 공격/수호 패턴으로.</summary>
+        /// <summary>이끼 쫄 1체 소환. PS_MOSS_E901 5종 행동(공격/힐/엠파워/블록/화상) 매 턴 랜덤.</summary>
         private void SpawnMoss(EnemyInstance summoner)
         {
-            bool aggressive = summoner.isMossAggressive;
             var mossData = new EnemyData
             {
                 id = "MOSS_" + summoner.data.id,
@@ -1293,9 +1328,9 @@ namespace DianoCard.Battle
                 enemyType = EnemyType.NORMAL,
                 chapter = summoner.data.chapter,
                 hp = 5,
-                attack = aggressive ? 2 : 0,
+                attack = 2,
                 defense = 0,
-                patternSetId = aggressive ? "PS_MOSS_ATTACK" : "PS_MOSS_PASSIVE",
+                patternSetId = "PS_MOSS_E901",  // 5종 행동(공격/힐/엠파워/블록/화상) 매 턴 랜덤
                 phaseSetId = "",
                 image = "E901_Moss_left_up.png", // 기본값 — 실제 스프라이트는 BattleUI.ComputeSlotPositions에서 코너별로 스왑
 
@@ -1304,7 +1339,18 @@ namespace DianoCard.Battle
             moss.isMoss = true;
             state.enemies.Add(moss);
             RollIntent(moss);
-            Log($"  {summoner.data.nameKr} 이끼 소환 (HP 5, {(aggressive ? "공격" : "수호")})");
+            Log($"  {summoner.data.nameKr} 이끼 소환 (HP 5, 5종 행동 랜덤)");
+        }
+
+        /// <summary>모스 정령의 소환자(보스) 인스턴스 반환. data.id "MOSS_E901" → "E901" 검색.</summary>
+        private EnemyInstance GetMossSummoner(EnemyInstance moss)
+        {
+            if (!moss.isMoss) return null;
+            string summonerID = moss.data.id.StartsWith("MOSS_") ? moss.data.id.Substring(5) : null;
+            if (string.IsNullOrEmpty(summonerID)) return null;
+            foreach (var x in state.enemies)
+                if (!x.IsDead && x.data.id == summonerID) return x;
+            return null;
         }
 
         /// <summary>살아있는 이끼 수를 target까지 채움 (부족한 만큼만 소환).</summary>
@@ -1490,20 +1536,34 @@ namespace DianoCard.Battle
             foreach (var s in steps) if (s.stepOrder < 90) cycleCount++;
             if (cycleCount == 0) cycleCount = steps.Count;
 
-            // condition 충족 안 되면 다음 스텝으로 (최대 cycleCount번 시도해 무한루프 방지)
             EnemyPatternData chosen = null;
-            for (int tries = 0; tries < cycleCount; tries++)
+
+            // 이끼 정령(isMoss): cycle 대신 매 턴 랜덤 step 선택 — 4체 정령이 각자 독립적으로
+            // 매 턴 5종 행동 중 무엇을 할지 모르는 우선순위 결정 게임플레이.
+            if (e.isMoss)
             {
-                int idx = e.patternStepCursor % cycleCount;
-                e.patternStepCursor++;
-                var candidate = StepAt(steps, idx);
-                if (candidate == null) continue;
-                if (CheckCondition(candidate.condition, e))
+                var pool = new System.Collections.Generic.List<EnemyPatternData>();
+                foreach (var s in steps)
+                    if (s.stepOrder < 90 && CheckCondition(s.condition, e)) pool.Add(s);
+                if (pool.Count > 0)
+                    chosen = pool[UnityEngine.Random.Range(0, pool.Count)];
+            }
+            else
+            {
+                // condition 충족 안 되면 다음 스텝으로 (최대 cycleCount번 시도해 무한루프 방지)
+                for (int tries = 0; tries < cycleCount; tries++)
                 {
-                    chosen = candidate;
-                    break;
+                    int idx = e.patternStepCursor % cycleCount;
+                    e.patternStepCursor++;
+                    var candidate = StepAt(steps, idx);
+                    if (candidate == null) continue;
+                    if (CheckCondition(candidate.condition, e))
+                    {
+                        chosen = candidate;
+                        break;
+                    }
+                    Log($"  {e.data.nameKr}: skip step {candidate.action} (condition '{candidate.condition}' not met)");
                 }
-                Log($"  {e.data.nameKr}: skip step {candidate.action} (condition '{candidate.condition}' not met)");
             }
             if (chosen == null) chosen = StepAt(steps, 0);
 
@@ -1570,6 +1630,23 @@ namespace DianoCard.Battle
                     foreach (var other in state.enemies)
                         if (other != e && !other.IsDead && other.data.id.StartsWith("ADD_")) return true;
                     return false;
+                case "MOSS_FULL":
+                {
+                    int alive = 0;
+                    foreach (var x in state.enemies) if (!x.IsDead && x.isMoss) alive++;
+                    return alive >= 4;
+                }
+                case "MOSS_NOT_FULL":
+                {
+                    int alive = 0;
+                    foreach (var x in state.enemies) if (!x.IsDead && x.isMoss) alive++;
+                    return alive < 4;
+                }
+                case "MOSS_EMPTY":
+                {
+                    foreach (var x in state.enemies) if (!x.IsDead && x.isMoss) return false;
+                    return true;
+                }
                 default:
                     // ON_PARTNER_DEATH 등 트리거성은 RollIntent에서 자동 처리되지 않음 (별도 훅 필요)
                     return true;
@@ -1597,6 +1674,9 @@ namespace DianoCard.Battle
                 EnemyAction.COUNTDOWN_ATTACK  => EnemyIntentType.COUNTDOWN,
                 EnemyAction.COUNTDOWN_AOE     => EnemyIntentType.COUNTDOWN,
                 EnemyAction.IDLE              => EnemyIntentType.UNKNOWN,
+                EnemyAction.HEAL_BOSS         => EnemyIntentType.BUFF,
+                EnemyAction.EMPOWER_BOSS      => EnemyIntentType.BUFF,
+                EnemyAction.BLOCK_BOSS        => EnemyIntentType.DEFEND,
                 _                             => EnemyIntentType.UNKNOWN,
             };
         }

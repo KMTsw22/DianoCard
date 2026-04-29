@@ -89,6 +89,9 @@ namespace DianoCard.Data
         ARMOR_UP,      // 자가 영구 장갑 +N (extraBlockPerTurn 증가, 매 턴 자동 리프레시)
         CLOG_DECK,     // 플레이어 버림더미에 잡초(STATUS 카드) N장 강제 추가
         SILENCE,       // 플레이어 필드의 모든 공룡을 N턴 침묵 — 이 기간엔 공격 명령 불가
+        HEAL_BOSS,     // 자신을 소환한 보스(summoner)의 HP를 N 회복 (E901 정령 효과)
+        EMPOWER_BOSS,  // 자신을 소환한 보스의 다음 어택 데미지 +N (extraAttack 누적)
+        BLOCK_BOSS,    // 자신을 소환한 보스에게 블록 +N 부여
     }
 
     /// <summary>enemy_pattern.csv의 target 컬럼 값.</summary>

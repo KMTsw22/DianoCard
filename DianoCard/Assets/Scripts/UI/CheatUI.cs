@@ -26,7 +26,6 @@ public class CheatUI : MonoBehaviour
     // 카드 프리뷰 (프레임 디자인 확인용)
     private bool _cardPreviewOpen;
     private int _cardPreviewIndex;
-    private Rarity _cardPreviewRarity = Rarity.COMMON;
     private List<CardData> _cardPreviewList;
     private GUIStyle _previewLabelStyle;
     private float _cardPreviewHeight = 540f;   // 카드 세로 픽셀 (1280x720 가상 좌표). 슬라이더로 300~560 확대.
@@ -353,22 +352,22 @@ public class CheatUI : MonoBehaviour
         }
         else if (_cardPreviewSlotOnly)
         {
-            // 빈 슬롯 프리뷰 — 카드 데이터 없음. BattleUI의 Inspector에서 rect/tint 조정하며 실시간 확인.
-            ui.DrawCardPreview(cardRect, null, _cardPreviewRarity, slotOnly: true);
+            // 빈 슬롯 프리뷰 — 카드 데이터 없음. BattleUI Inspector에서 rect 조정하며 실시간 확인.
+            ui.DrawCardPreview(cardRect, null, slotOnly: true);
 
             // 정보 라벨은 화면 최상단 고정 — 카드가 커져도 안 가려짐.
             GUI.Label(new Rect(0, 8f, 1280f, 24f), "[ 카드 슬롯 프리뷰 — 빈 프레임 ]", _previewLabelStyle);
             GUI.Label(new Rect(0, 32f, 1280f, 20f),
-                "BattleUI Inspector · Card Layers v2 / cardBgTint / cardBaseTint 실시간 반영", _previewLabelStyle);
+                "BattleUI Inspector · Card Frame rect 실시간 반영", _previewLabelStyle);
         }
         else
         {
             var card = _cardPreviewList[_cardPreviewIndex];
-            ui.DrawCardPreview(cardRect, card, _cardPreviewRarity);
+            ui.DrawCardPreview(cardRect, card);
 
             GUI.Label(new Rect(0, 8f, 1280f, 24f), $"{card.id}  {card.nameKr}", _previewLabelStyle);
             GUI.Label(new Rect(0, 32f, 1280f, 20f),
-                $"{card.cardType} / {card.subType}  · 원본 {card.rarity} · 표시 {_cardPreviewRarity}",
+                $"{card.cardType} / {card.subType}  · {card.rarity}",
                 _previewLabelStyle);
         }
 
@@ -389,11 +388,6 @@ public class CheatUI : MonoBehaviour
                 _cardPreviewIndex = (_cardPreviewIndex - 1 + _cardPreviewList.Count) % _cardPreviewList.Count;
             if (GUI.Button(nextBtn, "Next\n▶", _btnStyle))
                 _cardPreviewIndex = (_cardPreviewIndex + 1) % _cardPreviewList.Count;
-
-            // 등급 토글 — 하단 좌측.
-            if (GUI.Button(new Rect(320f, bottomRow, 100f, 36f), "COMMON",   _btnStyle)) _cardPreviewRarity = Rarity.COMMON;
-            if (GUI.Button(new Rect(430f, bottomRow, 100f, 36f), "UNCOMMON", _btnStyle)) _cardPreviewRarity = Rarity.UNCOMMON;
-            if (GUI.Button(new Rect(540f, bottomRow, 100f, 36f), "RARE",     _btnStyle)) _cardPreviewRarity = Rarity.RARE;
         }
 
         // 슬롯/카드 모드 토글 — 하단 우측.
