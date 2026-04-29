@@ -32,6 +32,7 @@ public static class SpriteFittingTool
     private static readonly string[] ProtectedFolders =
     {
         "Assets/Resources/CardArt/",
+        "Assets/Resources/Lobby/CharacterAnimation/",
     };
 
     // 콘텐츠로 간주할 최소 알파.

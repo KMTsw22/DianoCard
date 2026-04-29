@@ -1297,7 +1297,7 @@ namespace DianoCard.Battle
                 defense = 0,
                 patternSetId = aggressive ? "PS_MOSS_ATTACK" : "PS_MOSS_PASSIVE",
                 phaseSetId = "",
-                image = "E901_Moss_L.png", // 기본값 — 실제 스프라이트는 BattleUI.ComputeSlotPositions에서 코너에 따라 L/R로 스왑
+                image = "E901_Moss_left_up.png", // 기본값 — 실제 스프라이트는 BattleUI.ComputeSlotPositions에서 코너별로 스왑
 
             };
             var moss = new EnemyInstance(mossData);

@@ -6,8 +6,9 @@ using UnityEngine;
 /// <summary>
 /// 메인 로비 화면. GameState == Lobby일 때만 그려짐.
 ///
-/// Resources/Lobby/Main_Background 를 배경으로 깔고, 우측에 Cinzel 폰트로
-/// Single Play / Settings / Quit 텍스트 메뉴를 렌더.
+/// Resources/Lobby/Main_Background 를 풀스크린 배경으로 깔고,
+/// 그 위에 Resources/Lobby/Main_Character 를 좌측 캐릭터 레이어로 얹은 뒤,
+/// ember 파티클과 우측 텍스트 메뉴(Single Play / Settings / Quit)를 렌더.
 /// </summary>
 public class LobbyUI : MonoBehaviour
 {
@@ -71,10 +72,27 @@ public class LobbyUI : MonoBehaviour
         public int seedOffset = 0;
     }
 
+    // ── 좌측 캐릭터 레이어 ────────────────────────────────────────
+    [Header("Lobby Character (좌측 캐릭터 레이어)")]
+    [SerializeField, Tooltip("Resources/Lobby/Main_Character 를 배경 위에 그릴지 여부.")]
+    private bool _drawCharacter = true;
+    [SerializeField, Tooltip("캐릭터 박스 좌상단 위치 (1280x720 가상좌표). Y를 키우면 캐릭터가 아래로 내려감 (발이 바닥에 가까워짐). 음수면 화면 밖으로 살짝 잘림.")]
+    private Vector2 _characterPos = new Vector2(10f, 100f);
+    [SerializeField, Tooltip("캐릭터 박스 크기 (가상좌표). PNG 비율은 ScaleToFit으로 유지됨. 박스 비율과 PNG 비율이 다르면 박스 안에서 가운데 정렬됨.")]
+    private Vector2 _characterSize = new Vector2(524f, 726f);
+    [SerializeField, Tooltip("체크 시 Resources/Lobby/CharacterAnimation/*.png 의 모든 프레임을 사전순으로 idle 루프 재생. 해제하면 Main_Character 단일 컷.")]
+    private bool _useIdleAnimation = true;
+    [SerializeField, Range(1f, 60f), Tooltip("idle 루프 재생 FPS. 한 사이클 길이 = 프레임 수 / FPS. 122프레임 기준 24fps≈5.1s, 30fps≈4.1s.")]
+    private float _idleFps = 24f;
+
     [Header("Fire Hand Glow (빠른 조정)")]
     [SerializeField, Tooltip("체크 시 아래 값으로 '손의 불덩어리' glow 위치/크기를 실시간 오버라이드.")]
     private bool _overrideFireHandGlow = true;
-    [SerializeField, Tooltip("손 glow 중심 좌표 (1280x720 기준).")]
+    [SerializeField, Tooltip("true면 손 glow 중심을 캐릭터 박스 기준 상대좌표로 자동 계산. 캐릭터 위치 옮기면 따라감.")]
+    private bool _bindFireHandToCharacter = true;
+    [SerializeField, Tooltip("캐릭터 박스 좌상단 기준 손 glow 오프셋 (px). _bindFireHandToCharacter=true일 때만 사용.")]
+    private Vector2 _fireHandOffsetInCharacter = new Vector2(175f, 215f);
+    [SerializeField, Tooltip("손 glow 중심 좌표 (1280x720 기준). 바인딩 모드에선 매 프레임 자동 갱신됨.")]
     private Vector2 _fireHandGlowCenter = new Vector2(190f, 275f);
     [SerializeField, Range(0f, 600f), Tooltip("손 glow 크기 (0이면 끔).")]
     private float _fireHandGlowSize = 300f;
@@ -149,6 +167,8 @@ public class LobbyUI : MonoBehaviour
     private readonly List<Action> _pending = new();
 
     private Texture2D _bgTexture;
+    private Texture2D _charTexture;
+    private Texture2D[] _charFrames;
     private Texture2D _emberTex;
     private Texture2D[] _flameTextures;
     private Font _displayFont;
@@ -179,7 +199,15 @@ public class LobbyUI : MonoBehaviour
     private void LoadAssets()
     {
         _bgTexture = Resources.Load<Texture2D>("Lobby/Main_Background");
+        _charTexture = Resources.Load<Texture2D>("Lobby/Main_Character");
         _displayFont = Resources.Load<Font>("Fonts/IMFellEnglish-Regular");
+
+        var frames = Resources.LoadAll<Texture2D>("Lobby/CharacterAnimation");
+        if (frames != null && frames.Length > 0)
+        {
+            System.Array.Sort(frames, (a, b) => string.CompareOrdinal(a.name, b.name));
+            _charFrames = frames;
+        }
 
         var names = new[] { "Flame02", "Flame03", "Flame04", "MediumFlame01", "TinyFlame" };
         var flames = new List<Texture2D>(names.Length);
@@ -191,6 +219,8 @@ public class LobbyUI : MonoBehaviour
         _flameTextures = flames.ToArray();
 
         if (_bgTexture == null) Debug.LogWarning("[LobbyUI] Missing: Resources/Lobby/Main_Background");
+        if (_charTexture == null) Debug.LogWarning("[LobbyUI] Missing: Resources/Lobby/Main_Character");
+        if (_charFrames == null || _charFrames.Length == 0) Debug.LogWarning("[LobbyUI] Missing: Resources/Lobby/CharacterAnimation/* (idle 단일 컷으로 폴백)");
         if (_displayFont == null) Debug.LogWarning("[LobbyUI] Missing: Resources/Fonts/IMFellEnglish-Regular");
         if (_flameTextures.Length == 0) Debug.LogWarning("[LobbyUI] Missing: Resources/FX/Flames/* (falling back to radial glow)");
 
@@ -225,10 +255,40 @@ public class LobbyUI : MonoBehaviour
         float scale = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
         GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1));
 
+        // 캐릭터 박스 옮기면 손 glow도 따라가게 — DrawEmbers 전에 갱신
+        if (_drawCharacter && _bindFireHandToCharacter && _overrideFireHandGlow)
+        {
+            _fireHandGlowCenter = _characterPos + _fireHandOffsetInCharacter;
+        }
+
+        DrawCharacter();
         DrawEmbers();
         DrawButtons(gsm);
         DrawVersion();
         DrawDevTools(gsm);
+    }
+
+    private void DrawCharacter()
+    {
+        if (!_drawCharacter) return;
+        if (_characterSize.x <= 0f || _characterSize.y <= 0f) return;
+
+        Texture2D tex = _charTexture;
+        if (_useIdleAnimation && _charFrames != null && _charFrames.Length > 0)
+        {
+            int n = _charFrames.Length;
+            int idx = Mathf.FloorToInt(Time.unscaledTime * Mathf.Max(0.1f, _idleFps)) % n;
+            if (idx < 0) idx += n;
+            var frame = _charFrames[idx];
+            if (frame != null) tex = frame;
+        }
+        if (tex == null) return;
+
+        GUI.DrawTexture(
+            new Rect(_characterPos.x, _characterPos.y, _characterSize.x, _characterSize.y),
+            tex,
+            ScaleMode.ScaleToFit,
+            alphaBlend: true);
     }
 
     private void DrawEmbers()

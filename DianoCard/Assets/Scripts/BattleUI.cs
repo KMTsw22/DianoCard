@@ -214,10 +214,12 @@ public class BattleUI : MonoBehaviour
     private readonly Dictionary<string, Sprite> _enemyWorldSprites = new();
     private readonly Dictionary<EnemyInstance, BattleEntityView> _enemyViews = new();
 
-    // E901 이끼 잡몹 — 좌/우 코너용 변형 스프라이트 + 코너별 원근 스케일.
-    // ComputeSlotPositions에서 코너 인덱스에 따라 L/R 스왑하고 스케일 dict에 기록 → GetEnemyDrawHeight가 읽음.
-    private Sprite _mossWorldSpriteL;
-    private Sprite _mossWorldSpriteR;
+    // E901 이끼 잡몹 — 4코너 전용 스프라이트 + 코너별 원근 스케일.
+    // ComputeSlotPositions에서 코너 인덱스로 스왑하고 스케일 dict에 기록 → GetEnemyDrawHeight가 읽음.
+    private Sprite _mossWorldSpriteLeftUp;
+    private Sprite _mossWorldSpriteRightUp;
+    private Sprite _mossWorldSpriteLeftDown;
+    private Sprite _mossWorldSpriteRightDown;
     private readonly Dictionary<EnemyInstance, float> _mossDepthScale = new();
 
     // 데미지 시 스폰되는 VFX 프리팹 (Inspector에서 할당)
@@ -1056,6 +1058,25 @@ public class BattleUI : MonoBehaviour
             100f);
     }
 
+    /// <summary>커스텀 pivot으로 시퀀스 로드 — 캔버스 안에서 캐릭터가 중앙이 아닌 위치에 그려진
+    /// GIF 분해본 등에서 캐릭터의 발 위치(또는 임의 anchor)를 sprite pivot으로 잡아 idle 정적 스프라이트와 위치를 맞춤.
+    /// pivot은 0..1 정규화 좌표 (0,0=좌하단, 1,1=우상단).</summary>
+    private static Sprite[] LoadFrameSequenceWithPivot(string pathPrefix, Vector2 pivot)
+    {
+        var list = new System.Collections.Generic.List<Sprite>();
+        for (int i = 1; i <= 99; i++)
+        {
+            var tex = Resources.Load<Texture2D>($"{pathPrefix}{i:D2}");
+            if (tex == null) break;
+            list.Add(Sprite.Create(
+                tex,
+                new Rect(0, 0, tex.width, tex.height),
+                pivot,
+                100f));
+        }
+        return list.Count > 0 ? list.ToArray() : null;
+    }
+
     private void OnDestroy()
     {
         if (_playerView != null && _playerView.gameObject != null)
@@ -1085,17 +1106,21 @@ public class BattleUI : MonoBehaviour
         }
 
         // E901 보스가 인라인으로 소환하는 이끼 잡몹 — DataManager.Enemies엔 없으니 별도 등록.
-        // 좌/우 변형 두 종 — 보스 좌측 코너엔 L(불꽃이 좌상단으로 흩날림), 우측 코너엔 R(우상단으로 흩날림) 스프라이트를 ComputeSlotPositions에서 코너별로 스왑.
-        // _enemySprites/_enemyWorldSprites["MOSS_E901"] 기본값은 L — 첫 프레임에 view 생성 시 폴백.
-        var mossTexL = Resources.Load<Texture2D>("Monsters/E901_Moss_L");
-        var mossTexR = Resources.Load<Texture2D>("Monsters/E901_Moss_R");
-        if (mossTexL != null)
+        // 4코너 전용 스프라이트를 코너 인덱스로 ComputeSlotPositions에서 스왑.
+        // _enemySprites/_enemyWorldSprites["MOSS_E901"] 기본값은 left_up — 첫 프레임 view 생성 시 폴백.
+        var mossTexLeftUp    = Resources.Load<Texture2D>("Monsters/E901_Moss_left_up");
+        var mossTexRightUp   = Resources.Load<Texture2D>("Monsters/E901_Moss_right_up");
+        var mossTexLeftDown  = Resources.Load<Texture2D>("Monsters/E901_Moss_left_down");
+        var mossTexRightDown = Resources.Load<Texture2D>("Monsters/E901_Moss_right_down");
+        if (mossTexLeftUp != null)
         {
-            _mossWorldSpriteL = TexToSprite(mossTexL);
-            _enemySprites["MOSS_E901"] = mossTexL;
-            _enemyWorldSprites["MOSS_E901"] = _mossWorldSpriteL;
+            _mossWorldSpriteLeftUp = TexToSprite(mossTexLeftUp);
+            _enemySprites["MOSS_E901"] = mossTexLeftUp;
+            _enemyWorldSprites["MOSS_E901"] = _mossWorldSpriteLeftUp;
         }
-        if (mossTexR != null) _mossWorldSpriteR = TexToSprite(mossTexR);
+        if (mossTexRightUp   != null) _mossWorldSpriteRightUp   = TexToSprite(mossTexRightUp);
+        if (mossTexLeftDown  != null) _mossWorldSpriteLeftDown  = TexToSprite(mossTexLeftDown);
+        if (mossTexRightDown != null) _mossWorldSpriteRightDown = TexToSprite(mossTexRightDown);
     }
 
     /// <summary>
@@ -1179,6 +1204,22 @@ public class BattleUI : MonoBehaviour
         view.SetSprite(sprite);
         view.SetSortingOrder(50);
         view.breathingEnabled = true;
+
+        // E901 폐허군주 P1 공격 시퀀스 — Monsters/E901_RuinLord_P1/attack_f01..f12.png 로드 (73프레임 GIF에서 12 키프레임 추림).
+        // _idleSprite는 이미 SetSprite에서 정적 E901_RuinLord로 잡혔으므로, 시퀀스 종료 후엔 그 idle로 복귀.
+        // Pivot — f01 idle 포즈에서 보스 발 위치 (866, 521) of (1123, 592). Sprite pivot은 좌하단 기준 정규화이므로
+        //   X = 866/1123 = 0.771, Y = (592-521)/592 = 0.120. 이렇게 잡아야 시퀀스 캔버스가 idle과 같은 월드 위치에 정렬됨.
+        // ScaleBoost 2.0 — 시퀀스 캔버스(1123x592)는 보스가 캔버스 높이의 50%만 차지 → idle(보스=캔버스 100%)과 시각 크기를 맞추려면 2배.
+        if (e.data.id == "E901")
+        {
+            var bossSeq = LoadFrameSequenceWithPivot("Monsters/E901_RuinLord_P1/attack_f", new Vector2(0.771f, 0.120f));
+            if (bossSeq != null && bossSeq.Length > 0)
+            {
+                view.SetAttackSequence(bossSeq);
+                view.SetSequenceScaleBoost(2.0f);
+                Debug.Log($"[BattleUI] E901 attack sequence loaded: {bossSeq.Length} frames (pivot=0.771,0.120, boost=2.0)");
+            }
+        }
         // 동시 박자 방지 — 개체별 해시로 주기(freq)와 위상(phase)을 모두 분산.
         // freq: 0.12 ~ 0.19Hz (~5.3s ~ 8.3s), phase: 0 ~ 2π
         int hash = e.GetHashCode();
@@ -1186,8 +1227,13 @@ public class BattleUI : MonoBehaviour
         float phaseNoise = (hash & 0x3FF) / 1024f;               // 0~1
         view.breathingFreq = 0.12f + freqNoise * 0.07f;
         view.breathingPhase = phaseNoise * Mathf.PI * 2f;
-        // 이끼 잡몹은 도깨비불처럼 살짝 투명하게 — 보스 BG 톤에 묻혀 들어가게.
-        if (e.isMoss) view.SetBaseColor(new Color(1f, 1f, 1f, 0.7f));
+        // 이끼 잡몹: 도깨비불 톤 — 본체 50% 알파 + 펄스 글로우 차일드 + 숨쉬기 진폭/주파수 강화.
+        if (e.isMoss)
+        {
+            view.SetPhantomMode(true, 0.75f, new Color(0.65f, 0.36f, 0.12f, 1f));
+            view.breathingAmp = 0.06f;                    // 기본 0.015 → 4x: 불꽃 흔들림
+            view.breathingFreq = 0.30f + freqNoise * 0.15f; // 0.30~0.45Hz: 본체보다 2~3배 빠른 깜빡임
+        }
         _enemyViews[e] = view;
 
         // 발밑 그림자 — 이미지 파일명 규칙(`Monsters/shadow/{이름}_shadow`)으로 로드.
@@ -2551,9 +2597,9 @@ public class BattleUI : MonoBehaviour
             // 코너별 원근 스케일: 위 한 쌍은 살짝 작게(멀리), 아래 한 쌍은 살짝 크게(가까이).
             Vector2[] corners =
             {
-                new Vector2(-220f, -bossH * 0.30f),  // 0: 위-좌
+                new Vector2(-170f, -bossH * 0.30f),  // 0: 위-좌
                 new Vector2(+170f, -bossH * 0.30f),  // 1: 위-우
-                new Vector2(-220f, +bossH * 0.22f),  // 2: 아래-좌
+                new Vector2(-170f, +bossH * 0.22f),  // 2: 아래-좌
                 new Vector2(+170f, +bossH * 0.22f),  // 3: 아래-우
             };
             float[] cornerScale = { 0.85f, 0.85f, 1.05f, 1.05f }; // 위 작게, 아래 크게
@@ -2564,9 +2610,14 @@ public class BattleUI : MonoBehaviour
                 _slotPositions[m] = bossPos + corners[cornerIdx];
                 _mossDepthScale[m] = cornerScale[cornerIdx];
 
-                // 좌측 코너(0,2) = L 스프라이트(불꽃 좌상단 흩날림), 우측(1,3) = R(우상단 흩날림).
-                bool isLeft = (cornerIdx == 0 || cornerIdx == 2);
-                Sprite target = isLeft ? _mossWorldSpriteL : _mossWorldSpriteR;
+                // 코너별 전용 스프라이트. 누락 시 다른 코너로 폴백 (left_up 우선).
+                Sprite target = cornerIdx switch
+                {
+                    0 => _mossWorldSpriteLeftUp,
+                    1 => _mossWorldSpriteRightUp,
+                    2 => _mossWorldSpriteLeftDown,
+                    _ => _mossWorldSpriteRightDown,
+                } ?? (_mossWorldSpriteLeftUp ?? _mossWorldSpriteRightUp ?? _mossWorldSpriteLeftDown ?? _mossWorldSpriteRightDown);
                 if (target != null && _enemyViews.TryGetValue(m, out var mview))
                     mview.SetSprite(target);
             }
@@ -2716,7 +2767,10 @@ public class BattleUI : MonoBehaviour
             if (_summonDisplayPositions.TryGetValue(s, out var pos)) DrawSummon(s, i, pos);
         }
 
-        for (int i = 0; i < state.enemies.Count; i++)
+        // 적 IMGUI 순회를 역순으로 — 작은 이끼 잡몹(높은 인덱스)이 보스(0)보다 먼저 클릭 검사를 받게 한다.
+        // 보스 IMGUI rect(400×400)가 코너 이끼와 겹쳐 항상 보스가 클릭을 가로채고 ResolveCard에서 첫 이끼로 자동 리다이렉트되던 문제 해결.
+        // 월드 스프라이트 렌더링은 SpriteRenderer 정렬과 무관하므로 IMGUI 순서가 시각에 영향 안 줌.
+        for (int i = state.enemies.Count - 1; i >= 0; i--)
         {
             var e = state.enemies[i];
             if (e.IsDead) continue;
@@ -3373,7 +3427,9 @@ public class BattleUI : MonoBehaviour
         }
 
         // intent 앵커 — 검 아이콘(56px) + 타겟 힌트 박스(~22px)가 스프라이트 위로 완전히 올라가도록 충분히 띄움.
-        DrawEnemyIntent(new Vector2(rect.center.x, rect.y - 44), e);
+        // 이끼 잡몹은 보호막용이라 의미 있는 intent가 거의 없음 → "▲ —" 더미 아이콘이 4개 떠다녀서 시각 오염. 숨김.
+        if (!e.isMoss)
+            DrawEnemyIntent(new Vector2(rect.center.x, rect.y - 44), e);
 
         // 아트 없는 placeholder 적은 가운데에 이름 라벨 (식별용)
         if (string.IsNullOrEmpty(e.data.image))
@@ -3395,9 +3451,28 @@ public class BattleUI : MonoBehaviour
         float enemyBarW = e.isMoss ? rect.width * 0.65f : ComputeHpBarWidth(rect.width);
         float enemyBarH = e.isMoss ? 8f : hpBarHeight;
         var enemyHpRect = new Rect(rect.center.x - enemyBarW / 2, rect.yMax + 4f, enemyBarW, enemyBarH);
-        DrawHpBar(enemyHpRect, e.hp, e.data.hp, new Color(0.65f, 0.16f, 0.18f));
 
-        if (e.block > 0)
+        // 이끼 보호막 활성 여부 — isBossProtected + 이끼 1체 이상 생존. true면 HP바 회색 + 살아있는 이끼 수가 적힌 방패 아이콘 표시.
+        int mossAliveCount = 0;
+        if (e.isBossProtected && _battle != null && _battle.state != null)
+        {
+            foreach (var x in _battle.state.enemies)
+                if (!x.IsDead && x.isMoss) mossAliveCount++;
+        }
+        bool mossShielded = mossAliveCount > 0;
+
+        Color hpFill = mossShielded
+            ? new Color(0.45f, 0.45f, 0.50f)   // 차콜 그레이 — "지금은 데미지 안 들어감"
+            : new Color(0.65f, 0.16f, 0.18f);
+        DrawHpBar(enemyHpRect, e.hp, e.data.hp, hpFill);
+
+        // 방패 아이콘 — moss 보호막 우선, 없으면 일반 block.
+        if (mossShielded)
+        {
+            DrawBlockBadge(new Vector2(enemyHpRect.x, enemyHpRect.center.y), mossAliveCount, 34f,
+                           _iconShieldGreen);
+        }
+        else if (e.block > 0)
         {
             // HP 바 왼쪽 끝에 살짝 겹치게 — 플레이어 파란 방패와 미러 대칭
             DrawBlockBadge(new Vector2(enemyHpRect.x, enemyHpRect.center.y), e.block, 34f,
@@ -3653,10 +3728,12 @@ public class BattleUI : MonoBehaviour
             FillRect(rect, new Color(0.85f, 0.18f, 0.20f, alpha));
         }
 
-        // 5) 머티드 차콜 외곽 프레임 + 내부 암색 인셋 라인 — 배경(보라+석조)에 묻히도록 톤 다운
-        DrawBorder(rect, 1f, new Color(0.18f, 0.14f, 0.18f, 0.92f));
-        var innerRect = new Rect(rect.x + 1f, rect.y + 1f, rect.width - 2f, rect.height - 2f);
-        DrawBorder(innerRect, 1f, new Color(0f, 0f, 0f, 0.45f));
+        // 5) 머티드 차콜 외곽 프레임 + 내부 암색 인셋 라인 — 배경(보라+석조)에 묻히도록 톤 다운.
+        //    바 두께(rect.height)에 비례해 보더 두께도 스케일 — 작은 이끼바(8px)에서 1px 보더가 과해 보이는 문제 해소.
+        float borderW = Mathf.Max(0.5f, rect.height / 18f); // 18px 기준 1px, 작아지면 비례 축소(최소 0.5)
+        DrawBorder(rect, borderW, new Color(0.18f, 0.14f, 0.18f, 0.92f));
+        var innerRect = new Rect(rect.x + borderW, rect.y + borderW, rect.width - borderW * 2f, rect.height - borderW * 2f);
+        DrawBorder(innerRect, borderW, new Color(0f, 0f, 0f, 0.45f));
 
         // 6) 외곽선 텍스트 — 흰 글자 + 검정 외곽. 바 높이에 맞춰 폰트 축소.
         int prevFs = _centerStyle.fontSize;
@@ -5014,8 +5091,20 @@ public class BattleUI : MonoBehaviour
     {
         if (_enemyViews.TryGetValue(e, out var view) && view != null)
         {
-            view.PlayAttack(Vector3.left);
-            yield return new WaitForSeconds(0.55f);
+            // E901 P1: 12 키프레임이 자체적으로 leap+impact 모션을 담고 있어
+            // transform-level 전후 이동(distance>0)을 더하면 시각이 어긋난다 → distance 0.
+            // 12프레임 × ~92ms = 1.1s — 도약/임팩트가 너무 늘어지지 않게 유지.
+            bool isE901P1 = e.data.id == "E901" && e.currentPhase < 3;
+            if (isE901P1)
+            {
+                view.PlayAttack(Vector3.left, distance: 0f, duration: 1.1f);
+                yield return new WaitForSeconds(1.0f);
+            }
+            else
+            {
+                view.PlayAttack(Vector3.left);
+                yield return new WaitForSeconds(0.55f);
+            }
         }
         else
         {

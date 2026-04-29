@@ -46,6 +46,9 @@ namespace DianoCard.Battle
         private float _activeScaleMultiplier = 1f;
         // StrikeExtended 스프라이트 표시 중 적용할 크기 부스트 (프레임 내 캐릭터가 작게 그려진 경우 보정). 기본 1.0
         private float _strikeExtendedScaleBoost = 1.2f;
+        // SequenceAttackRoutine 전체 구간에 적용되는 스케일 부스트 — 시퀀스 캔버스에 캐릭터가
+        // 일부분만 차지(여백이 큰 가로형 GIF 분해본 등)할 때 idle 정적 스프라이트와 시각 크기를 맞추기 위한 보정.
+        private float _sequenceScaleBoost = 1f;
 
         // 발 밑 그림자. 캐릭터가 공격/이동으로 움직여도 지면에 고정되도록 별도 GameObject로 관리 (parent는 캐릭터가 아님).
         private GameObject _shadowGO;
@@ -53,6 +56,15 @@ namespace DianoCard.Battle
         private float _shadowRelativeHeight = 0.10f; // intendedWorldHeight 대비 그림자 세로 길이
         private float _shadowWidthScale = 1f;        // 가로 폭만 추가 배수 (세로 유지)
         private Vector2 _shadowWorldOffset = Vector2.zero;
+
+        // 팬텀 모드 — 본체 반투명 + 본체 뒤에 같은 스프라이트의 확대 사본을 펄스 글로우로 렌더.
+        // 이끼 잡몹(E901 보스 소환물)처럼 "도깨비불" 느낌 줄 때 사용.
+        private bool _phantomMode;
+        private float _phantomBaseAlpha = 0.5f;
+        private Color _phantomGlowTint = new Color(1f, 0.55f, 0.18f, 1f);
+        private GameObject _glowGO;
+        private SpriteRenderer _glowSr;
+        private float _phantomPulsePhase;
 
         // Idle breathing — CharacterSelectUI의 캐릭터 호흡과 동일 공식(Y만 소폭, smoothstep eased).
         // 공격/피격/소환 코루틴 동안은 자동 off (_currentAnim != null).
@@ -67,6 +79,7 @@ namespace DianoCard.Battle
             _sr.sortingOrder = 50;
             // 개체별 위상 오프셋 — 여러 적/플레이어가 같은 박자로 움직여 기계적으로 보이지 않게.
             _idleBobPhase = Random.value * Mathf.PI * 2f;
+            _phantomPulsePhase = Random.value * Mathf.PI * 2f;
         }
 
         public void SetSprite(Sprite s)
@@ -75,6 +88,40 @@ namespace DianoCard.Battle
             if (_idleSprite == null) _idleSprite = s;
             if (_scaleReferenceHeight <= 0f && s != null && s.bounds.size.y > 0f)
                 _scaleReferenceHeight = s.bounds.size.y;
+            if (_glowSr != null) _glowSr.sprite = s;
+        }
+
+        /// <summary>
+        /// 팬텀 모드 토글 — 본체 알파를 baseAlpha로 낮추고 본체 뒤에 같은 스프라이트의 확대 사본을
+        /// glowTint로 틴트한 펄스 글로우로 렌더.
+        /// </summary>
+        public void SetPhantomMode(bool enabled, float baseAlpha = 0.5f, Color? glowTint = null)
+        {
+            _phantomMode = enabled;
+            _phantomBaseAlpha = Mathf.Clamp01(baseAlpha);
+            if (glowTint.HasValue) _phantomGlowTint = glowTint.Value;
+
+            if (!enabled)
+            {
+                _baseColor = Color.white;
+                if (_sr != null) _sr.color = _baseColor;
+                if (_glowGO != null) { Destroy(_glowGO); _glowGO = null; _glowSr = null; }
+                return;
+            }
+
+            // 본체 알파 적용 — _baseColor에 반영해야 hit flash 종료 시 알파가 복구됨.
+            _baseColor = new Color(1f, 1f, 1f, _phantomBaseAlpha);
+            if (_sr != null) _sr.color = _baseColor;
+
+            // 글로우 차일드 생성/재사용. 본체와 같은 부모에 붙여 transform 이동(공격 등)에 끌려가지 않도록.
+            if (_glowGO == null)
+            {
+                _glowGO = new GameObject(gameObject.name + "_Glow");
+                _glowGO.transform.SetParent(transform, worldPositionStays: false);
+                _glowSr = _glowGO.AddComponent<SpriteRenderer>();
+                _glowSr.sortingOrder = _sr.sortingOrder - 1;
+            }
+            _glowSr.sprite = _sr.sprite;
         }
 
         /// <summary>
@@ -242,6 +289,10 @@ namespace DianoCard.Battle
 
         public void SetStrikeExtendedScaleBoost(float boost) => _strikeExtendedScaleBoost = boost;
 
+        /// <summary>SequenceAttackRoutine 전체 구간에 적용될 스케일 부스트 — 시퀀스 캔버스 내 캐릭터가
+        /// 작게 그려진 가로형 GIF 분해본 등에서 idle 정적 스프라이트와 시각 크기를 맞추기 위해 사용.</summary>
+        public void SetSequenceScaleBoost(float boost) => _sequenceScaleBoost = boost;
+
         public void SetSortingOrder(int order)
         {
             _sr.sortingOrder = order;
@@ -251,6 +302,7 @@ namespace DianoCard.Battle
         private void OnDestroy()
         {
             if (_shadowGO != null) Destroy(_shadowGO);
+            if (_glowGO != null) Destroy(_glowGO);
         }
 
         public void PlayAttack(Vector3 dir, float distance = 0.7f, float duration = 0.75f)
@@ -302,6 +354,21 @@ namespace DianoCard.Battle
 
             // 그림자는 매 프레임 live 위치 따라가도록 — 공격/피격으로 캐릭터가 움직이면 그림자도 따라옴.
             ApplyShadowTransform();
+
+            // 팬텀 글로우 펄스 — 스케일·알파 동시 진동. 차일드라 본체 위치/스케일에 자동 따라옴.
+            if (_phantomMode && _glowSr != null && _sr != null && _sr.sprite != null)
+            {
+                float pt = Time.time * Mathf.PI * 2f * 0.55f + _phantomPulsePhase;
+                float pulse = (Mathf.Sin(pt) + 1f) * 0.5f; // 0~1
+                // 펄스 진폭/세기 절반 이상 축소 — 글로우 후광이 자기주장 안 하고 본체 뒤에 살짝 빛남.
+                float scale = Mathf.Lerp(1.08f, 1.15f, pulse);  // 기존 1.18~1.34 (range 0.16) → 1.08~1.15 (range 0.07)
+                float alpha = Mathf.Lerp(0.12f, 0.26f, pulse);  // 기존 0.22~0.55 (peak 0.55) → 0.12~0.26 (peak 0.26)
+                _glowGO.transform.localScale = new Vector3(scale, scale, 1f);
+                _glowGO.transform.localPosition = Vector3.zero;
+                var c = _phantomGlowTint;
+                _glowSr.color = new Color(c.r, c.g, c.b, alpha);
+                _glowSr.sortingOrder = _sr.sortingOrder - 1;
+            }
         }
 
         private IEnumerator AttackRoutine(Vector3 dir, float distance, float duration)
@@ -401,6 +468,9 @@ namespace DianoCard.Battle
             Sprite originalSprite = _sr.sprite;
             float perFrame = duration / n;
             int lastFrame = -1;
+
+            // 시퀀스 전체 구간에 스케일 부스트 적용 — 가로형 캔버스에 캐릭터가 일부만 차지할 때 idle과 크기 맞춤.
+            _activeScaleMultiplier = _sequenceScaleBoost;
 
             // 위치 커브: 앞 20% 약간 뒤로(windup) → 60% 지점에서 peak(+distance) → 마지막 20% 복귀
             float backEnd = duration * 0.20f;   // 이 시점까지 살짝 뒤로
