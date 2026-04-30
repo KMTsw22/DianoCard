@@ -401,6 +401,33 @@ MonoBehaviour:
   hudDividerTint: {r: 0.412, g: 0.412, b: 0.412, a: 1}
   hudBattleBottomLineColor: {r: 0.81960784, g: 0.6784314, b: 0.38039216, a: 0.20392157}
   hudBattleBottomLineThickness: 3
+  navBarMasterScale: 0.95
+  topBarTexEnabled: 1
+  topBarTexHeight: 90
+  topBarTexYOffset: -5
+  topBarTexHorizontalInset: 0
+  hudSlotIconSize: 45
+  hudSlotIconLabelGap: 5.13
+  hudSlotGap: 25
+  cornerPileSize: 90
+  cornerPileTopFromBottom: 110
+  cornerPileLeftX: 22
+  cornerPileRightInset: 95
+  endTurnButtonWidth: 190
+  endTurnButtonHeight: 95
+  endTurnButtonRightOffset: 280
+  endTurnButtonBottomOffset: 100
+  handCardWidth: 157.5
+  handCardHeight: 219.45
+  hudSlotLeftPadX: 17.1
+  hudRightPad: 23.94
+  hudRightSlotGap: 47.88
+  manaOrbSize: 125
+  manaOrbCenterX: 200
+  manaOrbBottomOffset: 70
+  manaOrbFontSizeRatio: 0.18
+  manaOrbTextOffsetXPct: 0
+  manaOrbTextOffsetYPct: -0.034
   _vfxHitA: {fileID: 4021103657954561961, guid: 5c755f9bc5253ea418e919994537dcc7, type: 3}
   _vfxHitD: {fileID: 5880797563127281583, guid: 265d3a5ba69981a4698ceabcedf368b0, type: 3}
   _vfxSmokeF: {fileID: 141433446842962269, guid: 9fe8f8b3288e45a44af36ff8aa04486e, type: 3}

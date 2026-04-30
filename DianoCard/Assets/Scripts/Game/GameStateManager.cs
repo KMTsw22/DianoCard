@@ -716,6 +716,17 @@ namespace DianoCard.Game
         // Debug / Cheat
         // =========================================================
 
+        /// <summary>치트 진입 시 CurrentRun.deck이 비어있으면 캐릭터 archetype 기준 시작 덱으로 채운다.
+        /// StartNewRun 직후 캐릭터 미확정 상태(deck=빈 리스트)에서 치트로 전투/상점 등에 진입하면 빈 덱으로 시작하는 버그 방지.</summary>
+        private void EnsureCheatStarterDeck()
+        {
+            if (CurrentRun == null) return;
+            if (CurrentRun.deck != null && CurrentRun.deck.Count > 0) return;
+            string cid = string.IsNullOrEmpty(CurrentRun.characterId) ? "CH001" : CurrentRun.characterId;
+            CurrentRun.deck = BuildStarterDeck(cid);
+            Debug.Log($"[GSM] Cheat: rebuilt empty deck (characterId={cid}, cards={CurrentRun.deck.Count})");
+        }
+
         /// <summary>
         /// 치트: 현재 상태 무시하고 바로 Reward 화면을 띄움.
         /// CurrentRun이 없으면 임시 러닝 상태를 생성해서 사용.
@@ -736,6 +747,7 @@ namespace DianoCard.Game
                     chapterId = "CH01",
                 };
             }
+            EnsureCheatStarterDeck();
 
             var reward = new BattleReward { gold = Random.Range(15, 40) };
 
@@ -796,6 +808,7 @@ namespace DianoCard.Game
                     chapterId = "CH01",
                 };
             }
+            EnsureCheatStarterDeck();
 
             CurrentShop = ShopGenerator.Generate(CurrentRun);
             State = GameState.Shop;
@@ -828,6 +841,7 @@ namespace DianoCard.Game
                     chapterId = "CH01",
                 };
             }
+            EnsureCheatStarterDeck();
 
             CurrentEnemies.Clear();
             foreach (var id in enemyIds)
@@ -877,6 +891,7 @@ namespace DianoCard.Game
                     chapterId = "CH01",
                 };
             }
+            EnsureCheatStarterDeck();
 
             State = GameState.Village;
             Debug.Log("[GSM] Cheat_EnterVillage");

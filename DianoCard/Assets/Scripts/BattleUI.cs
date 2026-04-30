@@ -72,6 +72,9 @@ public class BattleUI : MonoBehaviour
     private const float LungeDuration = 0.70f;
     private const float BetweenAttacksPause = 0.30f;
 
+    // 플레이어(Arkane) 공격 모션 총 길이. attack/ 12프레임 시퀀스 + 화염구 발사 타이밍 모두 이 값에 동기화.
+    private const float PlayerAttackDuration = 1.0f;
+
     // EndTurn 시 손패 카드가 버린 더미로 날아가는 애니메이션.
     // 3단계: (1) 화면 중앙으로 모이며 아치형으로 떠오름 (2) 잠깐 머무름 (3) 우하단 더미로 흘러감
     // 애니메이션 구동 중에는 DrawHand가 비어있는 상태를 그리고, 날아가는 카드는 DrawDiscardFlyingCards에서 그린다.
@@ -247,6 +250,62 @@ public class BattleUI : MonoBehaviour
     [SerializeField] private Color hudBattleBottomLineColor = new(0.82f, 0.68f, 0.38f, 0.55f);
     [Tooltip("전투 HUD 바 하단 골드 트림 라인 두께 (px). 0이면 안 그림.")]
     [SerializeField, Range(0f, 12f)] private float hudBattleBottomLineThickness = 3f;
+
+    [Header("HUD 상단 네비바 — 마스터 스케일 (한 번에 묶어서 키우기/줄이기)")]
+    [Tooltip("상단 네비바 전체 크기를 비례 스케일. 1=원본, 0.5=절반, 2=두배.\n다음 모두 한꺼번에 곱해짐:\n• 스트립 높이 / 디바이더 위치+두께 / 골드 트림\n• 장식 텍스처 높이+Y오프셋\n• 아이콘 영역(barY/barH) / 아이콘 크기 / 라벨 간격 / 슬롯 간격 / 좌·우 패딩")]
+    [SerializeField, Range(0.3f, 2.0f)] private float navBarMasterScale = 0.95f;
+
+    [Header("HUD 상단 장식 텍스처 (TopBar 오버레이) — 배틀 컨텍스트 전용")]
+    [Tooltip("InGame/TopBar.png 텍스처를 HUD 스트립 위에 오버레이로 그릴지.")]
+    [SerializeField] private bool topBarTexEnabled = true;
+    [Tooltip("오버레이 텍스처 높이 (px). HUD 스트립 높이와 무관하게 시각적 크기만 조절.")]
+    [SerializeField, Range(20f, 400f)] private float topBarTexHeight = 90f;
+    [Tooltip("오버레이 Y 위치 (px). 0=상단 정렬, 음수=위로, 양수=아래로.")]
+    [SerializeField, Range(-200f, 200f)] private float topBarTexYOffset = -5f;
+    [Tooltip("오버레이 좌우 여백 (px). 양쪽에서 안쪽으로 들이는 마진.")]
+    [SerializeField, Range(0f, 300f)] private float topBarTexHorizontalInset = 0f;
+
+    [Header("HUD 상단 슬롯 — HP/Gold/Potion/Relic/Deck/Floor 아이콘")]
+    [Tooltip("상단 HUD 슬롯 아이콘 한 변 크기 (px).")]
+    [SerializeField, Range(20f, 120f)] private float hudSlotIconSize = 45f;
+    [Tooltip("아이콘과 라벨 사이 간격 (px).")]
+    [SerializeField, Range(0f, 30f)] private float hudSlotIconLabelGap = 5.13f;
+    [Tooltip("좌측 슬롯 사이의 간격 (px).")]
+    [SerializeField, Range(0f, 100f)] private float hudSlotGap = 25f;
+
+    [Header("좌하단 덱 / 우하단 디스카드 더미")]
+    [Tooltip("코너 더미 한 변 크기 (px).")]
+    [SerializeField, Range(40f, 200f)] private float cornerPileSize = 90f;
+    [Tooltip("화면 하단으로부터 더미 상단까지 거리 (px). RefH - 이 값 = 더미 top y.")]
+    [SerializeField, Range(0f, 300f)] private float cornerPileTopFromBottom = 110f;
+    [Tooltip("좌측 덱 더미의 좌측 X 좌표 (px).")]
+    [SerializeField, Range(0f, 300f)] private float cornerPileLeftX = 22f;
+    [Tooltip("우측 디스카드 더미의 우측 인셋 (px). RefW - 이 값 = 더미 left x.")]
+    [SerializeField, Range(0f, 300f)] private float cornerPileRightInset = 95f;
+
+    [Header("END TURN 버튼")]
+    [Tooltip("END TURN 버튼 가로 (px).")]
+    [SerializeField, Range(80f, 500f)] private float endTurnButtonWidth = 190f;
+    [Tooltip("END TURN 버튼 세로 (px).")]
+    [SerializeField, Range(40f, 250f)] private float endTurnButtonHeight = 95f;
+    [Tooltip("화면 우측에서 버튼 우측까지 거리 (px). RefW - 이 값 = 버튼 left x.")]
+    [SerializeField, Range(0f, 700f)] private float endTurnButtonRightOffset = 280f;
+    [Tooltip("화면 하단에서 버튼 하단까지 거리 (px). RefH - 이 값 = 버튼 top y.")]
+    [SerializeField, Range(0f, 250f)] private float endTurnButtonBottomOffset = 100f;
+
+    [Header("손패 카드 크기 — 부채꼴 hand 전체 적용")]
+    [Tooltip("손패 카드 가로 (px). 모든 hand/discard/draw 애니에 공통.")]
+    [SerializeField, Range(80f, 400f)] private float handCardWidth = 157.5f;
+    [Tooltip("손패 카드 세로 (px). 모든 hand/discard/draw 애니에 공통.")]
+    [SerializeField, Range(120f, 600f)] private float handCardHeight = 219.45f;
+
+    [Header("HUD 슬롯 좌/우 패딩")]
+    [Tooltip("HUD 좌측 첫 슬롯 좌측 패딩 (px).")]
+    [SerializeField, Range(0f, 100f)] private float hudSlotLeftPadX = 17.1f;
+    [Tooltip("HUD 우측 마지막 슬롯과 화면 우측 가장자리 사이 패딩 (px).")]
+    [SerializeField, Range(0f, 100f)] private float hudRightPad = 23.94f;
+    [Tooltip("HUD 우측 슬롯 사이 간격 (px). 좌측 slotGap 보다 넉넉하게.")]
+    [SerializeField, Range(0f, 150f)] private float hudRightSlotGap = 47.88f;
 
     public enum HudContext { Battle, Map, Village }
 
@@ -455,13 +514,17 @@ public class BattleUI : MonoBehaviour
 
     [Header("Mana Orb (좌하단)")]
     [Tooltip("좌하단 마나 오브 지름 (RefH 좌표 기준 px).")]
-    [SerializeField, Range(40f, 240f)] private float manaOrbSize = 105f;
+    [SerializeField, Range(40f, 240f)] private float manaOrbSize = 125f;
     [Tooltip("좌하단 마나 오브 중심 X (RefW 좌표 기준 px, 좌측 0).")]
-    [SerializeField, Range(40f, 400f)] private float manaOrbCenterX = 210f;
+    [SerializeField, Range(40f, 400f)] private float manaOrbCenterX = 200f;
     [Tooltip("좌하단 마나 오브 중심이 화면 하단에서 떨어진 거리 (px). 클수록 위로 올라감.")]
     [SerializeField, Range(20f, 200f)] private float manaOrbBottomOffset = 70f;
     [Tooltip("마나 텍스트 크기 비율 (orb 지름 × 이 비율).")]
-    [SerializeField, Range(0.10f, 0.50f)] private float manaOrbFontSizeRatio = 0.22f;
+    [SerializeField, Range(0.10f, 0.50f)] private float manaOrbFontSizeRatio = 0.18f;
+    [Tooltip("Mana Orb 안 \"3/3\" 텍스트 가로 오프셋 (오브 사이즈 대비 비율). 0=중앙, 음수=왼쪽, 양수=오른쪽.")]
+    [SerializeField, Range(-0.5f, 0.5f)] private float manaOrbTextOffsetXPct = 0f;
+    [Tooltip("Mana Orb 안 \"3/3\" 텍스트 세로 오프셋 (오브 사이즈 대비 비율). 0=중앙, 음수=위, 양수=아래.")]
+    [SerializeField, Range(-0.5f, 0.5f)] private float manaOrbTextOffsetYPct = -0.034f;
 
     [Header("Battle Background Ambience")]
     [SerializeField] private List<BackgroundAmbienceEntry> _bgFxEntries = new();
@@ -599,17 +662,17 @@ public class BattleUI : MonoBehaviour
         if (_manaOrbTexture == null)
             Debug.LogWarning("[BattleUI] ManaOrb texture not found: Resources/CardSlot/ManaOrb");
 
-        // YJ 통합 프레임 — 종류별 5종.
-        _frameSummon  = Resources.Load<Texture2D>("CardSlot/Frames/Frame_SUMMON");
-        _frameMagic   = Resources.Load<Texture2D>("CardSlot/Frames/Frame_MAGIC");
-        _frameBuff    = Resources.Load<Texture2D>("CardSlot/Frames/Frame_BUFF");
-        _frameUtility = Resources.Load<Texture2D>("CardSlot/Frames/Frame_UTILITY");
-        _frameRitual  = Resources.Load<Texture2D>("CardSlot/Frames/Frame_RITUAL");
-        if (_frameSummon  == null) Debug.LogWarning("[BattleUI] Frame_SUMMON not found: Resources/CardSlot/Frames/Frame_SUMMON");
-        if (_frameMagic   == null) Debug.LogWarning("[BattleUI] Frame_MAGIC not found: Resources/CardSlot/Frames/Frame_MAGIC");
-        if (_frameBuff    == null) Debug.LogWarning("[BattleUI] Frame_BUFF not found: Resources/CardSlot/Frames/Frame_BUFF");
-        if (_frameUtility == null) Debug.LogWarning("[BattleUI] Frame_UTILITY not found: Resources/CardSlot/Frames/Frame_UTILITY");
-        if (_frameRitual  == null) Debug.LogWarning("[BattleUI] Frame_RITUAL not found: Resources/CardSlot/Frames/Frame_RITUAL");
+        // YJ 통합 프레임 — Frame_Test 단일 틀로 임시 통합 (테스트용).
+        _frameSummon  = Resources.Load<Texture2D>("CardSlot/Frames/Frame_Test");
+        _frameMagic   = Resources.Load<Texture2D>("CardSlot/Frames/Frame_Test");
+        _frameBuff    = Resources.Load<Texture2D>("CardSlot/Frames/Frame_Test");
+        _frameUtility = Resources.Load<Texture2D>("CardSlot/Frames/Frame_Test");
+        _frameRitual  = Resources.Load<Texture2D>("CardSlot/Frames/Frame_Test");
+        if (_frameSummon  == null) Debug.LogWarning("[BattleUI] Frame_Test not found: Resources/CardSlot/Frames/Frame_Test");
+        if (_frameMagic   == null) Debug.LogWarning("[BattleUI] Frame_Test not found: Resources/CardSlot/Frames/Frame_Test");
+        if (_frameBuff    == null) Debug.LogWarning("[BattleUI] Frame_Test not found: Resources/CardSlot/Frames/Frame_Test");
+        if (_frameUtility == null) Debug.LogWarning("[BattleUI] Frame_Test not found: Resources/CardSlot/Frames/Frame_Test");
+        if (_frameRitual  == null) Debug.LogWarning("[BattleUI] Frame_Test not found: Resources/CardSlot/Frames/Frame_Test");
 
         _shieldFxTexture = Resources.Load<Texture2D>("CardArt/Spell/Effect/ShieldBubble");
         if (_shieldFxTexture == null)
@@ -812,11 +875,14 @@ public class BattleUI : MonoBehaviour
     {
         if (_playerView != null) return;
 
-        // Character_infield/Archaeologist/ 에서 공격(attack_f##), 피격(hit_f##), 소환(summon_f##) 시퀀스를 순서대로 로드.
-        // hit/summon은 없으면 attack 시퀀스로 폴백한다.
-        var attackSeq = LoadFrameSequence("Character_infield/Archaeologist/attack_f");
-        var hitSeq    = LoadFrameSequence("Character_infield/Archaeologist/hit_f");
-        var summonSeq = LoadFrameSequence("Character_infield/Archaeologist/summon_f");
+        // Character_infield/character_basic/attack/ 에서 공격 시퀀스(01..12) 로드. (Arkane 통합 — Archaeologist 폴더는 폐기)
+        // attack 프레임(1272x1628)은 우측 상단에 화염구 솟구칠 공간을 비워두고 본체가 좌측 ~41% 지점에 위치.
+        // 기본 (0.5, 0) pivot을 쓰면 Idle ↔ Attack 전환 시 좌측으로 점프한다 — 몸통 중심(idle 프레임 body_cx=520/1272)에 맞춘 커스텀 pivot 사용.
+        // hit/summon 시퀀스는 아직 없으므로 attack 시퀀스로 폴백한다.
+        var attackPivot = new Vector2(0.409f, 0f);
+        var attackSeq = LoadFrameSequenceWithPivot("Character_infield/character_basic/attack/", attackPivot);
+        var hitSeq    = LoadFrameSequence("Character_infield/character_basic/hit/");
+        var summonSeq = LoadFrameSequence("Character_infield/character_basic/summon/");
         if (hitSeq == null || hitSeq.Length == 0)       hitSeq = attackSeq;
         if (summonSeq == null || summonSeq.Length == 0) summonSeq = attackSeq;
 
@@ -829,7 +895,7 @@ public class BattleUI : MonoBehaviour
 
         if (baseSprite == null)
         {
-            Debug.LogWarning("[BattleUI] PlayerView init skipped — Character_infield/Archaeologist/attack_f## 없음 + Char_Archaeologist_Field 폴백도 없음");
+            Debug.LogWarning("[BattleUI] PlayerView init skipped — Character_infield/character_basic/attack/## 없음 + Char_Archaeologist_Field 폴백도 없음");
             return;
         }
 
@@ -849,7 +915,11 @@ public class BattleUI : MonoBehaviour
         if (attackSeq != null && attackSeq.Length > 0)
         {
             _playerView.SetAttackSequence(attackSeq);
-            Debug.Log($"[BattleUI] Archaeologist attack sequence loaded: {attackSeq.Length} frames");
+            // attack 캔버스(1272x1628)는 우상단 화염구 공간 + 발 정렬을 위한 하단 여백 포함.
+            // 본체(머리~발)가 sprite 1628 중 1439 차지 (≈88%) → 그대로 두면 idle 높이에 맞출 때 본체가 12% 작아짐.
+            // 1628/1439 ≈ 1.131 부스트로 본체 높이 = idle 높이가 되도록 보정.
+            _playerView.SetSequenceScaleBoost(1628f / 1439f);
+            Debug.Log($"[BattleUI] Player attack sequence loaded: {attackSeq.Length} frames (character_basic/attack/)");
         }
         if (hitSeq != null && hitSeq.Length > 0)    _playerView.SetHitSequence(hitSeq);
         if (summonSeq != null && summonSeq.Length > 0)
@@ -873,8 +943,16 @@ public class BattleUI : MonoBehaviour
         if (fxTex != null) _playerAttackFxSprite = TexToSprite(fxTex);
         else Debug.LogWarning("[BattleUI] Player attack FX not found. Place PNG at Resources/FX/Attack/slash_gold.png (or CH001_fx.png).");
 
+        // CH002(Arkane) 발사체 — 시전 모션 끝나갈 때 손에서 출발해 적까지 비행하는 화염구.
+        var fireballTex = Resources.Load<Texture2D>("FX/Attack/CH002_fireball");
+        if (fireballTex != null)
+        {
+            _playerFireballSprite = TexToSprite(fireballTex);
+            Debug.Log("[BattleUI] Player fireball projectile loaded: FX/Attack/CH002_fireball");
+        }
+
         if (attackSeq == null || attackSeq.Length == 0)
-            Debug.LogWarning("[BattleUI] Character_infield/Archaeologist/attack_f## 시퀀스 없음 — 정적 Char_Archaeologist_Field 폴백 사용");
+            Debug.LogWarning("[BattleUI] Character_infield/character_basic/attack/## 시퀀스 없음 — 정적 폴백 사용");
 
         // 발 밑 그림자 — pivot을 이미지 중앙(0.5, 0.5)으로 잡아 발 위치에 타원 중심이 오도록.
         var shadowTex = Resources.Load<Texture2D>("Character_infield/character_basic/shadow/character_shadow");
@@ -1453,6 +1531,7 @@ public class BattleUI : MonoBehaviour
     // =========================================================
 
     private Sprite _playerAttackFxSprite;
+    private Sprite _playerFireballSprite;  // CH002 시전 발사체 — 손→적 비행 (있을 때만 임팩트 FX 대신 사용)
 
     /// <summary>
     /// 공격 이펙트 스프라이트를 타겟 world 위치에 잠깐 스폰.
@@ -1513,14 +1592,57 @@ public class BattleUI : MonoBehaviour
         Destroy(go);
     }
 
-    /// <summary>플레이어 공격 시 ComputeAttackDir + 타겟 world 좌표 기반으로 FX 예약.</summary>
+    /// <summary>플레이어 공격 시 ComputeAttackDir + 타겟 world 좌표 기반으로 FX 예약.
+    /// CH002(Arkane) 절차 화염구 발사체 — 시전 끝(85%) 시점에 손→적 비행. PlayerView가 있어야 정확한 손 위치 계산 가능.</summary>
     private void TriggerPlayerAttackFx(int preferredEnemyIdx, float attackDuration = 0.75f)
     {
-        if (_playerAttackFxSprite == null) return;
         var targetWorld = GetAttackTargetWorld(preferredEnemyIdx);
         if (targetWorld == Vector3.zero) return;
-        // 공격 peak는 sequence routine에서 60% 지점. 그 타이밍에 FX 스폰.
+
+        // 절차 화염구 발사체 (BossProjectile.SpawnCrescent를 화염색으로 재활용)
+        if (_playerView != null)
+        {
+            StartCoroutine(FireballProjectileRoutine(attackDuration * 0.85f, targetWorld));
+            return;
+        }
+
+        // 폴백: 임팩트 FX (slash_gold 등) — PlayerView 없을 때만
+        if (_playerAttackFxSprite == null) return;
         SpawnAttackFx(_playerAttackFxSprite, targetWorld, peakDelay: attackDuration * 0.55f, lifetime: 0.35f, size: 1.8f);
+    }
+
+    /// <summary>화염구 발사체 — 보스 SpawnCrescent를 그대로 재활용, 색만 화염 주황으로 덮어쓴다.
+    /// 모양/잔상/wobble/페이드 모두 보스와 동일.</summary>
+    private IEnumerator FireballProjectileRoutine(float launchDelay, Vector3 targetWorld)
+    {
+        if (launchDelay > 0f) yield return new WaitForSeconds(launchDelay);
+        if (_playerView == null) yield break;
+
+        // attack/10.png(1272x1628, pivot 0.409,0) frame 10 화염구 코어 픽셀 = (965, 316).
+        // pivot pixel: (520, 0 bottom). sprite-local (PPU=100): ((965-520)/100, (1628-316)/100) = (4.45, 13.12).
+        // 월드 좌표는 transform.localScale (ApplyWorldHeight × _sequenceScaleBoost 1.131) 곱해서 변환.
+        const float handLocalX = 4.45f;
+        const float handLocalY = 13.12f;
+        float renderScale = _playerView.transform.localScale.x;
+        Vector3 handPos = _playerView.transform.position + new Vector3(handLocalX * renderScale, handLocalY * renderScale, 0f);
+
+        // 보스 슬래시와 동일한 절차 반달 + 잔상 + wobble 사용. 보스보다 작게(0.8) + 살짝 빠르게(0.35s).
+        // yGrowEnd=2.2 → 비행할수록 Y(crescent 두께)가 2.2배까지 부풀어 오름 (불꽃 커지는 효과).
+        var proj = BossProjectile.SpawnCrescent(
+            from: handPos,
+            to: targetWorld,
+            duration: 0.35f,
+            worldHeight: 0.8f,
+            sortingOrder: 130,
+            yGrowEnd: 2.2f);
+
+        // 본체 + 잔상 모든 SpriteRenderer를 활활 타는 주황으로 덮어쓰기. alpha는 보존(잔상 페이드 유지).
+        Color flame = new Color(1.0f, 0.45f, 0.10f, 1f);
+        foreach (var sr in proj.GetComponentsInChildren<SpriteRenderer>())
+        {
+            var c = sr.color;
+            sr.color = new Color(flame.r, flame.g, flame.b, c.a);
+        }
     }
 
     // 공격 방향 (플레이어 → 타겟 적). 기본은 오른쪽(+x). 적 위치를 world로 변환해 벡터 계산.
@@ -1589,6 +1711,30 @@ public class BattleUI : MonoBehaviour
         _backgroundTexture = tex;
         // 기존 sprite를 다시 만들게끔 강제 — _worldBgSr는 그대로 두고 sprite만 교체됨
         UpdateWorldBackground();
+    }
+
+    /// CheatUI 공격 모션 미리보기 — 카드 사용 없이 PlayAttack + TriggerPlayerAttackFx 만 재생.
+    /// 살아있는 적이 있으면 그 적 방향으로, 없으면 우측 기본.
+    public void Cheat_PlayPlayerAttack()
+    {
+        if (_playerView == null)
+        {
+            Debug.LogWarning("[BattleUI] Cheat_PlayPlayerAttack: PlayerView 없음 — 전투 진입 후 사용");
+            return;
+        }
+
+        int eIdx = -1;
+        var enemies = _battle?.state?.enemies;
+        if (enemies != null)
+        {
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                if (!enemies[i].IsDead) { eIdx = i; break; }
+            }
+        }
+
+        _playerView.PlayAttack(ComputeAttackDir(eIdx), distance: 0.08f, duration: PlayerAttackDuration);
+        TriggerPlayerAttackFx(eIdx, attackDuration: PlayerAttackDuration);
     }
 
     /// CheatUI 라이브 튜닝용 — 실전 시퀀스 그대로 재생: 보스 swing → strike 정점 spawn → 명중 시 PlayHit.
@@ -3423,8 +3569,9 @@ public class BattleUI : MonoBehaviour
                 _targetingCardIndex = -1;
                 _pending.Add(() => {
                     _battle.PlayCard(cardIdx, eIdx);
-                    _playerView?.PlayAttack(ComputeAttackDir(eIdx));
-                    TriggerPlayerAttackFx(eIdx);
+                    // distance=0 → 시전 캐릭터는 제자리에서 모션. 거리 이동은 화염구가 담당.
+                    _playerView?.PlayAttack(ComputeAttackDir(eIdx), distance: 0.08f, duration: PlayerAttackDuration);
+                    TriggerPlayerAttackFx(eIdx, attackDuration: PlayerAttackDuration);
                 });
             }
         }
@@ -3748,8 +3895,25 @@ public class BattleUI : MonoBehaviour
             _                  => _hudDividerTexBattle,
         };
 
+        // 마스터 스케일 적용 — 모든 사이즈를 한 번에 비례 조절.
+        float s = navBarMasterScale;
+        float effStripH    = hudStripHeight * s;
+        float effDivCenterY = hudDividerCenterY * s;
+        float effDivH      = hudDividerHeight * s;
+        float effBottomLineT = hudBattleBottomLineThickness * s;
+        float effTexH      = topBarTexHeight * s;
+        float effTexY      = topBarTexYOffset * s;
+
         // 1) 바 배경 채우기. 한 번만 — 이중 fill은 알파 반투명을 깨뜨림.
-        FillRect(new Rect(0f, 0f, RefW, hudStripHeight), bg);
+        FillRect(new Rect(0f, 0f, RefW, effStripH), bg);
+
+        // 1.5) 장식 텍스처 (있으면 배틀 컨텍스트에서 fill 위에 오버레이) — 알파가 fill을 통과시켜 톤은 유지.
+        if (_topBarBg != null && ctx == HudContext.Battle && topBarTexEnabled)
+        {
+            float texW = Mathf.Max(0f, RefW - topBarTexHorizontalInset * 2f);
+            var texRect = new Rect(topBarTexHorizontalInset, effTexY, texW, effTexH);
+            GUI.DrawTexture(texRect, _topBarBg, ScaleMode.StretchToFill, alphaBlend: true);
+        }
 
         // 2) 디바이더는 마지막에 그려서 바 위로 겹치도록. Width가 0이면 오버스캔 기반 자동, >0이면 그 값 직접 사용해 가운데 정렬.
         if (divTex != null)
@@ -3760,9 +3924,9 @@ public class BattleUI : MonoBehaviour
             GUI.color = hudDividerTint;
             GUI.DrawTexture(
                 new Rect(divX,
-                         hudDividerCenterY - hudDividerHeight * 0.5f,
+                         effDivCenterY - effDivH * 0.5f,
                          divW,
-                         hudDividerHeight),
+                         effDivH),
                 divTex, ScaleMode.StretchToFill, alphaBlend: true);
             GUI.color = prev;
         }
@@ -3770,9 +3934,9 @@ public class BattleUI : MonoBehaviour
 
         // 바 하단 골드 트림 — 전투/맵 공용 (마을은 모닥불 톤 충돌로 제외). 두께 0이거나 알파 0이면 스킵.
         if ((ctx == HudContext.Battle || ctx == HudContext.Map)
-            && hudBattleBottomLineThickness > 0f && hudBattleBottomLineColor.a > 0f)
+            && effBottomLineT > 0f && hudBattleBottomLineColor.a > 0f)
         {
-            FillRect(new Rect(0f, hudStripHeight - hudBattleBottomLineThickness, RefW, hudBattleBottomLineThickness),
+            FillRect(new Rect(0f, effStripH - effBottomLineT, RefW, effBottomLineT),
                      hudBattleBottomLineColor);
         }
     }
@@ -3783,8 +3947,8 @@ public class BattleUI : MonoBehaviour
         float iconY, float iconSize, float iconLabelGap,
         string floorLabel, int deckCount = -1)
     {
-        const float rightPad = 23.94f;    // 화면 우측 가장자리 여백 (padX보다 살짝 크게)
-        const float rightSlotGap = 47.88f;// 슬롯 사이 간격 (좌측 slotGap보다 넓게)
+        float rightPad = hudRightPad * navBarMasterScale;         // 화면 우측 가장자리 여백 (padX보다 살짝 크게)
+        float rightSlotGap = hudRightSlotGap * navBarMasterScale; // 슬롯 사이 간격 (좌측 slotGap보다 넓게)
 
         float right = barRect.xMax - rightPad;
         bool anyDrawn = false;
@@ -3828,7 +3992,9 @@ public class BattleUI : MonoBehaviour
             DrawBorder(hitRect, 1f, new Color(1f, 0.82f, 0.35f, 0.35f));
         }
 
-        if (_iconDeck != null)
+        // HUD 우측 덱 카운트 슬롯 — Floor 바로 옆 — CardBack 텍스처 사용 (코너 더미는 _iconDeck 별도 사용).
+        var hudDeckTex = _iconCardBack != null ? _iconCardBack : _iconDeck;
+        if (hudDeckTex != null)
         {
             Color glowTint = hover ? new Color(1f, 0.92f, 0.60f) : new Color(0.70f, 0.88f, 1f);
             DrawIconGlow(iconRect, glowTint, hover ? 1.35f : 1f);
@@ -3836,7 +4002,7 @@ public class BattleUI : MonoBehaviour
             float angle = Mathf.Sin(Time.time * 0.7f + 1.2f) * 0.32f;
             var prevMatrix = GUI.matrix;
             GUIUtility.RotateAroundPivot(angle, iconRect.center);
-            GUI.DrawTexture(iconRect, _iconDeck, ScaleMode.ScaleToFit);
+            GUI.DrawTexture(iconRect, hudDeckTex, ScaleMode.ScaleToFit);
             GUI.matrix = prevMatrix;
         }
 
@@ -3865,16 +4031,18 @@ public class BattleUI : MonoBehaviour
 
         DrawHudStripAndDivider(ctx);
 
+        // 마스터 스케일 — 바 내부 아이콘/슬롯도 비례 조절.
+        float s = navBarMasterScale;
         const float barX = 10f;
-        const float barY = 8f;
+        float barY = 8f * s;
         const float barW = RefW - 20f;
-        const float barH = 58.14f;
+        float barH = 58.14f * s;
         var barRect = new Rect(barX, barY, barW, barH);
 
-        const float iconSize = 42.75f;
-        const float iconLabelGap = 5.13f;
-        const float slotGap = 23.94f;
-        const float padX = 17.1f;
+        float iconSize = hudSlotIconSize * s;
+        float iconLabelGap = hudSlotIconLabelGap * s;
+        float slotGap = hudSlotGap * s;
+        float padX = hudSlotLeftPadX * s;
         float iconY = barY + (barH - iconSize) * 0.5f;
         float cursorX = barX + padX;
 
@@ -3967,7 +4135,12 @@ public class BattleUI : MonoBehaviour
 
         int prevFontSize = _cardCostStyle.fontSize;
         _cardCostStyle.fontSize = Mathf.RoundToInt(orbSize * manaOrbFontSizeRatio);
-        DrawTextWithOutline(orbRect, $"{p.mana}/{p.maxMana}", _cardCostStyle,
+        // 오브 안 텍스트 위치 조정 — 인스펙터 오프셋(오브 사이즈 비율)을 px로 환산해 rect를 평행 이동.
+        float manaTextOffX = orbSize * manaOrbTextOffsetXPct;
+        float manaTextOffY = orbSize * manaOrbTextOffsetYPct;
+        var manaTextRect = new Rect(orbRect.x + manaTextOffX, orbRect.y + manaTextOffY,
+                                    orbRect.width, orbRect.height);
+        DrawTextWithOutline(manaTextRect, $"{p.mana}/{p.maxMana}", _cardCostStyle,
                             Color.white, new Color(0, 0, 0, 0.95f), 1.5f);
         _cardCostStyle.fontSize = prevFontSize;
 
@@ -3975,14 +4148,16 @@ public class BattleUI : MonoBehaviour
         var skyBlue = new Color(0.30f, 0.65f, 1f, 1f);
         int deckDisplay = GetDeckDisplayCount(state);
         float deckPulse = GetReshuffleDeckLandPulse();
-        DrawCardPile(new Rect(22f, RefH - 88f, 78f, 78f), _iconDeck, deckDisplay, skyBlue, deckPulse);
+        DrawCardPile(new Rect(cornerPileLeftX, RefH - cornerPileTopFromBottom, cornerPileSize, cornerPileSize),
+                     _iconDeck, deckDisplay, skyBlue, deckPulse);
 
         // 우하단 버린 카드 더미 — 좌측 덱과 동일한 하늘색 뱃지.
         // 손패가 버려지는 애니메이션 중에는 착지한 카드 수만큼 카운트가 틱틱 올라가며,
         // 카드가 착지할 때마다 뱃지가 잠깐 커졌다 돌아오는 펄스가 들어간다.
         int discardDisplay = GetDiscardDisplayCount(state);
         float discardPulse = GetDiscardLandPulse();
-        DrawCardPile(new Rect(RefW - 90f, RefH - 88f, 78f, 78f), _iconDiscard, discardDisplay, skyBlue, discardPulse);
+        DrawCardPile(new Rect(RefW - cornerPileRightInset, RefH - cornerPileTopFromBottom, cornerPileSize, cornerPileSize),
+                     _iconDiscard, discardDisplay, skyBlue, discardPulse);
     }
 
     // 덱 더미에 표시할 카운트 — reshuffle 중엔 착지한 카드 수(0에서 증가),
@@ -4066,8 +4241,8 @@ public class BattleUI : MonoBehaviour
 
     private void DrawHand(BattleState state)
     {
-        const float cardW = 157.5f;
-        const float cardH = 219.45f;
+        float cardW = handCardWidth;
+        float cardH = handCardHeight;
 
         // 숨김 진행도 업데이트 — 고정 지속시간으로 선형 진행, 표시에는 ease-in-out 적용.
         // EffectiveHandHidden = 수동 토글 OR 공룡 공격 타겟팅 중 → 자동 슬라이드 다운.
@@ -4264,8 +4439,8 @@ public class BattleUI : MonoBehaviour
                             _battle.PlayCard(captured, -1);
                             if (isAttack)
                             {
-                                _playerView?.PlayAttack(ComputeAttackDir(-1));
-                                TriggerPlayerAttackFx(-1);
+                                _playerView?.PlayAttack(ComputeAttackDir(-1), distance: 0.08f, duration: PlayerAttackDuration);
+                                TriggerPlayerAttackFx(-1, attackDuration: PlayerAttackDuration);
                             }
                             else if (isSummon)
                                 _playerView?.PlaySummon(ComputeAttackDir(-1));
@@ -4660,7 +4835,9 @@ public class BattleUI : MonoBehaviour
         GUI.enabled = !state.IsOver && !_endTurnAnimating && !IsDrawFlyActive;
 
         // 베이스 사이즈(살짝 작아짐) + 호버 시 확대
-        var baseRect = new Rect(RefW - 280f, RefH - 80f, 150f, 72f);
+        var baseRect = new Rect(RefW - endTurnButtonRightOffset,
+                                RefH - endTurnButtonBottomOffset,
+                                endTurnButtonWidth, endTurnButtonHeight);
         bool hovered = GUI.enabled && baseRect.Contains(Event.current.mousePosition);
 
         // 호버 스케일 — 즉각적인 펌프 느낌을 위해 약간 보간 (Repaint에서만 누적)
@@ -4957,8 +5134,8 @@ public class BattleUI : MonoBehaviour
         _discardFlyCards.Clear();
         _discardBaseCount = state.discard.Count;
 
-        const float cardW = 157.5f;
-        const float cardH = 219.45f;
+        float cardW = handCardWidth;
+        float cardH = handCardHeight;
 
         int n = state.hand.Count;
         if (n == 0) return;
@@ -5072,11 +5249,12 @@ public class BattleUI : MonoBehaviour
     {
         if (!IsDiscardFlyActive) return;
 
-        const float cardW = 157.5f;
-        const float cardH = 219.45f;
+        float cardW = handCardWidth;
+        float cardH = handCardHeight;
 
-        // 버린 더미 중심 (DrawTopBar의 Rect와 일치)
-        Vector2 pileTarget = new Vector2(RefW - 90f + 39f, RefH - 88f + 39f);
+        // 버린 더미 중심 (DrawTurnInfo의 디스카드 더미 Rect와 일치)
+        Vector2 pileTarget = new Vector2(RefW - cornerPileRightInset + cornerPileSize * 0.5f,
+                                         RefH - cornerPileTopFromBottom + cornerPileSize * 0.5f);
 
         float localNow = Time.time - _discardAnimStartTime;
         Matrix4x4 baseMatrix = GUI.matrix;
@@ -5251,7 +5429,7 @@ public class BattleUI : MonoBehaviour
     // 드로우 카드의 최종 부채꼴 위치/각도 — DrawHand의 부채꼴 계산과 일치해야 함.
     private void GetDrawFanTarget(int targetIndex, int handCount, out Vector2 center, out float angleDeg)
     {
-        const float cardH = 219.45f;
+        float cardH = handCardHeight;
         float hideOffset = EaseInOutCubic(_handHideProgress) * HandHideDistance;
         float centerCardY = RefH - cardH * 0.5f + handBottomOffset + hideOffset;
         float fanRadius = handFanRadius;
@@ -5274,11 +5452,12 @@ public class BattleUI : MonoBehaviour
     {
         if (!IsDrawFlyActive) return;
 
-        const float cardW = 157.5f;
-        const float cardH = 219.45f;
+        float cardW = handCardWidth;
+        float cardH = handCardHeight;
 
-        // 덱 더미 중심 (DrawTopBar의 Rect와 일치: (22, RefH-88, 78, 78))
-        Vector2 deckCenter = new Vector2(22f + 39f, RefH - 88f + 39f);
+        // 덱 더미 중심 (DrawTurnInfo의 덱 더미 Rect와 일치)
+        Vector2 deckCenter = new Vector2(cornerPileLeftX + cornerPileSize * 0.5f,
+                                         RefH - cornerPileTopFromBottom + cornerPileSize * 0.5f);
         // 버림 애니와 동일한 상단 아치 제어점 — 전체 톤 통일
         Vector2 control = DiscardFlyControl;
 
@@ -5443,9 +5622,10 @@ public class BattleUI : MonoBehaviour
         if (!IsReshuffleActive) return;
         if (_iconCardBack == null) return;  // 뒷면 텍스처 없으면 조용히 스킵
 
-        // 양쪽 더미 중심 (DrawTopBar Rect와 일치)
-        Vector2 discardCenter = new Vector2(RefW - 90f + 39f, RefH - 88f + 39f);  // (1229, 671)
-        Vector2 deckCenter    = new Vector2(22f + 39f,        RefH - 88f + 39f);  // (61, 671)
+        // 양쪽 더미 중심 (DrawTurnInfo의 덱/디스카드 Rect와 일치)
+        float pileCenterY = RefH - cornerPileTopFromBottom + cornerPileSize * 0.5f;
+        Vector2 discardCenter = new Vector2(RefW - cornerPileRightInset + cornerPileSize * 0.5f, pileCenterY);
+        Vector2 deckCenter    = new Vector2(cornerPileLeftX + cornerPileSize * 0.5f,            pileCenterY);
         // 부드러운 아치 — 화면 중앙 근처까지 살짝 떠올랐다 우→좌로 흘러감
         Vector2 control       = new Vector2(RefW * 0.5f, RefH - 380f);
 

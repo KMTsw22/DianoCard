@@ -129,10 +129,10 @@ TextureImporter:
       name: Gold_0
       rect:
         serializedVersion: 2
-        x: 208
-        y: 193
-        width: 640
-        height: 639
+        x: 0
+        y: 0
+        width: 784
+        height: 791
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

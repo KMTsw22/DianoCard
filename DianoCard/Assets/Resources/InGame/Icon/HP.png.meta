@@ -129,10 +129,10 @@ TextureImporter:
       name: HP_0
       rect:
         serializedVersion: 2
-        x: 235
-        y: 261
-        width: 554
-        height: 487
+        x: 0
+        y: 0
+        width: 804
+        height: 832
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

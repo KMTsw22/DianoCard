@@ -177,6 +177,13 @@ public class CheatUI : MonoBehaviour
             if (GUILayout.Button(invLabel, _btnStyle)) battle.Cheat_ToggleInvincible();
             GUILayout.EndHorizontal();
 
+            // 공격 모션 미리보기 — 카드 소비/데미지 없이 시전+화염구만 재생.
+            if (GUILayout.Button("공격 모션 재생", _btnStyle))
+            {
+                var ui = Object.FindFirstObjectByType<BattleUI>();
+                if (ui != null) ui.Cheat_PlayPlayerAttack();
+            }
+
             // ===== 배경 전환 =====
             GUILayout.Space(8f);
             GUILayout.Label("— 배경 전환 —", _stateStyle);

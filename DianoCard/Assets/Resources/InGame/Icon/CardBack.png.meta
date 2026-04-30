@@ -129,10 +129,10 @@ TextureImporter:
       name: CardBack_0
       rect:
         serializedVersion: 2
-        x: 29
-        y: 37
-        width: 792
-        height: 1190
+        x: 0
+        y: 0
+        width: 751
+        height: 861
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

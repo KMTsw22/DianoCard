@@ -129,10 +129,10 @@ TextureImporter:
       name: Deck_0
       rect:
         serializedVersion: 2
-        x: 126
-        y: 156
-        width: 767
-        height: 727
+        x: 0
+        y: 0
+        width: 666
+        height: 759
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

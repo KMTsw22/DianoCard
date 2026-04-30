@@ -46,16 +46,23 @@ namespace DianoCard.Battle
         private List<SpriteRenderer> _afterimages;
         private List<float> _afterimageBaseAlpha;
 
+        // 비행 중 Y 스케일이 자라는 옵션 — 1.0이면 변화 없음, 2.0이면 끝 시점에 두 배.
+        // 진행방향이 local X이라 Y는 crescent의 두께(폭) → 비행할수록 부풀어 오르는 효과.
+        private float _yGrowEnd = 1f;
+        private float _flightProgress01 = 0f;
+
         public static BossProjectile SpawnCrescent(
             Vector3 from, Vector3 to,
             float duration = 0.42f,
             float worldHeight = 1.0f,
             int sortingOrder = 110,
-            Action onHit = null)
+            Action onHit = null,
+            float yGrowEnd = 1f)
         {
             var go = new GameObject("BossProjectile_Crescent");
             go.transform.position = from;
             var p = go.AddComponent<BossProjectile>();
+            p._yGrowEnd = yGrowEnd;
             p.Init(from, to, duration, worldHeight, sortingOrder, onHit);
             return p;
         }
@@ -125,6 +132,9 @@ namespace DianoCard.Battle
 
         private void LateUpdate()
         {
+            // Y 자라남 — 비행 진행에 따라 Y(crescent 두께) 스케일 증가. 1.0이면 변화 없음.
+            float yGrow = _yGrowEnd != 1f ? Mathf.Lerp(1f, _yGrowEnd, _flightProgress01) : 1f;
+
             // 휘날림 — 두 주파수가 다른 sin을 합쳐 단조롭지 않은 흔들림.
             if (WobbleIntensity > 0.001f)
             {
@@ -137,7 +147,14 @@ namespace DianoCard.Battle
                 transform.rotation = Quaternion.AngleAxis(_baseAngle + angleJitter, Vector3.forward);
                 transform.localScale = new Vector3(
                     _baseLocalScale.x * scaleJitter,
-                    _baseLocalScale.y * (2f - scaleJitter), // x 늘면 y 줄여서 천 펄럭이는 느낌
+                    _baseLocalScale.y * (2f - scaleJitter) * yGrow, // x 늘면 y 줄여서 천 펄럭이는 느낌 + 진행에 따라 yGrow
+                    1f);
+            }
+            else if (yGrow != 1f)
+            {
+                transform.localScale = new Vector3(
+                    _baseLocalScale.x,
+                    _baseLocalScale.y * yGrow,
                     1f);
             }
         }
@@ -149,9 +166,11 @@ namespace DianoCard.Battle
             {
                 t += Time.deltaTime;
                 float u = Mathf.Clamp01(t / duration);
+                _flightProgress01 = u;
                 transform.position = Vector3.Lerp(from, to, u);
                 yield return null;
             }
+            _flightProgress01 = 1f;
             transform.position = to;
 
             onHit?.Invoke();
@@ -181,6 +200,10 @@ namespace DianoCard.Battle
             }
             Destroy(gameObject);
         }
+
+        /// 외부에서 절차 반달 스프라이트 재활용용 (예: 플레이어 화염구 streak 등).
+        /// 같은 캐시를 공유하므로 추가 메모리 비용 없음.
+        public static Sprite GetSharedCrescentSprite() => GetCrescentSprite();
 
         /// 절차 텍스처: 초승달 마스크 × 양 뿔 페이드(y) × perlin noise.
         /// TipFadePower / NoiseStrength 변경 시 자동 재생성.

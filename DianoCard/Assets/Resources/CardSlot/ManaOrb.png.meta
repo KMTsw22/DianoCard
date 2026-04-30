@@ -129,10 +129,10 @@ TextureImporter:
       name: ManaOrb_0
       rect:
         serializedVersion: 2
-        x: 42
-        y: 27
-        width: 938
-        height: 971
+        x: 0
+        y: 0
+        width: 961
+        height: 987
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

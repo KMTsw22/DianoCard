@@ -129,10 +129,10 @@ TextureImporter:
       name: Mana_0
       rect:
         serializedVersion: 2
-        x: 243
-        y: 242
-        width: 781
-        height: 782
+        x: 0
+        y: 0
+        width: 961
+        height: 987
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

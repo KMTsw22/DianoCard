@@ -129,10 +129,10 @@ TextureImporter:
       name: Floor_0
       rect:
         serializedVersion: 2
-        x: 261
-        y: 257
-        width: 563
-        height: 502
+        x: 0
+        y: 0
+        width: 723
+        height: 798
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
