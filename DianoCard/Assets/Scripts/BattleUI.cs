@@ -72,8 +72,12 @@ public class BattleUI : MonoBehaviour
     private const float LungeDuration = 0.70f;
     private const float BetweenAttacksPause = 0.30f;
 
-    // 플레이어(Arkane) 공격 모션 총 길이. attack/ 12프레임 시퀀스 + 화염구 발사 타이밍 모두 이 값에 동기화.
-    private const float PlayerAttackDuration = 1.0f;
+    // 플레이어(Arkane) 공격 모션 총 길이. attack/ 9프레임 시퀀스 + 화염구 발사 타이밍 모두 이 값에 동기화.
+    private const float PlayerAttackDuration = 0.75f;
+
+    // 화염구가 적에 도달하는 시점 (launchDelay = 0.75*0.55 = 0.4125s + flight 0.55s ≈ 0.96s).
+    // PlayCard 호출을 이 시점까지 지연 → 데미지/HP/상태 업데이트가 시각적 임팩트와 동기화.
+    private const float PlayerFireballImpactDelay = 0.96f;
 
     // EndTurn 시 손패 카드가 버린 더미로 날아가는 애니메이션.
     // 3단계: (1) 화면 중앙으로 모이며 아치형으로 떠오름 (2) 잠깐 머무름 (3) 우하단 더미로 흘러감
@@ -662,17 +666,17 @@ public class BattleUI : MonoBehaviour
         if (_manaOrbTexture == null)
             Debug.LogWarning("[BattleUI] ManaOrb texture not found: Resources/CardSlot/ManaOrb");
 
-        // YJ 통합 프레임 — Frame_Test 단일 틀로 임시 통합 (테스트용).
-        _frameSummon  = Resources.Load<Texture2D>("CardSlot/Frames/Frame_Test");
-        _frameMagic   = Resources.Load<Texture2D>("CardSlot/Frames/Frame_Test");
-        _frameBuff    = Resources.Load<Texture2D>("CardSlot/Frames/Frame_Test");
-        _frameUtility = Resources.Load<Texture2D>("CardSlot/Frames/Frame_Test");
-        _frameRitual  = Resources.Load<Texture2D>("CardSlot/Frames/Frame_Test");
-        if (_frameSummon  == null) Debug.LogWarning("[BattleUI] Frame_Test not found: Resources/CardSlot/Frames/Frame_Test");
-        if (_frameMagic   == null) Debug.LogWarning("[BattleUI] Frame_Test not found: Resources/CardSlot/Frames/Frame_Test");
-        if (_frameBuff    == null) Debug.LogWarning("[BattleUI] Frame_Test not found: Resources/CardSlot/Frames/Frame_Test");
-        if (_frameUtility == null) Debug.LogWarning("[BattleUI] Frame_Test not found: Resources/CardSlot/Frames/Frame_Test");
-        if (_frameRitual  == null) Debug.LogWarning("[BattleUI] Frame_Test not found: Resources/CardSlot/Frames/Frame_Test");
+        // YJ 통합 프레임 — 종류별 5종. UTILITY는 RITUAL과 동일한 보라 프레임 공유.
+        _frameSummon  = Resources.Load<Texture2D>("CardSlot/Frames/Frame_SUMMON");
+        _frameMagic   = Resources.Load<Texture2D>("CardSlot/Frames/Frame_MAGIC");
+        _frameBuff    = Resources.Load<Texture2D>("CardSlot/Frames/Frame_BUFF");
+        _frameUtility = Resources.Load<Texture2D>("CardSlot/Frames/Frame_UTILITY");
+        _frameRitual  = Resources.Load<Texture2D>("CardSlot/Frames/Frame_RITUAL");
+        if (_frameSummon  == null) Debug.LogWarning("[BattleUI] Frame_SUMMON not found: Resources/CardSlot/Frames/Frame_SUMMON");
+        if (_frameMagic   == null) Debug.LogWarning("[BattleUI] Frame_MAGIC not found: Resources/CardSlot/Frames/Frame_MAGIC");
+        if (_frameBuff    == null) Debug.LogWarning("[BattleUI] Frame_BUFF not found: Resources/CardSlot/Frames/Frame_BUFF");
+        if (_frameUtility == null) Debug.LogWarning("[BattleUI] Frame_UTILITY not found: Resources/CardSlot/Frames/Frame_UTILITY");
+        if (_frameRitual  == null) Debug.LogWarning("[BattleUI] Frame_RITUAL not found: Resources/CardSlot/Frames/Frame_RITUAL");
 
         _shieldFxTexture = Resources.Load<Texture2D>("CardArt/Spell/Effect/ShieldBubble");
         if (_shieldFxTexture == null)
@@ -1592,17 +1596,26 @@ public class BattleUI : MonoBehaviour
         Destroy(go);
     }
 
+    /// <summary>화염구 임팩트 시점에 _battle.PlayCard 호출 — 데미지/HP/상태 업데이트가 시각 임팩트와 동기화.
+    /// 트레이드오프: PlayCard 지연 동안 카드는 손에 남아있고 마나도 안 빠짐. 더블클릭 방지 필요할 수 있음.</summary>
+    private IEnumerator DelayedPlayCardOnImpact(System.Action playCardAction)
+    {
+        yield return new WaitForSeconds(PlayerFireballImpactDelay);
+        playCardAction();
+    }
+
     /// <summary>플레이어 공격 시 ComputeAttackDir + 타겟 world 좌표 기반으로 FX 예약.
-    /// CH002(Arkane) 절차 화염구 발사체 — 시전 끝(85%) 시점에 손→적 비행. PlayerView가 있어야 정확한 손 위치 계산 가능.</summary>
+    /// CH002(Arkane) 절차 화염구 발사체 — 시전 중 피크 버스트 시점에 손→적 비행. PlayerView가 있어야 정확한 손 위치 계산 가능.</summary>
     private void TriggerPlayerAttackFx(int preferredEnemyIdx, float attackDuration = 0.75f)
     {
         var targetWorld = GetAttackTargetWorld(preferredEnemyIdx);
         if (targetWorld == Vector3.zero) return;
 
         // 절차 화염구 발사체 (BossProjectile.SpawnCrescent를 화염색으로 재활용)
+        // 0.55 = 9프레임 / 0.75s 시퀀스 기준 frame 5(피크 버스트, 화염구 완전 형성) 시점에 손에서 발사.
         if (_playerView != null)
         {
-            StartCoroutine(FireballProjectileRoutine(attackDuration * 0.85f, targetWorld));
+            StartCoroutine(FireballProjectileRoutine(attackDuration * 0.55f, targetWorld));
             return;
         }
 
@@ -1626,15 +1639,25 @@ public class BattleUI : MonoBehaviour
         float renderScale = _playerView.transform.localScale.x;
         Vector3 handPos = _playerView.transform.position + new Vector3(handLocalX * renderScale, handLocalY * renderScale, 0f);
 
-        // 보스 슬래시와 동일한 절차 반달 + 잔상 + wobble 사용. 보스보다 작게(0.8) + 살짝 빠르게(0.35s).
-        // yGrowEnd=2.2 → 비행할수록 Y(crescent 두께)가 2.2배까지 부풀어 오름 (불꽃 커지는 효과).
+        // 화구 — 보스 비행 곡선 차용, 모양/잔상/wobble은 화구용으로 커스텀.
+        // - customSprite: 중앙 진함→바깥 옅어지는 양방향 cos 페이드 반달
+        // - yGrowEnd 3.5: Y(두께)가 3.5배까지 크게 부풀어 오름
+        // - easeOutPower 3.5: 처음 매우 빠름 → 끝 부드럽게 감속
+        // - alphaFadeEnd 0.30: 끝에서 30%까지 옅어짐
+        // - enableWobble false: 검 휘두르는 펄럭임 끄기
+        // - afterimageCount 0: 잔상(두 겹 보이는 사본) 제거
         var proj = BossProjectile.SpawnCrescent(
             from: handPos,
             to: targetWorld,
-            duration: 0.35f,
-            worldHeight: 0.8f,
+            duration: 0.55f,
+            worldHeight: 1.4f,
             sortingOrder: 130,
-            yGrowEnd: 2.2f);
+            yGrowEnd: 3.5f,
+            easeOutPower: 3.5f,
+            alphaFadeEnd: 0.30f,
+            customSprite: BossProjectile.GetSharedCrescentSpriteSoft(),
+            enableWobble: false,
+            afterimageCount: 0);
 
         // 본체 + 잔상 모든 SpriteRenderer를 활활 타는 주황으로 덮어쓰기. alpha는 보존(잔상 페이드 유지).
         Color flame = new Color(1.0f, 0.45f, 0.10f, 1f);
@@ -3568,10 +3591,10 @@ public class BattleUI : MonoBehaviour
                 int eIdx = enemyIndex;
                 _targetingCardIndex = -1;
                 _pending.Add(() => {
-                    _battle.PlayCard(cardIdx, eIdx);
-                    // distance=0 → 시전 캐릭터는 제자리에서 모션. 거리 이동은 화염구가 담당.
+                    // 모션과 화염구는 즉시 시작. PlayCard(데미지/마나/상태)는 화염구 임팩트 시점까지 지연.
                     _playerView?.PlayAttack(ComputeAttackDir(eIdx), distance: 0.08f, duration: PlayerAttackDuration);
                     TriggerPlayerAttackFx(eIdx, attackDuration: PlayerAttackDuration);
+                    StartCoroutine(DelayedPlayCardOnImpact(() => _battle.PlayCard(cardIdx, eIdx)));
                 });
             }
         }
@@ -4436,14 +4459,19 @@ public class BattleUI : MonoBehaviour
                         _swapFromCardIndex = -1;
                         bool isAttack = IsAttackSpell(c);
                         _pending.Add(() => {
-                            _battle.PlayCard(captured, -1);
                             if (isAttack)
                             {
+                                // 공격 카드: 모션/화염구 즉시 → 데미지(PlayCard)는 임팩트 시점까지 지연.
                                 _playerView?.PlayAttack(ComputeAttackDir(-1), distance: 0.08f, duration: PlayerAttackDuration);
                                 TriggerPlayerAttackFx(-1, attackDuration: PlayerAttackDuration);
+                                StartCoroutine(DelayedPlayCardOnImpact(() => _battle.PlayCard(captured, -1)));
                             }
-                            else if (isSummon)
-                                _playerView?.PlaySummon(ComputeAttackDir(-1));
+                            else
+                            {
+                                _battle.PlayCard(captured, -1);
+                                if (isSummon)
+                                    _playerView?.PlaySummon(ComputeAttackDir(-1));
+                            }
                         });
                     }
                 }
