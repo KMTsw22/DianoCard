@@ -1,13 +1,27 @@
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using DianoCard.Battle;
 using DianoCard.Data;
 using DianoCard.Game;
 using UnityEngine;
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
 
 [DefaultExecutionOrder(2000)]
 public class CheatUI : MonoBehaviour
 {
+    // 외부 파일 BG 프리뷰 — 디스크 어디서든 PNG/JPG를 골라 풀스크린으로 깔고,
+    // 기존 상단 HUD 네비바는 OnGUI라 그대로 위에 올라옴. 전투 상태와 무관하게 동작.
+    private SpriteRenderer _previewBgSr;
+    private Texture2D _previewBgTex;
+    private string _previewBgPath;
+    private bool _previewBgVisible;
+    // 격리 프리뷰 모드 — ON이면 OnGUI 풀스크린으로 BG + 상단 네비바만 그려서 다른 게임 UI를 가림.
+    private bool _previewIsolateMode;
+    private BattleUI.HudContext _previewHudCtx = BattleUI.HudContext.Battle;
+    private RunState _previewDummyRun;
     private bool _open;
     private Rect _windowRect = new(20f, 20f, 260f, 720f);
     private Vector2 _windowScroll;
@@ -31,25 +45,38 @@ public class CheatUI : MonoBehaviour
     private float _cardPreviewHeight = 540f;   // 카드 세로 픽셀 (1280x720 가상 좌표). 슬라이더로 300~560 확대.
     private bool  _cardPreviewSlotOnly;        // true = 프레임 레이어만, 카드 데이터 숨김
 
+    // 인텐트 프리뷰 — 첫 살아있는 적의 intentAction을 EnemyAction 순환으로 강제 변경.
+    private int _intentPreviewIdx = 1; // 0=UNKNOWN이라 ATTACK부터 시작
+
     void Update()
     {
         var kb = UnityEngine.InputSystem.Keyboard.current;
-        if (kb != null && kb.backquoteKey.wasPressedThisFrame)
+        if (kb == null) return;
+        // 백쿼트(`) — 한글 IME에선 가로채일 수 있어 F12도 동일하게 토글로 작동.
+        bool toggle = kb.backquoteKey.wasPressedThisFrame || kb.f12Key.wasPressedThisFrame;
+        if (toggle)
         {
             _open = !_open;
-            _bgNames = null; // 다음 열 때 배경 목록 재로드
+            _bgNames = null;
             _summonCards = null;
         }
     }
 
     void OnGUI()
     {
-        // 카드 프리뷰는 런타임 치트 패널이 닫혀 있어도 동작해야 함 — 에디터 CheatWindow에서도 열 수 있음.
-        if (!_open && !_cardPreviewOpen) return;
+        // 카드 프리뷰 / 격리 BG 프리뷰는 패널이 닫혀 있어도 동작해야 함.
+        if (!_open && !_cardPreviewOpen && !_previewIsolateMode) return;
 
         var matrix = GUI.matrix;
         float scale = Screen.width / 1280f;
         GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1f));
+
+        // 격리 BG 프리뷰 — 다른 게임 UI를 풀스크린으로 가린다. depth는 -150 (게임 UI=0보다 앞, 패널=-200보다 뒤).
+        if (_previewIsolateMode && _previewBgTex != null)
+        {
+            GUI.depth = -150;
+            DrawIsolatedPreview();
+        }
 
         // 프리뷰는 BattleUI보다 위 (depth 낮을수록 앞).
         if (_cardPreviewOpen)
@@ -60,9 +87,49 @@ public class CheatUI : MonoBehaviour
         }
 
         if (_open)
+        {
+            // BattleUI 위에 확실히 그리도록 depth를 음수로. 더 작을수록 앞.
+            GUI.depth = -200;
             _windowRect = GUI.Window(9999, _windowRect, DrawWindow, "");
+        }
 
         GUI.matrix = matrix;
+    }
+
+    // BG + 상단 네비바만 풀스크린으로. 1280x720 가상 좌표.
+    private void DrawIsolatedPreview()
+    {
+        // 1) BG 풀스크린 (1280x720 가상 캔버스).
+        GUI.DrawTexture(new Rect(0, 0, 1280f, 720f), _previewBgTex, ScaleMode.ScaleAndCrop);
+
+        // 2) 상단 네비바만. BattleUI가 씬에 떠있어야 함 — Inspector 튜닝값을 그대로 씀.
+        var battleUi = Object.FindFirstObjectByType<BattleUI>();
+        if (battleUi == null) return;
+
+        var run = ResolvePreviewRun();
+        // 휴식 노드(15층 보스 직전이라고 가정). 인자값은 디자인 확인 목적이라 적당히.
+        battleUi.DrawTopBar(_previewHudCtx, run, run.currentFloor, 15);
+    }
+
+    // 격리 프리뷰용 RunState — 진행 중인 run이 있으면 그걸 쓰고, 없으면 더미 표시값.
+    private RunState ResolvePreviewRun()
+    {
+        var gsm = GameStateManager.Instance;
+        if (gsm != null && gsm.CurrentRun != null) return gsm.CurrentRun;
+
+        if (_previewDummyRun == null)
+        {
+            _previewDummyRun = new RunState
+            {
+                playerMaxHp = 70,
+                playerCurrentHp = 52,
+                gold = 240,
+                currentFloor = 7,
+                chapterId = "CH01",
+                characterId = "CH001",
+            };
+        }
+        return _previewDummyRun;
     }
 
     // 스타일 생성을 DrawWindow 밖으로 뺀다 — DrawCardPreviewOverlay 도 _btnStyle 쓰기 때문.
@@ -89,6 +156,52 @@ public class CheatUI : MonoBehaviour
             alignment = TextAnchor.MiddleCenter,
             normal = { textColor = new Color(0.7f, 0.9f, 1f) },
         };
+    }
+
+    // 인텐트 프리뷰 — 액션을 적용하고 intentType과 기본 값을 적절히 매핑.
+    private static void ApplyIntentPreview(EnemyInstance e, EnemyAction action)
+    {
+        e.intentAction = action;
+        switch (action)
+        {
+            case EnemyAction.ATTACK:
+            case EnemyAction.MULTI_ATTACK:
+            case EnemyAction.COUNTDOWN_ATTACK:
+                e.intentType = EnemyIntentType.ATTACK;
+                if (e.intentValue <= 0) e.intentValue = 5;
+                break;
+            case EnemyAction.DEFEND:
+            case EnemyAction.BLOCK_BOSS:
+            case EnemyAction.ARMOR_UP:
+                e.intentType = EnemyIntentType.DEFEND;
+                if (e.intentValue <= 0) e.intentValue = 5;
+                break;
+            case EnemyAction.BUFF_SELF:
+            case EnemyAction.EMPOWER_BOSS:
+                e.intentType = EnemyIntentType.BUFF;
+                if (e.intentValue <= 0) e.intentValue = 2;
+                break;
+            case EnemyAction.SUMMON:
+            case EnemyAction.REFILL_MOSS:
+                e.intentType = EnemyIntentType.SUMMON;
+                e.intentValue = 0;
+                break;
+            case EnemyAction.STEAL_SUMMON:
+            case EnemyAction.SILENCE:
+            case EnemyAction.IDLE:
+            case EnemyAction.UNKNOWN:
+                e.intentType = EnemyIntentType.UNKNOWN;
+                e.intentValue = 0;
+                break;
+            case EnemyAction.COUNTDOWN_AOE:
+                e.intentType = EnemyIntentType.COUNTDOWN;
+                if (e.intentValue <= 0) e.intentValue = 3;
+                break;
+            default: // POISON / WEAK / DRAIN / VULNERABLE / CLOG_DECK / HEAL_BOSS
+                e.intentType = EnemyIntentType.DEBUFF;
+                if (e.intentValue <= 0) e.intentValue = 3;
+                break;
+        }
     }
 
     private void DrawWindow(int id)
@@ -127,6 +240,24 @@ public class CheatUI : MonoBehaviour
 
         if (GUILayout.Button("Village", _btnStyle))
             gsm.Cheat_EnterVillage();
+
+        // 미지 노드 — 진입 시 StS 방식으로 무작위 해석되는 ? 노드.
+        // 랜덤 / 강제 결과 4종 (Combat/Treasure/Shop/Rest)을 즉석에서 검증.
+        GUILayout.Label("미지 (Unknown)", _stateStyle);
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("? 랜덤", _btnStyle))
+            gsm.Cheat_TriggerUnknown(null);
+        if (GUILayout.Button("→ 전투", _btnStyle))
+            gsm.Cheat_TriggerUnknown(GameStateManager.UnknownOutcome.Combat);
+        GUILayout.EndHorizontal();
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button("→ 보물", _btnStyle))
+            gsm.Cheat_TriggerUnknown(GameStateManager.UnknownOutcome.Treasure);
+        if (GUILayout.Button("→ 상점", _btnStyle))
+            gsm.Cheat_TriggerUnknown(GameStateManager.UnknownOutcome.Shop);
+        if (GUILayout.Button("→ 휴식", _btnStyle))
+            gsm.Cheat_TriggerUnknown(GameStateManager.UnknownOutcome.Rest);
+        GUILayout.EndHorizontal();
 
         GUILayout.Space(8f);
         GUILayout.Label("— 훈련장 입장 (BG 자동) —", _stateStyle);
@@ -182,6 +313,39 @@ public class CheatUI : MonoBehaviour
             {
                 var ui = Object.FindFirstObjectByType<BattleUI>();
                 if (ui != null) ui.Cheat_PlayPlayerAttack();
+            }
+
+            // ===== 인텐트 프리뷰 — 첫 살아있는 적의 인텐트를 EnemyAction 전체에서 순환 =====
+            GUILayout.Space(8f);
+            GUILayout.Label("— 인텐트 프리뷰 —", _stateStyle);
+            var aliveEnemy = battle.state.enemies.FirstOrDefault(en => !en.IsDead);
+            if (aliveEnemy != null)
+            {
+                var actions = (EnemyAction[])System.Enum.GetValues(typeof(EnemyAction));
+                if (_intentPreviewIdx < 0 || _intentPreviewIdx >= actions.Length) _intentPreviewIdx = 0;
+                GUILayout.Label($"{actions[_intentPreviewIdx]}  (값 {aliveEnemy.intentValue})", _stateStyle);
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("◀ 이전", _btnStyle))
+                {
+                    _intentPreviewIdx = (_intentPreviewIdx - 1 + actions.Length) % actions.Length;
+                    ApplyIntentPreview(aliveEnemy, actions[_intentPreviewIdx]);
+                }
+                if (GUILayout.Button("다음 ▶", _btnStyle))
+                {
+                    _intentPreviewIdx = (_intentPreviewIdx + 1) % actions.Length;
+                    ApplyIntentPreview(aliveEnemy, actions[_intentPreviewIdx]);
+                }
+                GUILayout.EndHorizontal();
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button("값 -1", _btnStyle))
+                    aliveEnemy.intentValue = Mathf.Max(0, aliveEnemy.intentValue - 1);
+                if (GUILayout.Button("값 +1", _btnStyle))
+                    aliveEnemy.intentValue = aliveEnemy.intentValue + 1;
+                GUILayout.EndHorizontal();
+            }
+            else
+            {
+                GUILayout.Label("(살아있는 적 없음)", _stateStyle);
             }
 
             // ===== 배경 전환 =====
@@ -345,6 +509,46 @@ public class CheatUI : MonoBehaviour
             gsm.CurrentRun.gold += 500;
         GUILayout.EndHorizontal();
 
+        // ===== 외부 파일 BG 프리뷰 — 상단 네비 유지한 채 임의 사진 풀스크린 깔기.
+        GUILayout.Space(12f);
+        GUILayout.Label("— BG 프리뷰 (외부 파일) —", _stateStyle);
+        if (!string.IsNullOrEmpty(_previewBgPath))
+        {
+            GUILayout.Label(Path.GetFileName(_previewBgPath), _stateStyle);
+        }
+        if (GUILayout.Button("파일에서 로드…", _btnStyle))
+            PickAndLoadPreviewBg();
+
+        if (_previewBgTex != null)
+        {
+            GUILayout.BeginHorizontal();
+            string visLabel = _previewBgVisible ? "숨기기" : "보이기";
+            if (GUILayout.Button(visLabel, _btnStyle)) TogglePreviewBgVisible();
+            if (GUILayout.Button("끄기", _btnStyle)) ClearPreviewBg();
+            GUILayout.EndHorizontal();
+            if (GUILayout.Button("다시 맞추기 (카메라 변경시)", _btnStyle))
+                FitPreviewBgToCamera();
+
+            // 격리 모드 — BG + 상단 네비바만 보이게 (다른 UI 가림).
+            GUILayout.Space(4f);
+            string isoLabel = _previewIsolateMode ? "● 격리 모드 ON (BG+네비만)" : "○ 격리 모드 OFF";
+            if (GUILayout.Button(isoLabel, _btnStyle))
+                _previewIsolateMode = !_previewIsolateMode;
+
+            if (_previewIsolateMode)
+            {
+                GUILayout.Label("네비바 컨텍스트 (색)", _stateStyle);
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button(_previewHudCtx == BattleUI.HudContext.Battle ? "▶전투" : "전투", _btnStyle))
+                    _previewHudCtx = BattleUI.HudContext.Battle;
+                if (GUILayout.Button(_previewHudCtx == BattleUI.HudContext.Map ? "▶맵" : "맵", _btnStyle))
+                    _previewHudCtx = BattleUI.HudContext.Map;
+                if (GUILayout.Button(_previewHudCtx == BattleUI.HudContext.Village ? "▶마을" : "마을", _btnStyle))
+                    _previewHudCtx = BattleUI.HudContext.Village;
+                GUILayout.EndHorizontal();
+            }
+        }
+
         GUILayout.Space(12f);
         GUILayout.Label("— 카드 프리뷰 —", _stateStyle);
         string previewLabel = _cardPreviewOpen ? "프리뷰 닫기" : "카드 프리뷰 열기";
@@ -481,5 +685,152 @@ public class CheatUI : MonoBehaviour
     {
         var ui = Object.FindFirstObjectByType<BattleUI>();
         return ui != null ? ui.Battle : null;
+    }
+
+    // ===== 외부 파일 BG 프리뷰 헬퍼 =====
+
+    // 프로젝트 루트 옆 _cheat_bg 폴더 — 여기에 PNG/JPG 넣어두면 다이얼로그가 바로 그 폴더로 열림.
+    // Application.dataPath = ".../DianoCard/DianoCard/Assets" → 두 단계 위가 코딩 루트.
+    private static string CheatBgFolder()
+    {
+        var root = Directory.GetParent(Application.dataPath)?.Parent?.FullName;
+        if (string.IsNullOrEmpty(root)) return Application.dataPath;
+        var dir = Path.Combine(root, "_cheat_bg");
+        if (!Directory.Exists(dir))
+        {
+            try { Directory.CreateDirectory(dir); }
+            catch { /* 권한 문제 시 그냥 무시 — 다이얼로그가 부모 폴더에서 열림 */ }
+        }
+        return dir;
+    }
+
+    private void PickAndLoadPreviewBg()
+    {
+        string path = null;
+#if UNITY_EDITOR
+        // 에디터: 표준 파일 다이얼로그 — _cheat_bg 폴더로 기본 진입.
+        path = EditorUtility.OpenFilePanelWithFilters(
+            "BG 프리뷰 이미지 선택", CheatBgFolder(),
+            new[] { "Image", "png,jpg,jpeg" });
+#else
+        // 빌드: _cheat_bg 폴더(없으면 persistentDataPath/cheat_bg) 안의 첫 이미지 자동 선택.
+        var dir = CheatBgFolder();
+        if (!Directory.Exists(dir))
+            dir = Path.Combine(Application.persistentDataPath, "cheat_bg");
+        if (Directory.Exists(dir))
+        {
+            var files = Directory.GetFiles(dir)
+                .Where(f => f.EndsWith(".png") || f.EndsWith(".jpg") || f.EndsWith(".jpeg"))
+                .ToArray();
+            if (files.Length > 0) path = files[0];
+        }
+        if (string.IsNullOrEmpty(path))
+            Debug.LogWarning($"[Cheat] 빌드 모드: {dir} 에 이미지 넣어주세요.");
+#endif
+        if (string.IsNullOrEmpty(path)) return;
+
+        try
+        {
+            var bytes = File.ReadAllBytes(path);
+            var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            if (!tex.LoadImage(bytes))
+            {
+                Debug.LogWarning($"[Cheat] 이미지 로드 실패: {path}");
+                Object.Destroy(tex);
+                return;
+            }
+            tex.name = Path.GetFileNameWithoutExtension(path);
+
+            // 기존 프리뷰 텍스처 정리.
+            if (_previewBgTex != null) Object.Destroy(_previewBgTex);
+            _previewBgTex = tex;
+            _previewBgPath = path;
+            _previewBgVisible = true;
+
+            ApplyPreviewBg();
+        }
+        catch (System.Exception ex)
+        {
+            Debug.LogError($"[Cheat] BG 프리뷰 로드 에러: {ex.Message}");
+        }
+    }
+
+    private void ApplyPreviewBg()
+    {
+        if (_previewBgTex == null) return;
+        var cam = Camera.main;
+        if (cam == null)
+        {
+            Debug.LogWarning("[Cheat] BG 프리뷰: Camera.main 없음");
+            return;
+        }
+
+        if (_previewBgSr == null)
+        {
+            var go = new GameObject("_CheatPreviewBackground");
+            // 다른 씬 전환에도 살아있게 — 전투 ↔ 맵 옮겨다니며 비교 가능.
+            Object.DontDestroyOnLoad(go);
+            _previewBgSr = go.AddComponent<SpriteRenderer>();
+            // 전투 BG(-100)/기타 월드 스프라이트보다 위, OnGUI(HUD)는 어차피 더 위에.
+            _previewBgSr.sortingOrder = 1000;
+        }
+
+        var tex = _previewBgTex;
+        _previewBgSr.sprite = Sprite.Create(
+            tex,
+            new Rect(0, 0, tex.width, tex.height),
+            new Vector2(0.5f, 0.5f),
+            100f);
+        _previewBgSr.enabled = _previewBgVisible;
+
+        FitPreviewBgToCamera();
+    }
+
+    private void FitPreviewBgToCamera()
+    {
+        if (_previewBgSr == null || _previewBgTex == null) return;
+        var cam = Camera.main;
+        if (cam == null) return;
+
+        if (cam.orthographic)
+        {
+            float camH = cam.orthographicSize * 2f;
+            float camW = camH * cam.aspect;
+            float spriteW = _previewBgTex.width / 100f;
+            float spriteH = _previewBgTex.height / 100f;
+            // ScaleAndCrop 동작 — 짧은 축에 맞춰 가득 채움.
+            float s = Mathf.Max(camW / spriteW, camH / spriteH);
+            _previewBgSr.transform.localScale = new Vector3(s, s, 1f);
+        }
+        var camPos = cam.transform.position;
+        _previewBgSr.transform.position = new Vector3(camPos.x, camPos.y, 0f);
+    }
+
+    private void TogglePreviewBgVisible()
+    {
+        _previewBgVisible = !_previewBgVisible;
+        if (_previewBgSr != null) _previewBgSr.enabled = _previewBgVisible;
+    }
+
+    private void ClearPreviewBg()
+    {
+        if (_previewBgSr != null)
+        {
+            Object.Destroy(_previewBgSr.gameObject);
+            _previewBgSr = null;
+        }
+        if (_previewBgTex != null)
+        {
+            Object.Destroy(_previewBgTex);
+            _previewBgTex = null;
+        }
+        _previewBgPath = null;
+        _previewBgVisible = false;
+        _previewIsolateMode = false;
+    }
+
+    void OnDestroy()
+    {
+        ClearPreviewBg();
     }
 }

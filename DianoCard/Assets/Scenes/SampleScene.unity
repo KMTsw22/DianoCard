@@ -448,9 +448,9 @@ MonoBehaviour:
   hpBarMinWidth: 110
   hpBarMaxWidth: 170
   hpBarHeight: 18
-  handBottomOffset: 57
+  handBottomOffset: 55
   handAnglePerCard: 6.5
-  handFanRadius: 1100
+  handFanRadius: 1250
   cardBgRectPct: {x: 0.045, y: 0.03, z: 0.91, w: 0.94}
   cardArtRectPct: {x: 0.06, y: 0.045, z: 0.88, w: 0.63}
   cardArtFrameRectPct: {x: 0.15, y: 0.63, z: 0.7, w: 0.09}
@@ -536,7 +536,7 @@ MonoBehaviour:
   cardNameOutline: {r: 0, g: 0, b: 0, a: 0.9}
   cardNameOutlineThickness: 1
   cardTypeTextColor: {r: 1, g: 1, b: 1, a: 1}
-  cardBodyTextColor: {r: 0, g: 0, b: 0, a: 1}
+  cardBodyTextColor: {r: 1, g: 1, b: 1, a: 1}
   cardCostTextColor: {r: 1, g: 1, b: 1, a: 1}
   cardCostOutline: {r: 0, g: 0, b: 0, a: 0.95}
   cardCostOutlineThickness: 1.2

@@ -22,7 +22,7 @@ namespace DianoCard.Battle
         // 전투 시작 / 턴 시작
         // =========================================================
 
-        public void StartBattle(List<CardData> startingDeck, List<EnemyData> enemyPool, int maxMana = 3, int playerHp = 70, int maxFieldSize = 2)
+        public void StartBattle(List<CardData> startingDeck, List<EnemyData> enemyPool, int maxMana = 3, int playerHp = 70, int maxFieldSize = 2, float normalHpScale = 1f, float normalDamageScale = 1f)
         {
             state = new BattleState();
             state.maxFieldSize = maxFieldSize;
@@ -35,13 +35,16 @@ namespace DianoCard.Battle
 
             // 같은 id가 연속 등장하면 패턴 스텝을 오프셋해 행동이 동기화되지 않도록 한다.
             // (예: 쌍둥이 E103은 PS_E103의 step 1/2가 엇갈려서 한 쪽이 공격, 한 쪽이 방어)
+            // floor 스케일링은 NORMAL 적에만 적용 — 엘리트/보스는 디자인된 값 그대로.
             var idCount = new Dictionary<string, int>();
             foreach (var e in enemyPool)
             {
                 if (e == null) continue;
                 int dupIdx = idCount.TryGetValue(e.id, out var n) ? n : 0;
                 idCount[e.id] = dupIdx + 1;
-                var inst = new EnemyInstance(e);
+                float hpScale = e.enemyType == EnemyType.NORMAL ? normalHpScale : 1f;
+                float dmgScale = e.enemyType == EnemyType.NORMAL ? normalDamageScale : 1f;
+                var inst = new EnemyInstance(e, hpScale, dmgScale);
                 inst.patternStepCursor = dupIdx; // 첫 인스턴스 0, 두 번째 1, ...
                 state.enemies.Add(inst);
             }
@@ -956,7 +959,7 @@ namespace DianoCard.Battle
             var phases = DianoCard.Data.DataManager.Instance.GetPhaseSet(e.data.phaseSetId);
             if (phases == null) return;
 
-            float hpRatio = (float)e.hp / Math.Max(1, e.data.hp);
+            float hpRatio = (float)e.hp / Math.Max(1, e.maxHp);
             for (int i = e.phasesEntered; i < phases.Count; i++)
             {
                 var ph = phases[i];
@@ -1144,7 +1147,7 @@ namespace DianoCard.Battle
                 case EnemyAction.DRAIN:
                 {
                     state.player.TakeDamage(e.intentValue);
-                    int healed = Math.Min(e.intentValue, e.data.hp - e.hp);
+                    int healed = Math.Min(e.intentValue, e.maxHp - e.hp);
                     e.hp += healed;
                     Log($"  {e.data.nameKr} drains {e.intentValue} from PLAYER, heals self +{healed}");
                     break;
@@ -1213,10 +1216,13 @@ namespace DianoCard.Battle
                     break;
 
                 case EnemyAction.COUNTDOWN_AOE:
-                    Log($"  ⚡ {e.data.nameKr} 카운트다운 광역 발동! ({e.intentValue})");
-                    state.player.TakeDamage(e.intentValue);
-                    foreach (var s in state.field) s.TakeDamage(e.intentValue);
+                {
+                    int aoeDmg = Math.Max(1, (int)Math.Round(e.intentValue * e.damageScale));
+                    Log($"  ⚡ {e.data.nameKr} 카운트다운 광역 발동! ({aoeDmg})");
+                    state.player.TakeDamage(aoeDmg);
+                    foreach (var s in state.field) s.TakeDamage(aoeDmg);
                     break;
+                }
 
                 case EnemyAction.IDLE:
                     // 이끼 수호 상태 등 — 행동하지 않음
@@ -1227,9 +1233,9 @@ namespace DianoCard.Battle
                     var boss = GetMossSummoner(e);
                     if (boss != null && !boss.IsDead)
                     {
-                        int healed = Math.Min(e.intentValue, boss.data.hp - boss.hp);
+                        int healed = Math.Min(e.intentValue, boss.maxHp - boss.hp);
                         boss.hp += healed;
-                        Log($"  🟢 {e.data.nameKr} → {boss.data.nameKr} HP +{healed} (이제 {boss.hp}/{boss.data.hp})");
+                        Log($"  🟢 {e.data.nameKr} → {boss.data.nameKr} HP +{healed} (이제 {boss.hp}/{boss.maxHp})");
                     }
                     break;
                 }
@@ -1268,8 +1274,10 @@ namespace DianoCard.Battle
         /// </summary>
         private void DealAttack(EnemyInstance attacker, int rawDmg)
         {
+            // floor 스케일링 — 일반 적은 layer 깊어질수록 데미지 증가. 엘리트/보스는 1.0.
+            int scaled = Math.Max(1, (int)Math.Round(rawDmg * attacker.damageScale));
             // 약화 상태면 피해 25% 감소 (C129 포효 등의 효과)
-            int dmg = attacker.weakTurns > 0 ? Math.Max(1, (int)(rawDmg * 0.75f)) : rawDmg;
+            int dmg = attacker.weakTurns > 0 ? Math.Max(1, (int)(scaled * 0.75f)) : scaled;
 
             var target = attacker.intentTargetDino;
             // 타겟 유효성 재확인 — 사망 / 필드 이탈 시 플레이어로 폴백.
@@ -1598,8 +1606,8 @@ namespace DianoCard.Battle
             var alive = new List<SummonInstance>();
             foreach (var s in state.field) if (!s.IsDead) alive.Add(s);
             if (alive.Count == 0) return null;
-            // 3) 가중 랜덤 — 30% 플레이어 / 70% 랜덤 공룡
-            if (_rng.NextDouble() < 0.30) return null;
+            // 3) 가중 랜덤 — 50% 플레이어 / 50% 랜덤 공룡
+            if (_rng.NextDouble() < 0.50) return null;
             return alive[_rng.Next(alive.Count)];
         }
 
@@ -1811,9 +1819,9 @@ namespace DianoCard.Battle
                 boss = e; break;
             }
             if (boss == null) { Log("[CHEAT] 보스 대상 없음"); return; }
-            int newHp = Mathf.Max(1, Mathf.RoundToInt(boss.data.hp * Mathf.Clamp01(ratio)));
+            int newHp = Mathf.Max(1, Mathf.RoundToInt(boss.maxHp * Mathf.Clamp01(ratio)));
             boss.hp = newHp;
-            Log($"[CHEAT] {boss.data.nameKr} HP → {newHp}/{boss.data.hp} (≈ {ratio * 100f:F0}%) — 페이즈는 다음 턴에 갱신");
+            Log($"[CHEAT] {boss.data.nameKr} HP → {newHp}/{boss.maxHp} (≈ {ratio * 100f:F0}%) — 페이즈는 다음 턴에 갱신");
         }
 
         /// <summary>플레이어 HP/마나 풀 보충 + 독·약화·취약 해제 + 필드·패 유지. 훈련용.</summary>

@@ -180,7 +180,7 @@ public class CharacterSelectUI : MonoBehaviour
 
     [Header("FX • Dust (바닥에서 올라오는 먼지 — LobbyUI Bottom Smoke와 동일 공식)")]
     [SerializeField] private bool _enableDust = true;
-    [SerializeField, Range(0, 40), Tooltip("먼지 입자 개수.")] private int _dustCount = 14;
+    [SerializeField, Range(0, 40), Tooltip("먼지 입자 개수.")] private int _dustCount = 5;
     [SerializeField, Tooltip("스폰 Y 위치 범위 (0=상단, 1=하단). 화면 하단 얇은 띠.")] private Vector2 _dustYRange = new Vector2(0.965f, 1.0f);
     [SerializeField, Range(20f, 600f), Tooltip("올라가는 높이 (px).")] private float _dustRiseHeight = 70f;
     [SerializeField, Range(0.02f, 1f), Tooltip("상승 속도 (life/sec). 작을수록 천천히.")] private float _dustRiseSpeed = 0.15f;
@@ -273,6 +273,9 @@ public class CharacterSelectUI : MonoBehaviour
     private static readonly Rect BackButtonRect    = new Rect(  60, 560, 90, 90);
     private static readonly Rect ConfirmButtonRect = new Rect(1130, 560, 90, 90);
 
+    // 모드 토글 버튼 — 정보 패널(60,60,600,340) 안쪽 하단. linkedForm 이 있을 때만 표시.
+    private static readonly Rect ModeToggleRect = new Rect(330, 350, 280, 38);
+
     // 스타일
     private GUIStyle _titleStyle;
     private GUIStyle _statStyle;
@@ -285,6 +288,7 @@ public class CharacterSelectUI : MonoBehaviour
     private GUIStyle _slotLabelStyle;
     private GUIStyle _comingSoonStyle;
     private GUIStyle _questionStyle;
+    private GUIStyle _modeToggleStyle;
     private bool _stylesReady;
     private bool _assetsLoaded;
 
@@ -606,13 +610,8 @@ public class CharacterSelectUI : MonoBehaviour
                           ?? Resources.Load<Texture2D>("CharSelect/Background/CharSelect_Background")
                           ?? Resources.Load<Texture2D>("Lobby/Main_Background");
 
-        // 캐릭터 — 애니메이션 시퀀스(akane_select_char_anim/) 우선, 없으면 정적 PNG 폴백.
-        // 추후 캐릭터별 분기 필요 시 character.csv에 select_character_anim 컬럼 추가.
-        var charFrames = Resources.LoadAll<Texture2D>("CharSelect/Background/akane_select_char_anim");
-        _characterFrames = charFrames != null && charFrames.Length > 0
-            ? charFrames.OrderBy(t => t.name, StringComparer.Ordinal).ToArray()
-            : null;
-        _characterTexture = Resources.Load<Texture2D>("CharSelect/Background/akane_select_char");
+        // 캐릭터 — character.csv 의 select_char 기준. 애니메이션 시퀀스(<select_char>_anim/) 우선, 없으면 정적 PNG 폴백.
+        LoadStageTexturesFor(_selectedCharacter);
         _characterShadowTexture = Resources.Load<Texture2D>("Character_infield/character_basic/shadow/character_shadow");
         _cloudsTexture = Resources.Load<Texture2D>("CharSelect/Background/akane_select_clouds");
 
@@ -1418,6 +1417,37 @@ public class CharacterSelectUI : MonoBehaviour
         string abilityDescText = ch != null ? ch.passiveDescription.Replace("\\n", "\n") : "";
         float abilityDescH = _abilityDescStyle.CalcHeight(new GUIContent(abilityDescText), textW);
         GUI.Label(new Rect(textX, y + abilityNameH + 2, textW, abilityDescH), abilityDescText, _abilityDescStyle);
+
+        // 모드 토글 — linkedForm 이 있을 때만 표시 (아케네↔린네)
+        DrawModeToggle();
+    }
+
+    /// <summary>같은 인물의 다른 모드(육식↔초식)로 전환하는 버튼.
+    /// CARN 모드일 때 초록색 "초식 모드로 전환" / HERB 모드일 때 붉은색 "육식 모드로 전환".</summary>
+    private void DrawModeToggle()
+    {
+        var ch = _selectedCharacter;
+        if (ch == null || string.IsNullOrEmpty(ch.linkedForm)) return;
+
+        bool isCarn = ch.archetype == "CARN";
+        string label = isCarn ? "초식 모드로 전환  →" : "←  육식 모드로 전환";
+        Color baseFill   = isCarn
+            ? new Color(0.18f, 0.40f, 0.22f, 0.85f)   // 깊은 잎새 초록
+            : new Color(0.50f, 0.18f, 0.18f, 0.85f);  // 묵직한 와인 레드
+        Color hoverFill  = isCarn
+            ? new Color(0.26f, 0.55f, 0.30f, 0.95f)
+            : new Color(0.65f, 0.24f, 0.24f, 0.95f);
+
+        bool hovered = ModeToggleRect.Contains(Event.current.mousePosition);
+        DrawRoundedRect(ModeToggleRect, 12f, hovered ? hoverFill : baseFill);
+        GUI.Label(ModeToggleRect, label, _modeToggleStyle);
+
+        var ev = Event.current;
+        if (ev.type == EventType.MouseDown && ev.button == 0 && ModeToggleRect.Contains(ev.mousePosition))
+        {
+            ev.Use();
+            SwitchSelection(ch.linkedForm);
+        }
     }
 
     // =========================================================
@@ -1502,14 +1532,44 @@ public class CharacterSelectUI : MonoBehaviour
         }
     }
 
-    /// <summary>선택 캐릭터 변경 — 데이터 + 포트레이트 재로드.</summary>
+    /// <summary>선택 캐릭터 변경 — 데이터 + 슬롯 초상 + 우측 전신 일러까지 재로드.
+    /// 새 캐릭터의 에셋이 아직 없으면(린네 placeholder 단계) 기존 텍스처를 유지해 빈 슬롯이 되지 않게 한다.</summary>
     private void SwitchSelection(string characterId)
     {
         _selectedCharacterId = characterId;
         _selectedCharacter = DataManager.Instance.GetCharacter(characterId);
         string portraitName = _selectedCharacter != null ? _selectedCharacter.cardPortrait : null;
         if (!string.IsNullOrEmpty(portraitName))
-            _archaeologistCardPortrait = Resources.Load<Texture2D>("Character_select/" + portraitName);
+        {
+            var newPortrait = Resources.Load<Texture2D>("Character_select/" + portraitName);
+            if (newPortrait != null) _archaeologistCardPortrait = newPortrait;
+            else Debug.LogWarning($"[CharacterSelectUI] Missing Character_select/{portraitName}, keeping previous portrait.");
+        }
+        LoadStageTexturesFor(_selectedCharacter);
+    }
+
+    /// <summary>선택 화면 우측 전신 일러(정적 + 애니 프레임) 로드.
+    /// character.csv 의 select_char 컬럼 기준. 비어있거나 에셋이 없으면 akane_select_char 로 폴백.</summary>
+    private void LoadStageTexturesFor(CharacterData ch)
+    {
+        string baseName = ch != null && !string.IsNullOrEmpty(ch.selectChar)
+            ? ch.selectChar
+            : "akane_select_char";
+
+        var frames = Resources.LoadAll<Texture2D>("CharSelect/Background/" + baseName + "_anim");
+        var staticTex = Resources.Load<Texture2D>("CharSelect/Background/" + baseName);
+
+        // 새 캐릭터의 에셋이 둘 다 없으면 기존 텍스처 유지 (placeholder 이전 상태).
+        if ((frames == null || frames.Length == 0) && staticTex == null && _characterTexture != null)
+        {
+            Debug.LogWarning($"[CharacterSelectUI] No stage textures for '{baseName}', keeping previous.");
+            return;
+        }
+
+        _characterFrames = frames != null && frames.Length > 0
+            ? frames.OrderBy(t => t.name, StringComparer.Ordinal).ToArray()
+            : null;
+        _characterTexture = staticTex;
     }
 
     // =========================================================
@@ -1727,6 +1787,14 @@ public class CharacterSelectUI : MonoBehaviour
             alignment = TextAnchor.MiddleCenter,
             fontStyle = FontStyle.Bold,
             normal = { textColor = new Color(0.85f, 0.85f, 0.9f, 0.85f) },
+        };
+        _modeToggleStyle = new GUIStyle(GUI.skin.label)
+        {
+            font = _bodyFont,
+            fontSize = 16,
+            alignment = TextAnchor.MiddleCenter,
+            fontStyle = FontStyle.Bold,
+            normal = { textColor = new Color(1f, 0.96f, 0.88f) },
         };
 
         _stylesReady = true;

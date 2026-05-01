@@ -7,9 +7,10 @@ namespace DianoCard.Game
         Combat,
         Elite,
         Boss,
-        Camp,      // MVP 미구현
-        Event,     // MVP 미구현
-        Merchant,  // MVP 미구현
+        Camp,
+        Event,     // 더 이상 맵에 직접 스폰되지 않음 — UNKNOWN/EVENT/TREASURE는 모두 Unknown으로 접힘. 향후 이벤트 UI 추가 시 부활.
+        Merchant,
+        Unknown,   // 미지의 노드 — 진입 시 StS 방식으로 Combat/Treasure(보물)/Shop/Camp(휴식)로 해석된다.
     }
 
     /// <summary>

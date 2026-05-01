@@ -176,6 +176,11 @@ namespace DianoCard.Battle
     {
         public EnemyData data;
         public int hp;
+        // 인스턴스 최대 HP — floor 스케일링이 반영된 값. 보스 페이즈 전환 비율 비교에 사용
+        // (data.hp는 베이스값이라 스케일이 적용되면 비율이 깨짐).
+        public int maxHp;
+        // 이 적이 입히는 피해/디버프 수치에 곱해지는 배율. floor 스케일링용. 1.0이면 무영향.
+        public float damageScale = 1f;
         public int block;
         public int extraAttack; // BUFF_SELF로 누적된 공격력 보너스 (영구)
 
@@ -256,10 +261,12 @@ namespace DianoCard.Battle
             }
         }
 
-        public EnemyInstance(EnemyData data)
+        public EnemyInstance(EnemyData data, float hpScale = 1f, float damageScale = 1f)
         {
             this.data = data;
-            this.hp = data.hp;
+            this.hp = Math.Max(1, (int)Math.Round(data.hp * hpScale));
+            this.maxHp = this.hp;
+            this.damageScale = damageScale;
             this.block = data.defense;
             this.currentPatternSetId = data.patternSetId;
         }

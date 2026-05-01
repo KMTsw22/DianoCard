@@ -129,7 +129,11 @@ public class RewardUI : MonoBehaviour
     private bool _potionDone;
     private bool _relicDone;
 
-    private GameState _prevState = GameState.Lobby;
+    // 어떤 BattleReward 인스턴스에 대해 이미 ResetForNewReward를 돌렸는지 추적.
+    // 상태 엣지(_prevState != Reward → Reward) 기반으로 판정하면 텍트리/덱 화면 갔다 복귀할 때
+    // ResetForNewReward가 또 걸려서 _cardDone/_goldDone 등이 풀려 같은 보상을 무한 수령 가능.
+    // pendingReward는 새 보상마다 새 인스턴스로 재할당되므로 참조 동일성으로 판정한다.
+    private BattleReward _initializedReward;
     private readonly List<Action> _pending = new();
 
     // Sprites (SPOILS list view)
@@ -179,11 +183,17 @@ public class RewardUI : MonoBehaviour
             jumpToCardPicker = true;
         }
 
-        if (_prevState != GameState.Reward && gsm.State == GameState.Reward)
+        var pending = gsm.CurrentRun?.pendingReward;
+        if (gsm.State == GameState.Reward && pending != null && !ReferenceEquals(_initializedReward, pending))
         {
             ResetForNewReward();
+            _initializedReward = pending;
         }
-        _prevState = gsm.State;
+        else if (pending == null)
+        {
+            // 보상 소진 후 다음 전투 보상에서 새 인스턴스가 들어오면 다시 reset 걸리도록 비움
+            _initializedReward = null;
+        }
 
         // F10 치트는 ResetForNewReward 이후에 플래그를 덮어써서 다른 보상은 모두 완료 처리하고
         // 카드 피커 뷰로 즉시 진입

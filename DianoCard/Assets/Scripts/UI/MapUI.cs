@@ -621,7 +621,7 @@ public class MapUI : MonoBehaviour
         (NodeKind.Boss,     "보스"),
         (NodeKind.Camp,     "휴식"),
         (NodeKind.Merchant, "상인"),
-        (NodeKind.Event,    "미지"),
+        (NodeKind.Unknown,  "미지"),
     };
 
     private void DrawLegend()
@@ -1182,6 +1182,7 @@ public class MapUI : MonoBehaviour
         NodeKind.Boss     => _nodeBossTex,
         NodeKind.Camp     => _nodeCampTex,
         NodeKind.Event    => _nodeEventTex,
+        NodeKind.Unknown  => _nodeEventTex, // 전용 ? 아이콘이 추가될 때까진 Event 아이콘 재활용
         NodeKind.Merchant => _nodeMerchantTex,
         _ => null,
     };
@@ -1193,6 +1194,7 @@ public class MapUI : MonoBehaviour
         NodeKind.Boss     => new Color(0.55f, 0.1f, 0.6f, 0.95f),
         NodeKind.Camp     => new Color(0.25f, 0.6f, 0.35f, 0.95f),
         NodeKind.Event    => new Color(0.9f, 0.85f, 0.2f, 0.95f),
+        NodeKind.Unknown  => new Color(0.9f, 0.85f, 0.2f, 0.95f),
         NodeKind.Merchant => new Color(0.25f, 0.45f, 0.75f, 0.95f),
         _ => Color.gray,
     };
@@ -1205,6 +1207,7 @@ public class MapUI : MonoBehaviour
         NodeKind.Boss     => new Color(1.00f, 0.30f, 0.35f), // 붉은 (해골)
         NodeKind.Camp     => new Color(1.00f, 0.65f, 0.30f), // 주황 (모닥불)
         NodeKind.Event    => new Color(0.80f, 0.40f, 1.00f), // 보라 (물음표)
+        NodeKind.Unknown  => new Color(0.80f, 0.40f, 1.00f), // 보라 (물음표)
         NodeKind.Merchant => new Color(1.00f, 0.80f, 0.30f), // 금 (돈주머니)
         _ => Color.white,
     };

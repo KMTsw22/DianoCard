@@ -17,6 +17,7 @@ namespace DianoCard.Game
         Victory,
         Training,        // 훈련장 — 임의 적을 골라 자유롭게 전투 (승패 무관, 맵/보상 없음)
         AnimationTest,   // 애니메이션 테스트 — Resources/AnimationTest 폴더의 프레임 시퀀스 프리뷰 (에디터 전용 개발 툴)
+        TechTree,        // 메타 진행 — 영구 해금 트리. 로비에서만 진입 가능, 임시 UI(MVP 3브랜치 9노드).
     }
 
     /// <summary>
@@ -42,6 +43,9 @@ namespace DianoCard.Game
         /// <summary>훈련장 모드 플래그 — true면 EndBattle이 Reward/Defeat 대신 Training으로 복귀.</summary>
         public bool IsTrainingMode { get; private set; }
 
+        /// <summary>영구 메타 진행(테크트리) 상태. PlayerPrefs에서 로드, 노드 해금 시 자동 저장.</summary>
+        public TechTreeState TechTree { get; private set; }
+
         // 이전 코드 호환용 — 리스트의 첫 적 (배경/보상 결정에 사용)
         public EnemyData PrimaryEnemy => CurrentEnemies.Count > 0 ? CurrentEnemies[0] : null;
 
@@ -65,6 +69,7 @@ namespace DianoCard.Game
         void Start()
         {
             if (!DataManager.Instance.IsLoaded) DataManager.Instance.Load();
+            if (TechTree == null) TechTree = TechTreeState.Load();
             State = GameState.Lobby;
         }
 
@@ -80,6 +85,7 @@ namespace DianoCard.Game
             if (GetComponent<GameOverUI>() == null) gameObject.AddComponent<GameOverUI>();
             if (GetComponent<TrainingUI>() == null) gameObject.AddComponent<TrainingUI>();
             if (GetComponent<AnimationTestUI>() == null) gameObject.AddComponent<AnimationTestUI>();
+            if (GetComponent<TechTreeUI>() == null) gameObject.AddComponent<TechTreeUI>();
         }
 
         /// <summary>Lobby에서 애니메이션 테스트 화면 진입. Run 상태는 건드리지 않음.</summary>
@@ -94,6 +100,26 @@ namespace DianoCard.Game
         {
             State = GameState.Lobby;
             Debug.Log("[GSM] ExitAnimationTest");
+        }
+
+        // 테크트리 진입 직전의 상태를 보관 — 어떤 화면(Battle/Map/Village/Lobby 등)에서 들어왔든
+        // ExitTechTree에서 그 화면으로 정확히 복귀시키기 위함.
+        private GameState _stateBeforeTechTree = GameState.Lobby;
+
+        /// <summary>현재 화면에서 테크트리 화면으로 진입. 복귀 시 원래 화면으로 돌아감.</summary>
+        public void EnterTechTree()
+        {
+            if (TechTree == null) TechTree = TechTreeState.Load();
+            if (State != GameState.TechTree) _stateBeforeTechTree = State;
+            State = GameState.TechTree;
+            Debug.Log($"[GSM] EnterTechTree (from {_stateBeforeTechTree})");
+        }
+
+        /// <summary>테크트리에서 진입했던 이전 화면으로 복귀.</summary>
+        public void ExitTechTree()
+        {
+            State = _stateBeforeTechTree;
+            Debug.Log($"[GSM] ExitTechTree → {State}");
         }
 
         // =========================================================
@@ -237,13 +263,17 @@ namespace DianoCard.Game
                 int nodeCount = Random.Range(3, 6);
                 var floorKinds = PickFloorNodeKinds(nodeTable, floor, nodeCount);
 
+                // 일반 적 수: 층이 올라갈수록 증가. 첫 전투(층 1)는 무조건 1마리.
+                int normalCount = NormalEnemyCountForFloor(floor);
+
                 for (int col = 0; col < nodeCount; col++)
                 {
                     NodeKind kind = floorKinds[col];
                     List<string> enemyIds = kind switch
                     {
-                        NodeKind.Elite  => PickN(chapter.eliteEnemyPool, 1),
-                        NodeKind.Combat => PickN(chapter.normalEnemyPool, 2),
+                        // 쌍둥이류 엘리트는 2체로 등장해야 하므로 ExpandTwinElites로 확장
+                        NodeKind.Elite  => ExpandTwinElites(PickN(chapter.eliteEnemyPool, 1)),
+                        NodeKind.Combat => PickN(chapter.normalEnemyPool, normalCount),
                         _ => new List<string>(), // 비전투 노드(Camp/Event/Merchant)는 적 없음
                     };
 
@@ -339,17 +369,56 @@ namespace DianoCard.Game
             return result;
         }
 
+        // EVENT / TREASURE 도 UNKNOWN과 함께 모두 미지의 노드(Unknown)로 접힘.
+        // 이벤트 시스템과 보물 노드 전용 UI가 추가되면 다시 분리.
         private static NodeKind CsvTypeToKind(NodeType t) => t switch
         {
             NodeType.NORMAL_BATTLE => NodeKind.Combat,
             NodeType.ELITE_BATTLE  => NodeKind.Elite,
             NodeType.SHOP          => NodeKind.Merchant,
             NodeType.TOWN          => NodeKind.Camp,
-            NodeType.EVENT         => NodeKind.Event,
-            NodeType.UNKNOWN       => NodeKind.Event,
-            NodeType.TREASURE      => NodeKind.Event, // 전용 아이콘 추가 전까진 Event로 표시
+            NodeType.EVENT         => NodeKind.Unknown,
+            NodeType.UNKNOWN       => NodeKind.Unknown,
+            NodeType.TREASURE      => NodeKind.Unknown,
             _ => NodeKind.Combat,
         };
+
+        // 쌍둥이류 엘리트 — 한 ID로 2체가 동시 등장해야 하는 적.
+        // ON_PARTNER_DEATH 격노 메커니즘은 같은 patternSetId 인스턴스가 2개 이상일 때만 의미가 있다.
+        private static readonly HashSet<string> TwinEliteIds = new() { "E103" };
+
+        private static List<string> ExpandTwinElites(List<string> ids)
+        {
+            if (ids == null || ids.Count == 0) return ids ?? new List<string>();
+            var result = new List<string>(ids.Count * 2);
+            foreach (var id in ids)
+            {
+                result.Add(id);
+                if (TwinEliteIds.Contains(id)) result.Add(id); // 쌍둥이는 2체로 등장
+            }
+            return result;
+        }
+
+        // 층 진행에 따른 일반 전투 적 수. 첫 전투(층 0/1)는 1마리, 이후 점진 증가.
+        public static int NormalEnemyCountForFloor(int floor)
+        {
+            if (floor <= 1) return 1;
+            if (floor <= 4) return 2;
+            return 3;
+        }
+
+        // 층 진행에 따른 일반 적 HP 배율. 보스/엘리트는 별도(BattleManager에서 NORMAL만 적용).
+        // 층 0: 1.0x, 층 13(보스 전): 1.65x — 선형.
+        public static float NormalEnemyHpScaleForFloor(int floor)
+        {
+            return 1f + 0.05f * Mathf.Max(0, floor);
+        }
+
+        // 층 진행에 따른 일반 적 데미지 배율. HP보다 약간 부드럽게.
+        public static float NormalEnemyDamageScaleForFloor(int floor)
+        {
+            return 1f + 0.04f * Mathf.Max(0, floor);
+        }
 
         private List<string> PickN(List<string> pool, int n)
         {
@@ -409,8 +478,16 @@ namespace DianoCard.Game
                 return;
             }
 
-            // 그 외 비전투 노드(Event)는 MVP에선 전용 상호작용이 없으므로
-            // 그냥 클리어 처리하고 다음 층으로 넘어간다.
+            // 미지(Unknown) 노드 — Slay the Spire 방식. 진입 순간 무작위로 해석된다.
+            // 해석된 종류로 node.kind 자체를 덮어써서 EndBattle 등 후속 흐름이 정상 동작하고,
+            // 클리어 후 회색 아이콘도 실제 결과로 표시되어 플레이어가 어떤 일이 있었는지 알 수 있다.
+            if (node.kind == NodeKind.Unknown)
+            {
+                ResolveUnknownAndDispatch(node);
+                return;
+            }
+
+            // 그 외 비전투 노드는 MVP에선 전용 상호작용이 없으므로 그냥 클리어 처리.
             bool isBattleNode = node.kind == NodeKind.Combat || node.kind == NodeKind.Elite || node.kind == NodeKind.Boss;
             if (!isBattleNode)
             {
@@ -440,6 +517,104 @@ namespace DianoCard.Game
             CurrentRun.currentFloor = node.floor;
             State = GameState.Battle;
             Debug.Log($"[GSM] State=>Battle, enemies=[{string.Join(",", CurrentEnemies.ConvertAll(e => e.nameKr))}]");
+        }
+
+        // =========================================================
+        // 미지(Unknown) 노드 해석 — Slay the Spire 분포에 가깝게.
+        //
+        // StS의 ? 노드는 진입 시 Event/Combat/Treasure/Shop으로 무작위 해석된다.
+        // DianoCard MVP에는 Event UI가 없으므로 Event 비중을 다른 결과로 재분배.
+        //
+        // 분포:
+        //   40% Combat   — 챕터 일반 적 풀에서 2마리 매복 전투
+        //   25% Treasure — 마을 보물상자와 동일 (유물 + 약간의 골드)
+        //   20% Shop     — 일반 상점
+        //   15% Rest     — 평화로운 쉼터, 최대 HP 25% 회복 후 자동 진행
+        // =========================================================
+        public enum UnknownOutcome { Combat, Treasure, Shop, Rest }
+
+        // 디버그/치트로 다음 미지 노드 결과를 강제 — null이면 정상 랜덤.
+        public UnknownOutcome? ForcedUnknownOutcome { get; set; }
+
+        private UnknownOutcome RollUnknownOutcome()
+        {
+            if (ForcedUnknownOutcome.HasValue)
+            {
+                var f = ForcedUnknownOutcome.Value;
+                ForcedUnknownOutcome = null;
+                return f;
+            }
+            int roll = Random.Range(0, 100);
+            if (roll < 40) return UnknownOutcome.Combat;
+            if (roll < 65) return UnknownOutcome.Treasure;
+            if (roll < 85) return UnknownOutcome.Shop;
+            return UnknownOutcome.Rest;
+        }
+
+        private void ResolveUnknownAndDispatch(MapNode node)
+        {
+            CurrentMap.currentColumn = node.column;
+            CurrentRun.currentFloor = node.floor;
+
+            var outcome = RollUnknownOutcome();
+            switch (outcome)
+            {
+                case UnknownOutcome.Combat:
+                {
+                    var chapter = DataManager.Instance.GetChapter(CurrentRun.chapterId);
+                    int unkCount = NormalEnemyCountForFloor(node.floor);
+                    var ids = chapter != null ? PickN(chapter.normalEnemyPool, unkCount) : new List<string>();
+                    CurrentEnemies.Clear();
+                    foreach (var id in ids)
+                    {
+                        var e = DataManager.Instance.GetEnemy(id);
+                        if (e != null) CurrentEnemies.Add(e);
+                    }
+                    if (CurrentEnemies.Count == 0)
+                    {
+                        // 적 풀이 비면 안전하게 골드 캐시로 대체
+                        Debug.LogWarning("[GSM] Unknown→Combat: empty enemy pool, falling back to gold cache");
+                        int g = Random.Range(15, 31);
+                        CurrentRun.gold += g;
+                        node.cleared = true;
+                        AdvanceToNextFloorOrVictory();
+                        return;
+                    }
+                    // 결과 시각화(클리어 후 아이콘) + EndBattle TechPoint 산정을 위해 kind 자체를 덮어씀
+                    node.kind = NodeKind.Combat;
+                    node.enemyIds = ids;
+                    State = GameState.Battle;
+                    Debug.Log($"[GSM] Unknown→Combat F{node.floor} C{node.column} enemies=[{string.Join(",", ids)}]");
+                    break;
+                }
+                case UnknownOutcome.Treasure:
+                {
+                    var reward = RewardGenerator.GenerateTreasureChest(CurrentRun);
+                    CurrentRun.pendingReward = reward;
+                    CurrentRun.gold += reward.gold;
+                    State = GameState.Reward;
+                    Debug.Log($"[GSM] Unknown→Treasure F{node.floor} C{node.column} relic={(reward.relic != null ? reward.relic.id : "none")} gold={reward.gold}");
+                    break;
+                }
+                case UnknownOutcome.Shop:
+                {
+                    CurrentShop = ShopGenerator.Generate(CurrentRun);
+                    node.kind = NodeKind.Merchant;
+                    State = GameState.Shop;
+                    Debug.Log($"[GSM] Unknown→Shop F{node.floor} C{node.column}");
+                    break;
+                }
+                case UnknownOutcome.Rest:
+                {
+                    int healAmount = Mathf.Max(1, Mathf.RoundToInt(CurrentRun.playerMaxHp * 0.25f));
+                    CurrentRun.playerCurrentHp = Mathf.Min(CurrentRun.playerCurrentHp + healAmount, CurrentRun.playerMaxHp);
+                    node.kind = NodeKind.Camp;
+                    node.cleared = true;
+                    Debug.Log($"[GSM] Unknown→Rest F{node.floor} C{node.column} +{healAmount}HP → {CurrentRun.playerCurrentHp}/{CurrentRun.playerMaxHp}");
+                    AdvanceToNextFloorOrVictory();
+                    break;
+                }
+            }
         }
 
         // 비전투 노드 스킵 및 보상 이후 진행에서 공통으로 쓰는 층 진행.
@@ -478,6 +653,26 @@ namespace DianoCard.Game
 
             if (won)
             {
+                // 테크 포인트 — 전투 클리어 시 노드 등급별 지급. 일반 +1 / 엘리트 +2 / 보스 +3.
+                // 비전투(상점/휴식/이벤트)는 EndBattle을 거치지 않으므로 0 유지.
+                if (TechTree != null && CurrentMap != null)
+                {
+                    var node = CurrentMap.nodes.Find(n =>
+                        n.floor == CurrentMap.currentFloor && n.column == CurrentMap.currentColumn);
+                    int gain = node?.kind switch
+                    {
+                        NodeKind.Combat => 1,
+                        NodeKind.Elite  => 2,
+                        NodeKind.Boss   => 3,
+                        _ => 0,
+                    };
+                    if (gain > 0)
+                    {
+                        TechTree.GrantPoints(gain);
+                        Debug.Log($"[GSM] TechPoint +{gain} ({node.kind}) → {TechTree.points}");
+                    }
+                }
+
                 // 보상은 노드의 첫 적 기준으로 생성 (같은 노드는 같은 등급 적이므로 OK)
                 var primary = PrimaryEnemy;
                 if (primary != null)
@@ -895,6 +1090,54 @@ namespace DianoCard.Game
 
             State = GameState.Village;
             Debug.Log("[GSM] Cheat_EnterVillage");
+        }
+
+        /// <summary>
+        /// 치트: 즉석에서 미지 노드 진입 시뮬레이션.
+        /// forced 가 null이면 정상 분포로 랜덤, 값이 있으면 해당 결과로 강제.
+        /// 진행 중인 맵이 있으면 현재 층의 임시 Unknown 노드를 만들어 실제 흐름과 동일하게 dispatch.
+        /// 맵이 없으면 1층 단일 Unknown 노드로 구성된 미니 맵을 만들어 dispatch (테스트 전용).
+        /// </summary>
+        public void Cheat_TriggerUnknown(UnknownOutcome? forced = null)
+        {
+            if (CurrentRun == null)
+            {
+                CurrentRun = new RunState
+                {
+                    playerMaxHp = 70,
+                    playerCurrentHp = 50,
+                    gold = 50,
+                    deck = BuildStarterDeck(),
+                    relics = new List<RelicData>(),
+                    potions = new List<PotionData>(),
+                    currentFloor = 1,
+                    chapterId = "CH01",
+                };
+            }
+            EnsureCheatStarterDeck();
+
+            // 맵이 없거나 현재 층에 노드가 비면 즉석 미니 맵 — 결과 dispatch만 검증.
+            // 보스층(14)에 배치해 두면 결과 처리 후 AdvanceToNextFloorOrVictory가 Victory로 빠진다.
+            if (CurrentMap == null || CurrentMap.NodesOnFloor(CurrentMap.currentFloor).Count == 0)
+            {
+                CurrentMap = new MapState { currentFloor = BossFloor, totalFloors = TotalFloors };
+                CurrentMap.nodes.Add(new MapNode { floor = BossFloor, column = 0, kind = NodeKind.Unknown });
+            }
+
+            // 현재 층의 첫 클리어되지 않은 노드를 Unknown으로 캐스팅.
+            var floorNodes = CurrentMap.NodesOnFloor(CurrentMap.currentFloor);
+            MapNode target = null;
+            foreach (var n in floorNodes) if (!n.cleared) { target = n; break; }
+            if (target == null)
+            {
+                Debug.LogWarning("[GSM] Cheat_TriggerUnknown: no uncleared node on current floor");
+                return;
+            }
+            target.kind = NodeKind.Unknown;
+            target.enemyIds = new List<string>();
+
+            ForcedUnknownOutcome = forced;
+            ResolveUnknownAndDispatch(target);
         }
     }
 }

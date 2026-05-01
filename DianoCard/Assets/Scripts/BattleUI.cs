@@ -42,11 +42,23 @@ public class BattleUI : MonoBehaviour
     // 공룡 교체 모드: 필드 꽉 찬 상태에서 SUMMON 카드 클릭 후 교체할 필드 공룡 클릭 대기 중 (-1 = 비활성).
     private int _swapFromCardIndex = -1;
 
+    // 직전 프레임에 호버된 손패 인덱스. 호버 시 카드가 확대되어 원본 부채꼴 영역을 벗어날 수 있어,
+    // 확대된 hoverRect 기준으로 hover를 유지(끈적이게)하기 위한 sticky 상태.
+    private int _handStickyHoverIdx = -1;
+
     // 융합 모드: UTILITY/FUSION 카드가 _targetingCardIndex로 지정된 상태에서, 첫 재료를 선택 → 두 번째 선택 → 실행.
     // _fusionMaterialAPicked == false면 첫 번째 재료 대기 중, true면 두 번째 대기 중.
     // _fusionMaterialA는 선택된 재료의 (필드/손, 인덱스) 기록.
     private bool _fusionMaterialAPicked;
     private DianoCard.Battle.FusionMaterial _fusionMaterialA;
+
+    // StS 스타일 타겟팅 화살표 — 매 OnGUI 프레임 리셋되고 DrawHand/DrawSummon이 source를,
+    // DrawEnemy/DrawSummon의 타겟팅 브랜치가 target 후보 rect를 채운다. 융합 모드에는 사용하지 않음.
+    private bool _arrowSourceValid;
+    private Rect _arrowSourceRect;
+    private readonly List<Rect> _arrowTargetRects = new();
+    // 곡선 위에 찍히는 부드러운 동그라미 + 화살촉용 텍스처(중심 1.0, 가장자리 0.0 알파).
+    private Texture2D _arrowDotTex;
 
     // 패시브 호버 툴팁 — 프레임마다 리셋. 해당 프레임에 마우스가 칩 위에 있으면 채워진다.
     private string _hoveredPassiveTitle;
@@ -182,9 +194,13 @@ public class BattleUI : MonoBehaviour
     private Texture2D _iconDiscard;
     private Texture2D _iconCardBack;  // 드로우 애니메이션의 뒷면 표시용
     private Texture2D _iconFloor;
-    private Texture2D _iconShield;
-    private Texture2D _iconShieldGreen;
-    private Texture2D _iconAttack;
+    // 인텐트/상태이상이 공유하는 머리 위·HP바 아래 아이콘 풀 (Resources/InGame/HeadIcon/<ID>.png)
+    private Dictionary<string, Texture2D> _headIcons;
+    private static readonly string[] HeadIconIds = {
+        "ATTACK","MULTI_ATTACK","DEFEND","BUFF","DEBUFF","SUMMON","COUNTDOWN",
+        "HEAL","UNKNOWN","POISON","VULNERABLE","WEAK","BIND","FEAR","STOLEN",
+        "STRENGTH","WARD","ROOTED",
+    };
     private Texture2D _topBarBg;
     private Texture2D _endTurnButtonTex;
     private Texture2D _hudDividerTexMap;     // 맵 전용 구분선 — Map/divider_map
@@ -484,7 +500,7 @@ public class BattleUI : MonoBehaviour
     [Tooltip("카드명 외곽선 두께.")]
     [SerializeField, Range(0f, 3f)] private float cardNameOutlineThickness = 1.0f;
     [Tooltip("본문(ATK/HP, 설명) 텍스트 색 — 명판 베이지 위 최대 가독성.")]
-    [SerializeField] private Color cardBodyTextColor = Color.black;
+    [SerializeField] private Color cardBodyTextColor = Color.white;
     [Tooltip("본문 외곽선 색 — 필요 시 사용.")]
     [SerializeField] private Color cardBodyOutline = new(0f, 0f, 0f, 0.7f);
     [Tooltip("본문 외곽선 두께 — 0 = 외곽선 없음(기본), 0.5 = 살짝 굵게, 1.0 = 또렷한 외곽선.")]
@@ -566,7 +582,7 @@ public class BattleUI : MonoBehaviour
     [Tooltip("normal1 전투 배경에서 바닥 안개 활성화.")]
     [SerializeField] private bool _normal1FogEnabled = true;
     [Tooltip("안개 파티클 개수.")]
-    [SerializeField, Range(0, 60)] private int _normal1FogCount = 24;
+    [SerializeField, Range(0, 60)] private int _normal1FogCount = 9;
     [Tooltip("1280x720 가상 좌표 기준 스폰 영역 (바닥 띠).")]
     [SerializeField] private Rect _normal1FogSpawnRect = new Rect(0f, 580f, 1280f, 30f);
     [Tooltip("파티클 크기 범위(px).")]
@@ -691,9 +707,13 @@ public class BattleUI : MonoBehaviour
         _iconDiscard = Resources.Load<Texture2D>("InGame/Icon/Discard");
         _iconCardBack = Resources.Load<Texture2D>("InGame/Icon/CardBack");
         _iconFloor   = Resources.Load<Texture2D>("InGame/Icon/Floor");
-        _iconShield       = Resources.Load<Texture2D>("InGame/Icon/Shield");
-        _iconShieldGreen  = Resources.Load<Texture2D>("InGame/Icon/ShieldGreen");
-        _iconAttack       = Resources.Load<Texture2D>("InGame/Icon/Attack");
+        _headIcons = new Dictionary<string, Texture2D>(HeadIconIds.Length);
+        foreach (var id in HeadIconIds)
+        {
+            var tex = Resources.Load<Texture2D>("InGame/HeadIcon/" + id);
+            _headIcons[id] = tex;
+            if (tex == null) Debug.LogWarning($"[BattleUI] HeadIcon not found: Resources/InGame/HeadIcon/{id}");
+        }
         _topBarBg   = Resources.Load<Texture2D>("InGame/TopBar");
         _hudDividerTexMap     = Resources.Load<Texture2D>("Map/divider_map");
         _hudDividerTexVillage = Resources.Load<Texture2D>("VillageUI/divider_village");
@@ -710,9 +730,12 @@ public class BattleUI : MonoBehaviour
         if (_iconDiscard == null) Debug.LogWarning("[BattleUI] Discard icon not found: Resources/InGame/Icon/Discard");
         if (_iconCardBack == null) Debug.LogWarning("[BattleUI] CardBack icon not found: Resources/InGame/Icon/CardBack");
         if (_iconFloor   == null) Debug.LogWarning("[BattleUI] Floor icon not found: Resources/InGame/Icon/Floor");
-        if (_iconShield       == null) Debug.LogWarning("[BattleUI] Shield icon not found: Resources/InGame/Icon/Shield");
-        if (_iconShieldGreen  == null) Debug.LogWarning("[BattleUI] ShieldGreen icon not found: Resources/InGame/Icon/ShieldGreen");
-        if (_iconAttack       == null) Debug.LogWarning("[BattleUI] Attack icon not found: Resources/InGame/Icon/Attack");
+    }
+
+    private Texture2D HeadIcon(string id)
+    {
+        if (id == null) return null;
+        return _headIcons != null && _headIcons.TryGetValue(id, out var t) ? t : null;
     }
 
     void Update()
@@ -851,15 +874,24 @@ public class BattleUI : MonoBehaviour
             string filename = Path.GetFileNameWithoutExtension(card.image);
 
             // 카드 표시용 일러스트 — 타입별 서브폴더
+            // SUMMON은 완성본을 Dino/ 에 두고 미완성은 Summon/ (REF 원본)으로 폴백
             string subfolder = card.cardType switch
             {
                 CardType.SUMMON => "Summon",
                 CardType.MAGIC  => "Spell",
                 _               => "Utility", // BUFF / UTILITY / RITUAL
             };
-            var tex = Resources.Load<Texture2D>($"CardArt/{subfolder}/{filename}");
+            Texture2D tex = null;
+            if (card.cardType == CardType.SUMMON)
+            {
+                tex = Resources.Load<Texture2D>($"CardArt/Dino/{filename}");
+            }
+            if (tex == null)
+            {
+                tex = Resources.Load<Texture2D>($"CardArt/{subfolder}/{filename}");
+            }
             if (tex != null) _cardSprites[card.id] = tex;
-            else Debug.LogWarning($"[BattleUI] Card sprite not found: CardArt/{subfolder}/{filename}");
+            else Debug.LogWarning($"[BattleUI] Card sprite not found: CardArt/{(card.cardType == CardType.SUMMON ? "Dino|Summon" : subfolder)}/{filename}");
 
             // 필드용 공룡 스프라이트 (투명 배경) — SUMMON만
             if (card.cardType == CardType.SUMMON)
@@ -1256,13 +1288,20 @@ public class BattleUI : MonoBehaviour
         EndDrawFlyAnimation();
         EndReshuffleAnimation();
 
+        // floor 진행 스케일 — 일반 적만 대상. 엘리트/보스는 BattleManager에서 1.0 유지.
+        int floor = run.currentFloor;
+        float hpScale = DianoCard.Game.GameStateManager.NormalEnemyHpScaleForFloor(floor);
+        float dmgScale = DianoCard.Game.GameStateManager.NormalEnemyDamageScaleForFloor(floor);
+
         _battle = new BattleManager();
         _battle.StartBattle(
             new List<CardData>(run.deck),
             new List<EnemyData>(enemies), // 복사본 전달
             mana,
             run.playerMaxHp,
-            maxFieldSize);
+            maxFieldSize,
+            hpScale,
+            dmgScale);
 
         // 현재 run의 HP로 플레이어 초기화 (이전 전투 잔존 HP 반영)
         _battle.state.player.hp = Mathf.Clamp(run.playerCurrentHp, 1, run.playerMaxHp);
@@ -1976,6 +2015,11 @@ public class BattleUI : MonoBehaviour
 
         EnsureStyles();
 
+        // 타겟팅 화살표 상태는 매 OnGUI 호출마다 다시 빌드된다.
+        // (Layout/Repaint 양쪽 모두 — 둘 다 동일한 source/target 후보를 모은다.)
+        _arrowSourceValid = false;
+        _arrowTargetRects.Clear();
+
         bool active = gsm.State == GameState.Battle;
 
         if (active)
@@ -2070,6 +2114,8 @@ public class BattleUI : MonoBehaviour
             DrawTargetingHint(state);
             DrawSummonAttackHint(state);
             DrawSummonSkillHint(state);
+            // 손패/배틀필드 렌더가 끝난 뒤 source/target rect가 다 모인 상태에서 그린다.
+            DrawTargetingArrow(state);
         }
         DrawToast();
 
@@ -2439,8 +2485,8 @@ public class BattleUI : MonoBehaviour
         };
         _intentNumberStyle = new GUIStyle(GUI.skin.label)
         {
-            fontSize = 11,
-            alignment = TextAnchor.MiddleRight,
+            fontSize = 10,
+            alignment = TextAnchor.MiddleCenter,
             fontStyle = FontStyle.Bold,
             wordWrap = false,
             clipping = TextClipping.Overflow,
@@ -2761,8 +2807,8 @@ public class BattleUI : MonoBehaviour
         float baseH = e.data.enemyType switch
         {
             EnemyType.BOSS  => 400f,
-            EnemyType.ELITE => 320f,
-            _               => 240f,
+            EnemyType.ELITE => 260f,
+            _               => 180f,
         };
         return baseH * e.data.SafeFieldScale;
     }
@@ -2915,7 +2961,7 @@ public class BattleUI : MonoBehaviour
             if (p.block > 0)
             {
                 // 방패 뱃지를 HP 바 왼쪽 끝에 살짝 겹치게 — 머리 위 대신 인라인
-                DrawBlockBadge(new Vector2(barRect.x, barRect.center.y), p.block, 34f);
+                DrawBlockBadge(new Vector2(barRect.x, barRect.center.y), p.block, 40f);
             }
 
             // 디버프 표시 (rough — HP 바 우측 끝)
@@ -2944,32 +2990,211 @@ public class BattleUI : MonoBehaviour
 
             if (p.block > 0)
             {
-                DrawBlockBadge(new Vector2(fbHpRect.x, fbHpRect.center.y), p.block, 34f);
+                DrawBlockBadge(new Vector2(fbHpRect.x, fbHpRect.center.y), p.block, 40f);
             }
         }
     }
 
-    // 적 머리 위 intent 표시 — 숫자 + 아이콘을 좌우로 나란히. 공격은 검, 방어는 방패, 버프는 텍스트.
+    // EnemyAction을 18개 머리 위 아이콘 풀의 ID로 매핑. 흡혈은 별도 모티프 없어 POISON 임시 사용.
+    private static string IntentIconForAction(DianoCard.Data.EnemyAction action)
+    {
+        switch (action)
+        {
+            case DianoCard.Data.EnemyAction.ATTACK:           return "ATTACK";
+            case DianoCard.Data.EnemyAction.MULTI_ATTACK:     return "MULTI_ATTACK";
+            case DianoCard.Data.EnemyAction.DEFEND:           return "DEFEND";
+            case DianoCard.Data.EnemyAction.BLOCK_BOSS:       return "DEFEND";
+            case DianoCard.Data.EnemyAction.POISON:           return "POISON";
+            case DianoCard.Data.EnemyAction.DRAIN:            return "POISON";
+            case DianoCard.Data.EnemyAction.WEAK:             return "WEAK";
+            case DianoCard.Data.EnemyAction.VULNERABLE:       return "VULNERABLE";
+            case DianoCard.Data.EnemyAction.SILENCE:          return "BIND";
+            case DianoCard.Data.EnemyAction.STEAL_SUMMON:     return "STOLEN";
+            case DianoCard.Data.EnemyAction.CLOG_DECK:        return "DEBUFF";
+            case DianoCard.Data.EnemyAction.SUMMON:           return "SUMMON";
+            case DianoCard.Data.EnemyAction.REFILL_MOSS:      return "SUMMON";
+            case DianoCard.Data.EnemyAction.BUFF_SELF:        return "STRENGTH";
+            case DianoCard.Data.EnemyAction.EMPOWER_BOSS:     return "STRENGTH";
+            case DianoCard.Data.EnemyAction.ARMOR_UP:         return "ROOTED";
+            case DianoCard.Data.EnemyAction.HEAL_BOSS:        return "HEAL";
+            case DianoCard.Data.EnemyAction.COUNTDOWN_ATTACK: return "COUNTDOWN";
+            case DianoCard.Data.EnemyAction.COUNTDOWN_AOE:    return "COUNTDOWN";
+            case DianoCard.Data.EnemyAction.IDLE:             return "UNKNOWN";
+            default:                                          return "UNKNOWN";
+        }
+    }
+
+    // 숫자가 의미 없는 액션 (소환·강탈·휴식 등)은 인텐트 아이콘에서 숫자 생략.
+    private static bool IntentShowsNumber(DianoCard.Data.EnemyAction action)
+    {
+        switch (action)
+        {
+            case DianoCard.Data.EnemyAction.SUMMON:
+            case DianoCard.Data.EnemyAction.REFILL_MOSS:
+            case DianoCard.Data.EnemyAction.STEAL_SUMMON:
+            case DianoCard.Data.EnemyAction.SILENCE:
+            case DianoCard.Data.EnemyAction.IDLE:
+            case DianoCard.Data.EnemyAction.UNKNOWN:
+                return false;
+            default:
+                return true;
+        }
+    }
+
+    // 적 머리 위 intent 표시 — 18개 아이콘 풀에서 액션별로 매핑된 아이콘 + (선택) 숫자 + hover 툴팁.
     private void DrawEnemyIntent(Vector2 center, EnemyInstance e)
     {
+        bool drawnAsIcon = false;
+
         if (e.intentType == EnemyIntentType.ATTACK)
         {
-            DrawAttackIconBadge(center, e.intentValue, -45f, boosted: false);
-            DrawTargetHint(center, e);
-            return;
+            DrawAttackIconBadge(center, e.intentValue, 0f, boosted: false);
+            drawnAsIcon = true;
         }
-
-        if (e.intentType == EnemyIntentType.DEFEND && _iconShield != null)
+        else
         {
-            DrawSideBySideBadge(center, e.intentValue, _iconShield, 0f, Color.white);
-            return;
+            string iconId = IntentIconForAction(e.intentAction);
+            var tex = HeadIcon(iconId);
+            if (tex != null)
+            {
+                int shownValue = IntentShowsNumber(e.intentAction) ? e.intentValue : 0;
+                DrawSideBySideBadge(center, shownValue, tex, 0f, Color.white);
+                drawnAsIcon = true;
+            }
+            else
+            {
+                GUI.Label(new Rect(center.x - 80f, center.y - 12f, 160f, 24f),
+                          $"▲ {e.IntentLabel}", _intentStyle);
+            }
         }
 
-        // 폴백: 텍스트 라벨 (BUFF 또는 아이콘 미로드)
-        GUI.Label(new Rect(center.x - 80f, center.y - 12f, 160f, 24f),
-                  $"▲ {e.IntentLabel}", _intentStyle);
-        // 카운트다운 공격·광역·강탈 등에도 타겟 힌트
         DrawTargetHint(center, e);
+    }
+
+    private static (string title, string body) GetIntentTooltipText(EnemyInstance e)
+    {
+        int v = e.intentValue;
+        int c = e.intentCount;
+        int t = e.telegraphRemaining;
+        switch (e.intentAction)
+        {
+            case DianoCard.Data.EnemyAction.ATTACK:           return ("Attack",          $"Deals {v} damage to the player.");
+            case DianoCard.Data.EnemyAction.MULTI_ATTACK:     return ("Multi Attack",    $"{v} x {c} split damage.");
+            case DianoCard.Data.EnemyAction.DEFEND:           return ("Defend",          $"Gains {v} block.");
+            case DianoCard.Data.EnemyAction.POISON:           return ("Apply Poison",    $"Inflicts {v} poison on the player (N damage per turn, -1 each turn).");
+            case DianoCard.Data.EnemyAction.WEAK:             return ("Weak",            $"Player weakened for {v} turn(s) — deals 25% less damage.");
+            case DianoCard.Data.EnemyAction.VULNERABLE:       return ("Vulnerable",      $"Player vulnerable for {v} turn(s) — takes 50% more damage.");
+            case DianoCard.Data.EnemyAction.DRAIN:            return ("Drain",           $"Deals {v} damage and heals self for the same.");
+            case DianoCard.Data.EnemyAction.SILENCE:          return ("Silence",         $"Silences your dinos for {v} turn(s) — cannot act.");
+            case DianoCard.Data.EnemyAction.STEAL_SUMMON:     return ("Steal Dino",      "Converts one of your dinos to the enemy side. Cleansable.");
+            case DianoCard.Data.EnemyAction.SUMMON:           return ("Summon",          $"Summons {Mathf.Max(1, v)} minion(s).");
+            case DianoCard.Data.EnemyAction.REFILL_MOSS:      return ("Refill Moss",     $"Refills moss spirits up to {v}.");
+            case DianoCard.Data.EnemyAction.BUFF_SELF:        return ("Self Buff",       $"Permanent +{v} attack to self.");
+            case DianoCard.Data.EnemyAction.EMPOWER_BOSS:     return ("Empower Boss",    $"+{v} damage on the boss's next attack.");
+            case DianoCard.Data.EnemyAction.ARMOR_UP:         return ("Armor Up",        $"Permanent +{v} block refreshed each turn.");
+            case DianoCard.Data.EnemyAction.HEAL_BOSS:        return ("Heal Boss",       $"Boss recovers {v} HP.");
+            case DianoCard.Data.EnemyAction.BLOCK_BOSS:       return ("Block Boss",      $"Grants the boss +{v} block.");
+            case DianoCard.Data.EnemyAction.COUNTDOWN_ATTACK: return ("Charging Strike", $"Strikes for {v} damage in {t} turn(s).");
+            case DianoCard.Data.EnemyAction.COUNTDOWN_AOE:    return ("Charging AOE",    $"Hits everyone for {v} damage in {t} turn(s).");
+            case DianoCard.Data.EnemyAction.CLOG_DECK:        return ("Clog Deck",       $"Adds {v} status card(s) to your discard pile.");
+            case DianoCard.Data.EnemyAction.IDLE:             return ("Idle",            "Does nothing this turn.");
+            default:                                          return ("Unknown",         "Next action is unknown.");
+        }
+    }
+
+    // StS 스타일 — 적 좌측에 고정 표시되는 정보 패널. 적 이름 + 인텐트 아이콘/설명 + 디버프 스택.
+    private void DrawEnemyTooltip(Rect enemyRect, EnemyInstance e)
+    {
+        EnsurePassiveStyles();
+
+        var (intentTitle, intentBody) = GetIntentTooltipText(e);
+        string nameStr = !string.IsNullOrEmpty(e.data?.nameKr) ? e.data.nameKr
+                          : (!string.IsNullOrEmpty(e.data?.nameEn) ? e.data.nameEn : "Enemy");
+
+        const float tw = 240f;
+        const float pad = 11f;
+        var nameSize  = _tooltipTitleStyle.CalcSize(new GUIContent(nameStr));
+        var titleSize = _tooltipTitleStyle.CalcSize(new GUIContent(intentTitle));
+        float bodyH   = _tooltipBodyStyle.CalcHeight(new GUIContent(intentBody), tw - pad * 2f);
+
+        string statusLine = BuildEnemyStatusLine(e);
+        float statusH = string.IsNullOrEmpty(statusLine)
+            ? 0f
+            : _tooltipBodyStyle.CalcHeight(new GUIContent(statusLine), tw - pad * 2f);
+
+        float iconSize = Mathf.Max(titleSize.y, 18f);
+        float intentRowH = Mathf.Max(iconSize, titleSize.y);
+        float th = 9f + nameSize.y + 6f + 1f + 7f + intentRowH + 4f + bodyH
+                   + (string.IsNullOrEmpty(statusLine) ? 0f : (7f + 1f + 7f + statusH))
+                   + 9f;
+
+        // 적 좌측에 붙임. 화면 좌측 끝이면 우측으로 플립.
+        float tx = enemyRect.x - tw - 12f;
+        float ty = enemyRect.y;
+        if (tx < 6f) tx = enemyRect.xMax + 12f;
+        if (tx + tw > RefW) tx = RefW - tw - 6f;
+        if (ty + th > RefH) ty = RefH - th - 6f;
+        if (ty < 6f) ty = 6f;
+
+        // 그림자
+        FillRect(new Rect(tx + 3f, ty + 4f, tw, th), new Color(0f, 0f, 0f, 0.45f));
+
+        // 외곽: 에이지드 브라스
+        var outer = new Rect(tx, ty, tw, th);
+        FillRect(outer, new Color(0.62f, 0.48f, 0.28f, 0.95f));
+
+        // 안쪽: 잉크 차콜 + 미세 보라
+        var inner = new Rect(outer.x + 2f, outer.y + 2f, outer.width - 4f, outer.height - 4f);
+        FillRect(inner, new Color(0.085f, 0.07f, 0.115f, 0.97f));
+
+        // 미세 하이라이트
+        FillRect(new Rect(inner.x, inner.y, inner.width, 1f), new Color(1f, 0.85f, 0.55f, 0.18f));
+
+        Color divider = new Color(0.62f, 0.48f, 0.28f, 0.55f);
+
+        // 1) 적 이름 헤더
+        var nameRect = new Rect(tx + pad, ty + 7f, tw - pad * 2f, nameSize.y);
+        GUI.Label(nameRect, nameStr, _tooltipTitleStyle);
+
+        float lineY = nameRect.yMax + 6f;
+        FillRect(new Rect(tx + pad, lineY, tw - pad * 2f, 1f), divider);
+
+        // 2) 인텐트 아이콘 + 제목
+        float intentTopY = lineY + 7f;
+        string iconId = e.intentType == EnemyIntentType.ATTACK ? "ATTACK" : IntentIconForAction(e.intentAction);
+        var iconTex = HeadIcon(iconId);
+        float titleX = tx + pad;
+        if (iconTex != null)
+        {
+            var iconR = new Rect(tx + pad, intentTopY + (intentRowH - iconSize) * 0.5f, iconSize, iconSize);
+            GUI.DrawTexture(iconR, iconTex, ScaleMode.ScaleToFit, true);
+            titleX = iconR.xMax + 5f;
+        }
+        var titleR = new Rect(titleX, intentTopY + (intentRowH - titleSize.y) * 0.5f, tx + tw - pad - titleX, titleSize.y);
+        GUI.Label(titleR, intentTitle, _tooltipTitleStyle);
+
+        // 3) 인텐트 본문
+        float bodyY = intentTopY + intentRowH + 4f;
+        var bodyR = new Rect(tx + pad, bodyY, tw - pad * 2f, bodyH);
+        GUI.Label(bodyR, intentBody, _tooltipBodyStyle);
+
+        // 4) 디버프 스택 (있을 때만)
+        if (!string.IsNullOrEmpty(statusLine))
+        {
+            float lineY2 = bodyY + bodyH + 7f;
+            FillRect(new Rect(tx + pad, lineY2, tw - pad * 2f, 1f), divider);
+            var statusR = new Rect(tx + pad, lineY2 + 7f, tw - pad * 2f, statusH);
+            GUI.Label(statusR, statusLine, _tooltipBodyStyle);
+        }
+    }
+
+    private static string BuildEnemyStatusLine(EnemyInstance e)
+    {
+        var parts = new System.Collections.Generic.List<string>();
+        if (e.poisonStacks    > 0) parts.Add($"Poison {e.poisonStacks}");
+        if (e.weakTurns       > 0) parts.Add($"Weak {e.weakTurns}");
+        if (e.vulnerableTurns > 0) parts.Add($"Vulnerable {e.vulnerableTurns}");
+        return parts.Count == 0 ? "" : "Status:  " + string.Join("  ·  ", parts);
     }
 
     /// <summary>공격 인텐트 아래에 "→ 공룡 / → 플레이어 / → 전체" 타겟 힌트 표시. 반투명 배경 박스로 가독성 확보.</summary>
@@ -3008,12 +3233,13 @@ public class BattleUI : MonoBehaviour
         switch (e.intentAction)
         {
             // 단일 대상 공격 — RollIntent 시점에 확정된 intentTargetDino 그대로 표시.
+            // 플레이어 타겟은 디폴트라 라벨 숨김 (공룡 겨냥일 때만 명시).
             case DianoCard.Data.EnemyAction.ATTACK:
             case DianoCard.Data.EnemyAction.MULTI_ATTACK:
             case DianoCard.Data.EnemyAction.COUNTDOWN_ATTACK:
                 if (e.intentTargetDino != null && !e.intentTargetDino.IsDead)
                     return $"→ {e.intentTargetDino.data.nameKr}";
-                return "→ 플레이어";
+                return "";
 
             // 광역: 플레이어 + 필드 전체
             case DianoCard.Data.EnemyAction.COUNTDOWN_AOE:
@@ -3024,13 +3250,13 @@ public class BattleUI : MonoBehaviour
             case DianoCard.Data.EnemyAction.SILENCE:
                 return hasField ? "→ 공룡" : "→ (공룡 없음)";
 
-            // 플레이어 직접 디버프
+            // 플레이어 직접 디버프 — 디폴트 타겟이라 라벨 숨김 (인텐트 아이콘만으로 충분).
             case DianoCard.Data.EnemyAction.POISON:
             case DianoCard.Data.EnemyAction.WEAK:
             case DianoCard.Data.EnemyAction.DRAIN:
             case DianoCard.Data.EnemyAction.VULNERABLE:
             case DianoCard.Data.EnemyAction.CLOG_DECK:
-                return "→ 플레이어";
+                return "";
 
             default:
                 return null; // DEFEND/BUFF_SELF/SUMMON/REFILL_MOSS/ARMOR_UP/IDLE 등은 자기 대상
@@ -3040,24 +3266,22 @@ public class BattleUI : MonoBehaviour
     // 공격 아이콘(검) + 데미지 숫자 뱃지. 적은 -45°, 아군은 +45°. boosted면 숫자를 강조 색으로.
     private void DrawAttackIconBadge(Vector2 center, int value, float angleDeg, bool boosted)
     {
-        if (_iconAttack == null) return;
+        var tex = HeadIcon("ATTACK");
+        if (tex == null) return;
         Color textCol = boosted ? new Color(1f, 0.85f, 0.3f) : Color.white;
-        DrawSideBySideBadge(center, value, _iconAttack, angleDeg, textCol);
+        DrawSideBySideBadge(center, value, tex, angleDeg, textCol);
     }
 
-    // 아이콘은 center에 정중앙으로 배치, 숫자는 아이콘 왼쪽에 치우쳐서 표시.
+    // 아이콘은 center에 정중앙으로 배치, 숫자는 아이콘 우하단 코너에 작은 뱃지로 살짝 겹쳐 표시.
     private void DrawSideBySideBadge(Vector2 center, int value, Texture2D icon, float angleDeg, Color textCol)
     {
-        const float iconSize = 56f;
-        const float numberW = 22f;
-        const float overlap = 5f; // 아이콘 가장자리 안으로 숫자 영역을 살짝만 겹쳐 적당한 간격 유지
+        const float iconSize = 40f;
+        const float numW = 18f;
+        const float numH = 16f;
 
         var iconRect = new Rect(center.x - iconSize / 2f, center.y - iconSize / 2f, iconSize, iconSize);
-        var numRect = new Rect(iconRect.x + overlap - numberW, center.y - iconSize / 2f, numberW, iconSize);
 
-        DrawTextWithOutline(numRect, value.ToString(), _intentNumberStyle,
-                            textCol, new Color(0f, 0f, 0f, 0.95f), 1.2f);
-
+        // 아이콘 먼저 (회전 옵션). 숫자가 위에 올라가야 가려지지 않음.
         if (Mathf.Abs(angleDeg) > 0.01f)
         {
             Matrix4x4 baseMatrix = GUI.matrix;
@@ -3069,13 +3293,21 @@ public class BattleUI : MonoBehaviour
         {
             GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit, alphaBlend: true);
         }
+
+        // 숫자: 아이콘 우하단 코너에 살짝 겹치게. value <= 0이면 숫자 생략 (소환·강탈 등).
+        if (value > 0)
+        {
+            var numRect = new Rect(iconRect.xMax - numW * 0.6f, iconRect.yMax - numH * 0.6f, numW, numH);
+            DrawTextWithOutline(numRect, value.ToString(), _intentNumberStyle,
+                                textCol, new Color(0f, 0f, 0f, 0.95f), 1.4f);
+        }
     }
 
     // 방패 아이콘 + 숫자 뱃지. center를 중심으로 size 크기로 그림. icon으로 플레이어/적 텍스처 분리.
     private void DrawBlockBadge(Vector2 center, int block, float size = 40f, Texture2D icon = null)
     {
         var iconRect = new Rect(center.x - size / 2, center.y - size / 2, size, size);
-        var tex = icon != null ? icon : _iconShield;
+        var tex = icon != null ? icon : HeadIcon("DEFEND");
         if (tex != null)
         {
             GUI.DrawTexture(iconRect, tex, ScaleMode.ScaleToFit, alphaBlend: true);
@@ -3083,7 +3315,7 @@ public class BattleUI : MonoBehaviour
 
         int prevFontSize = _centerStyle.fontSize;
         Color prevColor = _centerStyle.normal.textColor;
-        _centerStyle.fontSize = Mathf.RoundToInt(size * 0.42f);
+        _centerStyle.fontSize = Mathf.RoundToInt(size * 0.3f);
         _centerStyle.normal.textColor = Color.white;
 
         var shadowRect = new Rect(iconRect.x + 1, iconRect.y + 2, iconRect.width, iconRect.height);
@@ -3192,6 +3424,19 @@ public class BattleUI : MonoBehaviour
         float footY = center.y + h / 2f;          // 원래 rect의 바닥 — 발 위치로 사용
         var rect = new Rect(center.x - w / 2f, footY - drawH, w, drawH);
 
+        // 이 공룡이 공격/스킬/융합 재료 A 타겟팅의 source면 화살표 출발 rect로 기록.
+        // 융합 스테이지2(재료 A 선택 완료) 상태에서 A가 필드 공룡이면 A → 두 번째 재료 후보로 화살표를 그린다.
+        bool isFusionMaterialAField = _fusionMaterialAPicked
+            && !_fusionMaterialA.isHand
+            && _fusionMaterialA.index == summonIndex;
+        if (summonIndex == _targetingSummonIndex
+            || summonIndex == _targetingSummonSkillIndex
+            || isFusionMaterialAField)
+        {
+            _arrowSourceRect = rect;
+            _arrowSourceValid = true;
+        }
+
         // Reward 상태면 공룡도 world-space overlay와 같은 톤으로 어둡게 tint
         bool inReward = GameStateManager.Instance != null && GameStateManager.Instance.State == GameState.Reward;
         // 공격 불가 상태(이미 공격 / 침묵)는 어둡게, 이번 턴 선택된 공룡은 살짝 밝게.
@@ -3225,7 +3470,7 @@ public class BattleUI : MonoBehaviour
         // 방어도 뱃지 — HP 바 왼쪽에 겹치게 (플레이어와 동일 스타일)
         if (s.block > 0)
         {
-            DrawBlockBadge(new Vector2(summonHpRect.x, summonHpRect.center.y), s.block, 30f, _iconShieldGreen);
+            DrawBlockBadge(new Vector2(summonHpRect.x, summonHpRect.center.y), s.block, 40f, HeadIcon("DEFEND"));
         }
 
         // 티어/스택 인디케이터 — 육식: 현재 티어 (T0/T1/T2·MAX). 초식: 덮어쓰기 누적 스택.
@@ -3255,7 +3500,7 @@ public class BattleUI : MonoBehaviour
         // ATK 뱃지 — 머리 위 (적 intent와 미러 대칭). 아군은 검을 +45°로 회전.
         // 이 뱃지를 클릭하면 공격 타겟팅 시작 (예전엔 공룡 전체 클릭). 클릭 영역은 시인성보다 살짝 크게.
         Vector2 badgeCenter = new Vector2(rect.center.x, rect.y - 12f);
-        DrawAttackIconBadge(badgeCenter, s.TotalAttack, +45f, s.tempAttackBonus > 0);
+        DrawAttackIconBadge(badgeCenter, s.TotalAttack, 0f, s.tempAttackBonus > 0);
         var badgeHitRect = new Rect(badgeCenter.x - 36f, badgeCenter.y - 36f, 72f, 72f);
         bool badgeActive = !inReward && _battle?.state != null && !_battle.state.IsOver
             && _targetingCardIndex < 0 && _swapFromCardIndex < 0 && s.CanAttack;
@@ -3309,6 +3554,7 @@ public class BattleUI : MonoBehaviour
             if (_swapFromCardIndex >= 0)
             {
                 DrawTargetFootGlow(rect, hovered);
+                _arrowTargetRects.Add(rect);
                 if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && hovered)
                 {
                     ev.Use();
@@ -3324,6 +3570,7 @@ public class BattleUI : MonoBehaviour
             else if (allyTargetMode)
             {
                 DrawTargetFootGlow(rect, hovered);
+                _arrowTargetRects.Add(rect);
                 if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && hovered)
                 {
                     ev.Use();
@@ -3351,6 +3598,8 @@ public class BattleUI : MonoBehaviour
                 else if (fieldMaterialEligible)
                 {
                     DrawTargetFootGlow(rect, hovered);
+                    // 융합 후보 — 화살표 끝점 스냅 대상으로 등록.
+                    _arrowTargetRects.Add(rect);
                     if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && hovered)
                     {
                         ev.Use();
@@ -3522,7 +3771,18 @@ public class BattleUI : MonoBehaviour
         // intent 앵커 — 검 아이콘(56px) + 타겟 힌트 박스(~22px)가 스프라이트 위로 완전히 올라가도록 충분히 띄움.
         // 이끼 잡몹은 보호막용이라 의미 있는 intent가 거의 없음 → "▲ —" 더미 아이콘이 4개 떠다녀서 시각 오염. 숨김.
         if (!e.isMoss)
+        {
             DrawEnemyIntent(new Vector2(rect.center.x, rect.y - 44), e);
+
+            // hover 영역: 적 본체 rect + 머리 위 인텐트 영역까지 포함 (StS 방식 — 적 위 hover면 정보 패널).
+            var ev = Event.current;
+            if (ev != null)
+            {
+                var hoverArea = new Rect(rect.x, rect.y - 70f, rect.width, rect.height + 70f);
+                if (hoverArea.Contains(ev.mousePosition))
+                    DrawEnemyTooltip(rect, e);
+            }
+        }
 
         // 아트 없는 placeholder 적은 가운데에 이름 라벨 (식별용)
         if (string.IsNullOrEmpty(e.data.image))
@@ -3557,19 +3817,19 @@ public class BattleUI : MonoBehaviour
         Color hpFill = mossShielded
             ? new Color(0.45f, 0.45f, 0.50f)   // 차콜 그레이 — "지금은 데미지 안 들어감"
             : new Color(0.65f, 0.16f, 0.18f);
-        DrawHpBar(enemyHpRect, e.hp, e.data.hp, hpFill);
+        DrawHpBar(enemyHpRect, e.hp, e.maxHp, hpFill);
 
         // 방패 아이콘 — moss 보호막 우선, 없으면 일반 block.
         if (mossShielded)
         {
-            DrawBlockBadge(new Vector2(enemyHpRect.x, enemyHpRect.center.y), mossAliveCount, 34f,
-                           _iconShieldGreen);
+            DrawBlockBadge(new Vector2(enemyHpRect.x, enemyHpRect.center.y), mossAliveCount, 40f,
+                           HeadIcon("DEFEND"));
         }
         else if (e.block > 0)
         {
             // HP 바 왼쪽 끝에 살짝 겹치게 — 플레이어 파란 방패와 미러 대칭
-            DrawBlockBadge(new Vector2(enemyHpRect.x, enemyHpRect.center.y), e.block, 34f,
-                           _iconShieldGreen);
+            DrawBlockBadge(new Vector2(enemyHpRect.x, enemyHpRect.center.y), e.block, 40f,
+                           HeadIcon("DEFEND"));
         }
 
         // 패시브 칩 — HP 바 바로 아래 한 줄. 호버 시 툴팁.
@@ -3583,6 +3843,7 @@ public class BattleUI : MonoBehaviour
             var ev = Event.current;
             bool hovered = rect.Contains(ev.mousePosition);
             DrawTargetFootGlow(rect, hovered);
+            _arrowTargetRects.Add(rect);
 
             if (ev.type == EventType.MouseDown && ev.button == 0 && hovered)
             {
@@ -3604,6 +3865,7 @@ public class BattleUI : MonoBehaviour
             var ev = Event.current;
             bool hovered = rect.Contains(ev.mousePosition);
             DrawTargetEnemyRing(rect, hovered);
+            _arrowTargetRects.Add(rect);
 
             if (ev.type == EventType.MouseDown && ev.button == 0 && hovered)
             {
@@ -3621,6 +3883,7 @@ public class BattleUI : MonoBehaviour
             var ev = Event.current;
             bool hovered = rect.Contains(ev.mousePosition);
             DrawTargetEnemyRing(rect, hovered);
+            _arrowTargetRects.Add(rect);
 
             if (ev.type == EventType.MouseDown && ev.button == 0 && hovered)
             {
@@ -3719,6 +3982,173 @@ public class BattleUI : MonoBehaviour
             GUI.DrawTexture(r, _manaFrameTexture, ScaleMode.StretchToFill, alphaBlend: true);
             GUI.color = prev;
         }
+    }
+
+    // StS 스타일 타겟팅 화살표 — 카드/공룡(source) → 마우스(또는 스냅된 타겟) 사이를 cubic 베지어로 잇는다.
+    // 곡선 위에 점점 커지는 부드러운 동그라미를 찍고 끝에 V자 화살촉을 그림.
+    // 융합도 단계별 source 전환(스테이지1: 촉매 카드 → 재료A 후보, 스테이지2: 재료A → 재료B 후보)으로 동일 화살표 사용.
+    private void DrawTargetingArrow(BattleState state)
+    {
+        if (!_arrowSourceValid || state == null) return;
+
+        // 출발 — 카드/공룡 rect의 상단보다 약간 안쪽. 회전된 카드라도 center.x는 회전 피벗이라 안정적.
+        Vector2 from = new Vector2(_arrowSourceRect.center.x, _arrowSourceRect.y + 12f);
+
+        // 끝점 — 호버된 valid 타겟이 있으면 중심에 스냅, 없으면 마우스를 따라간다.
+        Vector2 mouse = Event.current != null ? Event.current.mousePosition : from;
+        bool snapped = false;
+        Vector2 to = mouse;
+        for (int i = 0; i < _arrowTargetRects.Count; i++)
+        {
+            var tr = _arrowTargetRects[i];
+            if (tr.Contains(mouse))
+            {
+                to = tr.center;
+                snapped = true;
+                break;
+            }
+        }
+
+        // 마우스가 카드 위에 머물러 화살표 길이가 거의 0일 때는 그리지 않는다 — 자기 자신 가리키는 모양 방지.
+        if (!snapped && Vector2.Distance(from, to) < 36f) return;
+
+        EnsureArrowDotTexture();
+        DrawBezierArrow(from, to, snapped);
+    }
+
+    // 부드러운 원형 알파 마스크 텍스처 — 가장자리로 갈수록 부드럽게 사라지도록 (1-d)^2.
+    private void EnsureArrowDotTexture()
+    {
+        if (_arrowDotTex != null) return;
+        const int S = 64;
+        _arrowDotTex = new Texture2D(S, S, TextureFormat.RGBA32, false, false)
+        {
+            hideFlags = HideFlags.HideAndDontSave,
+            filterMode = FilterMode.Bilinear,
+            wrapMode = TextureWrapMode.Clamp,
+        };
+        var px = new Color32[S * S];
+        Vector2 c = new Vector2((S - 1) * 0.5f, (S - 1) * 0.5f);
+        float maxR = (S - 1) * 0.5f;
+        for (int y = 0; y < S; y++)
+        for (int x = 0; x < S; x++)
+        {
+            float d = Vector2.Distance(new Vector2(x, y), c) / maxR;
+            float a = Mathf.Clamp01(1f - d);
+            a = a * a;
+            px[y * S + x] = new Color(1f, 1f, 1f, a);
+        }
+        _arrowDotTex.SetPixels32(px);
+        _arrowDotTex.Apply(false, false);
+    }
+
+    private void DrawBezierArrow(Vector2 from, Vector2 to, bool snapped)
+    {
+        // 컨트롤 포인트: source에서 위로 들어올린 뒤 target 위쪽에서 내려오도록 잡음 → 카드에서 솟아오르는 호.
+        float dist = Vector2.Distance(from, to);
+        float lift = Mathf.Min(240f, dist * 0.55f);
+        Vector2 c1 = new Vector2(from.x, from.y - lift * 0.95f);
+        Vector2 c2 = new Vector2(to.x, to.y - lift * 0.55f);
+
+        // 두 가지 컬러: 외부 헤일로(어두운 적색)와 내부 코어(밝은 옐로우-오렌지) — STS 톤.
+        // 헤일로가 검은 외곽선처럼 카드/배경 어디에서나 곡선을 분리시켜 가독성 확보.
+        // 펄스는 살짝만 — 항상 또렷이 보이도록.
+        float pulse = 0.88f + 0.12f * Mathf.Sin(Time.time * 5f);
+        Color halo = snapped
+            ? new Color(0.55f, 0.05f, 0.02f, 1f)   // 스냅: 짙은 진홍 외곽
+            : new Color(0.40f, 0.10f, 0.03f, 1f);  // 평소: 짙은 적갈 외곽
+        Color core = snapped
+            ? new Color(1.00f, 0.55f, 0.20f, 1f)   // 스냅: 강렬한 오렌지 — "박힌다"
+            : new Color(1.00f, 0.85f, 0.35f, 1f);  // 평소: 따뜻한 골든
+
+        // 충분히 촘촘하게 찍어 점이 아닌 두꺼운 연속 리본으로 보이게 (간격 < 점 반지름).
+        const int N = 56;
+        var prevColor = GUI.color;
+
+        // Pass 1 — 어두운 외곽 헤일로 (큰 점, 낮은 알파). 카드/배경에서 곡선을 분리.
+        for (int i = 0; i < N; i++)
+        {
+            float t = i / (float)(N - 1);
+            Vector2 p = CubicBezier(from, c1, c2, to, t);
+            float size = Mathf.Lerp(22f, 44f, t);  // 시작 22 → 끝 44 (두꺼운 리본 폭)
+            float a = Mathf.Lerp(0.55f, 0.95f, t) * pulse;
+            GUI.color = new Color(halo.r, halo.g, halo.b, a);
+            GUI.DrawTexture(
+                new Rect(p.x - size * 0.5f, p.y - size * 0.5f, size, size),
+                _arrowDotTex, ScaleMode.StretchToFill, alphaBlend: true);
+        }
+
+        // Pass 2 — 밝은 코어 (헤일로보다 약 절반 크기, 높은 알파). 곡선 본체.
+        for (int i = 0; i < N; i++)
+        {
+            float t = i / (float)(N - 1);
+            Vector2 p = CubicBezier(from, c1, c2, to, t);
+            float size = Mathf.Lerp(11f, 24f, t);
+            float a = Mathf.Lerp(0.85f, 1.00f, t) * pulse;
+            GUI.color = new Color(core.r, core.g, core.b, a);
+            GUI.DrawTexture(
+                new Rect(p.x - size * 0.5f, p.y - size * 0.5f, size, size),
+                _arrowDotTex, ScaleMode.StretchToFill, alphaBlend: true);
+        }
+
+        GUI.color = prevColor;
+
+        // 화살촉 — 끝점 접선 기준 V자. 큰 헤일로 깃 → 작은 코어 깃 두 패스로 두꺼운 외곽선 효과.
+        Vector2 tangent = CubicBezierTangent(from, c1, c2, to, 1f);
+        float angleDeg = Mathf.Atan2(tangent.y, tangent.x) * Mathf.Rad2Deg;
+        float headLen = snapped ? 44f : 38f;
+        DrawArrowHead(to, angleDeg, headLen + 6f, 12f, new Color(halo.r, halo.g, halo.b, pulse));
+        DrawArrowHead(to, angleDeg, headLen,      7f,  new Color(core.r, core.g, core.b, pulse));
+    }
+
+    // 끝점 to에서 진행 방향(angleDeg) 반대쪽으로 ±32° 벌어진 두 짧은 막대를 그려 V자 화살촉을 만든다.
+    // 막대는 1×1 불투명 화이트 텍스처를 회전된 직사각형으로 늘려 sharp한 라인을 만든다.
+    private void DrawArrowHead(Vector2 tip, float angleDeg, float length, float thickness, Color color)
+    {
+        Matrix4x4 baseMat = GUI.matrix;
+        var prevColor = GUI.color;
+        GUI.color = color;
+
+        // 깃은 tip에서 뒤쪽으로 뻗는다 → 진행 방향 반대(+180) 기준 ±32°.
+        float[] flutes = { angleDeg + 180f - 32f, angleDeg + 180f + 32f };
+        foreach (float a in flutes)
+        {
+            GUI.matrix = baseMat * RotateAroundPivotMatrix(a, tip);
+            // 회전 전 좌표계에서 tip → tip + (length, 0) 방향의 가는 막대.
+            var r = new Rect(tip.x, tip.y - thickness * 0.5f, length, thickness);
+            GUI.DrawTexture(r, Texture2D.whiteTexture, ScaleMode.StretchToFill, alphaBlend: true);
+        }
+
+        GUI.matrix = baseMat;
+        GUI.color = prevColor;
+
+        // 끝점에 약간 큰 부드러운 글로우 — 화살촉이 "박히는" 임팩트.
+        if (_arrowDotTex != null)
+        {
+            float glow = length * 1.3f;
+            GUI.color = new Color(color.r, color.g, color.b, color.a * 0.55f);
+            GUI.DrawTexture(
+                new Rect(tip.x - glow * 0.5f, tip.y - glow * 0.5f, glow, glow),
+                _arrowDotTex, ScaleMode.StretchToFill, alphaBlend: true);
+            GUI.color = prevColor;
+        }
+    }
+
+    private static Vector2 CubicBezier(Vector2 a, Vector2 b, Vector2 c, Vector2 d, float t)
+    {
+        float u = 1f - t;
+        return u * u * u * a
+             + 3f * u * u * t * b
+             + 3f * u * t * t * c
+             + t * t * t * d;
+    }
+
+    private static Vector2 CubicBezierTangent(Vector2 a, Vector2 b, Vector2 c, Vector2 d, float t)
+    {
+        float u = 1f - t;
+        return 3f * u * u * (b - a)
+             + 6f * u * t * (c - b)
+             + 3f * t * t * (d - c);
     }
 
     private void DrawTargetFootGlow(Rect enemyRect, bool hovered)
@@ -3988,7 +4418,17 @@ public class BattleUI : MonoBehaviour
         if (deckCount >= 0)
         {
             if (anyDrawn) right -= rightSlotGap;
-            DrawDeckViewRightSlot(right, barY, barH, iconY, iconSize, iconLabelGap, deckCount);
+            right = DrawDeckViewRightSlot(right, barY, barH, iconY, iconSize, iconLabelGap, deckCount);
+            anyDrawn = true;
+        }
+
+        // 테크트리 진입 슬롯 — 덱 왼쪽. 별도 아이콘 에셋이 없어서 절차적으로 그림(임시 UI).
+        // 보유 포인트가 1 이상이면 따뜻하게 강조 + 라벨로 카운트 표시.
+        var gsm = GameStateManager.Instance;
+        if (gsm != null && gsm.TechTree != null)
+        {
+            if (anyDrawn) right -= rightSlotGap;
+            DrawTechTreeRightSlot(right, barY, barH, iconY, iconSize, iconLabelGap, gsm.TechTree.points);
         }
     }
 
@@ -4039,6 +4479,132 @@ public class BattleUI : MonoBehaviour
         }
 
         return iconX;
+    }
+
+    // 덱 슬롯 왼쪽에 위치한 테크트리 진입 슬롯 — 절차적 트리 아이콘(루트 → 중간 → T2 3분기).
+    // 클릭 시 GameStateManager.EnterTechTree() 호출, 보유 포인트 1+ 면 라벨로 카운트 노출.
+    private float DrawTechTreeRightSlot(float right, float barY, float barH,
+        float iconY, float iconSize, float iconLabelGap, int totalPoints)
+    {
+        // 라벨은 포인트 보유 시에만 표시 (0이면 아이콘만)
+        string label = totalPoints > 0 ? totalPoints.ToString() : "";
+        Vector2 labelSize = string.IsNullOrEmpty(label)
+            ? Vector2.zero
+            : _labelStyle.CalcSize(new GUIContent(label));
+
+        float labelX = right - labelSize.x;
+        float iconRightEdge = string.IsNullOrEmpty(label) ? right : labelX - iconLabelGap;
+        float iconX = iconRightEdge - iconSize;
+        var iconRect = new Rect(iconX, iconY, iconSize, iconSize);
+
+        // 클릭 히트 영역 — 아이콘 + 라벨 묶기
+        var hitRect = new Rect(iconX - 8f, barY, (right - iconX) + 16f, barH);
+        var ev = Event.current;
+        bool hover = hitRect.Contains(ev.mousePosition);
+
+        // 호버 강조 + 포인트 보유 시 따뜻한 글로우
+        Color glowTint = hover
+            ? new Color(1f, 0.92f, 0.55f)
+            : (totalPoints > 0 ? new Color(1f, 0.82f, 0.40f) : new Color(0.85f, 0.75f, 0.55f));
+        float glowIntensity = hover ? 1.5f : (totalPoints > 0 ? 1.25f : 0.9f);
+
+        if (hover)
+        {
+            FillRect(hitRect, new Color(1f, 0.82f, 0.35f, 0.10f));
+            DrawBorder(hitRect, 1f, new Color(1f, 0.82f, 0.35f, 0.35f));
+        }
+
+        DrawIconGlow(iconRect, glowTint, glowIntensity);
+
+        // 절차적 트리 아이콘 — 살짝 좌우 흔들 (다른 우측 아이콘과 동일한 패턴)
+        float angle = Mathf.Sin(Time.time * 0.7f + 0.6f) * 0.32f;
+        var prevMatrix = GUI.matrix;
+        GUIUtility.RotateAroundPivot(angle, iconRect.center);
+        DrawTechTreeProcIcon(iconRect, hover, totalPoints > 0);
+        GUI.matrix = prevMatrix;
+
+        if (!string.IsNullOrEmpty(label))
+        {
+            var labelRect = new Rect(labelX, barY + (barH - labelSize.y) * 0.5f, labelSize.x + 2f, labelSize.y);
+            GUI.Label(labelRect, label, _labelStyle);
+        }
+
+        if (hover && ev.type == EventType.MouseDown && ev.button == 0)
+        {
+            var gsm = GameStateManager.Instance;
+            if (gsm != null) gsm.EnterTechTree();
+            ev.Use();
+        }
+
+        return iconX;
+    }
+
+    // 절차적 트리 아이콘 — 루트(아래) → 중간 → 상단 3분기 + 가는 연결선.
+    // hover/active 따라 색을 따뜻하게.
+    private void DrawTechTreeProcIcon(Rect rect, bool hovered, bool active)
+    {
+        // 아이콘 안쪽 패딩
+        float pad = rect.width * 0.12f;
+        Rect ico = new Rect(rect.x + pad, rect.y + pad, rect.width - pad * 2f, rect.height - pad * 2f);
+
+        Color line = hovered
+            ? new Color(1f, 0.92f, 0.60f, 1f)
+            : (active ? new Color(1f, 0.85f, 0.45f, 1f) : new Color(0.85f, 0.75f, 0.50f, 0.95f));
+        Color nodeFill = hovered
+            ? new Color(1f, 0.88f, 0.50f, 1f)
+            : (active ? new Color(0.92f, 0.78f, 0.40f, 1f) : new Color(0.55f, 0.48f, 0.30f, 1f));
+
+        Vector2 root = new Vector2(ico.center.x, ico.yMax - ico.height * 0.05f);
+        Vector2 mid  = new Vector2(ico.center.x, ico.center.y + ico.height * 0.05f);
+        Vector2 tl   = new Vector2(ico.x + ico.width * 0.10f, ico.y + ico.height * 0.10f);
+        Vector2 tc   = new Vector2(ico.center.x,              ico.y);
+        Vector2 tr   = new Vector2(ico.xMax - ico.width * 0.10f, ico.y + ico.height * 0.10f);
+
+        float thick = Mathf.Max(1.2f, rect.width * 0.04f);
+        DrawProcLine(root, mid, line, thick);
+        DrawProcLine(mid, tl, line, thick);
+        DrawProcLine(mid, tc, line, thick);
+        DrawProcLine(mid, tr, line, thick);
+
+        float nSize = Mathf.Max(2.5f, rect.width * 0.10f);
+        DrawProcNode(root, nSize * 1.05f, nodeFill, line);
+        DrawProcNode(mid,  nSize,         nodeFill, line);
+        DrawProcNode(tl,   nSize * 0.9f,  nodeFill, line);
+        DrawProcNode(tc,   nSize * 0.9f,  nodeFill, line);
+        DrawProcNode(tr,   nSize * 0.9f,  nodeFill, line);
+    }
+
+    private void DrawProcLine(Vector2 a, Vector2 b, Color color, float thickness)
+    {
+        float dx = b.x - a.x;
+        float dy = b.y - a.y;
+        float len = Mathf.Sqrt(dx * dx + dy * dy);
+        if (len < 0.01f) return;
+        float angle = Mathf.Atan2(dy, dx) * Mathf.Rad2Deg;
+
+        var prevMatrix = GUI.matrix;
+        var prevColor = GUI.color;
+
+        GUI.matrix = prevMatrix
+                     * Matrix4x4.Translate(new Vector3(a.x, a.y, 0f))
+                     * Matrix4x4.Rotate(Quaternion.Euler(0, 0, angle))
+                     * Matrix4x4.Translate(new Vector3(-a.x, -a.y, 0f));
+
+        GUI.color = color;
+        GUI.DrawTexture(new Rect(a.x, a.y - thickness * 0.5f, len, thickness), Texture2D.whiteTexture);
+
+        GUI.matrix = prevMatrix;
+        GUI.color = prevColor;
+    }
+
+    private void DrawProcNode(Vector2 c, float size, Color fill, Color border)
+    {
+        var prev = GUI.color;
+        var rect = new Rect(c.x - size, c.y - size, size * 2f, size * 2f);
+        GUI.color = fill;
+        GUI.DrawTexture(rect, Texture2D.whiteTexture);
+        DrawBorder(rect, Mathf.Max(1f, size * 0.18f), border);
+        GUI.color = prev;
     }
 
     // =========================================================
@@ -4310,20 +4876,43 @@ public class BattleUI : MonoBehaviour
         int hoverIdx = -1;
         if (inputActive && !IsDrawFlyActive)
         {
-            for (int k = n - 1; k >= 0; k--)
+            // 직전 프레임에 호버되어 확대된 카드는, 확대된 영역(hoverRect)을 벗어나야만 hover 해제.
+            // 부채꼴 원본 rect는 작아서 마우스가 확대 카드 위에 있어도 빠져나갈 수 있음 → sticky 처리.
+            if (_handStickyHoverIdx >= 0 && _handStickyHoverIdx < n
+                && !IsBeingDrawnInto(state.hand[_handStickyHoverIdx]))
             {
-                int i = drawOrder[k];
-                if (IsBeingDrawnInto(state.hand[i])) continue;
-                float angle = startAngle + i * anglePerCard;
-                Vector2 center = FanCardCenter(fanOriginX, fanOriginY, fanRadius, angle);
-                center.y += CardIdleBob(i);
-                if (PointInRotatedRect(mouse, center, cardW, cardH, angle))
+                Rect stickyRect = ComputeHandHoverRect(_handStickyHoverIdx,
+                    startAngle, anglePerCard, fanOriginX, fanOriginY, fanRadius,
+                    cardW, cardH, hideOffset);
+                if (stickyRect.Contains(mouse))
                 {
-                    hoverIdx = i;
-                    break;
+                    hoverIdx = _handStickyHoverIdx;
+                }
+            }
+
+            if (hoverIdx < 0)
+            {
+                for (int k = n - 1; k >= 0; k--)
+                {
+                    int i = drawOrder[k];
+                    if (IsBeingDrawnInto(state.hand[i])) continue;
+                    float angle = startAngle + i * anglePerCard;
+                    Vector2 center = FanCardCenter(fanOriginX, fanOriginY, fanRadius, angle);
+                    center.y += CardIdleBob(i);
+                    if (PointInRotatedRect(mouse, center, cardW, cardH, angle))
+                    {
+                        hoverIdx = i;
+                        break;
+                    }
                 }
             }
         }
+        _handStickyHoverIdx = hoverIdx;
+
+        // 융합 모드 여부 — fan/hover 양쪽 루프에서 재사용. 타겟팅 카드가 UTILITY/FUSION이면 true.
+        bool fusionMode = _targetingCardIndex >= 0
+            && _targetingCardIndex < state.hand.Count
+            && CardNeedsFusionTargets(state.hand[_targetingCardIndex].data);
 
         // 2) 비호버 카드 — drawOrder 순서대로(바깥 → 안쪽) 회전시켜 드로우
         // 주의: GUIUtility.RotateAroundPivot은 pivot을 스크린 픽셀 좌표로 다루므로
@@ -4349,9 +4938,31 @@ public class BattleUI : MonoBehaviour
             bool isFusionFanA = _fusionMaterialAPicked
                 && _fusionMaterialA.isHand
                 && _fusionMaterialA.index == i;
-            if (i == _targetingCardIndex || i == _swapFromCardIndex || isFusionFanA)
+            // 융합 후보 카드 — 촉매/재료A가 아니면서 자격 만족(스테이지1: 모든 carnivore T<2, 스테이지2: A와 종/티어 일치).
+            bool isFusionEligibleHand = fusionMode
+                && i != _targetingCardIndex
+                && !isFusionFanA
+                && IsFusionMaterialEligible(null, i, isHand: true);
+            if (i == _targetingCardIndex || i == _swapFromCardIndex || isFusionFanA || isFusionEligibleHand)
             {
                 DrawSoftCardGlow(rect);
+            }
+            // 화살표 source — 일반 타겟팅 카드 / 스왑 출발 카드 / 융합 단계별 source(스테이지1: 촉매, 스테이지2: 재료A).
+            bool isFusionCatalystStage1 = i == _targetingCardIndex
+                && CardNeedsFusionTargets(c)
+                && !_fusionMaterialAPicked;
+            if ((i == _targetingCardIndex && !CardNeedsFusionTargets(c))
+                || i == _swapFromCardIndex
+                || isFusionCatalystStage1
+                || isFusionFanA)
+            {
+                _arrowSourceRect = rect;
+                _arrowSourceValid = true;
+            }
+            // 융합 후보 카드는 화살표 끝점 스냅 대상.
+            if (isFusionEligibleHand)
+            {
+                _arrowTargetRects.Add(rect);
             }
             DrawCardFrame(rect, c, canPlay, drawCost: false);
         }
@@ -4384,32 +4995,44 @@ public class BattleUI : MonoBehaviour
             var c = state.hand[i].data;
             bool canPlay = IsCardPlayable(state, c);
 
-            float angle = startAngle + i * anglePerCard;
-            Vector2 fanCenter = FanCardCenter(fanOriginX, fanOriginY, fanRadius, angle);
-
-            const float hoverScale = 1.18f;
-            const float hoverBottomPad = 20f;
-            float hw = cardW * hoverScale;
-            float hh = cardH * hoverScale;
-
             // 호버 카드는 부채꼴 위치와 무관하게 화면 하단에 고정 앵커해서 전체가 항상 보이게 함.
             // x는 부채꼴 위치 유지(손 위 어느 카드인지 직관적으로 보이게), y만 화면 하단 기준.
-            // 숨김 진행도에 따라 함께 아래로 슬라이드.
-            var hoverRect = new Rect(fanCenter.x - hw * 0.5f, RefH - hh - hoverBottomPad + hideOffset, hw, hh);
+            // 숨김 진행도에 따라 함께 아래로 슬라이드. ← sticky hover 판정도 동일한 rect 사용.
+            var hoverRect = ComputeHandHoverRect(i, startAngle, anglePerCard,
+                fanOriginX, fanOriginY, fanRadius, cardW, cardH, hideOffset);
 
             bool isFusionHoverA = _fusionMaterialAPicked
                 && _fusionMaterialA.isHand
                 && _fusionMaterialA.index == i;
-            if (i == _targetingCardIndex || i == _swapFromCardIndex || isFusionHoverA)
+            // 호버 카드가 융합 후보(촉매/재료A 제외)면 글로우 + 화살표 끝점 스냅 대상.
+            bool isFusionEligibleHover = fusionMode
+                && i != _targetingCardIndex
+                && !isFusionHoverA
+                && IsFusionMaterialEligible(null, i, isHand: true);
+            if (i == _targetingCardIndex || i == _swapFromCardIndex || isFusionHoverA || isFusionEligibleHover)
             {
                 DrawSoftCardGlow(hoverRect);
             }
+            // 호버 중인 카드가 화살표 source면 들어올린 hoverRect에서 시작 (융합 단계별 source 포함).
+            bool isFusionCatalystStage1Hover = i == _targetingCardIndex
+                && CardNeedsFusionTargets(c)
+                && !_fusionMaterialAPicked;
+            if ((i == _targetingCardIndex && !CardNeedsFusionTargets(c))
+                || i == _swapFromCardIndex
+                || isFusionCatalystStage1Hover
+                || isFusionHoverA)
+            {
+                _arrowSourceRect = hoverRect;
+                _arrowSourceValid = true;
+            }
+            // 호버 중인 융합 후보 카드는 hoverRect 기준으로 화살표 끝점 스냅 대상.
+            if (isFusionEligibleHover)
+            {
+                _arrowTargetRects.Add(hoverRect);
+            }
             DrawCardFrame(hoverRect, c, canPlay, drawCost: true);
 
-            // 융합 모드에서 손 카드 클릭 — 재료 선택으로 가로챔 (canPlay 무관).
-            bool fusionMode = _targetingCardIndex >= 0
-                && _targetingCardIndex < state.hand.Count
-                && CardNeedsFusionTargets(state.hand[_targetingCardIndex].data);
+            // 융합 모드에서 손 카드 클릭 — 재료 선택으로 가로챔 (canPlay 무관). fusionMode는 DrawHand 상단에서 미리 계산.
             if (fusionMode)
             {
                 var ev2 = Event.current;
@@ -4615,6 +5238,21 @@ public class BattleUI : MonoBehaviour
                            originY - Mathf.Cos(rad) * radius);
     }
 
+    // 손패 호버 시 확대되어 화면 하단에 고정 앵커되는 카드의 화면 사각형.
+    // hover 그리기와 sticky hover 판정이 같은 rect를 봐야 마우스가 확대 카드 위에 있는 동안 hover가 풀리지 않는다.
+    private const float HandHoverScale = 1.18f;
+    private const float HandHoverBottomPad = 20f;
+    private static Rect ComputeHandHoverRect(int i, float startAngle, float anglePerCard,
+                                             float fanOriginX, float fanOriginY, float fanRadius,
+                                             float cardW, float cardH, float hideOffset)
+    {
+        float angle = startAngle + i * anglePerCard;
+        Vector2 fanCenter = FanCardCenter(fanOriginX, fanOriginY, fanRadius, angle);
+        float hw = cardW * HandHoverScale;
+        float hh = cardH * HandHoverScale;
+        return new Rect(fanCenter.x - hw * 0.5f, RefH - hh - HandHoverBottomPad + hideOffset, hw, hh);
+    }
+
     // 손패 카드의 idle 수직 호흡 — 카드마다 위상이 어긋나 자연스럽게 출렁인다.
     private static float CardIdleBob(int i)
     {
@@ -4800,9 +5438,19 @@ public class BattleUI : MonoBehaviour
                                             Color textColor, Color outlineColor, float thickness)
     {
         var prev = GUI.color;
-        var prevTextColor = style.normal.textColor;
+        var prevNormal    = style.normal.textColor;
+        var prevHover     = style.hover.textColor;
+        var prevActive    = style.active.textColor;
+        var prevFocused   = style.focused.textColor;
+        var prevOnNormal  = style.onNormal.textColor;
+        var prevOnHover   = style.onHover.textColor;
+        var prevOnActive  = style.onActive.textColor;
+        var prevOnFocused = style.onFocused.textColor;
 
-        style.normal.textColor = outlineColor;
+        // 마우스가 라벨 위에 있을 때 GUIStyle은 hover state의 textColor를 적용한다.
+        // normal만 갱신하면 init 시점의 hover 색이 그대로 보이므로(예: 본문이 검정으로 다시 보임),
+        // 그릴 때마다 모든 state를 함께 맞춰준다.
+        SetAllStateColors(style, outlineColor);
         GUI.color = outlineColor;
         for (int dx = -1; dx <= 1; dx++)
             for (int dy = -1; dy <= 1; dy++)
@@ -4812,12 +5460,31 @@ public class BattleUI : MonoBehaviour
                 GUI.Label(r, text, style);
             }
 
-        style.normal.textColor = textColor;
+        SetAllStateColors(style, textColor);
         GUI.color = textColor;
         GUI.Label(rect, text, style);
 
-        style.normal.textColor = prevTextColor;
+        style.normal.textColor    = prevNormal;
+        style.hover.textColor     = prevHover;
+        style.active.textColor    = prevActive;
+        style.focused.textColor   = prevFocused;
+        style.onNormal.textColor  = prevOnNormal;
+        style.onHover.textColor   = prevOnHover;
+        style.onActive.textColor  = prevOnActive;
+        style.onFocused.textColor = prevOnFocused;
         GUI.color = prev;
+    }
+
+    private static void SetAllStateColors(GUIStyle s, Color c)
+    {
+        s.normal.textColor    = c;
+        s.hover.textColor     = c;
+        s.active.textColor    = c;
+        s.focused.textColor   = c;
+        s.onNormal.textColor  = c;
+        s.onHover.textColor   = c;
+        s.onActive.textColor  = c;
+        s.onFocused.textColor = c;
     }
 
     // 카드 종류별 통합 프레임 — 색은 PNG에 이미 입혀져 있으므로 텍스처 선택만.

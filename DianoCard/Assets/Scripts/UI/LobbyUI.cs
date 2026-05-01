@@ -2,13 +2,15 @@ using System;
 using System.Collections.Generic;
 using DianoCard.Game;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 /// <summary>
 /// 메인 로비 화면. GameState == Lobby일 때만 그려짐.
 ///
-/// Resources/Lobby/Main_Background 를 풀스크린 배경으로 깔고,
-/// 그 위에 Resources/Lobby/Main_Character 를 좌측 캐릭터 레이어로 얹은 뒤,
-/// ember 파티클과 우측 텍스트 메뉴(Single Play / Settings / Quit)를 렌더.
+/// Resources/Lobby/배경_1 를 풀스크린 배경으로 깔고 (좌우반전된 신규 BG),
+/// Resources/Lobby/글씨_1-Photoroom 타이틀 로고를 위에 얹은 뒤,
+/// Resources/Lobby/Main_Character 캐릭터를 우측 레이어로 얹고,
+/// ember 파티클과 좌측 텍스트 메뉴(Single Play / Settings / Quit)를 렌더.
 /// </summary>
 public class LobbyUI : MonoBehaviour
 {
@@ -76,10 +78,14 @@ public class LobbyUI : MonoBehaviour
     [Header("Lobby Character (좌측 캐릭터 레이어)")]
     [SerializeField, Tooltip("Resources/Lobby/Main_Character 를 배경 위에 그릴지 여부.")]
     private bool _drawCharacter = true;
-    [SerializeField, Tooltip("캐릭터 박스 좌상단 위치 (1280x720 가상좌표). Y를 키우면 캐릭터가 아래로 내려감 (발이 바닥에 가까워짐). 음수면 화면 밖으로 살짝 잘림.")]
-    private Vector2 _characterPos = new Vector2(10f, 100f);
-    [SerializeField, Tooltip("캐릭터 박스 크기 (가상좌표). PNG 비율은 ScaleToFit으로 유지됨. 박스 비율과 PNG 비율이 다르면 박스 안에서 가운데 정렬됨.")]
-    private Vector2 _characterSize = new Vector2(524f, 726f);
+    [SerializeField, Tooltip("캐릭터 박스 좌상단 X (1280x720 가상좌표). BG 좌우반전 후 우측 배치. 작을수록 왼쪽으로 이동.")]
+    private float _characterX = 780f;
+    [SerializeField, Tooltip("캐릭터 박스 좌상단 Y (1280x720 가상좌표). 클수록 아래로 내려감 (발이 바닥에 가까워짐).")]
+    private float _characterY = 40f;
+    [SerializeField, Tooltip("캐릭터 박스 가로 크기 (px). PNG 비율은 ScaleToFit으로 유지됨.")]
+    private float _characterWidth = 600f;
+    [SerializeField, Tooltip("캐릭터 박스 세로 크기 (px). PNG 비율은 ScaleToFit으로 유지됨.")]
+    private float _characterHeight = 726f;
     [SerializeField, Tooltip("체크 시 Resources/Lobby/CharacterAnimation/*.png 의 모든 프레임을 사전순으로 idle 루프 재생. 해제하면 Main_Character 단일 컷.")]
     private bool _useIdleAnimation = true;
     [SerializeField, Range(1f, 60f), Tooltip("idle 루프 재생 FPS. 한 사이클 길이 = 프레임 수 / FPS. 122프레임 기준 24fps≈5.1s, 30fps≈4.1s.")]
@@ -90,14 +96,44 @@ public class LobbyUI : MonoBehaviour
     private bool _overrideFireHandGlow = true;
     [SerializeField, Tooltip("true면 손 glow 중심을 캐릭터 박스 기준 상대좌표로 자동 계산. 캐릭터 위치 옮기면 따라감.")]
     private bool _bindFireHandToCharacter = true;
-    [SerializeField, Tooltip("캐릭터 박스 좌상단 기준 손 glow 오프셋 (px). _bindFireHandToCharacter=true일 때만 사용.")]
-    private Vector2 _fireHandOffsetInCharacter = new Vector2(175f, 215f);
+    [SerializeField, Tooltip("캐릭터 박스 좌상단 기준 손 glow 오프셋 (px). 캐릭터 박스 600x726 기준. _bindFireHandToCharacter=true일 때만 사용.")]
+    private Vector2 _fireHandOffsetInCharacter = new Vector2(426f, 215f);
     [SerializeField, Tooltip("손 glow 중심 좌표 (1280x720 기준). 바인딩 모드에선 매 프레임 자동 갱신됨.")]
-    private Vector2 _fireHandGlowCenter = new Vector2(190f, 275f);
-    [SerializeField, Range(0f, 600f), Tooltip("손 glow 크기 (0이면 끔).")]
-    private float _fireHandGlowSize = 300f;
+    private Vector2 _fireHandGlowCenter = new Vector2(1100f, 320f);
+    [SerializeField, Range(0f, 600f), Tooltip("손 glow 크기 (0이면 끔). 캐릭터 박스 크기에 비례.")]
+    private float _fireHandGlowSize = 400f;
     [SerializeField, Range(0f, 1f)]
     private float _fireHandGlowAlpha = 0.5f;
+
+    [Header("Menu Buttons (Single Play / Settings / Quit)")]
+    [SerializeField, Tooltip("메뉴 버튼 좌상단 X (1280x720 가상좌표). BG 좌우반전 후 좌측 배치.")]
+    private float _menuX = 260f;
+    [SerializeField, Tooltip("첫 메뉴 버튼 Y (1280x720 가상좌표). 제목 ember가 80~120이므로 그 아래 여백 두고 배치.")]
+    private float _menuStartY = 370f;
+    [SerializeField, Tooltip("버튼 가로 크기.")]
+    private float _menuBtnWidth = 360f;
+    [SerializeField, Tooltip("버튼 세로 크기.")]
+    private float _menuBtnHeight = 100f;
+    [SerializeField, Tooltip("버튼 사이 세로 간격 (음수면 오버랩).")]
+    private float _menuGap = -10f;
+
+    [Header("Title Logo (LAST EMBER 이미지)")]
+    [SerializeField, Tooltip("타이틀 로고를 그릴지 여부. Resources/Lobby/글씨_1-Photoroom.png 사용.")]
+    private bool _drawTitleLogo = true;
+    [SerializeField, Tooltip("타이틀 로고 좌상단 X (1280x720 가상좌표).")]
+    private float _titleX = 100f;
+    [SerializeField, Tooltip("타이틀 로고 좌상단 Y (1280x720 가상좌표).")]
+    private float _titleY = 150f;
+    [SerializeField, Tooltip("타이틀 로고 가로 크기 (px). PNG 비율은 ScaleToFit으로 유지됨.")]
+    private float _titleWidth = 700f;
+    [SerializeField, Tooltip("타이틀 로고 세로 크기 (px). PNG 비율은 ScaleToFit으로 유지됨.")]
+    private float _titleHeight = 200f;
+
+    [Header("Single Play Scene Load")]
+    [SerializeField, Tooltip("Single Play 클릭 시 로드할 씬 이름. 비우면 씬 전환 없이 GameState만 변경. Build Settings에 등록된 씬이어야 함.")]
+    private string _singlePlaySceneName = "";
+    [SerializeField, Tooltip("체크하면 현재 씬을 다시 로드해서 모든 상태를 초기화. _singlePlaySceneName 보다 우선함.")]
+    private bool _reloadCurrentScene = false;
 
     [Header("Fire Ember Emitters")]
     [SerializeField]
@@ -106,7 +142,7 @@ public class LobbyUI : MonoBehaviour
         new EmberEmitter
         {
             name = "Fire Hand",
-            spawnRect = new Rect(135f, 295f, 110f, 35f),
+            spawnRect = new Rect(1035f, 295f, 110f, 35f),
             count = 0,
             haloSize = 140f,
             haloAlpha = 0.85f,
@@ -120,7 +156,7 @@ public class LobbyUI : MonoBehaviour
         {
             name = "Bottom Smoke",
             spawnRect = new Rect(0f, 695f, 1280f, 25f),
-            count = 24,
+            count = 8,
             sizeRange = new Vector2(30f, 55f),
             riseHeight = 120f,
             riseSpeed = 0.15f,
@@ -143,7 +179,7 @@ public class LobbyUI : MonoBehaviour
         new EmberEmitter
         {
             name = "Title (Last Ember)",
-            spawnRect = new Rect(540f, 80f, 620f, 40f),
+            spawnRect = new Rect(80f, 160f, 700f, 40f),
             count = 30,
             sizeRange = new Vector2(3f, 3f),
             riseHeight = 80f,
@@ -167,6 +203,7 @@ public class LobbyUI : MonoBehaviour
     private readonly List<Action> _pending = new();
 
     private Texture2D _bgTexture;
+    private Texture2D _titleTexture;
     private Texture2D _charTexture;
     private Texture2D[] _charFrames;
     private Texture2D _emberTex;
@@ -198,7 +235,8 @@ public class LobbyUI : MonoBehaviour
 
     private void LoadAssets()
     {
-        _bgTexture = Resources.Load<Texture2D>("Lobby/Main_Background");
+        _bgTexture = Resources.Load<Texture2D>("Lobby/배경_1");
+        _titleTexture = Resources.Load<Texture2D>("Lobby/글씨_1-Photoroom");
         _charTexture = Resources.Load<Texture2D>("Lobby/Main_Character");
         _displayFont = Resources.Load<Font>("Fonts/IMFellEnglish-Regular");
 
@@ -218,7 +256,8 @@ public class LobbyUI : MonoBehaviour
         }
         _flameTextures = flames.ToArray();
 
-        if (_bgTexture == null) Debug.LogWarning("[LobbyUI] Missing: Resources/Lobby/Main_Background");
+        if (_bgTexture == null) Debug.LogWarning("[LobbyUI] Missing: Resources/Lobby/배경_1");
+        if (_titleTexture == null) Debug.LogWarning("[LobbyUI] Missing: Resources/Lobby/글씨_1-Photoroom");
         if (_charTexture == null) Debug.LogWarning("[LobbyUI] Missing: Resources/Lobby/Main_Character");
         if (_charFrames == null || _charFrames.Length == 0) Debug.LogWarning("[LobbyUI] Missing: Resources/Lobby/CharacterAnimation/* (idle 단일 컷으로 폴백)");
         if (_displayFont == null) Debug.LogWarning("[LobbyUI] Missing: Resources/Fonts/IMFellEnglish-Regular");
@@ -258,10 +297,11 @@ public class LobbyUI : MonoBehaviour
         // 캐릭터 박스 옮기면 손 glow도 따라가게 — DrawEmbers 전에 갱신
         if (_drawCharacter && _bindFireHandToCharacter && _overrideFireHandGlow)
         {
-            _fireHandGlowCenter = _characterPos + _fireHandOffsetInCharacter;
+            _fireHandGlowCenter = new Vector2(_characterX, _characterY) + _fireHandOffsetInCharacter;
         }
 
         DrawCharacter();
+        DrawTitleLogo();
         DrawEmbers();
         DrawButtons(gsm);
         DrawVersion();
@@ -271,7 +311,7 @@ public class LobbyUI : MonoBehaviour
     private void DrawCharacter()
     {
         if (!_drawCharacter) return;
-        if (_characterSize.x <= 0f || _characterSize.y <= 0f) return;
+        if (_characterWidth <= 0f || _characterHeight <= 0f) return;
 
         Texture2D tex = _charTexture;
         if (_useIdleAnimation && _charFrames != null && _charFrames.Length > 0)
@@ -285,8 +325,21 @@ public class LobbyUI : MonoBehaviour
         if (tex == null) return;
 
         GUI.DrawTexture(
-            new Rect(_characterPos.x, _characterPos.y, _characterSize.x, _characterSize.y),
+            new Rect(_characterX, _characterY, _characterWidth, _characterHeight),
             tex,
+            ScaleMode.ScaleToFit,
+            alphaBlend: true);
+    }
+
+    private void DrawTitleLogo()
+    {
+        if (!_drawTitleLogo) return;
+        if (_titleTexture == null) return;
+        if (_titleWidth <= 0f || _titleHeight <= 0f) return;
+
+        GUI.DrawTexture(
+            new Rect(_titleX, _titleY, _titleWidth, _titleHeight),
+            _titleTexture,
             ScaleMode.ScaleToFit,
             alphaBlend: true);
     }
@@ -484,15 +537,15 @@ public class LobbyUI : MonoBehaviour
 
     private void DrawButtons(GameStateManager gsm)
     {
-        const float btnW = 360f;
-        const float btnH = 62f;
-        const float gap = 18f;
-        float startY = RefH * 0.55f;
-        float x = RefW * 0.68f;
+        float btnW = _menuBtnWidth;
+        float btnH = _menuBtnHeight;
+        float gap = _menuGap;
+        float startY = _menuStartY;
+        float x = _menuX;
 
         if (DrawTextMenuItem(new Rect(x, startY, btnW, btnH), "Single Play", "SINGLE PLAY", true))
         {
-            _pending.Add(() => gsm.StartNewRun());
+            _pending.Add(() => StartSinglePlay(gsm));
         }
 
         DrawTextMenuItem(new Rect(x, startY + (btnH + gap) * 1, btnW, btnH), "Settings", "SETTINGS", false);
@@ -508,6 +561,30 @@ public class LobbyUI : MonoBehaviour
 #endif
             });
         }
+    }
+
+    private void StartSinglePlay(GameStateManager gsm)
+    {
+        Debug.Log($"[LobbyUI] StartSinglePlay invoked. reload={_reloadCurrentScene} sceneName='{_singlePlaySceneName}'");
+
+        if (_reloadCurrentScene)
+        {
+            var active = SceneManager.GetActiveScene();
+            Debug.Log($"[LobbyUI] SinglePlay → reload scene '{active.name}'");
+            SceneManager.LoadScene(active.buildIndex);
+            return;
+        }
+
+        if (!string.IsNullOrEmpty(_singlePlaySceneName))
+        {
+            Debug.Log($"[LobbyUI] SinglePlay → load scene '{_singlePlaySceneName}'");
+            SceneManager.LoadScene(_singlePlaySceneName);
+            return;
+        }
+
+        Debug.Log($"[LobbyUI] SinglePlay → gsm.StartNewRun() (state before={gsm.State})");
+        gsm.StartNewRun();
+        Debug.Log($"[LobbyUI] SinglePlay → state after={gsm.State}");
     }
 
     private bool DrawTextMenuItem(Rect rect, string label, string key, bool enabled)
@@ -603,6 +680,7 @@ public class LobbyUI : MonoBehaviour
             _pending.Add(() => gsm.EnterAnimationTest());
         }
     }
+
 
     private void EnsureStyles()
     {

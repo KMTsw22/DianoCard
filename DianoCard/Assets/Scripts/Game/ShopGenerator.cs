@@ -28,9 +28,26 @@ namespace DianoCard.Game
             var uncommon = new List<CardData>();
             var rare = new List<CardData>();
 
+            // RewardGenerator와 동일한 풀 규칙: 진화 결과체(T1/T2)는 융합으로만 획득.
+            // archetype별 SUMMON 분리, 힐/융합 분리도 동일하게 적용.
+            var evoResults = dm.EvolutionResultIds;
+            var character = dm.GetCharacter(run.characterId);
+            string archetype = character?.archetype ?? "HERB";
+            bool isHerb = archetype == "HERB";
+
             foreach (var c in dm.Cards.Values)
             {
                 if (c.cardType == CardType.RITUAL) continue;
+                if (evoResults.Contains(c.id)) continue;
+                if (c.cardType == CardType.SUMMON)
+                {
+                    bool matchHerb = c.subType == CardSubType.HERBIVORE;
+                    bool matchCarn = c.subType == CardSubType.CARNIVORE;
+                    if (isHerb && !matchHerb) continue;
+                    if (!isHerb && !matchCarn) continue;
+                }
+                if (!isHerb && c.subType == CardSubType.HEAL) continue;
+                if (isHerb && c.subType == CardSubType.FUSION) continue;
                 switch (c.rarity)
                 {
                     case Rarity.COMMON:   common.Add(c);   break;
