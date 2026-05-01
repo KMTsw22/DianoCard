@@ -586,6 +586,24 @@ public class CheatUI : MonoBehaviour
 
     public void CloseCardPreview() => _cardPreviewOpen = false;
 
+    // ===== BG 프리뷰 — Editor CheatWindow 호출용 공개 API =====
+    public bool HasPreviewBg => _previewBgTex != null;
+    public string PreviewBgFileName =>
+        string.IsNullOrEmpty(_previewBgPath) ? null : Path.GetFileName(_previewBgPath);
+    public bool IsPreviewIsolateOn => _previewIsolateMode;
+    public BattleUI.HudContext PreviewHudCtx
+    {
+        get => _previewHudCtx;
+        set => _previewHudCtx = value;
+    }
+
+    public void PickPreviewBgFile() => PickAndLoadPreviewBg();
+    public void ClearPreviewBackground() => ClearPreviewBg();
+    public void SetPreviewIsolateMode(bool on)
+    {
+        _previewIsolateMode = on && _previewBgTex != null;
+    }
+
     // 모든 카드 한 번 캐시 (id 정렬).
     private void EnsureCardPreviewList()
     {

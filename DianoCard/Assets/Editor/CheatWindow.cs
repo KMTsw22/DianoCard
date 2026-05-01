@@ -180,6 +180,51 @@ public class CheatWindow : EditorWindow
         }
 
         EditorGUILayout.Space(12);
+        EditorGUILayout.LabelField("BG 프리뷰 — 외부 파일 + 상단 네비바", EditorStyles.boldLabel);
+        EditorGUILayout.HelpBox(
+            "디스크의 이미지를 풀스크린 BG로 깔고, 상단 네비바와 어울리는지 확인.\n" +
+            "격리 모드 ON 시 다른 게임 UI는 숨겨지고 BG + 네비바만 보임.\n" +
+            "이미지 폴더: <프로젝트>/_cheat_bg/",
+            MessageType.None);
+
+        var cheatUiBg = GetOrCreateCheatUI();
+        bool hasBattleUiBg = Object.FindFirstObjectByType<BattleUI>() != null;
+
+        if (GUILayout.Button("이미지 파일 선택…", GUILayout.Height(28)))
+            cheatUiBg.PickPreviewBgFile();
+
+        if (cheatUiBg.HasPreviewBg)
+        {
+            EditorGUILayout.LabelField("로드됨", cheatUiBg.PreviewBgFileName ?? "(이름 없음)");
+
+            using (new EditorGUI.DisabledScope(!hasBattleUiBg))
+            {
+                string isoLabel = cheatUiBg.IsPreviewIsolateOn
+                    ? "● 격리 모드 ON  (BG + 네비만)"
+                    : "○ 격리 모드 OFF";
+                if (GUILayout.Button(isoLabel, GUILayout.Height(28)))
+                    cheatUiBg.SetPreviewIsolateMode(!cheatUiBg.IsPreviewIsolateOn);
+            }
+            if (!hasBattleUiBg)
+                EditorGUILayout.HelpBox(
+                    "BattleUI가 씬에 없음. 전투 한 번 들어가서 BattleUI를 띄운 뒤 격리 모드 사용.",
+                    MessageType.Warning);
+
+            if (cheatUiBg.IsPreviewIsolateOn)
+            {
+                EditorGUILayout.LabelField("네비바 컨텍스트 (색)", EditorStyles.miniBoldLabel);
+                EditorGUILayout.BeginHorizontal();
+                DrawCtxBtn(cheatUiBg, BattleUI.HudContext.Battle,  "전투");
+                DrawCtxBtn(cheatUiBg, BattleUI.HudContext.Map,     "맵");
+                DrawCtxBtn(cheatUiBg, BattleUI.HudContext.Village, "마을");
+                EditorGUILayout.EndHorizontal();
+            }
+
+            if (GUILayout.Button("BG 프리뷰 끄기", GUILayout.Height(24)))
+                cheatUiBg.ClearPreviewBackground();
+        }
+
+        EditorGUILayout.Space(12);
         EditorGUILayout.LabelField("카드 슬롯 프리뷰 (Inspector 튜닝용)", EditorStyles.boldLabel);
         EditorGUILayout.HelpBox(
             "BattleUI의 Card Layers v2 / cardBgTint / cardBaseTint 를 실시간 조정하면서 카드 프레임 확인.\n" +
@@ -248,6 +293,15 @@ public class CheatWindow : EditorWindow
         }
 
         EditorGUILayout.EndScrollView();
+    }
+
+    // 격리 모드 컨텍스트 라디오 — 현재 선택된 ctx에는 ▶ 표시.
+    private static void DrawCtxBtn(CheatUI cheatUi, BattleUI.HudContext ctx, string label)
+    {
+        bool selected = cheatUi.PreviewHudCtx == ctx;
+        var content = new GUIContent(selected ? "▶ " + label : label);
+        if (GUILayout.Button(content, GUILayout.Height(24)))
+            cheatUi.PreviewHudCtx = ctx;
     }
 
     // 플레이 모드에서 CheatUI MonoBehaviour가 씬에 없으면 지속 GameObject로 자동 스폰한다.
