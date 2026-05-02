@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 7c6a917c2b52c4241904f74ccbaa4a0d
+guid: 238fa5dfb8cb09443aaf72b4220aa8ac
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -129,10 +129,10 @@ TextureImporter:
       name: Frame_SUMMON_0
       rect:
         serializedVersion: 2
-        x: 7
-        y: 7
-        width: 335
-        height: 470
+        x: 29
+        y: 9
+        width: 839
+        height: 1191
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

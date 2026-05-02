@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: ea2e19ff6735f1946baa323162f2a2cc
+guid: a6c4cba4baed7534e9801424bbdafb5b
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -129,10 +129,10 @@ TextureImporter:
       name: Potion_Bottle_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0
-        width: 504
-        height: 778
+        x: 245
+        y: 152
+        width: 779
+        height: 872
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

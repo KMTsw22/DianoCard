@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 31cbf7dc30e19d14dbd2fdfe58e9f7e0
+guid: 67c67579043c3b444b0978e5ca457a78
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -129,10 +129,10 @@ TextureImporter:
       name: Deck_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0
-        width: 666
-        height: 759
+        x: 139
+        y: 141
+        width: 885
+        height: 883
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

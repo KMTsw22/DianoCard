@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: c28956a308b84e54a97e950fe72a0e85
+guid: f93da363caf004d44a88be591999ce93
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -129,10 +129,10 @@ TextureImporter:
       name: Floor_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0
-        width: 723
-        height: 798
+        x: 119
+        y: 169
+        width: 786
+        height: 686
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

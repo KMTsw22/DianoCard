@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 2b1f7120e96016a4fa9f697be37d3c74
+guid: 81e5165b3a68b7948a1e43aef5e319a9
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -129,10 +129,10 @@ TextureImporter:
       name: Frame_BUFF_0
       rect:
         serializedVersion: 2
-        x: 8
-        y: 7
-        width: 334
-        height: 470
+        x: 28
+        y: 19
+        width: 841
+        height: 1179
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

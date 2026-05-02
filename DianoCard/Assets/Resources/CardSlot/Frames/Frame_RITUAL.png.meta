@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: f945f97804e512847b76ca56949956d5
+guid: e94fbc4a826114d4287de486c7c999fa
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -129,10 +129,10 @@ TextureImporter:
       name: Frame_RITUAL_0
       rect:
         serializedVersion: 2
-        x: 7
-        y: 7
-        width: 335
-        height: 470
+        x: 29
+        y: 27
+        width: 867
+        height: 1173
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

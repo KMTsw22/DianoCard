@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 61255e13b64bfd5469cdacd9fd0e6d6c
+guid: c9512a2cd9484f042b0b96196792ca55
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -129,10 +129,10 @@ TextureImporter:
       name: CardBack_0
       rect:
         serializedVersion: 2
-        x: 0
-        y: 0
-        width: 751
-        height: 861
+        x: 217
+        y: 133
+        width: 807
+        height: 891
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

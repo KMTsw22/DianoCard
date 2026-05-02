@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: c21c02e5f734f9a42bdf3cf3d0fec200
+guid: 492957b04480d7e499a9cb1e72f9b083
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -129,10 +129,10 @@ TextureImporter:
       name: Frame_MAGIC_0
       rect:
         serializedVersion: 2
-        x: 7
-        y: 7
-        width: 335
-        height: 470
+        x: 0
+        y: 17
+        width: 868
+        height: 1183
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}

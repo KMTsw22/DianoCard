@@ -173,6 +173,8 @@ public class BattleUI : MonoBehaviour
     private Texture2D _cardCountBadgeTexture;
     private Texture2D _manaFrameTexture;
     private Texture2D _manaOrbTexture; // 좌하단 마나 오브 본체 — 다크판타지 톤 디테일 에셋. 없으면 _manaFrameTexture로 폴백.
+    private Texture2D _manaOrbAkaneTexture; // CH002(아케네) 전용 빨강 오브 — InGame/Icon/Mana_Akane.png
+    private Texture2D _manaOrbRinneTexture; // CH002B(린네) 전용 초록 오브 — InGame/Icon/Mana_Rinne.png
     private Texture2D _shieldFxTexture;
 
     // YJ 통합 프레임 (2026-04-28) — 카드 종류별 프리렌더 PNG 한 장.
@@ -193,6 +195,9 @@ public class BattleUI : MonoBehaviour
     private Texture2D _iconDeck;
     private Texture2D _iconDiscard;
     private Texture2D _iconCardBack;  // 드로우 애니메이션의 뒷면 표시용
+    private Texture2D _iconDeckRinne;     // CH002B 린네 전용 초록 젬 덱
+    private Texture2D _iconDiscardRinne;  // CH002B 린네 전용 초록 젬 디스카드
+    private Texture2D _iconCardBackRinne; // CH002B 린네 전용 초록 젬 카드백
     private Texture2D _iconFloor;
     // 인텐트/상태이상이 공유하는 머리 위·HP바 아래 아이콘 풀 (Resources/InGame/HeadIcon/<ID>.png)
     private Dictionary<string, Texture2D> _headIcons;
@@ -203,6 +208,8 @@ public class BattleUI : MonoBehaviour
     };
     private Texture2D _topBarBg;
     private Texture2D _endTurnButtonTex;
+    private Texture2D _endTurnButtonAkane; // CH002 아케네 전용
+    private Texture2D _endTurnButtonRinne; // CH002B 린네 전용
     private Texture2D _hudDividerTexMap;     // 맵 전용 구분선 — Map/divider_map
     private Texture2D _hudDividerTexVillage; // 마을 전용 구분선 — VillageUI/divider_village
     private Texture2D _hudDividerTexBattle;  // 전투 전용 구분선 — InGame/divider_battle (없으면 스킵)
@@ -294,8 +301,10 @@ public class BattleUI : MonoBehaviour
     [SerializeField, Range(0f, 100f)] private float hudSlotGap = 25f;
 
     [Header("좌하단 덱 / 우하단 디스카드 더미")]
-    [Tooltip("코너 더미 한 변 크기 (px).")]
-    [SerializeField, Range(40f, 200f)] private float cornerPileSize = 90f;
+    [Tooltip("좌하단 덱 더미 한 변 크기 (px).")]
+    [SerializeField, Range(30f, 200f)] private float cornerDeckPileSize = 65f;
+    [Tooltip("우하단 디스카드 더미 한 변 크기 (px).")]
+    [SerializeField, Range(30f, 200f)] private float cornerDiscardPileSize = 65f;
     [Tooltip("화면 하단으로부터 더미 상단까지 거리 (px). RefH - 이 값 = 더미 top y.")]
     [SerializeField, Range(0f, 300f)] private float cornerPileTopFromBottom = 110f;
     [Tooltip("좌측 덱 더미의 좌측 X 좌표 (px).")]
@@ -682,6 +691,12 @@ public class BattleUI : MonoBehaviour
         if (_manaOrbTexture == null)
             Debug.LogWarning("[BattleUI] ManaOrb texture not found: Resources/CardSlot/ManaOrb");
 
+        // 캐릭터별 마나 오브 — CH002=아케네(빨강), CH002B=린네(초록). 둘 다 없으면 _manaOrbTexture 폴백.
+        _manaOrbAkaneTexture = Resources.Load<Texture2D>("InGame/Icon/Mana_Akane");
+        _manaOrbRinneTexture = Resources.Load<Texture2D>("InGame/Icon/Mana_Rinne");
+        if (_manaOrbAkaneTexture == null) Debug.LogWarning("[BattleUI] Mana_Akane not found: Resources/InGame/Icon/Mana_Akane");
+        if (_manaOrbRinneTexture == null) Debug.LogWarning("[BattleUI] Mana_Rinne not found: Resources/InGame/Icon/Mana_Rinne");
+
         // YJ 통합 프레임 — 종류별 5종. UTILITY는 RITUAL과 동일한 보라 프레임 공유.
         _frameSummon  = Resources.Load<Texture2D>("CardSlot/Frames/Frame_SUMMON");
         _frameMagic   = Resources.Load<Texture2D>("CardSlot/Frames/Frame_MAGIC");
@@ -707,6 +722,9 @@ public class BattleUI : MonoBehaviour
         _iconDiscard = Resources.Load<Texture2D>("InGame/Icon/Discard");
         _iconCardBack = Resources.Load<Texture2D>("InGame/Icon/CardBack");
         _iconFloor   = Resources.Load<Texture2D>("InGame/Icon/Floor");
+        _iconDeckRinne     = Resources.Load<Texture2D>("InGame/Icon/Deck_Rinne");
+        _iconDiscardRinne  = Resources.Load<Texture2D>("InGame/Icon/Discard_Rinne");
+        _iconCardBackRinne = Resources.Load<Texture2D>("InGame/Icon/CardBack_Rinne");
         _headIcons = new Dictionary<string, Texture2D>(HeadIconIds.Length);
         foreach (var id in HeadIconIds)
         {
@@ -718,9 +736,11 @@ public class BattleUI : MonoBehaviour
         _hudDividerTexMap     = Resources.Load<Texture2D>("Map/divider_map");
         _hudDividerTexVillage = Resources.Load<Texture2D>("VillageUI/divider_village");
         _hudDividerTexBattle  = Resources.Load<Texture2D>("InGame/divider_battle"); // 유저가 넣을 예정 — 없으면 null
-        _endTurnButtonTex = Resources.Load<Texture2D>("InGame/EndTurnButton");
-        if (_endTurnButtonTex == null)
-            Debug.LogWarning("[BattleUI] EndTurnButton texture not found: Resources/InGame/EndTurnButton");
+        _endTurnButtonTex   = Resources.Load<Texture2D>("InGame/EndTurnButton");
+        _endTurnButtonAkane = Resources.Load<Texture2D>("InGame/EndTurnButton_Akane");
+        _endTurnButtonRinne = Resources.Load<Texture2D>("InGame/EndTurnButton_Rinne");
+        if (_endTurnButtonAkane == null) Debug.LogWarning("[BattleUI] EndTurnButton_Akane not found: Resources/InGame/EndTurnButton_Akane");
+        if (_endTurnButtonRinne == null) Debug.LogWarning("[BattleUI] EndTurnButton_Rinne not found: Resources/InGame/EndTurnButton_Rinne");
         if (_iconHP     == null) Debug.LogWarning("[BattleUI] HP icon not found: Resources/InGame/Icon/HP");
         if (_iconGold   == null) Debug.LogWarning("[BattleUI] Gold icon not found: Resources/InGame/Icon/Gold");
         if (_iconMana   == null) Debug.LogWarning("[BattleUI] Mana icon not found: Resources/InGame/Icon/Mana");
@@ -736,6 +756,33 @@ public class BattleUI : MonoBehaviour
     {
         if (id == null) return null;
         return _headIcons != null && _headIcons.TryGetValue(id, out var t) ? t : null;
+    }
+
+    // 현재 런의 캐릭터 ID에 맞춰 마나 오브 텍스처 선택. CH002=아케네 빨강, CH002B/CH001=린네 초록.
+    private Texture2D GetCharacterManaOrb()
+    {
+        var run = GameStateManager.Instance?.CurrentRun;
+        string cid = run?.characterId;
+        if (cid == "CH002B" || cid == "CH001") return _manaOrbRinneTexture;
+        return _manaOrbAkaneTexture; // CH002 및 미지정 기본
+    }
+
+    // 현재 캐릭터가 린네 계열이면 true. CardBack/Deck/Discard 변형 선택용 공통 분기.
+    private bool IsRinneCharacter()
+    {
+        string cid = GameStateManager.Instance?.CurrentRun?.characterId;
+        return cid == "CH002B" || cid == "CH001";
+    }
+
+    private Texture2D GetCharacterDeckIcon()    => (IsRinneCharacter() && _iconDeckRinne     != null) ? _iconDeckRinne     : _iconDeck;
+    private Texture2D GetCharacterDiscardIcon() => (IsRinneCharacter() && _iconDiscardRinne  != null) ? _iconDiscardRinne  : _iconDiscard;
+    private Texture2D GetCharacterCardBack()    => (IsRinneCharacter() && _iconCardBackRinne != null) ? _iconCardBackRinne : _iconCardBack;
+
+    private Texture2D GetCharacterEndTurnButton()
+    {
+        if (IsRinneCharacter() && _endTurnButtonRinne != null) return _endTurnButtonRinne;
+        if (!IsRinneCharacter() && _endTurnButtonAkane != null) return _endTurnButtonAkane;
+        return _endTurnButtonTex; // 둘 다 없으면 레거시 폴백
     }
 
     void Update()
@@ -4456,17 +4503,13 @@ public class BattleUI : MonoBehaviour
         }
 
         // HUD 우측 덱 카운트 슬롯 — Floor 바로 옆 — CardBack 텍스처 사용 (코너 더미는 _iconDeck 별도 사용).
-        var hudDeckTex = _iconCardBack != null ? _iconCardBack : _iconDeck;
+        var hudDeckTex = GetCharacterCardBack() ?? GetCharacterDeckIcon();
         if (hudDeckTex != null)
         {
             Color glowTint = hover ? new Color(1f, 0.92f, 0.60f) : new Color(0.70f, 0.88f, 1f);
             DrawIconGlow(iconRect, glowTint, hover ? 1.35f : 1f);
 
-            float angle = Mathf.Sin(Time.time * 0.7f + 1.2f) * 0.32f;
-            var prevMatrix = GUI.matrix;
-            GUIUtility.RotateAroundPivot(angle, iconRect.center);
             GUI.DrawTexture(iconRect, hudDeckTex, ScaleMode.ScaleToFit);
-            GUI.matrix = prevMatrix;
         }
 
         GUI.Label(labelRect, label, _labelStyle);
@@ -4678,12 +4721,7 @@ public class BattleUI : MonoBehaviour
             var iconRect = new Rect(iconX, iconY, iconSize, iconSize);
             DrawIconGlow(iconRect, glowTint);
 
-            // 아주 미세한 좌우 기울임 — 더 천천히 부드럽게, 폭은 더 작게
-            float angle = Mathf.Sin(Time.time * 0.7f + wobblePhase) * 0.32f;
-            var prevMatrix = GUI.matrix;
-            GUIUtility.RotateAroundPivot(angle, iconRect.center);
             GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
-            GUI.matrix = prevMatrix;
         }
         return iconX;
     }
@@ -4698,7 +4736,7 @@ public class BattleUI : MonoBehaviour
         float orbCy = RefH - manaOrbBottomOffset;
         var orbRect = new Rect(orbCx - orbSize * 0.5f, orbCy - orbSize * 0.5f, orbSize, orbSize);
 
-        var orbBodyTex = _manaOrbTexture != null ? _manaOrbTexture : _manaFrameTexture;
+        var orbBodyTex = GetCharacterManaOrb() ?? (_manaOrbTexture != null ? _manaOrbTexture : _manaFrameTexture);
 
         if (orbBodyTex != null)
         {
@@ -4737,16 +4775,16 @@ public class BattleUI : MonoBehaviour
         var skyBlue = new Color(0.30f, 0.65f, 1f, 1f);
         int deckDisplay = GetDeckDisplayCount(state);
         float deckPulse = GetReshuffleDeckLandPulse();
-        DrawCardPile(new Rect(cornerPileLeftX, RefH - cornerPileTopFromBottom, cornerPileSize, cornerPileSize),
-                     _iconDeck, deckDisplay, skyBlue, deckPulse);
+        DrawCardPile(new Rect(cornerPileLeftX, RefH - cornerPileTopFromBottom, cornerDeckPileSize, cornerDeckPileSize),
+                     GetCharacterDeckIcon() ?? _iconDeck, deckDisplay, skyBlue, deckPulse);
 
         // 우하단 버린 카드 더미 — 좌측 덱과 동일한 하늘색 뱃지.
         // 손패가 버려지는 애니메이션 중에는 착지한 카드 수만큼 카운트가 틱틱 올라가며,
         // 카드가 착지할 때마다 뱃지가 잠깐 커졌다 돌아오는 펄스가 들어간다.
         int discardDisplay = GetDiscardDisplayCount(state);
         float discardPulse = GetDiscardLandPulse();
-        DrawCardPile(new Rect(RefW - cornerPileRightInset, RefH - cornerPileTopFromBottom, cornerPileSize, cornerPileSize),
-                     _iconDiscard, discardDisplay, skyBlue, discardPulse);
+        DrawCardPile(new Rect(RefW - cornerPileRightInset, RefH - cornerPileTopFromBottom, cornerDiscardPileSize, cornerDiscardPileSize),
+                     GetCharacterDiscardIcon() ?? _iconDiscard, discardDisplay, skyBlue, discardPulse);
     }
 
     // 덱 더미에 표시할 카운트 — reshuffle 중엔 착지한 카드 수(0에서 증가),
@@ -5544,7 +5582,8 @@ public class BattleUI : MonoBehaviour
         float h = baseRect.height * _endTurnHoverScale;
         var rect = new Rect(baseRect.center.x - w * 0.5f, baseRect.center.y - h * 0.5f, w, h);
 
-        if (_endTurnButtonTex != null)
+        var endTurnTex = GetCharacterEndTurnButton();
+        if (endTurnTex != null)
         {
             var prev = GUI.color;
 
@@ -5571,11 +5610,11 @@ public class BattleUI : MonoBehaviour
                 float gh = rect.height * scale;
                 var gr = new Rect(cx - gw * 0.5f, cy - gh * 0.5f, gw, gh);
                 GUI.color = new Color(goldTint.r, goldTint.g, goldTint.b, alpha);
-                GUI.DrawTexture(gr, _endTurnButtonTex, ScaleMode.ScaleToFit, alphaBlend: true);
+                GUI.DrawTexture(gr, endTurnTex, ScaleMode.ScaleToFit, alphaBlend: true);
             }
 
             GUI.color = GUI.enabled ? Color.white : new Color(1f, 1f, 1f, 0.5f);
-            GUI.DrawTexture(rect, _endTurnButtonTex, ScaleMode.ScaleToFit, alphaBlend: true);
+            GUI.DrawTexture(rect, endTurnTex, ScaleMode.ScaleToFit, alphaBlend: true);
             GUI.color = prev;
 
             if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
@@ -5948,8 +5987,8 @@ public class BattleUI : MonoBehaviour
         float cardH = handCardHeight;
 
         // 버린 더미 중심 (DrawTurnInfo의 디스카드 더미 Rect와 일치)
-        Vector2 pileTarget = new Vector2(RefW - cornerPileRightInset + cornerPileSize * 0.5f,
-                                         RefH - cornerPileTopFromBottom + cornerPileSize * 0.5f);
+        Vector2 pileTarget = new Vector2(RefW - cornerPileRightInset + cornerDiscardPileSize * 0.5f,
+                                         RefH - cornerPileTopFromBottom + cornerDiscardPileSize * 0.5f);
 
         float localNow = Time.time - _discardAnimStartTime;
         Matrix4x4 baseMatrix = GUI.matrix;
@@ -6151,8 +6190,8 @@ public class BattleUI : MonoBehaviour
         float cardH = handCardHeight;
 
         // 덱 더미 중심 (DrawTurnInfo의 덱 더미 Rect와 일치)
-        Vector2 deckCenter = new Vector2(cornerPileLeftX + cornerPileSize * 0.5f,
-                                         RefH - cornerPileTopFromBottom + cornerPileSize * 0.5f);
+        Vector2 deckCenter = new Vector2(cornerPileLeftX + cornerDeckPileSize * 0.5f,
+                                         RefH - cornerPileTopFromBottom + cornerDeckPileSize * 0.5f);
         // 버림 애니와 동일한 상단 아치 제어점 — 전체 톤 통일
         Vector2 control = DiscardFlyControl;
 
@@ -6246,9 +6285,9 @@ public class BattleUI : MonoBehaviour
             {
                 DrawCardFrame(rect, fc.data, canPlay: true, drawCost: true);
             }
-            else if (_iconCardBack != null)
+            else if (GetCharacterCardBack() != null)
             {
-                GUI.DrawTexture(rect, _iconCardBack, ScaleMode.StretchToFill, alphaBlend: true);
+                GUI.DrawTexture(rect, GetCharacterCardBack(), ScaleMode.StretchToFill, alphaBlend: true);
             }
             else
             {
@@ -6315,12 +6354,13 @@ public class BattleUI : MonoBehaviour
     private void DrawReshuffleFlyingCards()
     {
         if (!IsReshuffleActive) return;
-        if (_iconCardBack == null) return;  // 뒷면 텍스처 없으면 조용히 스킵
+        if (GetCharacterCardBack() == null) return;  // 뒷면 텍스처 없으면 조용히 스킵
 
         // 양쪽 더미 중심 (DrawTurnInfo의 덱/디스카드 Rect와 일치)
-        float pileCenterY = RefH - cornerPileTopFromBottom + cornerPileSize * 0.5f;
-        Vector2 discardCenter = new Vector2(RefW - cornerPileRightInset + cornerPileSize * 0.5f, pileCenterY);
-        Vector2 deckCenter    = new Vector2(cornerPileLeftX + cornerPileSize * 0.5f,            pileCenterY);
+        float deckCenterY    = RefH - cornerPileTopFromBottom + cornerDeckPileSize * 0.5f;
+        float discardCenterY = RefH - cornerPileTopFromBottom + cornerDiscardPileSize * 0.5f;
+        Vector2 discardCenter = new Vector2(RefW - cornerPileRightInset + cornerDiscardPileSize * 0.5f, discardCenterY);
+        Vector2 deckCenter    = new Vector2(cornerPileLeftX + cornerDeckPileSize * 0.5f,                deckCenterY);
         // 부드러운 아치 — 화면 중앙 근처까지 살짝 떠올랐다 우→좌로 흘러감
         Vector2 control       = new Vector2(RefW * 0.5f, RefH - 380f);
 
@@ -6360,7 +6400,7 @@ public class BattleUI : MonoBehaviour
             else
                 GUI.matrix = baseMatrix;
 
-            GUI.DrawTexture(rect, _iconCardBack, ScaleMode.StretchToFill, alphaBlend: true);
+            GUI.DrawTexture(rect, GetCharacterCardBack(), ScaleMode.StretchToFill, alphaBlend: true);
         }
         GUI.matrix = baseMatrix;
     }

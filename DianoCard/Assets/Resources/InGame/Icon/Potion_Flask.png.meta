@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 2b40b50fb8eb72e43b13f2e58b53b54d
+guid: 92f0e2f5031ab7d4cb9e288281626de5
 TextureImporter:
   internalIDToNameTable:
   - first:
@@ -129,10 +129,10 @@ TextureImporter:
       name: Potion_Flask_0
       rect:
         serializedVersion: 2
-        x: 288
-        y: 222
-        width: 437
-        height: 618
+        x: 318
+        y: 180
+        width: 706
+        height: 844
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
