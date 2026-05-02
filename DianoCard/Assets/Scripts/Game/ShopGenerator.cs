@@ -95,6 +95,8 @@ namespace DianoCard.Game
 
         private static void FillPotions(ShopState shop, DataManager dm)
         {
+            const int TARGET = 3;
+
             var buyable = new List<PotionData>();
             foreach (var p in dm.Potions.Values)
             {
@@ -104,13 +106,20 @@ namespace DianoCard.Game
             if (buyable.Count == 0) return;
 
             var picked = new HashSet<string>();
+            // Phase 1: unique picks
             int attempts = 0;
-            while (shop.potions.Count < 2 && attempts < 50)
+            while (shop.potions.Count < TARGET && attempts < 50 && picked.Count < buyable.Count)
             {
                 attempts++;
                 var p = buyable[Random.Range(0, buyable.Count)];
                 if (!picked.Add(p.id)) continue;
-
+                int price = p.price > 0 ? p.price : PotionFallbackPrice(p.rarity);
+                shop.potions.Add(new ShopPotionEntry { potion = p, price = price });
+            }
+            // Phase 2: pool too small → allow duplicates to fill remaining
+            while (shop.potions.Count < TARGET)
+            {
+                var p = buyable[Random.Range(0, buyable.Count)];
                 int price = p.price > 0 ? p.price : PotionFallbackPrice(p.rarity);
                 shop.potions.Add(new ShopPotionEntry { potion = p, price = price });
             }
@@ -126,6 +135,8 @@ namespace DianoCard.Game
 
         private static void FillRelics(ShopState shop, DataManager dm, RunState run)
         {
+            const int TARGET = 6;
+
             var pool = new List<RelicData>();
             foreach (var r in dm.Relics.Values)
             {
@@ -135,12 +146,22 @@ namespace DianoCard.Game
             }
             if (pool.Count == 0) return;
 
-            var r1 = pool[Random.Range(0, pool.Count)];
-            shop.relics.Add(new ShopRelicEntry
+            var picked = new HashSet<RelicData>();
+            // Phase 1: unique picks
+            int attempts = 0;
+            while (shop.relics.Count < TARGET && attempts < 50 && picked.Count < pool.Count)
             {
-                relic = r1,
-                price = RelicPrice(r1.rarity),
-            });
+                attempts++;
+                var r = pool[Random.Range(0, pool.Count)];
+                if (!picked.Add(r)) continue;
+                shop.relics.Add(new ShopRelicEntry { relic = r, price = RelicPrice(r.rarity) });
+            }
+            // Phase 2: pool too small → allow duplicates to fill remaining
+            while (shop.relics.Count < TARGET)
+            {
+                var r = pool[Random.Range(0, pool.Count)];
+                shop.relics.Add(new ShopRelicEntry { relic = r, price = RelicPrice(r.rarity) });
+            }
         }
 
         private static int RelicPrice(Rarity r) => r switch

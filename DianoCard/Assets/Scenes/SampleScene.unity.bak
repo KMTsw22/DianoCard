@@ -352,7 +352,6 @@ GameObject:
   - component: {fileID: 727273076}
   - component: {fileID: 727273077}
   - component: {fileID: 727273078}
-  - component: {fileID: 727273079}
   m_Layer: 0
   m_Name: GameObject
   m_TagString: Untagged
@@ -713,66 +712,6 @@ MonoBehaviour:
   flapDepth: 0.4
   sortingLayer: Default
   sortingOrder: 10
---- !u!114 &727273079
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 727273073}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: dfc427db2ab8b7e4dae0ae428f5065b9, type: 3}
-  m_Name:
-  m_EditorClassIdentifier: Assembly-CSharp::ShopUI
-  servicesContentPadX: 0
-  servicesContentTopY: 30
-  serviceIconSize: 74
-  serviceNameOverride: 1
-  serviceNameX: 798
-  serviceNameY: 540
-  serviceNameW: 110
-  serviceNameH: 50
-  servicePriceUsePlaque: 1
-  servicePlaqueWidth: 65
-  servicePlaqueHeight: 34
-  servicePlaqueXOffset: -17.5
-  servicePlaqueYOffset: 10
-  servicePlaqueFontSize: 16
-  servicePlaqueIconSize: 18
-  servicePlaqueIconLeftPad: 8
-  servicePlaqueTextGap: 10
-  goldOverlayCenterX: 1180
-  goldOverlayCenterY: 52
-  goldOverlayWidth: 130
-  goldOverlayHeight: 52
-  goldOverlayUsePlaque: 1
-  goldIconSize: 35
-  goldIconTextGap: 16
-  goldIconLeftPad: 14
-  goldFontSize: 22
-  showTitlePanel: 1
-  titlePanelCenterX: 640
-  titlePanelTargetY: -40
-  titlePanelWidth: 360
-  titlePanelHeight: 180
-  titlePanelDropDuration: 0.8
-  titlePanelDropFrom: 220
-  itemHoverScale: 1.04
-  plaqueHoverScale: 1.12
-  relicPlaqueWidth: 64
-  relicPlaqueHeight: 25
-  relicPlaqueIconLeftPad: 5
-  relicPlaqueTextGap: 8
-  relicPlaqueIconSize: 16
-  relicPlaqueFontSize: 14
-  potionPriceUsePlaque: 1
-  potionPlaqueWidth: 70
-  potionPlaqueHeight: 25
-  potionPlaqueFontSize: 16
-  potionPlaqueIconSize: 18
-  potionPlaqueIconLeftPad: 8
-  potionPlaqueTextGap: 10
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

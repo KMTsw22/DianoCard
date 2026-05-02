@@ -249,10 +249,13 @@ public class CharacterSelectUI : MonoBehaviour
     private Texture2D _cardFrameBase;
     private Texture2D _buttonBack;
     private Texture2D _buttonConfirm;
+    private Texture2D _toggleCarnivore;   // 육식 활성 상태(붉은빛 룬) 텍스처 — DrawModeToggle에서 사용
+    private Texture2D _toggleHerbivore;   // 초식 활성 상태(초록빛 룬) 텍스처
     private Texture2D _archaeologistCardPortrait;
     private Texture2D _iconHeart;
     private Texture2D _iconCoin;
-    private Texture2D _iconPassive;
+    // 패시브 이름(character.passiveName) → 아이콘 매핑. 캐릭터마다 다른 패시브 비주얼 사용.
+    private Dictionary<string, Texture2D> _iconPassiveByName;
 
     private Font _displayFont;  // 영문 디스플레이 (Cinzel)
     private Font _bodyFont;     // 한글 본문 (Noto Sans KR)
@@ -273,8 +276,9 @@ public class CharacterSelectUI : MonoBehaviour
     private static readonly Rect BackButtonRect    = new Rect(  60, 560, 90, 90);
     private static readonly Rect ConfirmButtonRect = new Rect(1130, 560, 90, 90);
 
-    // 모드 토글 버튼 — 정보 패널(60,60,600,340) 안쪽 하단. linkedForm 이 있을 때만 표시.
-    private static readonly Rect ModeToggleRect = new Rect(330, 350, 280, 38);
+    // 모드 토글 룬-스톤 — 정보 패널(60,60,600,340) 우상단 코너. linkedForm 이 있을 때만 표시.
+    // 텍스처는 가로:세로 ≈ 5:4 비율의 사각 룬-스톤. ScaleToFit으로 비율 유지.
+    private static readonly Rect ModeToggleRect = new Rect(540, 80, 100, 82);
 
     // 스타일
     private GUIStyle _titleStyle;
@@ -583,11 +587,17 @@ public class CharacterSelectUI : MonoBehaviour
         if (_selectedCharacter == null)
             Debug.LogError($"[CharacterSelectUI] Missing character data: {_selectedCharacterId}");
 
-        // UI 요소 — CharSelect/UI/
+        // UI 요소 — CharSelect/UI/ (프레임/슬롯), CharSelect/Icon/ (버튼 아이콘 신규)
         _cardSlotLocked    = Resources.Load<Texture2D>("CharSelect/UI/CardSlot_Locked");
         _cardFrameBase     = Resources.Load<Texture2D>("CharSelect/UI/CardFrameBase");
-        _buttonBack        = Resources.Load<Texture2D>("CharSelect/UI/Button_Back");
-        _buttonConfirm     = Resources.Load<Texture2D>("CharSelect/UI/Button_Confirm");
+        // 새 아이콘은 CharSelect/Icon/ 에서 로드. 폴백은 구버전 CharSelect/UI/ 위치.
+        _buttonBack        = Resources.Load<Texture2D>("CharSelect/Icon/Button_Back")
+                          ?? Resources.Load<Texture2D>("CharSelect/UI/Button_Back");
+        _buttonConfirm     = Resources.Load<Texture2D>("CharSelect/Icon/Button_Confirm")
+                          ?? Resources.Load<Texture2D>("CharSelect/UI/Button_Confirm");
+        // 모드 토글 룬-스톤 — 활성 상태별 두 종.
+        _toggleCarnivore   = Resources.Load<Texture2D>("CharSelect/Icon/Toggle_Carnivore");
+        _toggleHerbivore   = Resources.Load<Texture2D>("CharSelect/Icon/Toggle_Herbivore");
 
         // 카드 초상 — Character_select/ (경로는 character.csv 의 card_portrait)
         string portraitName = _selectedCharacter != null
@@ -595,10 +605,19 @@ public class CharacterSelectUI : MonoBehaviour
             : "Char_Archaeologist_Card";
         _archaeologistCardPortrait = Resources.Load<Texture2D>("Character_select/" + portraitName);
 
-        // HP/Gold/패시브 아이콘 — CharSelect/Icon/
-        _iconHeart   = Resources.Load<Texture2D>("CharSelect/Icon/ico_heart");
-        _iconCoin    = Resources.Load<Texture2D>("CharSelect/Icon/ico_coin");
-        _iconPassive = Resources.Load<Texture2D>("CharSelect/Icon/passive");
+        // HP/Gold/패시브 아이콘
+        // HP/Gold는 게임 내 상단 네비와 동일한 아이콘으로 통일 (InGame/Icon/).
+        // 폴백: 구버전 CharSelect 전용 아이콘.
+        _iconHeart   = Resources.Load<Texture2D>("InGame/Icon/HP")
+                    ?? Resources.Load<Texture2D>("CharSelect/Icon/ico_heart");
+        _iconCoin    = Resources.Load<Texture2D>("InGame/Icon/Gold")
+                    ?? Resources.Load<Texture2D>("CharSelect/Icon/ico_coin");
+        // 패시브 아이콘: passive_name 기준으로 매핑. 캐릭터마다 다른 패시브 비주얼.
+        _iconPassiveByName = new Dictionary<string, Texture2D>
+        {
+            ["Apex Fusion"]       = Resources.Load<Texture2D>("CharSelect/Icon/passive_apex_fusion"),
+            ["Overwrite Growth"]  = Resources.Load<Texture2D>("CharSelect/Icon/passive_overwrite_growth"),
+        };
 
         // 폰트 — Fonts/
         _displayFont = Resources.Load<Font>("Fonts/Cinzel-VariableFont_wght");
@@ -617,12 +636,19 @@ public class CharacterSelectUI : MonoBehaviour
 
         if (_cardSlotLocked == null)   Debug.LogWarning("[CharacterSelectUI] Missing CharSelect/UI/CardSlot_Locked");
         if (_cardFrameBase == null)    Debug.LogWarning("[CharacterSelectUI] Missing CharSelect/UI/CardFrameBase");
-        if (_buttonBack == null)       Debug.LogWarning("[CharacterSelectUI] Missing CharSelect/UI/Button_Back");
-        if (_buttonConfirm == null)    Debug.LogWarning("[CharacterSelectUI] Missing CharSelect/UI/Button_Confirm");
+        if (_buttonBack == null)       Debug.LogWarning("[CharacterSelectUI] Missing CharSelect/Icon/Button_Back (and UI fallback)");
+        if (_buttonConfirm == null)    Debug.LogWarning("[CharacterSelectUI] Missing CharSelect/Icon/Button_Confirm (and UI fallback)");
+        if (_toggleCarnivore == null)  Debug.LogWarning("[CharacterSelectUI] Missing CharSelect/Icon/Toggle_Carnivore");
+        if (_toggleHerbivore == null)  Debug.LogWarning("[CharacterSelectUI] Missing CharSelect/Icon/Toggle_Herbivore");
         if (_archaeologistCardPortrait == null) Debug.LogWarning($"[CharacterSelectUI] Missing Character_select/{portraitName}");
-        if (_iconHeart == null)   Debug.LogWarning("[CharacterSelectUI] Missing CharSelect/Icon/ico_heart");
-        if (_iconCoin == null)    Debug.LogWarning("[CharacterSelectUI] Missing CharSelect/Icon/ico_coin");
-        if (_iconPassive == null) Debug.LogWarning("[CharacterSelectUI] Missing CharSelect/Icon/passive");
+        if (_iconHeart == null)   Debug.LogWarning("[CharacterSelectUI] Missing InGame/Icon/HP (and CharSelect/Icon/ico_heart fallback)");
+        if (_iconCoin == null)    Debug.LogWarning("[CharacterSelectUI] Missing InGame/Icon/Gold (and CharSelect/Icon/ico_coin fallback)");
+        if (_iconPassiveByName != null)
+        {
+            foreach (var kv in _iconPassiveByName)
+                if (kv.Value == null)
+                    Debug.LogWarning($"[CharacterSelectUI] Missing CharSelect/Icon/passive_{kv.Key.ToLower().Replace(' ', '_')}");
+        }
         if (_backgroundTexture == null) Debug.LogWarning("[CharacterSelectUI] Missing CharSelect/Background/akane_select_bg");
         if (_characterTexture == null) Debug.LogWarning("[CharacterSelectUI] Missing CharSelect/Background/akane_select_char");
         if (_cloudsTexture == null) Debug.LogWarning("[CharacterSelectUI] Missing CharSelect/Background/akane_select_clouds");
@@ -1404,8 +1430,13 @@ public class CharacterSelectUI : MonoBehaviour
         const float passiveTextGap = 12f;
 
         var passiveIconRect = new Rect(inner.x, y, passiveIconSize, passiveIconSize);
-        if (_iconPassive != null)
-            GUI.DrawTexture(passiveIconRect, _iconPassive, ScaleMode.ScaleToFit, alphaBlend: true);
+        // 캐릭터별 매핑된 패시브 아이콘. 매핑되지 않은 패시브는 아이콘 없이 표시.
+        Texture2D passiveTex = null;
+        if (ch != null && _iconPassiveByName != null
+            && _iconPassiveByName.TryGetValue(ch.passiveName, out var mapped))
+            passiveTex = mapped;
+        if (passiveTex != null)
+            GUI.DrawTexture(passiveIconRect, passiveTex, ScaleMode.ScaleToFit, alphaBlend: true);
 
         float textX = passiveIconRect.xMax + passiveTextGap;
         float textW = inner.xMax - textX;
@@ -1422,25 +1453,40 @@ public class CharacterSelectUI : MonoBehaviour
         DrawModeToggle();
     }
 
-    /// <summary>같은 인물의 다른 모드(육식↔초식)로 전환하는 버튼.
-    /// CARN 모드일 때 초록색 "초식 모드로 전환" / HERB 모드일 때 붉은색 "육식 모드로 전환".</summary>
+    /// <summary>같은 인물의 다른 모드(육식↔초식)로 전환하는 룬-스톤 버튼.
+    /// 현재 활성 archetype에 맞는 텍스처 표시 — CARN이면 붉은빛 룬, HERB면 초록빛 룬.
+    /// 클릭 시 linkedForm 으로 전환되어 텍스처도 자동 변경됨.</summary>
     private void DrawModeToggle()
     {
         var ch = _selectedCharacter;
         if (ch == null || string.IsNullOrEmpty(ch.linkedForm)) return;
 
         bool isCarn = ch.archetype == "CARN";
-        string label = isCarn ? "초식 모드로 전환  →" : "←  육식 모드로 전환";
-        Color baseFill   = isCarn
-            ? new Color(0.18f, 0.40f, 0.22f, 0.85f)   // 깊은 잎새 초록
-            : new Color(0.50f, 0.18f, 0.18f, 0.85f);  // 묵직한 와인 레드
-        Color hoverFill  = isCarn
-            ? new Color(0.26f, 0.55f, 0.30f, 0.95f)
-            : new Color(0.65f, 0.24f, 0.24f, 0.95f);
+        var tex = isCarn ? _toggleCarnivore : _toggleHerbivore;
 
         bool hovered = ModeToggleRect.Contains(Event.current.mousePosition);
-        DrawRoundedRect(ModeToggleRect, 12f, hovered ? hoverFill : baseFill);
-        GUI.Label(ModeToggleRect, label, _modeToggleStyle);
+
+        if (tex != null)
+        {
+            // 호버 시 살짝 밝게 — tint 살짝 띄우기
+            var prev = GUI.color;
+            GUI.color = hovered ? new Color(1.1f, 1.1f, 1.1f, 1f) : Color.white;
+            GUI.DrawTexture(ModeToggleRect, tex, ScaleMode.ScaleToFit, alphaBlend: true);
+            GUI.color = prev;
+        }
+        else
+        {
+            // 텍스처 누락 시 폴백 — 구 디자인(색 채우기 + 라벨)
+            Color baseFill = isCarn
+                ? new Color(0.50f, 0.18f, 0.18f, 0.85f)
+                : new Color(0.18f, 0.40f, 0.22f, 0.85f);
+            Color hoverFill = isCarn
+                ? new Color(0.65f, 0.24f, 0.24f, 0.95f)
+                : new Color(0.26f, 0.55f, 0.30f, 0.95f);
+            DrawRoundedRect(ModeToggleRect, 12f, hovered ? hoverFill : baseFill);
+            string label = isCarn ? "초식 모드로 전환  →" : "←  육식 모드로 전환";
+            GUI.Label(ModeToggleRect, label, _modeToggleStyle);
+        }
 
         var ev = Event.current;
         if (ev.type == EventType.MouseDown && ev.button == 0 && ModeToggleRect.Contains(ev.mousePosition))

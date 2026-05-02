@@ -14,8 +14,6 @@ C101,Searing Fang,Searing Fang,MAGIC,ATTACK,COMMON,1,5,0,5,ENEMY,Deal 5.,Searing
 C102,Runic Orb,Runic Orb,MAGIC,DEFENSE,COMMON,1,0,0,6,SELF,+6 block.,RunicOrb.png,1,1.0
 C103,Inferno Meteor,Inferno Meteor,MAGIC,ATTACK,UNCOMMON,2,0,0,12,ENEMY,Deal 12.,InfernoMeteor.png,1,1.0
 C104,Twin Rune Dome,Twin Rune Dome,MAGIC,DEFENSE,UNCOMMON,2,0,0,10,SELF,+10 block. +5 next T.,TwinRuneDome.png,1,1.0
-C105,Lightning,Lightning,MAGIC,ATTACK,RARE,1,0,0,8,RANDOM,Deal 8 to random.,Lightning.png,2,1.0
-C106,Meteor,Meteor,MAGIC,ATTACK,RARE,3,0,0,10,ALL_ENEMY,Deal 10 to all.,Meteor.png,3,1.0
 C107,Sacred Orb,Sacred Orb,MAGIC,PURIFY,UNCOMMON,1,0,0,0,SELF,Free stolen. Clear debuffs.,SacredOrb.png,1,1.0
 C108,Taunt,Taunt,BUFF,TAUNT,COMMON,1,0,0,2,ALL_ALLY,All Taunt (2T).,Taunt.png,1,1.0
 C201,Power Up,Power Up,BUFF,ATTACK_BUFF,COMMON,1,0,0,3,ALLY,+3 ATK (1T).,PowerUp.png,1,1.0
@@ -43,7 +41,6 @@ C129,Thunder Roar,Thunder Roar,MAGIC,ATTACK,UNCOMMON,2,0,0,4,ALL_ENEMY,Deal 4 al
 C131,Claw Storm,Claw Storm,MAGIC,ATTACK,UNCOMMON,1,0,0,0,ENEMY,Deal field total ATK.,ClawStorm.png,1,1.0
 C132,Pack,Pack,BUFF,SPECIAL,UNCOMMON,2,0,0,1,SELF,SUMMON -1 cost (1T).,PackCall.png,1,1.0
 C133,Binding Vine,Binding Vine,MAGIC,DEBUFF,UNCOMMON,1,0,0,1,ENEMY,Bind (1T).,BindingVine.png,1,1.0
-C134,Chain,Chain,MAGIC,DEBUFF,RARE,2,0,0,2,ENEMY,Bind (2T).,SealingChain.png,2,1.0
 C135,Corrosive Cyclone,Corrosive Cyclone,MAGIC,DEBUFF,COMMON,1,0,0,3,ENEMY,Deal 3. Vulnerable (1T).,CorrosiveCyclone.png,1,1.0
 C136,Venom Thorn,Venom Thorn,MAGIC,DEBUFF,UNCOMMON,1,0,0,3,ENEMY,+3 Poison.,VenomThorn.png,1,1.0
 C137,Bone Arrow,Bone Arrow,MAGIC,ATTACK,COMMON,0,0,0,3,ENEMY,Deal 3. 0-cost.,BoneArrow.png,1,1.0
@@ -52,7 +49,6 @@ C139,Voltaic Flash,Voltaic Flash,MAGIC,ATTACK,COMMON,1,0,0,4,ENEMY,Deal 4. Draw 
 C140,Verdant Knot,Verdant Knot,MAGIC,DEFENSE,COMMON,1,0,0,5,SELF,+5 block. Draw 1.,VerdantKnot.png,1,1.0
 C141,Fossil Burst,Fossil Burst,MAGIC,ATTACK,UNCOMMON,1,0,0,8,ENEMY,Deal 8. Exhaust.,FossilBurst.png,1,1.0
 C142,Primordial Wail,Primordial Wail,MAGIC,DEBUFF,UNCOMMON,1,0,0,0,ALL_ENEMY,All Vulnerable (1T).,PrimordialWail.png,1,1.0
-C143,Frost,Frost,MAGIC,DEBUFF,RARE,2,0,0,6,ENEMY,Deal 6. Bind (1T).,FrostBreath.png,2,1.0
 C152,Fusion Sigil,Fusion Sigil,UTILITY,FUSION,COMMON,1,0,0,0,ALLY,Fuse 2 same-tier carnivores.,FusionSigil.png,1,1.0
 C153,Vitality Sigil,Vitality Sigil,UTILITY,FUSION,UNCOMMON,1,0,0,5,ALLY,Fuse. Result +5 HP (2T).,VitalitySigil.png,1,1.0
 C154,Fury Sigil,Fury Sigil,UTILITY,FUSION,UNCOMMON,1,0,0,3,ALLY,Fuse. Result +3 ATK (2T).,FurySigil.png,1,1.0
