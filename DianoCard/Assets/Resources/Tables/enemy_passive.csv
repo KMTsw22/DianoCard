@@ -1,15 +1,15 @@
 id,name_kr,name_en,description,icon
-P_TWIN_RAGE,쌍둥이의 분노,Twin's Wrath,파트너가 쓰러지면 즉시 공격력 +4를 영구 획득하며 격노한다.,
-P_ROOT_REBIRTH,뿌리 번식,Root Rebirth,자신이 소환한 쫄이 쓰러지면 다시 소환한다.,
-P_GROW_ATK,성장,Growth,매 턴 공격력 +2가 영구 누적된다.,
-P_MOSS_SHIELD,이끼 수호,Moss Shield,필드에 이끼가 한 체라도 남아있는 동안 본체는 모든 피해를 받지 않는다.,
-P_MOSS_REFILL,이끼 소환술,Moss Summoning,주기적으로 살아있는 이끼를 최대 수까지 보충한다.,
-P_ABSORB_MOSS,거대화,Colossus,체력이 일정 이하로 떨어지면 남은 이끼를 모두 흡수해 공격력과 장갑을 크게 올린다.,
-P_DUAL_ACTION,이중 행동,Dual Action,1턴에 두 번 행동한다.,
-P_TRIPLE_ACTION,삼중 행동,Triple Action,1턴에 세 번 행동한다.,
-P_QUAD_ACTION,사중 행동,Quad Action,1턴에 네 번 행동한다.,
-P_STEAL_SUMMON,공룡 강탈,Dino Thief,플레이어의 공룡을 빼앗아 자기 편으로 만든다. 정화로 해제 가능.,
-P_SILENCE_HOWL,울부짖음,Silencing Howl,플레이어의 모든 공룡을 일정 턴 동안 침묵시킨다.,
-P_VULN_MARK,취약 각인,Brittle Mark,플레이어에게 취약을 부여해 받는 피해를 증폭시킨다.,
-P_MULTI_HIT,분할 타격,Flurry,공격을 여러 번에 나눠 작은 피해로 쪼갠다. 두꺼운 실드에 강하다.,
-P_ARMOR_REGEN,재생 장갑,Regenerating Armor,매 턴 시작 시 방어도가 자동으로 재생된다.,
+P_TWIN_RAGE,쌍둥이의 분노,Twin's Wrath,파트너가 쓰러지면 즉시 공격력 +4를 영구 획득하며 격노한다.,STRENGTH
+P_ROOT_REBIRTH,뿌리 번식,Root Rebirth,자신이 소환한 쫄이 쓰러지면 다시 소환한다.,SUMMON
+P_GROW_ATK,성장,Growth,매 턴 공격력 +2가 영구 누적된다.,STRENGTH
+P_MOSS_SHIELD,이끼 수호,Moss Shield,필드에 이끼가 한 체라도 남아있는 동안 본체는 모든 피해를 받지 않는다.,WARD
+P_MOSS_REFILL,이끼 소환술,Moss Summoning,주기적으로 살아있는 이끼를 최대 수까지 보충한다.,SUMMON
+P_ABSORB_MOSS,거대화,Colossus,체력이 일정 이하로 떨어지면 남은 이끼를 모두 흡수해 공격력과 장갑을 크게 올린다.,STRENGTH
+P_DUAL_ACTION,이중 행동,Dual Action,1턴에 두 번 행동한다.,MULTI_ACTION
+P_TRIPLE_ACTION,삼중 행동,Triple Action,1턴에 세 번 행동한다.,MULTI_ACTION
+P_QUAD_ACTION,사중 행동,Quad Action,1턴에 네 번 행동한다.,MULTI_ACTION
+P_STEAL_SUMMON,공룡 강탈,Dino Thief,플레이어의 공룡을 빼앗아 자기 편으로 만든다. 정화로 해제 가능.,STOLEN
+P_SILENCE_HOWL,울부짖음,Silencing Howl,플레이어의 모든 공룡을 일정 턴 동안 침묵시킨다.,BIND
+P_VULN_MARK,취약 각인,Brittle Mark,플레이어에게 취약을 부여해 받는 피해를 증폭시킨다.,VULNERABLE
+P_MULTI_HIT,분할 타격,Flurry,공격을 여러 번에 나눠 작은 피해로 쪼갠다. 두꺼운 실드에 강하다.,MULTI_ATTACK
+P_ARMOR_REGEN,재생 장갑,Regenerating Armor,매 턴 시작 시 방어도가 자동으로 재생된다.,DEFEND

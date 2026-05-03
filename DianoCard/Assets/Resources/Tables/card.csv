@@ -1,56 +1,56 @@
-id,name_kr,name_en,card_type,sub_type,rarity,cost,attack,hp,value,target,description,image,chapter,field_scale
-C001,Triceratops,Triceratops,SUMMON,HERBIVORE,COMMON,1,4,20,0,FIELD,Herbivore. Tank.,Triceratops.png,1,1.0
-C002,Stegosaurus,Stegosaurus,SUMMON,HERBIVORE,COMMON,1,5,17,0,FIELD,Herbivore. Balanced.,Stegosaurus.png,1,1.0
-C003,Ankylosaurus,Ankylosaurus,SUMMON,HERBIVORE,UNCOMMON,2,3,25,0,FIELD,Herbivore. Heavy tank.,Ankylosaurus.png,1,1.0
-C004,Raptor,Raptor,SUMMON,CARNIVORE,COMMON,1,7,13,0,FIELD,Carnivore. Fast.,Raptor.png,1,0.85
-C005,Carno,Carno,SUMMON,CARNIVORE,COMMON,1,8,10,0,FIELD,Carnivore. Hard hitter.,Carnotaurus.png,1,1.05
-C006,Dilophosaurus,Dilophosaurus,SUMMON,CARNIVORE,UNCOMMON,2,6,12,0,FIELD,Carnivore. Poisons.,Dilophosaurus.png,2,1.0
-C007,Spinosaurus,Spinosaurus,SUMMON,CARNIVORE,RARE,3,12,18,0,FIELD,Mighty carnivore.,Spinosaurus.png,3,1.0
-C008,T-Rex,T-Rex,SUMMON,CARNIVORE,RARE,3,15,22,0,FIELD,Apex. AoE Fear.,T-Rex.png,1,1.35
-C009,Pteranodon,Pteranodon,SUMMON,CARNIVORE,UNCOMMON,2,5,8,0,FIELD,Flying. Hits back row.,Pteranodon.png,2,1.0
-C010,Compy,Compy,SUMMON,CARNIVORE,COMMON,0,2,5,0,FIELD,Tiny. 0-cost. Fusion seed.,Compsognathus.png,1,0.60
-C011,Brachiosaurus,Brachiosaurus,SUMMON,HERBIVORE,RARE,2,3,40,0,FIELD,Apex herbivore. Massive.,Brachiosaurus.png,1,1.0
-C101,Searing Fang,Searing Fang,MAGIC,ATTACK,COMMON,1,5,0,5,ENEMY,Deal 5.,SearingFang.png,1,1.0
-C102,Runic Orb,Runic Orb,MAGIC,DEFENSE,COMMON,1,0,0,6,SELF,+6 block.,RunicOrb.png,1,1.0
-C103,Inferno Meteor,Inferno Meteor,MAGIC,ATTACK,UNCOMMON,2,0,0,12,ENEMY,Deal 12.,InfernoMeteor.png,1,1.0
-C104,Twin Rune Dome,Twin Rune Dome,MAGIC,DEFENSE,UNCOMMON,2,0,0,10,SELF,+10 block. +5 next T.,TwinRuneDome.png,1,1.0
-C107,Sacred Orb,Sacred Orb,MAGIC,PURIFY,UNCOMMON,1,0,0,0,SELF,Free stolen. Clear debuffs.,SacredOrb.png,1,1.0
-C108,Taunt,Taunt,BUFF,TAUNT,COMMON,1,0,0,2,ALL_ALLY,All Taunt (2T).,Taunt.png,1,1.0
-C201,Power Up,Power Up,BUFF,ATTACK_BUFF,COMMON,1,0,0,3,ALLY,+3 ATK (1T).,PowerUp.png,1,1.0
-C202,Heal,Heal,BUFF,HEAL,COMMON,1,0,0,2,ALL_ALLY,+2 HP to all.,HealAll.png,1,1.0
-C203,Berserk,Berserk,BUFF,ATTACK_BUFF,UNCOMMON,1,0,0,5,ALLY,+5 ATK (1T). -1 HP.,Berserk.png,1,1.0
-C204,Cleave,Cleave,BUFF,SPECIAL,UNCOMMON,2,0,0,0,ALLY,Attacks become AoE.,Cleave.png,2,1.0
-C205,Regenerate,Regenerate,BUFF,HEAL,UNCOMMON,1,0,0,3,ALLY,+3 HP. +1/T (3T).,Regenerate.png,2,1.0
-C206,Roar,Roar,BUFF,SPECIAL,RARE,2,0,0,0,ALL_ALLY,All +2 ATK (forever).,Roar.png,3,1.0
-C302,Draw,Draw,UTILITY,DRAW,COMMON,1,0,0,2,SELF,Draw 2.,Draw.png,1,1.0
-C303,Excavate,Excavate,UTILITY,DRAW,UNCOMMON,1,0,0,3,SELF,Draw 3. Discard 1.,Excavate.png,2,1.0
-C004_T1,Alpha Raptor,Alpha Raptor,SUMMON,CARNIVORE,UNCOMMON,1,10,15,0,FIELD,Raptor T1. Faster.,Raptor_T1.png,1,0.85
-C004_T2,Apex Raptor,Apex Raptor,SUMMON,CARNIVORE,RARE,1,13,18,0,FIELD,Raptor T2. Apex speed.,Raptor_T2.png,1,0.85
-C005_T1,Storm Carno,Storm Carno,SUMMON,CARNIVORE,UNCOMMON,1,11,12,0,FIELD,Carno T1. Pure offense.,Carnotaurus_T1.png,1,1.05
-C005_T2,Abyss Carno,Abyss Carno,SUMMON,CARNIVORE,RARE,1,15,14,0,FIELD,Carno T2. Glass cannon.,Carnotaurus_T2.png,1,1.05
-C010_T1,Clever Compy,Clever Compy,SUMMON,CARNIVORE,UNCOMMON,0,3,8,0,FIELD,Compy T1. Tougher.,Compsognathus_T1.png,1,0.60
-C010_T2,Pack Compy,Pack Compy,SUMMON,CARNIVORE,RARE,0,4,12,0,FIELD,Compy T2. 0-cost beast.,Compsognathus_T2.png,1,0.60
-C008_T1,Tyrant T-Rex,Tyrant T-Rex,SUMMON,CARNIVORE,RARE,3,20,28,0,FIELD,T-Rex T1. Field crusher.,T-Rex_T1.png,1,1.35
-C008_T2,Doom T-Rex,Doom T-Rex,SUMMON,CARNIVORE,RARE,3,26,36,0,FIELD,T-Rex T2. Apex of apex.,T-Rex_T2.png,1,1.35
-C111,Ward Cyclone,Ward Cyclone,MAGIC,DEFENSE,COMMON,1,0,0,7,ALLY,+7 block to ally.,WardCyclone.png,1,1.0
-C112,Pack Canopy,Pack Canopy,MAGIC,DEFENSE,UNCOMMON,2,0,0,5,ALL_ALLY,+5 block to all.,PackCanopy.png,1,1.0
-C114,Bedrock Monolith,Bedrock Monolith,MAGIC,DEFENSE,RARE,2,0,0,12,ALLY,+12 block (single).,BedrockMonolith.png,1,1.0
-C121,Shield Slam,Shield Slam,MAGIC,ATTACK,UNCOMMON,2,0,0,7,ENEMY,Deal 7. Self +5 block.,ShieldSlam.png,1,1.0
-C124,Frenzy Slash,Frenzy Slash,MAGIC,ATTACK,UNCOMMON,1,0,0,5,ENEMY,Deal 5. Half HP: deal 10.,FrenzySlash.png,1,1.0
-C129,Thunder Roar,Thunder Roar,MAGIC,ATTACK,UNCOMMON,2,0,0,4,ALL_ENEMY,Deal 4 all. Weak (1T).,ThunderRoar.png,1,1.0
-C131,Claw Storm,Claw Storm,MAGIC,ATTACK,UNCOMMON,1,0,0,0,ENEMY,Deal field total ATK.,ClawStorm.png,1,1.0
-C132,Pack,Pack,BUFF,SPECIAL,UNCOMMON,2,0,0,1,SELF,SUMMON -1 cost (1T).,PackCall.png,1,1.0
-C133,Binding Vine,Binding Vine,MAGIC,DEBUFF,UNCOMMON,1,0,0,1,ENEMY,Bind (1T).,BindingVine.png,1,1.0
-C135,Corrosive Cyclone,Corrosive Cyclone,MAGIC,DEBUFF,COMMON,1,0,0,3,ENEMY,Deal 3. Vulnerable (1T).,CorrosiveCyclone.png,1,1.0
-C136,Venom Thorn,Venom Thorn,MAGIC,DEBUFF,UNCOMMON,1,0,0,3,ENEMY,+3 Poison.,VenomThorn.png,1,1.0
-C137,Bone Arrow,Bone Arrow,MAGIC,ATTACK,COMMON,0,0,0,3,ENEMY,Deal 3. 0-cost.,BoneArrow.png,1,1.0
-C138,Primal Mark,Primal Mark,MAGIC,ATTACK,UNCOMMON,0,0,0,5,ENEMY,Deal 5. +copy to discard.,PrimalMark.png,1,1.0
-C139,Voltaic Flash,Voltaic Flash,MAGIC,ATTACK,COMMON,1,0,0,4,ENEMY,Deal 4. Draw 1.,VoltaicFlash.png,1,1.0
-C140,Verdant Knot,Verdant Knot,MAGIC,DEFENSE,COMMON,1,0,0,5,SELF,+5 block. Draw 1.,VerdantKnot.png,1,1.0
-C141,Fossil Burst,Fossil Burst,MAGIC,ATTACK,UNCOMMON,1,0,0,8,ENEMY,Deal 8. Exhaust.,FossilBurst.png,1,1.0
-C142,Primordial Wail,Primordial Wail,MAGIC,DEBUFF,UNCOMMON,1,0,0,0,ALL_ENEMY,All Vulnerable (1T).,PrimordialWail.png,1,1.0
-C152,Fusion Sigil,Fusion Sigil,UTILITY,FUSION,COMMON,1,0,0,0,ALLY,Fuse 2 same-tier carnivores.,FusionSigil.png,1,1.0
-C153,Vitality Sigil,Vitality Sigil,UTILITY,FUSION,UNCOMMON,1,0,0,5,ALLY,Fuse. Result +5 HP (2T).,VitalitySigil.png,1,1.0
-C154,Fury Sigil,Fury Sigil,UTILITY,FUSION,UNCOMMON,1,0,0,3,ALLY,Fuse. Result +3 ATK (2T).,FurySigil.png,1,1.0
-C155,Aegis Sigil,Aegis Sigil,UTILITY,FUSION,UNCOMMON,1,0,0,8,ALLY,Fuse. Result +8 block (2T).,AegisSigil.png,1,1.0
-C901,Weed,Weed,UTILITY,STATUS,COMMON,1,0,0,0,SELF,Curse. No effect. Exhaust.,Weed.png,1,1.0
+id,name_kr,name_en,card_type,sub_type,rarity,cost,attack,hp,value,target,description_kr,description_en,image,chapter,field_scale
+C001,트리케라톱스,Triceratops,SUMMON,HERBIVORE,COMMON,1,4,20,0,FIELD,초식. 탱커.,Herbivore. Tank.,Triceratops.png,1,1.0
+C002,스테고사우루스,Stegosaurus,SUMMON,HERBIVORE,COMMON,1,5,17,0,FIELD,초식. 밸런스형.,Herbivore. Balanced.,Stegosaurus.png,1,1.0
+C003,안킬로사우루스,Ankylosaurus,SUMMON,HERBIVORE,UNCOMMON,2,3,25,0,FIELD,초식. 중장 탱커.,Herbivore. Heavy tank.,Ankylosaurus.png,1,1.0
+C004,랩터,Raptor,SUMMON,CARNIVORE,COMMON,1,7,13,0,FIELD,육식. 속공.,Carnivore. Fast.,Raptor.png,1,0.85
+C005,카르노타우루스,Carno,SUMMON,CARNIVORE,COMMON,1,8,10,0,FIELD,육식. 강타.,Carnivore. Hard hitter.,Carnotaurus.png,1,1.05
+C006,딜로포사우루스,Dilophosaurus,SUMMON,CARNIVORE,UNCOMMON,2,6,12,0,FIELD,육식. 독 부여.,Carnivore. Poisons.,Dilophosaurus.png,2,1.0
+C007,스피노사우루스,Spinosaurus,SUMMON,CARNIVORE,RARE,3,12,18,0,FIELD,강대한 육식.,Mighty carnivore.,Spinosaurus.png,3,1.0
+C008,티렉스,T-Rex,SUMMON,CARNIVORE,RARE,2,15,22,0,FIELD,아펙스. 광역 공포.,Apex. AoE Fear.,T-Rex.png,1,1.35
+C009,프테라노돈,Pteranodon,SUMMON,CARNIVORE,UNCOMMON,2,5,8,0,FIELD,비행. 후열 타격.,Flying. Hits back row.,Pteranodon.png,2,1.0
+C010,콤프소그나투스,Compy,SUMMON,CARNIVORE,COMMON,0,2,5,0,FIELD,초소형. 0코. 융합 시드.,Tiny. 0-cost. Fusion seed.,Compsognathus.png,1,0.60
+C011,브라키오사우루스,Brachiosaurus,SUMMON,HERBIVORE,RARE,2,3,40,0,FIELD,초식 아펙스. 거대.,Apex herbivore. Massive.,Brachiosaurus.png,1,1.0
+C101,작열 송곳니,Searing Fang,MAGIC,ATTACK,COMMON,1,5,0,5,ENEMY,5 피해.,Deal 5.,SearingFang.png,1,1.0
+C102,룬 보주,Runic Orb,MAGIC,DEFENSE,COMMON,1,0,0,6,SELF,방어 +6.,+6 block.,RunicOrb.png,1,1.0
+C103,폭염 운석,Inferno Meteor,MAGIC,ATTACK,UNCOMMON,2,0,0,12,ENEMY,12 피해.,Deal 12.,InfernoMeteor.png,1,1.0
+C104,이중 룬돔,Twin Rune Dome,MAGIC,DEFENSE,UNCOMMON,2,0,0,10,SELF,방어 +10. 다음 턴 +5.,+10 block. +5 next T.,TwinRuneDome.png,1,1.0
+C107,신성의 광구,Sacred Orb,MAGIC,PURIFY,UNCOMMON,1,0,0,0,SELF,공룡 해방. 디버프 제거.,Free stolen. Clear debuffs.,SacredOrb.png,1,1.0
+C108,도발,Taunt,BUFF,TAUNT,COMMON,1,0,0,2,ALL_ALLY,전체 도발 (2턴).,All Taunt (2T).,Taunt.png,1,1.0
+C201,공격 강화,Power Up,BUFF,ATTACK_BUFF,COMMON,1,0,0,3,ALLY,초식 ATK +3 (1턴).,+3 ATK (1T).,PowerUp.png,1,1.0
+C202,공룡 치유,Heal,BUFF,HEAL,COMMON,1,0,0,2,ALL_ALLY,전체 +2 HP.,+2 HP to all.,HealAll.png,1,1.0
+C203,광폭화,Berserk,BUFF,ATTACK_BUFF,UNCOMMON,1,0,0,5,ALLY,ATK +5 (1턴). HP -1.,+5 ATK (1T). -1 HP.,Berserk.png,1,1.0
+C204,광역 공격,Cleave,BUFF,SPECIAL,UNCOMMON,2,0,0,0,ALLY,공격이 광역화.,Attacks become AoE.,Cleave.png,2,1.0
+C205,재생,Regenerate,BUFF,HEAL,UNCOMMON,1,0,0,3,ALLY,HP +3. +1/턴 (3턴).,+3 HP. +1/T (3T).,Regenerate.png,2,1.0
+C206,분노의 함성,Roar,BUFF,SPECIAL,RARE,2,0,0,0,ALL_ALLY,전체 ATK +2 (영구).,All +2 ATK (forever).,Roar.png,3,1.0
+C302,카드 드로우,Draw,UTILITY,DRAW,COMMON,1,0,0,2,SELF,2장 드로우.,Draw 2.,Draw.png,1,1.0
+C303,발굴,Excavate,UTILITY,DRAW,UNCOMMON,1,0,0,3,SELF,3장 드로우. 1장 버림.,Draw 3. Discard 1.,Excavate.png,2,1.0
+C004_T1,알파 랩터,Alpha Raptor,SUMMON,CARNIVORE,UNCOMMON,1,10,15,0,FIELD,랩터 T1. 더 빠름.,Raptor T1. Faster.,Raptor_T1.png,1,0.85
+C004_T2,절멸 랩터,Apex Raptor,SUMMON,CARNIVORE,RARE,1,13,18,0,FIELD,랩터 T2. 아펙스 속도.,Raptor T2. Apex speed.,Raptor_T2.png,1,0.85
+C005_T1,폭풍 카르노타우루스,Storm Carno,SUMMON,CARNIVORE,UNCOMMON,1,11,12,0,FIELD,카르노 T1. 순수 공격.,Carno T1. Pure offense.,Carnotaurus_T1.png,1,1.05
+C005_T2,심연 카르노타우루스,Abyss Carno,SUMMON,CARNIVORE,RARE,1,15,14,0,FIELD,카르노 T2. 글래스 캐논.,Carno T2. Glass cannon.,Carnotaurus_T2.png,1,1.05
+C010_T1,영리한 콤프소그나투스,Clever Compy,SUMMON,CARNIVORE,UNCOMMON,0,3,8,0,FIELD,콤프 T1. 더 단단함.,Compy T1. Tougher.,Compsognathus_T1.png,1,0.60
+C010_T2,무리의 콤프소그나투스,Pack Compy,SUMMON,CARNIVORE,RARE,0,4,12,0,FIELD,콤프 T2. 0코 괴수.,Compy T2. 0-cost beast.,Compsognathus_T2.png,1,0.60
+C008_T1,폭군 티렉스,Tyrant T-Rex,SUMMON,CARNIVORE,RARE,2,20,28,0,FIELD,티렉스 T1. 필드 분쇄.,T-Rex T1. Field crusher.,T-Rex_T1.png,1,1.35
+C008_T2,종말 티렉스,Doom T-Rex,SUMMON,CARNIVORE,RARE,2,26,36,0,FIELD,티렉스 T2. 아펙스의 정점.,T-Rex T2. Apex of apex.,T-Rex_T2.png,1,1.35
+C111,호위 선풍,Ward Cyclone,MAGIC,DEFENSE,COMMON,1,0,0,7,ALLY,공룡 방어 +7.,+7 block to ally.,WardCyclone.png,1,1.0
+C112,무리의 천막,Pack Canopy,MAGIC,DEFENSE,UNCOMMON,2,0,0,5,ALL_ALLY,전체 방어 +5.,+5 block to all.,PackCanopy.png,1,1.0
+C114,대지의 거석,Bedrock Monolith,MAGIC,DEFENSE,RARE,2,0,0,9,SELF,캐릭터 방어 +9.,+9 block (self).,BedrockMonolith.png,1,1.0
+C121,방패 격돌,Shield Slam,MAGIC,ATTACK,UNCOMMON,2,0,0,7,ENEMY,7 피해. 자신 방어 +5.,Deal 7. Self +5 block.,ShieldSlam.png,1,1.0
+C124,광기의 검광,Frenzy Slash,MAGIC,ATTACK,UNCOMMON,1,0,0,5,ENEMY,5 피해. HP 절반↓: 10.,Deal 5. Half HP: deal 10.,FrenzySlash.png,1,1.0
+C129,천둥 포효,Thunder Roar,MAGIC,ATTACK,UNCOMMON,2,0,0,4,ALL_ENEMY,전체 4 피해. 약화 (1턴).,Deal 4 all. Weak (1T).,ThunderRoar.png,1,1.0
+C131,발톱 폭우,Claw Storm,MAGIC,ATTACK,UNCOMMON,1,0,0,0,ENEMY,필드 ATK 합산 피해.,Deal field total ATK.,ClawStorm.png,1,1.0
+C132,동족 소환,Pack,BUFF,SPECIAL,UNCOMMON,2,0,0,1,SELF,SUMMON -1코 (1턴).,SUMMON -1 cost (1T).,PackCall.png,1,1.0
+C133,속박의 덩굴,Binding Vine,MAGIC,DEBUFF,UNCOMMON,1,0,0,1,ENEMY,속박 (1턴).,Bind (1T).,BindingVine.png,1,1.0
+C135,부식의 선풍,Corrosive Cyclone,MAGIC,DEBUFF,COMMON,1,0,0,3,ENEMY,3 피해. 취약 (1턴).,Deal 3. Vulnerable (1T).,CorrosiveCyclone.png,1,1.0
+C136,맹독 가시,Venom Thorn,MAGIC,DEBUFF,UNCOMMON,1,0,0,3,ENEMY,독 +3.,+3 Poison.,VenomThorn.png,1,1.0
+C137,뼈 화살,Bone Arrow,MAGIC,ATTACK,COMMON,0,0,0,3,ENEMY,3 피해. 0코.,Deal 3. 0-cost.,BoneArrow.png,1,1.0
+C138,원시 각인,Primal Mark,MAGIC,ATTACK,UNCOMMON,0,0,0,5,ENEMY,5 피해. 복사본 버림패로.,Deal 5. +copy to discard.,PrimalMark.png,1,1.0
+C139,자전 섬광,Voltaic Flash,MAGIC,ATTACK,COMMON,1,0,0,4,ENEMY,4 피해. 1장 드로우.,Deal 4. Draw 1.,VoltaicFlash.png,1,1.0
+C140,수목의 매듭,Verdant Knot,MAGIC,DEFENSE,COMMON,1,0,0,5,SELF,방어 +5. 1장 드로우.,+5 block. Draw 1.,VerdantKnot.png,1,1.0
+C141,화석 폭발,Fossil Burst,MAGIC,ATTACK,UNCOMMON,1,0,0,8,ENEMY,8 피해. 소진.,Deal 8. Exhaust.,FossilBurst.png,1,1.0
+C142,태고의 비명,Primordial Wail,MAGIC,DEBUFF,UNCOMMON,1,0,0,0,ALL_ENEMY,전체 취약 (1턴).,All Vulnerable (1T).,PrimordialWail.png,1,1.0
+C152,융합의 각인,Fusion Sigil,UTILITY,FUSION,COMMON,1,0,0,0,ALLY,동티어 육식 2 융합.,Fuse 2 same-tier carnivores.,FusionSigil.png,1,1.0
+C153,생명의 각인,Vitality Sigil,UTILITY,FUSION,UNCOMMON,1,0,0,5,ALLY,융합. 결과체 HP +5 (2턴).,Fuse. Result +5 HP (2T).,VitalitySigil.png,1,1.0
+C154,격노의 각인,Fury Sigil,UTILITY,FUSION,UNCOMMON,1,0,0,3,ALLY,융합. 결과체 ATK +3 (2턴).,Fuse. Result +3 ATK (2T).,FurySigil.png,1,1.0
+C155,가호의 각인,Aegis Sigil,UTILITY,FUSION,UNCOMMON,1,0,0,8,ALLY,융합. 결과체 방어 +8 (2턴).,Fuse. Result +8 block (2T).,AegisSigil.png,1,1.0
+C901,잡초,Weed,UTILITY,STATUS,COMMON,1,0,0,0,SELF,저주. 효과 없음. 소진.,Curse. No effect. Exhaust.,Weed.png,1,1.0

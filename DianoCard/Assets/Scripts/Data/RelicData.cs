@@ -14,6 +14,7 @@ namespace DianoCard.Data
         public string effectType;
         public int value;
         public string description;
+        public string archetypeLock;
 
         public static RelicData FromRow(Dictionary<string, string> row)
         {
@@ -28,6 +29,7 @@ namespace DianoCard.Data
                 effectType = CSVUtil.GetString(row, "effect_type"),
                 value = CSVUtil.GetInt(row, "value"),
                 description = CSVUtil.GetString(row, "description"),
+                archetypeLock = CSVUtil.GetString(row, "archetype_lock"),
             };
         }
     }

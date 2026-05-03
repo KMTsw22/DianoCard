@@ -38,6 +38,8 @@ namespace DianoCard.Game
             foreach (var c in dm.Cards.Values)
             {
                 if (c.cardType == CardType.RITUAL) continue;
+                // STATUS(잡초 등) 저주 카드는 상점에 노출되면 안 됨 — 적 강제 추가 전용.
+                if (c.subType == CardSubType.STATUS) continue;
                 if (evoResults.Contains(c.id)) continue;
                 if (c.cardType == CardType.SUMMON)
                 {

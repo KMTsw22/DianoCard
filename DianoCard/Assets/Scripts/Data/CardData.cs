@@ -19,14 +19,27 @@ namespace DianoCard.Data
         public int hp;
         public int value;
         public TargetType target;
-        public string description;
+        // CSV는 description_kr / description_en 두 컬럼을 갖는다.
+        // 외부에서 c.description으로 읽으면 LocaleSettings 활성언어에 따라 자동 폴백한다.
+        public string descriptionKr;
+        public string descriptionEn;
         public string image;
         public int chapter;
         // 필드 그릴 때 dinoSize에 곱하는 배율. SUMMON 카드만 의미 있음. CSV 비어있거나 0이면 1.0으로 처리.
         public float fieldScale;
 
+        // 활성언어 기준 본문/이름. 외부에서 c.description, c.name으로 읽으면 LocaleSettings 기준 폴백.
+        public string description => LocaleSettings.Pick(descriptionKr, descriptionEn);
+        public string name => LocaleSettings.Pick(nameKr, nameEn);
+
         public static CardData FromRow(Dictionary<string, string> row)
         {
+            // 구버전 CSV(description 단일 컬럼) 호환: description_en이 없고 description만 있으면 그쪽으로 폴백.
+            string descKr = CSVUtil.GetString(row, "description_kr");
+            string descEn = CSVUtil.GetString(row, "description_en");
+            if (string.IsNullOrEmpty(descEn))
+                descEn = CSVUtil.GetString(row, "description");
+
             return new CardData
             {
                 id = CSVUtil.GetString(row, "id"),
@@ -40,7 +53,8 @@ namespace DianoCard.Data
                 hp = CSVUtil.GetInt(row, "hp"),
                 value = CSVUtil.GetInt(row, "value"),
                 target = CSVUtil.GetEnum(row, "target", TargetType.NONE),
-                description = CSVUtil.GetString(row, "description"),
+                descriptionKr = descKr,
+                descriptionEn = descEn,
                 image = CSVUtil.GetString(row, "image"),
                 chapter = CSVUtil.GetInt(row, "chapter"),
                 fieldScale = CSVUtil.GetFloat(row, "field_scale", 1f),

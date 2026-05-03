@@ -56,6 +56,9 @@ namespace DianoCard.Battle
         // C132 동족 소환: 이번 턴 SUMMON 카드 비용 감면. StartTurn에 0으로 리셋.
         public int summonCostReduction;
 
+        // C104 이중 룬돔 등: 다음 플레이어 턴 시작 시 block을 0으로 리셋한 뒤 이 값만큼 부여하고 소진.
+        public int pendingBlockNextTurn;
+
         // === 치트 ===
         public bool cheatInvincible; // true면 모든 피해 무시 (블록도 안 깎임)
 

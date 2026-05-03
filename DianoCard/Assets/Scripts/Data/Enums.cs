@@ -27,6 +27,7 @@ namespace DianoCard.Data
         TAUNT,    // 도발 — 대상 공룡에게 도발 상태 부여 (적 공격 이 공룡 집중)
         FEED,     // 먹이 — 대상(또는 전체) 공룡 EXP 증가. 진화 조건 충족 시 진화 가능.
         FUSION,   // 융합 촉매 — 같은 종·같은 티어 육식공룡 2마리(필드/손 조합)를 합성해 한 단계 위 티어로 업그레이드.
+        DEBUFF,   // 디버프 마법 — 적에게 독/약화/취약/속박 등 상태 부여 (단일/광역).
     }
 
     public enum Rarity
@@ -130,6 +131,7 @@ namespace DianoCard.Data
         SUMMON,
         KILL,
         HP_LOW,
+        HP_CRITICAL,
         NODE_ENTER,
     }
 

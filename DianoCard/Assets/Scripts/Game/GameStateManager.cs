@@ -946,11 +946,12 @@ namespace DianoCard.Game
 
             var reward = new BattleReward { gold = Random.Range(15, 40) };
 
-            // 카드 3장 — 챕터 제한 + RITUAL 제외
+            // 카드 3장 — 챕터 제한 + RITUAL/STATUS 제외 (STATUS는 적 강제 추가 전용 저주 카드)
             var eligibleCards = new List<CardData>();
             foreach (var c in DataManager.Instance.Cards.Values)
             {
                 if (c.cardType == CardType.RITUAL) continue;
+                if (c.subType == CardSubType.STATUS) continue;
                 eligibleCards.Add(c);
             }
             for (int i = 0; i < 3 && eligibleCards.Count > 0; i++)

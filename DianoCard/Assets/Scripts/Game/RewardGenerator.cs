@@ -100,6 +100,8 @@ namespace DianoCard.Game
             {
                 if (c.chapter > chapterIdx) continue;
                 if (c.cardType == CardType.RITUAL) continue;
+                // STATUS(잡초 등 저주 카드)는 적이 강제로 끼워넣는 카드 — 보상 풀에서 절대 제외.
+                if (c.subType == CardSubType.STATUS) continue;
                 if (starterIds.Contains(c.id)) continue;
                 if (evoResults.Contains(c.id)) continue;
                 // SUMMON 공룡은 캐릭터 archetype과 sub_type 일치 필요 — 다른 공룡 획득 불가.

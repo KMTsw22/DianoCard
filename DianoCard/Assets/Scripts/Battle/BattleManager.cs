@@ -68,6 +68,14 @@ namespace DianoCard.Battle
             state.player.block = 0;
             state.player.summonCostReduction = 0;
 
+            // 예약된 다음 턴 방어도 적용 (C104 이중 룬돔 등). 적용 후 소진.
+            if (state.player.pendingBlockNextTurn > 0)
+            {
+                state.player.block += state.player.pendingBlockNextTurn;
+                Log($"  >> Pending block {state.player.pendingBlockNextTurn} applied (block now {state.player.block})");
+                state.player.pendingBlockNextTurn = 0;
+            }
+
             // 소환수 상태 리셋 — 한 턴 버프 / 공격 가능 플래그 / 방어도 / 스킬 쿨다운 틱
             foreach (var s in state.field)
             {
@@ -147,6 +155,12 @@ namespace DianoCard.Battle
                     return false;
                 }
                 var swapped = state.field[swapFieldIndex];
+                // 이미 이번 턴 공격한 공룡은 교체 금지 — 새 공룡이 들어와 또 공격하면 사실상 한 턴 2회 공격이 됨.
+                if (swapped.hasAttackedThisTurn)
+                {
+                    Log($"  ! Cannot swap out {swapped.data.nameKr}: already attacked this turn");
+                    return false;
+                }
                 Log($"  >> Swapped out {swapped.data.nameKr}");
                 ReturnBoundCard(swapped);
                 state.field.RemoveAt(swapFieldIndex);
@@ -561,6 +575,11 @@ namespace DianoCard.Battle
                     }
                     Log($"    -> {weakApplied}체 적 약화 1턴");
                 }
+                if (c.id == "C139")  // 자전 섬광: 1장 드로우
+                {
+                    Draw(1);
+                    Log($"    -> Drew 1 card");
+                }
             }
             else if (c.subType == CardSubType.DEFENSE)
             {
@@ -587,10 +606,25 @@ namespace DianoCard.Battle
                     state.player.block += c.value;
                     Log($"    -> +{c.value} block (now {state.player.block})");
                 }
+
+                if (c.id == "C140")  // 수목의 매듭: 1장 드로우
+                {
+                    Draw(1);
+                    Log($"    -> Drew 1 card");
+                }
+                if (c.id == "C104")  // 이중 룬돔: 다음 턴 +5 방어 예약
+                {
+                    state.player.pendingBlockNextTurn += 5;
+                    Log($"    -> +5 block scheduled for next turn (pending {state.player.pendingBlockNextTurn})");
+                }
             }
             else if (c.subType == CardSubType.PURIFY)
             {
                 ResolvePurify(c);
+            }
+            else if (c.subType == CardSubType.DEBUFF)
+            {
+                ResolveDebuff(c, explicitTarget);
             }
             // 융합(FUSION)은 TryPlayFusion에서 전체 처리 — 여기로 오지 않음.
         }
@@ -602,6 +636,71 @@ namespace DianoCard.Battle
             if (cardId.EndsWith("_T2")) return 2;
             if (cardId.EndsWith("_T1")) return 1;
             return 0;
+        }
+
+        /// <summary>DEBUFF 마법 — 카드 id별로 독/취약/속박 등 상태를 적에게 부여.
+        /// target이 ALL_ENEMY면 광역, 아니면 explicitTarget(없으면 첫 적)에 단일 적용.</summary>
+        private void ResolveDebuff(CardData c, EnemyInstance explicitTarget)
+        {
+            // 단일 타겟 결정 — 명시 타겟 우선, 없으면 첫 적. 이끼 보호 중이면 이끼로 리다이렉트.
+            EnemyInstance ResolveSingle()
+            {
+                var t = explicitTarget ?? FirstTargetableEnemy();
+                if (t != null && IsProtectedByMoss(t))
+                {
+                    var moss = FirstTargetableEnemy();
+                    if (moss != null && moss != t) t = moss;
+                    else t = null;
+                }
+                return (t != null && !t.IsDead) ? t : null;
+            }
+
+            switch (c.id)
+            {
+                case "C133":  // 속박의 덩굴: 속박(=stun) value턴
+                {
+                    var t = ResolveSingle();
+                    if (t == null) return;
+                    t.stunTurns += c.value;
+                    Log($"    -> {t.data.nameKr} 속박 +{c.value}T (총 {t.stunTurns}T)");
+                    break;
+                }
+                case "C135":  // 부식의 선풍: value 피해 + 취약 1턴
+                {
+                    var t = ResolveSingle();
+                    if (t == null) return;
+                    int dmg = ApplyPlayerWeak(c.value);
+                    t.TakeDamage(dmg);
+                    t.vulnerableTurns += 1;
+                    Log($"    -> {t.data.nameKr} takes {dmg} (HP {t.hp}), 취약 +1T (총 {t.vulnerableTurns}T)");
+                    CheckBossPhaseTransition(t);
+                    CheckPartnerDeathTrigger(t);
+                    break;
+                }
+                case "C136":  // 맹독 가시: 독 +value
+                {
+                    var t = ResolveSingle();
+                    if (t == null) return;
+                    t.poisonStacks += c.value;
+                    Log($"    -> {t.data.nameKr} 독 +{c.value} (총 {t.poisonStacks})");
+                    break;
+                }
+                case "C142":  // 태고의 비명: 전체 적 취약 1턴
+                {
+                    int n = 0;
+                    foreach (var e in state.enemies)
+                    {
+                        if (e.IsDead) continue;
+                        e.vulnerableTurns += 1;
+                        n++;
+                    }
+                    Log($"    -> {n}체 적 취약 +1T");
+                    break;
+                }
+                default:
+                    Log($"    ? unhandled DEBUFF card '{c.id}'");
+                    break;
+            }
         }
 
         private void ResolveBuff(CardData c)
@@ -632,6 +731,18 @@ namespace DianoCard.Battle
                         applied++;
                     }
                     Log($"    -> 도발: {applied}체의 공룡 {c.value}턴 도발 상태");
+                    // 이미 롤된 적 인텐트 타겟을 도발 공룡으로 갱신 — UI 화살표/툴팁이 즉시 반영되도록.
+                    SummonInstance tauntTarget = null;
+                    foreach (var s in state.field) if (s.IsTaunting) { tauntTarget = s; break; }
+                    if (tauntTarget != null)
+                    {
+                        foreach (var en in state.enemies)
+                        {
+                            if (en.IsDead) continue;
+                            if (IsSingleTargetAttackAction(en.intentAction))
+                                en.intentTargetDino = tauntTarget;
+                        }
+                    }
                     break;
 
                 case CardSubType.SPECIAL:
@@ -1061,6 +1172,19 @@ namespace DianoCard.Battle
             ExecuteIntent(enemy);
         }
 
+        /// <summary>MULTI_ATTACK 분할 hit 1회 실행 — UI가 hit별로 lunge 애니메이션을 재생하기 위한 분할 진입점.
+        /// 호출자가 카운트만큼 반복하고 각 hit 사이에 애니메이션을 끼워넣는다.
+        /// 그레이스/기절/예고 진행 중이면 false 반환(아무것도 안 함).</summary>
+        public bool DealEnemyMultiAttackHit(EnemyInstance enemy)
+        {
+            if (enemy == null || enemy.IsDead) return false;
+            if (enemy.graceTurnsRemaining > 0) return false;
+            if (enemy.stunTurns > 0) return false;
+            if (enemy.telegraphRemaining > 0) return false;
+            DealAttack(enemy, enemy.intentValue);
+            return !state.PlayerLost;
+        }
+
         /// <summary>턴 종료 정리: 죽은 소환수 제거(바인딩 카드 복귀), 패 버림더미로.</summary>
         public void EndTurnCleanup()
         {
@@ -1271,6 +1395,8 @@ namespace DianoCard.Battle
         /// <summary>
         /// 적 단발 공격 — 인텐트 롤 시점(RollIntent)에 확정된 attacker.intentTargetDino를 그대로 때림.
         /// null이면 플레이어. 확정된 공룡이 이미 죽었거나 필드에서 빠졌으면 플레이어로 폴백.
+        /// 단, 도발 활성 공룡이 있으면 실행 시점에 그쪽으로 강제 리다이렉트(C108 도발이
+        /// 인텐트 롤 이후에 발동돼도 같은 턴에 효과가 적용되도록).
         /// </summary>
         private void DealAttack(EnemyInstance attacker, int rawDmg)
         {
@@ -1279,7 +1405,14 @@ namespace DianoCard.Battle
             // 약화 상태면 피해 25% 감소 (C129 포효 등의 효과)
             int dmg = attacker.weakTurns > 0 ? Math.Max(1, (int)(scaled * 0.75f)) : scaled;
 
-            var target = attacker.intentTargetDino;
+            // 도발 우선 — 살아있는 첫 도발 공룡이 있으면 인텐트 타겟을 무시하고 그쪽으로 끌어감.
+            SummonInstance taunting = null;
+            foreach (var s in state.field)
+            {
+                if (s.IsTaunting) { taunting = s; break; }
+            }
+
+            var target = taunting ?? attacker.intentTargetDino;
             // 타겟 유효성 재확인 — 사망 / 필드 이탈 시 플레이어로 폴백.
             if (target != null && (target.IsDead || !state.field.Contains(target)))
                 target = null;

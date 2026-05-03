@@ -1,4 +1,4 @@
-id,name_kr,name_en,rarity,source,trigger,effect_type,value,description
+id,name_kr,name_en,rarity,source,trigger,effect_type,value,description,archetype_lock
 R001,고대의 뼈,Ancient Bone,COMMON,START,PASSIVE,MAX_HP,10,최대 HP +10으로 시작.
 R002,화석 펜던트,Fossil Pendant,COMMON,ELITE,BATTLE_START,DRAW,1,전투 시작 시 카드 1장 추가 드로우.
 R003,호박 보석,Amber Gem,COMMON,ELITE,BATTLE_START,MANA,1,전투 시작 시 마나 +1 (첫 턴).
@@ -15,3 +15,8 @@ R014,왕의 왕관,King's Crown,RARE,BOSS,PASSIVE,MANA,1,매 턴 마나 +1.
 R015,영원의 모래시계,Eternal Hourglass,RARE,BOSS,BATTLE_START,DRAW,3,전투 시작 시 3장 추가 드로우.
 R016,광폭의 부적,Rage Amulet,RARE,EVENT,HP_LOW,ATTACK_BUFF,3,HP 50% 이하 시 공격력 +3.
 R017,고고학자의 일지,Archaeologist Log,SHOP,SHOP,NODE_ENTER,GOLD,5,새 노드 진입 시 골드 +5.
+R018,어린 무리,Young Pack,COMMON,START,BATTLE_START,SUMMON_COMPY,1,전투 시작 시 콤프소그나투스 1마리 무료 소환.,CARN
+R019,사냥꾼 본능,Hunter Instinct,COMMON,EVENT,KILL,HEAL_KILLER,2,적 처치 시 처치한 아군 공룡 HP +2.,
+R020,분노의 핏줄,Rage Vein,UNCOMMON,EVENT,HP_CRITICAL,MANA,1,HP 30% 이하 시 매 턴 마나 +1.,
+R021,균열의 인장,Rift Seal,RARE,BOSS,PASSIVE,FUSION_REFUND,1,융합 카드 사용 시 마나 1 환급.,
+R022,타락한 성유물,Tainted Relic,RARE,BOSS,PASSIVE,MAX_HP,15,최대 HP +15 / HP 회복량 -25% (저주).,
