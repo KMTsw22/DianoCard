@@ -23,76 +23,27 @@ public class VillageUI : MonoBehaviour
     // Inspector 튜닝 필드
     // =========================================================
 
-    [Header("Backdrop (배경 이미지 + 딤 + 모닥불 글로우)")]
+    [Header("Backdrop (배경 이미지 + 딤) — 위치/크기 Inspector 튜닝")]
     [Tooltip("배경 이미지 위에 덮는 딤 색. 알파 0=이미지 그대로, 높일수록 어두움.")]
     [SerializeField] private Color backdropColor = new(0.02f, 0.04f, 0.06f, 0.25f);
-    [Tooltip("모닥불 글로우 오버레이 — 배경 이미지에 이미 불이 있으면 알파 0으로 해서 끄기.")]
-    [SerializeField] private Color campfireGlowColor = new(1f, 0.55f, 0.22f, 0.18f);
-    [SerializeField] private Vector2 campfireGlowSize = new(1400f, 900f);
+    [Tooltip("배경 이미지 X 오프셋 (px). 양수=오른쪽으로 밀림. ScaleAndCrop 후 위치 보정용.")]
+    [SerializeField, Range(-400f, 400f)] private float bgOffsetX = 0f;
+    [Tooltip("배경 이미지 Y 오프셋 (px). 양수=아래로 밀림.")]
+    [SerializeField, Range(-400f, 400f)] private float bgOffsetY = 0f;
+    [Tooltip("배경 이미지 스케일. 1=원본, >1=확대(가까이), <1=축소.")]
+    [SerializeField, Range(0.5f, 2f)] private float bgScale = 1f;
 
-    [Header("모닥불 집중 글로우 (fire pit 근처 강한 빛)")]
-    [SerializeField] private bool focalGlowEnabled = true;
-    [Tooltip("집중 글로우 중심 위치 (px, 1280x720 기준). 배경에서 모닥불 위치에 맞추세요.")]
-    [SerializeField] private Vector2 focalGlowCenter = new(640f, 620f);
-    [SerializeField] private Vector2 focalGlowSize = new(520f, 360f);
-    [Tooltip("집중 글로우 색 + 알파. 알파 0.3~0.5 권장.")]
-    [SerializeField] private Color focalGlowColor = new(1f, 0.55f, 0.20f, 0.40f);
-    [Tooltip("펄스 진폭 (알파에 더해지는 미세한 떨림). 0=정적, 0.05=은은하게 깜빡.")]
-    [SerializeField, Range(0f, 0.2f)] private float focalGlowPulseAmp = 0.06f;
-    [Tooltip("펄스 주기 (초).")]
-    [SerializeField, Range(0.5f, 5f)] private float focalGlowPulsePeriod = 1.8f;
-
-    [Header("횃불 불씨 파티클 (좌/우 횃불에서 튀는 불꽃)")]
-    [SerializeField] private bool embersEnabled = true;
-    [Tooltip("파티클 총 개수 (양쪽 횃불 합산).")]
-    [SerializeField, Range(0, 80)] private int embersCount = 32;
-    [Tooltip("좌측 횃불 위치 (px). 배경의 왼쪽 횃불 불꽃 위치에 맞추세요.")]
-    [SerializeField] private Vector2 torchLeft = new(90f, 220f);
-    [Tooltip("우측 횃불 위치 (px). 배경의 오른쪽 횃불 불꽃 위치에 맞추세요.")]
-    [SerializeField] private Vector2 torchRight = new(1190f, 220f);
-    [Tooltip("파티클 생성 반경 (px). 횃불 주위 이 안에서 랜덤 생성.")]
-    [SerializeField, Range(5f, 80f)] private float embersSpawnRadius = 18f;
-    [Tooltip("파티클 상승 속도 (px/s).")]
-    [SerializeField, Range(20f, 200f)] private float embersRiseSpeed = 30f;
-    [Tooltip("파티클 가로 흔들림 폭 (px).")]
-    [SerializeField, Range(0f, 40f)] private float embersSway = 12f;
-    [Tooltip("파티클 수명 (초). 짧을수록 짧게 튀고 자주 재생성.")]
-    [SerializeField, Range(0.5f, 4f)] private float embersLifetime = 3f;
-    [Tooltip("파티클 크기 범위 (px).")]
-    [SerializeField] private Vector2 embersSizeRange = new(3f, 6f);
-    [Tooltip("파티클 색 (시작).")]
-    [SerializeField] private Color embersColorStart = new(1f, 0.85f, 0.35f, 1f);
-    [Tooltip("파티클 색 (끝 — 페이드).")]
-    [SerializeField] private Color embersColorEnd = new(1f, 0.3f, 0.1f, 0f);
-
-    [Header("별 반짝임 (랜덤 분포, 은은)")]
-    [SerializeField] private bool starsEnabled = true;
-    [Tooltip("별 개수. 많이 뿌려놓고 각자 다른 타이밍에 희미하게 반짝이게.")]
-    [SerializeField, Range(0, 200)] private int starsCount = 100;
-    [Tooltip("별이 랜덤 생성되는 영역 (px). 배경 그림의 '열린 하늘' 부분만 덮도록 좁게.")]
-    [SerializeField] private Rect starsArea = new Rect(400f, 0f, 500f, 150f);
-    [Tooltip("별 크기 범위 (px). 2~4 가 자세히 봐야 보이는 수준.")]
-    [SerializeField] private Vector2 starsSizeRange = new(2f, 4f);
-    [Tooltip("별 최대 색 + 알파. 알파 낮을수록 전체적으로 희미.")]
-    [SerializeField] private Color starsColor = new(1f, 0.97f, 0.85f, 0.9f);
-    [Tooltip("반짝임 최소 알파 배율 (0~1). 0.0 이면 주기적으로 완전히 사라짐.")]
-    [SerializeField, Range(0f, 1f)] private float starsMinAlphaMul = 0.1f;
-    [Tooltip("반짝임 주기 범위 (초). 값 크면 천천히 깜빡. 4~10 이 자연스러움.")]
-    [SerializeField] private Vector2 starsTwinklePeriodRange = new(5f, 11f);
-    [Tooltip("전체 별 중 동시에 반짝이는 비율. 낮으면 띄엄띄엄 반짝여 희소성 연출.")]
-    [SerializeField, Range(0.1f, 1f)] private float starsActiveRatio = 0.1f;
-
-    [Header("NPC (상반신 화자)")]
+    [Header("NPC (상반신 화자) — 위치/크기 Inspector 튜닝")]
     [Tooltip("NPC 표시 여부.")]
     [SerializeField] private bool npcEnabled = true;
     [Tooltip("NPC 크기 (px). ScaleToFit이라 비율 유지됨.")]
-    [SerializeField] private Vector2 npcSize = new(540f, 740f);
+    [SerializeField] private Vector2 npcSize = new(594f, 740f);
     [Tooltip("NPC 좌상단 Y 위치 (px). 값 크게 → 아래로 내려감.")]
-    [SerializeField, Range(-100f, 500f)] private float npcY = 260f;
+    [SerializeField, Range(-300f, 700f)] private float npcY = 110f;
     [Tooltip("NPC X 위치 모드 (true=화면 왼쪽 기준, false=오른쪽 기준).")]
     [SerializeField] private bool npcAlignLeft = true;
     [Tooltip("앵커로부터의 X 거리 (px). 왼쪽 정렬이면 화면 왼쪽에서, 오른쪽이면 화면 오른쪽에서.")]
-    [SerializeField, Range(-200f, 400f)] private float npcXOffset = -30f;
+    [SerializeField, Range(-400f, 800f)] private float npcXOffset = -20f;
 
     [Header("NPC Intro (Village 진입 시 1회 페이드 인)")]
     [Tooltip("진입 페이드인 재생 여부.")]
@@ -114,42 +65,18 @@ public class VillageUI : MonoBehaviour
     [Tooltip("호흡 주기 (초). 한 호흡 = 들이쉬고 내쉬는 1사이클.")]
     [SerializeField, Range(1.5f, 8f)] private float breathingPeriod = 3.5f;
 
-    [Header("Header (타이틀 / 부제 / HP)")]
-    [SerializeField] private string titleText = "";
-    [SerializeField] private string subtitleText = "";
-    [SerializeField] private Rect campIconRect = new(40f, 18f, 68f, 68f);
-    [SerializeField] private float titleY = 24f;
-    [SerializeField] private float titleHeight = 48f;
-    [SerializeField] private float subtitleY = 70f;
-    [SerializeField] private float subtitleHeight = 22f;
-    [SerializeField] private Vector2 hpPanelSize = new(220f, 44f);
-    [SerializeField] private float hpPanelRightMargin = 240f;
-    [SerializeField] private float hpPanelTopY = 22f;
-    [Tooltip("HP 패널 배경색 — ShopUI 섹션 패널과 동일한 짙은 네이비 반투명.")]
-    [SerializeField] private Color hpPanelBgColor = new(0.04f, 0.07f, 0.10f, 0.78f);
-    [Tooltip("HP 패널 테두리 색 — 연한 골드.")]
-    [SerializeField] private Color hpPanelBorderColor = new(0.72f, 0.56f, 0.28f, 0.75f);
-    [Tooltip("HP 패널 테두리 두께 (0=없음).")]
-    [SerializeField, Range(0f, 4f)] private float hpPanelBorderThickness = 1.5f;
-    [Tooltip("HP 하트 아이콘 크기 (px).")]
-    [SerializeField, Range(16f, 60f)] private float hpIconSize = 32f;
-    [Tooltip("HP 아이콘 왼쪽 여백 (패널 시작부터).")]
-    [SerializeField, Range(0f, 40f)] private float hpIconLeftPad = 12f;
-    [Tooltip("HP 텍스트 왼쪽 시프트 — 아이콘 오른쪽부터 시작되도록 패널 텍스트 정렬을 보정.")]
-    [SerializeField, Range(-40f, 40f)] private float hpTextXShift = 18f;
-
-    // HUD Divider/Strip — BattleUI로 이전됨. GameStateManager의 BattleUI 컴포넌트 Inspector에서 튜닝.
-
-    [Header("Option Cards (좌/우 2장)")]
+    [Header("Option Cards (좌/우 2장) — 위치/크기 Inspector 튜닝")]
+    [Tooltip("카드 한 장 크기 (W, H, px).")]
     [SerializeField] private Vector2 optionCardSize = new(340f, 540f);
-    [SerializeField] private float optionCardGap = 50f;
-    [SerializeField] private float optionCardYOffset = 10f;
+    [Tooltip("두 카드 사이 간격 (px).")]
+    [SerializeField, Range(0f, 200f)] private float optionCardGap = 50f;
+    [Tooltip("카드 2장 묶음의 Y 오프셋 (양수=아래로). 기본 0 = 화면 세로 중앙.")]
+    [SerializeField, Range(-300f, 300f)] private float optionCardYOffset = 10f;
     [Tooltip("카드 2장 묶음의 X 오프셋 (양수 = 오른쪽으로 이동). 기본 0 = 화면 중앙.")]
-    [SerializeField, Range(-300f, 300f)] private float optionCardXOffset = 200f;
+    [SerializeField, Range(-500f, 500f)] private float optionCardXOffset = 200f;
     [SerializeField, Range(1f, 1.2f)] private float optionHoverScale = 1.04f;
 
     [Header("Option Content (왼쪽: Treasure / 오른쪽: Rest)")]
-    [SerializeField] private string treasureTitle = "";
     [TextArea(2, 4)]
     [Tooltip("카드 1 보물 — 타이틀(큰 글씨). 본문은 아래 desc 필드.")]
     [SerializeField] private string treasureName = "Mystery";
@@ -157,34 +84,20 @@ public class VillageUI : MonoBehaviour
     [TextArea(2, 4)]
     [SerializeField] private string treasureDesc = "Free Relic Inside";
     [SerializeField] private Color treasureGlowColor = new(1f, 0.82f, 0.42f);
-    [SerializeField] private string restTitle = "";
     [Tooltip("카드 2 휴식 — 타이틀(큰 글씨).")]
     [SerializeField] private string restName = "Heal";
     [SerializeField, Range(0f, 1f)] private float restHealPct = 0.25f;
     [SerializeField] private Color restGlowColor = new(1f, 0.35f, 0.30f);
 
-    [Header("Option Title Banner (상단 텍스트 위치 — 배경/테두리 없음)")]
-    [Tooltip("true면 타이틀을 상단 배너 위치에, false면 메달리온 아래에 표시.")]
-    [SerializeField] private bool useTitleBanner = true;
-    [Tooltip("타이틀 X 오프셋 (카드 중앙 기준, 양수=오른쪽).")]
-    [SerializeField, Range(-200f, 200f)] private float titleBannerOffsetX = 0f;
-    [Tooltip("타이틀 Y 위치 — 음수면 카드 위쪽으로 튀어나옴.")]
-    [SerializeField, Range(-60f, 80f)] private float titleBannerOffsetY = 2.6f;
-    [Tooltip("타이틀 배너 영역 폭 (텍스트 wrap/정렬 기준).")]
-    [SerializeField, Range(80f, 340f)] private float titleBannerWidth = 280f;
-    [Tooltip("타이틀 배너 영역 높이.")]
-    [SerializeField, Range(24f, 80f)] private float titleBannerHeight = 46f;
-    [Tooltip("배너 모드에서 쓸 타이틀 폰트 크기 (일반 optionTitleFontSize와 별개).")]
-    [SerializeField, Range(12, 48)] private int titleBannerFontSize = 22;
-
-    [Header("Option Card Inner (메달리온/아이콘/타이틀/설명)")]
-    [Tooltip("메달리온 링 그리기 여부. false면 아이콘만 단독 표시.")]
-    [SerializeField] private bool drawMedallion = false;
-    [SerializeField] private float medallionSize = 150f;
-    [Tooltip("메달리온 중심 Y = card.y + card.h * 이 값")]
-    [SerializeField, Range(0.2f, 0.6f)] private float medallionCenterYFactor = 0.359f;
-    [Tooltip("아이콘 크기 배율 — 메달리온 없으면 큰 값(0.9~1.1) 권장.")]
-    [SerializeField, Range(0.3f, 1.4f)] private float iconSizeFactor = 0.824f;
+    [Header("옵션 카드 아이콘 — 위치/크기")]
+    [Tooltip("아이콘 기준 크기 (px). 글로우·그림자 크기 계산의 기준이 됨. 실제 아이콘 픽셀 크기는 이 값 × Icon Size Factor.")]
+    [SerializeField, Range(60f, 280f)] private float medallionSize = 150f;
+    [Tooltip("아이콘 크기 배율 (medallionSize 대비). 1=기준 크기 그대로, <1=줄임, >1=키움.")]
+    [SerializeField, Range(0.3f, 1.4f)] private float iconSizeFactor = 1f;
+    [Tooltip("아이콘 X 오프셋 (px). 0=카드 정중앙, 양수=오른쪽으로.")]
+    [SerializeField, Range(-120f, 120f)] private float iconCenterXOffset = 0f;
+    [Tooltip("아이콘 중심 Y = card.y + card.h * 이 값. (0.2~0.6 범위, 작을수록 위쪽)")]
+    [SerializeField, Range(0.2f, 0.6f)] private float medallionCenterYFactor = 0.47f;
     [Tooltip("아이콘 뒤 글로우 표시 여부.")]
     [SerializeField] private bool iconGlowEnabled = true;
     [Tooltip("기본(기타) 아이콘 글로우 색.")]
@@ -214,11 +127,13 @@ public class VillageUI : MonoBehaviour
     [Tooltip("그림자 세로 납작 비율. 1=원, 0.5=타원(바닥에 깔린 느낌).")]
     [SerializeField, Range(0.3f, 1f)] private float iconShadowVerticalSquish = 0.55f;
 
-    [SerializeField] private float optionTitleTopGap = 14f;
-    [SerializeField] private float optionTitleHeight = 36f;
-    [SerializeField] private float optionDescTopGap = 10f;
-    [SerializeField] private float optionDescXPad = 30f;
-    [SerializeField] private float optionDescBottomPad = 16f;
+    [Header("옵션 카드 설명 영역 (텍스트 컨테이너) — 카드 안쪽 여백")]
+    [Tooltip("아이콘 하단으로부터 설명 영역(본문)이 시작되는 간격 (px).")]
+    [SerializeField, Range(-40f, 200f)] private float optionDescTopGap = 72f;
+    [Tooltip("설명 영역의 좌우 패딩 (px). 카드 폭에서 양쪽으로 이만큼씩 안쪽 들여쓰기.")]
+    [SerializeField, Range(0f, 80f)] private float optionDescXPad = 30f;
+    [Tooltip("설명 영역의 하단 패딩 (px). 카드 하단에서 이만큼 위까지만 텍스트 영역으로 사용.")]
+    [SerializeField, Range(0f, 60f)] private float optionDescBottomPad = 16f;
 
     [Header("Option Card Glow")]
     [SerializeField, Range(0f, 120f)] private float cardGlowPadNormal = 52f;
@@ -238,28 +153,34 @@ public class VillageUI : MonoBehaviour
     [SerializeField, Range(-40f, 40f)] private float plantedShadowYOffset = -4f;
 
     [Header("Font Sizes")]
-    [SerializeField, Range(20, 60)] private int titleFontSize = 44;
-    [SerializeField, Range(10, 24)] private int subtitleFontSize = 16;
-    [SerializeField, Range(16, 40)] private int optionTitleFontSize = 26;
     [SerializeField, Range(10, 32)] private int optionDescFontSize = 20;
-    [SerializeField, Range(14, 32)] private int hpFontSize = 22;
 
-    [Header("옵션 카드 이름 (Mystery / Heal 폰트/위치)")]
-    [Tooltip("이름 폰트 크기.")]
+    [Header("옵션 카드 제목 (Mystery / Heal) — 아이콘 위쪽에 표시")]
+    [Tooltip("제목 폰트 크기.")]
     [SerializeField, Range(16, 60)] private int nameFontSize = 26;
-    [Tooltip("이름 위치 오프셋 (px). X 양수=오른쪽, Y 양수=아래. 설명 영역 좌상단 기준.")]
-    [SerializeField] private Vector2 nameOffset = new(0f, 25f);
-    [Tooltip("이름 보물(Mystery) 색.")]
+    [Tooltip("제목 위치 오프셋 (px). 기준점=아이콘 위쪽 끝. X 양수=오른쪽, Y 양수=아이콘에서 더 위로 멀어짐.")]
+    [SerializeField] private Vector2 nameOffset = new(0f, 50f);
+    [Tooltip("제목 영역 폭 오버라이드 (px). 0=설명 영역과 동일한 폭 (카드 폭 - 좌우 패딩).")]
+    [SerializeField, Range(0f, 600f)] private float nameWidthOverride = 0f;
+    [Tooltip("제목 영역 높이 오버라이드 (px). 0=폰트 크기에 맞춰 자동.")]
+    [SerializeField, Range(0f, 200f)] private float nameHeightOverride = 0f;
+    [Tooltip("제목 보물(Mystery) 색.")]
     [SerializeField] private Color treasureNameColor = new(1f, 0.83f, 0.29f); // #FFD54A
-    [Tooltip("이름 휴식(Heal) 색.")]
+    [Tooltip("제목 휴식(Heal) 색.")]
     [SerializeField] private Color restNameColor = new(0.91f, 0.29f, 0.29f); // #E84A4A
-    [Tooltip("본문(Free Relic Inside / Recover 25% HP 등) 위치 오프셋 (px). 이름 하단 기준. Y 양수=아래로.")]
-    [SerializeField] private Vector2 bodyOffset = new(0f, 30f);
+
+    [Header("옵션 카드 본문 (Free Relic Inside / Recover ...) — 위치/크기")]
+    [Tooltip("본문 위치 오프셋 (px). 기준점=설명 영역 좌상단(아이콘 아래). X 양수=오른쪽, Y 양수=아래.")]
+    [SerializeField] private Vector2 bodyOffset = new(0f, 0f);
     [Tooltip("본문 폰트 크기 오버라이드 — 0=Option Desc Font Size 사용, 그 외는 이 값으로.")]
     [SerializeField, Range(0, 32)] private int bodyFontSizeOverride = 0;
+    [Tooltip("본문 영역 폭 오버라이드 (px). 0=설명 영역 기본 폭(카드 폭 - 좌우 패딩).")]
+    [SerializeField, Range(0f, 600f)] private float bodyWidthOverride = 0f;
+    [Tooltip("본문 영역 높이 오버라이드 (px). 0=설명 영역 잔여 높이(자동, 카드 하단까지).")]
+    [SerializeField, Range(0f, 400f)] private float bodyHeightOverride = 0f;
 
-    [Header("옵션 카드 이름 외곽선")]
-    [Tooltip("이름 외곽선 on/off.")]
+    [Header("옵션 카드 제목/본문 외곽선 (이름·본문 공통)")]
+    [Tooltip("외곽선 on/off.")]
     [SerializeField] private bool nameOutlineEnabled = true;
     [Tooltip("외곽선 두께 (px). 0.3~0.6 이 아주 얇음. 값이 클수록 굵어짐.")]
     [SerializeField, Range(0f, 3f)] private float nameOutlineThickness = 0.4f;
@@ -277,56 +198,31 @@ public class VillageUI : MonoBehaviour
     [SerializeField] private Color textShadowColor = new(0.08f, 0.04f, 0.02f, 0.28f);
 
     [Header("Colors")]
-    [SerializeField] private Color titleColor = new(0.98f, 0.88f, 0.52f);
-    [SerializeField] private Color creamColor = new(0.99f, 0.95f, 0.78f);
-    [SerializeField] private Color hpTextColor = new(0.95f, 0.55f, 0.55f);
-    [Tooltip("옵션 설명문 색 — 목조 패널에 어울리는 짙은 세피아.")]
-    [SerializeField] private Color optionDescColor = new(0.22f, 0.14f, 0.08f);
-    [Tooltip("옵션 타이틀(TREASURE/REST) 글자 색 — 진한 블랙 계열.")]
-    [SerializeField] private Color optionTitleColor = new(0.08f, 0.05f, 0.03f);
-    [Tooltip("외곽선 위쪽 색 (밝은 실버).")]
-    [SerializeField] private Color optionTitleOutlineTop = new(0.92f, 0.92f, 0.94f, 1f);
-    [Tooltip("외곽선 아래쪽 색 (어두운 차콜) — 상하 그라데이션용.")]
-    [SerializeField] private Color optionTitleOutlineBottom = new(0.35f, 0.35f, 0.38f, 1f);
-    [Tooltip("외곽선 두께 (0=외곽선 없음).")]
-    [SerializeField, Range(0f, 3f)] private float optionTitleOutlineThickness = 0f;
+    [Tooltip("옵션 본문 글자 색. 어두운 카드 위에서는 밝은 크림/오프화이트가 가독성 좋음.")]
+    [SerializeField] private Color optionDescColor = new(0.96f, 0.91f, 0.78f);
+
+    [Header("Font (Resources/Fonts/* — 확장자 제외)")]
+    [Tooltip("폰트 경로. 추천 경로:\n• Fonts/NotoSansKR-VariableFont_wght — 모던 산세리프, 아크나이츠/그랑블루 톤 (UI 추천)\n• Fonts/IMFellEnglish-Regular — 빈티지 책체, 작은 본문 가독성↑\n• Fonts/Metamorphous-Regular — 고딕 캐피털 (장식적)\n• Fonts/MedievalSharp-Regular — 중세 LARP\n• Fonts/Cinzel-VariableFont_wght — 클래식 로마 세리프")]
+    [SerializeField] private string fontResourcePath = "Fonts/NotoSansKR-VariableFont_wght";
 
     private readonly List<Action> _pending = new();
 
-    // 파티클(ember) 상태 — 각 파티클은 (x, y, age, lifetime, size, swayPhase, baseX)
-    private struct Ember { public Vector2 pos; public float age; public float lifetime; public float size; public float swayPhase; public float baseX; }
-    private readonly List<Ember> _embers = new();
-
-    // 별 상태 — 위치/크기/반짝임 phase 는 Village 진입 시 1회 생성 후 고정.
-    private struct Star { public Vector2 pos; public float size; public float period; public float phase; }
-    private readonly List<Star> _stars = new();
-    private bool _starsInitialized;
-
-    // 아트 (Reward / Map 폴더에서 재사용)
-    private Texture2D _panelTex;
-    private Texture2D _rowTex;
-    private Texture2D _medallionTex;
-    private Texture2D _continueTex;
+    // 아트 — VillageUI/ 폴더에 정리된 5종만 사용. 헤더(HP/Gold/Mana/Floor)는 BattleUI.DrawTopBar가 자체 자산 사용.
     private Texture2D _glowTex;
-    private Texture2D _campIconTex;     // 헤더 — Map/Node_Camp
-    private Texture2D _treasureIconTex; // 좌측 옵션 — Reward/RelicIcon
-    private Texture2D _restIconTex;     // 우측 옵션 — Reward/Potion_Bottle
-    private Texture2D _hpIconTex;       // HP 하트 아이콘 — InGame/Icon/HP (헤더 비활성화 시 미사용)
+    private Texture2D _treasureIconTex; // 좌측 옵션 아이콘 — VillageUI/TreasureChest
+    private Texture2D _restIconTex;     // 우측 옵션 아이콘 — VillageUI/RestHeart
     private Texture2D _bgTex;           // 전체 화면 배경 — VillageUI/BackGround
-    private Texture2D _npcTex;          // NPC 상반신 — VillageUI/NPC (1프레임 + transform 애니메이션)
-    private Texture2D _optionCardTex;   // 선택지 카드 패널 — VillageUI/OptionCardPanel
+    private Texture2D _npcTex;          // NPC 상반신 — VillageUI/NPC
+    private Texture2D _optionCardTex;   // 선택지 카드 프레임 — VillageUI/OptionCardPanel
 
     // 진입 엣지 디텍션 + 제스처 타이머. _gestureT < 0 = 재생 안 함.
     private bool _wasInVillage;
     private float _gestureT = -1f;
 
     private Font _displayFont;
+    private string _loadedFontPath;
 
-    private GUIStyle _titleStyle;
-    private GUIStyle _subStyle;
-    private GUIStyle _optionTitleStyle;
     private GUIStyle _optionDescStyle;
-    private GUIStyle _hpStyle;
     private bool _stylesReady;
 
     void Update()
@@ -346,9 +242,6 @@ public class VillageUI : MonoBehaviour
         if (inVillage && !_wasInVillage && introEnabled) _gestureT = 0f;
         _wasInVillage = inVillage;
         if (_gestureT >= 0f && inVillage) _gestureT += Time.deltaTime;
-
-        // 불씨 파티클 업데이트 — Village 에 있을 때만 틱.
-        if (inVillage && embersEnabled) UpdateEmbers(Time.deltaTime);
 
         if (_pending.Count > 0)
         {
@@ -403,12 +296,16 @@ public class VillageUI : MonoBehaviour
     {
         var prev = GUI.color;
 
-        // 배경 이미지 (모닥불 야영지). 없으면 단색 폴백.
+        // 배경 이미지 — Inspector 의 offset/scale 적용. 없으면 단색 폴백.
         if (_bgTex != null)
         {
             GUI.color = Color.white;
-            GUI.DrawTexture(new Rect(0, 0, RefW, RefH), _bgTex, ScaleMode.ScaleAndCrop);
-            // UI 가독성 확보용 딤 오버레이
+            float bgW = RefW * bgScale;
+            float bgH = RefH * bgScale;
+            float bgX = (RefW - bgW) * 0.5f + bgOffsetX;
+            float bgY = (RefH - bgH) * 0.5f + bgOffsetY;
+            GUI.DrawTexture(new Rect(bgX, bgY, bgW, bgH), _bgTex, ScaleMode.ScaleAndCrop);
+            // UI 가독성 확보용 딤 오버레이 — 항상 전체 화면.
             GUI.color = backdropColor;
             GUI.DrawTexture(new Rect(0, 0, RefW, RefH), Texture2D.whiteTexture);
         }
@@ -418,169 +315,6 @@ public class VillageUI : MonoBehaviour
             GUI.DrawTexture(new Rect(0, 0, RefW, RefH), Texture2D.whiteTexture);
         }
 
-        if (_glowTex != null)
-        {
-            GUI.color = campfireGlowColor;
-            GUI.DrawTexture(new Rect(RefW * 0.5f - campfireGlowSize.x * 0.5f,
-                                     RefH * 0.5f - campfireGlowSize.y * 0.5f,
-                                     campfireGlowSize.x, campfireGlowSize.y),
-                            _glowTex, ScaleMode.StretchToFill);
-        }
-
-        // 모닥불 집중 글로우 — 은은한 펄스 효과.
-        if (focalGlowEnabled && _glowTex != null)
-        {
-            float pulse = focalGlowPulsePeriod > 0f
-                ? Mathf.Sin(Time.time * (Mathf.PI * 2f / focalGlowPulsePeriod)) * focalGlowPulseAmp
-                : 0f;
-            Color gc = focalGlowColor;
-            gc.a = Mathf.Clamp01(gc.a + pulse);
-            GUI.color = gc;
-            GUI.DrawTexture(new Rect(
-                    focalGlowCenter.x - focalGlowSize.x * 0.5f,
-                    focalGlowCenter.y - focalGlowSize.y * 0.5f,
-                    focalGlowSize.x, focalGlowSize.y),
-                _glowTex, ScaleMode.StretchToFill);
-        }
-
-        GUI.color = prev;
-
-        // 별 — 배경 위 가장 뒤쪽 레이어.
-        if (starsEnabled) DrawStars();
-
-        // 횃불 불씨 파티클 — 배경 위 / NPC 아래 레이어. 밝은 색 + 덧셈 느낌 위해 알파 블렌드.
-        if (embersEnabled) DrawEmbers();
-    }
-
-    private void UpdateEmbers(float dt)
-    {
-        // 개수 맞추기 — 추가 or 제거.
-        while (_embers.Count < embersCount) _embers.Add(SpawnEmber(UnityEngine.Random.Range(0f, embersLifetime)));
-        while (_embers.Count > embersCount) _embers.RemoveAt(_embers.Count - 1);
-
-        for (int i = 0; i < _embers.Count; i++)
-        {
-            var e = _embers[i];
-            e.age += dt;
-            if (e.age >= e.lifetime) { _embers[i] = SpawnEmber(0f); continue; }
-            // 상승 + 가로 흔들림 (sin wave).
-            e.pos.y -= embersRiseSpeed * dt;
-            e.pos.x = e.baseX + Mathf.Sin(Time.time * 1.4f + e.swayPhase) * embersSway;
-            _embers[i] = e;
-        }
-    }
-
-    private Ember SpawnEmber(float startAge)
-    {
-        // 좌/우 횃불 중 랜덤 선택 (교대로 섞여서 양쪽 모두 활발해 보이게).
-        Vector2 center = UnityEngine.Random.value < 0.5f ? torchLeft : torchRight;
-        float ang = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
-        float r = UnityEngine.Random.Range(0f, embersSpawnRadius);
-        float x = center.x + Mathf.Cos(ang) * r;
-        float y = center.y + Mathf.Sin(ang) * r * 0.3f; // 상하로는 좁게
-        return new Ember
-        {
-            pos = new Vector2(x, y),
-            baseX = x,
-            age = startAge,
-            lifetime = embersLifetime * UnityEngine.Random.Range(0.7f, 1.3f),
-            size = UnityEngine.Random.Range(embersSizeRange.x, embersSizeRange.y),
-            swayPhase = UnityEngine.Random.Range(0f, Mathf.PI * 2f),
-        };
-    }
-
-    private void DrawEmbers()
-    {
-        if (_embers.Count == 0) return;
-        var prev = GUI.color;
-        for (int i = 0; i < _embers.Count; i++)
-        {
-            var e = _embers[i];
-            float t = Mathf.Clamp01(e.age / e.lifetime);
-            Color c = Color.Lerp(embersColorStart, embersColorEnd, t);
-            GUI.color = c;
-            float half = e.size * 0.5f;
-            GUI.DrawTexture(new Rect(e.pos.x - half, e.pos.y - half, e.size, e.size), _glowTex ?? Texture2D.whiteTexture, ScaleMode.StretchToFill);
-        }
-        GUI.color = prev;
-    }
-
-    private int _starsLastCount = -1;
-    private Rect _starsLastArea;
-    private static Texture2D _starCircleTex;
-    private void EnsureStars()
-    {
-        bool needRebuild = !_starsInitialized
-            || _stars.Count != starsCount
-            || _starsLastCount != starsCount
-            || _starsLastArea != starsArea;
-        if (!needRebuild) return;
-
-        _stars.Clear();
-        for (int i = 0; i < starsCount; i++)
-        {
-            _stars.Add(new Star
-            {
-                pos = new Vector2(
-                    UnityEngine.Random.Range(starsArea.xMin, starsArea.xMax),
-                    UnityEngine.Random.Range(starsArea.yMin, starsArea.yMax)),
-                size = UnityEngine.Random.Range(starsSizeRange.x, starsSizeRange.y),
-                period = UnityEngine.Random.Range(starsTwinklePeriodRange.x, starsTwinklePeriodRange.y),
-                phase = UnityEngine.Random.Range(0f, Mathf.PI * 2f),
-            });
-        }
-        _starsLastCount = starsCount;
-        _starsLastArea = starsArea;
-        _starsInitialized = true;
-    }
-
-    /// <summary>작은 원 모양 텍스처 — 별을 네모 대신 동그랗게 렌더하기 위한 단순 알파 마스크.</summary>
-    private static Texture2D GetStarCircleTexture()
-    {
-        if (_starCircleTex != null) return _starCircleTex;
-        const int size = 16;
-        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
-        { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
-        var px = new Color[size * size];
-        float c = (size - 1) * 0.5f;
-        float rMax = c; // 끝까지가 반지름
-        for (int y = 0; y < size; y++)
-        for (int x = 0; x < size; x++)
-        {
-            float d = Mathf.Sqrt((x - c) * (x - c) + (y - c) * (y - c));
-            // 가장자리에서 부드럽게 페이드아웃 — 안티앨리어싱 느낌.
-            float a = Mathf.Clamp01(rMax - d);
-            px[y * size + x] = new Color(1f, 1f, 1f, a);
-        }
-        tex.SetPixels(px);
-        tex.Apply();
-        _starCircleTex = tex;
-        return tex;
-    }
-
-    private void DrawStars()
-    {
-        EnsureStars();
-        if (_stars.Count == 0) return;
-        var prev = GUI.color;
-        var tex = GetStarCircleTexture();
-        float now = Time.time;
-        for (int i = 0; i < _stars.Count; i++)
-        {
-            var s = _stars[i];
-            // 반짝임: sin 기반 0~1 알파 배율. minAlphaMul ~ 1 범위에서 진동.
-            float t = (Mathf.Sin(now * (Mathf.PI * 2f / Mathf.Max(0.1f, s.period)) + s.phase) + 1f) * 0.5f;
-            float alphaMul = Mathf.Lerp(starsMinAlphaMul, 1f, t);
-            // 활성 비율 — phase 기반 결정적 선택으로 N% 만 "활동적"으로 반짝이게.
-            // phase 를 0~1 정규화 후 activeRatio 보다 큰 별은 최소 밝기 유지.
-            float normPhase = (s.phase / (Mathf.PI * 2f));
-            if (normPhase > starsActiveRatio) alphaMul *= 0.35f;
-            var c = starsColor;
-            c.a *= alphaMul;
-            GUI.color = c;
-            float half = s.size * 0.5f;
-            GUI.DrawTexture(new Rect(s.pos.x - half, s.pos.y - half, s.size, s.size), tex, ScaleMode.StretchToFill);
-        }
         GUI.color = prev;
     }
 
@@ -673,7 +407,6 @@ public class VillageUI : MonoBehaviour
         DrawOptionCard(
             leftRect,
             _treasureIconTex,
-            treasureTitle,
             treasureName,
             treasureNameColor,
             treasureDesc,
@@ -684,7 +417,6 @@ public class VillageUI : MonoBehaviour
         DrawOptionCard(
             rightRect,
             _restIconTex,
-            restTitle,
             restName,
             restNameColor,
             restBody,
@@ -701,7 +433,7 @@ public class VillageUI : MonoBehaviour
         }
     }
 
-    private void DrawOptionCard(Rect rect, Texture2D icon, string title, string name, Color nameColor, string description, Color glowColor, bool hover)
+    private void DrawOptionCard(Rect rect, Texture2D icon, string name, Color nameColor, string description, Color glowColor, bool hover)
     {
         // 호버 시 카드 전체를 하나의 단위로 스케일 — GUI.matrix 로 중심 기준 확대.
         Matrix4x4 prevMatrix = GUI.matrix;
@@ -740,23 +472,16 @@ public class VillageUI : MonoBehaviour
             GUI.color = prevShadow;
         }
 
-        // 패널 — 새 tribal OptionCardPanel 우선, 없으면 기존 Panel, 그것도 없으면 단색 fallback
+        // 카드 프레임 — VillageUI/OptionCardPanel (없으면 단색 fallback).
         if (_optionCardTex != null)
             GUI.DrawTexture(rect, _optionCardTex, ScaleMode.StretchToFill);
-        else if (_panelTex != null)
-            GUI.DrawTexture(rect, _panelTex, ScaleMode.StretchToFill);
         else
             DrawFilledRect(rect, new Color(0.10f, 0.14f, 0.20f, 0.96f));
 
-        // 메달리온 + 아이콘
+        // 아이콘 배치 기준 — 프레임 중앙(+ Inspector 의 X 오프셋) / Y 는 카드 높이의 비율.
         float medSize = medallionSize;
-        float medCx = rect.center.x;
+        float medCx = rect.center.x + iconCenterXOffset;
         float medCy = rect.y + rect.height * medallionCenterYFactor;
-        if (drawMedallion && _medallionTex != null)
-        {
-            var medRect = new Rect(medCx - medSize * 0.5f, medCy - medSize * 0.5f, medSize, medSize);
-            GUI.DrawTexture(medRect, _medallionTex, ScaleMode.ScaleToFit);
-        }
         if (icon != null)
         {
             float iconSize = medSize * iconSizeFactor;
@@ -804,56 +529,24 @@ public class VillageUI : MonoBehaviour
             GUI.color = prevIcon;
         }
 
-        // 타이틀 — 상단 배너 위치(글씨만) or 기존(메달리온 아래)
-        Rect titleRect;
-        int prevFS = _optionTitleStyle.fontSize;
-        if (useTitleBanner)
-        {
-            titleRect = new Rect(
-                rect.center.x - titleBannerWidth * 0.5f + titleBannerOffsetX,
-                rect.y + titleBannerOffsetY,
-                titleBannerWidth,
-                titleBannerHeight);
-            _optionTitleStyle.fontSize = titleBannerFontSize;
-        }
-        else
-        {
-            titleRect = new Rect(rect.x, medCy + medSize * 0.5f + optionTitleTopGap, rect.width, optionTitleHeight);
-        }
-        // 외곽선 — 상하 그라데이션 (dy=-1: 위쪽=밝은 실버, dy=+1: 아래쪽=어두운 차콜, dy=0: 중간 믹스)
-        if (optionTitleOutlineThickness > 0f)
-        {
-            var prevColor = _optionTitleStyle.normal.textColor;
-            float t = optionTitleOutlineThickness;
-            for (int dx = -1; dx <= 1; dx++)
-            for (int dy = -1; dy <= 1; dy++)
-            {
-                if (dx == 0 && dy == 0) continue;
-                Color c = dy < 0 ? optionTitleOutlineTop
-                        : dy > 0 ? optionTitleOutlineBottom
-                        : Color.Lerp(optionTitleOutlineTop, optionTitleOutlineBottom, 0.5f);
-                _optionTitleStyle.normal.textColor = c;
-                GUI.Label(new Rect(titleRect.x + dx * t, titleRect.y + dy * t, titleRect.width, titleRect.height),
-                          title, _optionTitleStyle);
-            }
-            _optionTitleStyle.normal.textColor = prevColor;
-        }
-        GUI.Label(titleRect, title, _optionTitleStyle);
-        _optionTitleStyle.fontSize = prevFS;
-
-        // 설명 — 배너 모드면 메달리온 아래부터, 일반 모드면 타이틀 아래부터
-        float descTop = useTitleBanner
-            ? (medCy + medSize * 0.5f + optionDescTopGap)
-            : (titleRect.y + titleRect.height + optionDescTopGap);
+        // 설명 영역 — 아이콘 아래(본문 전용 컨테이너).
+        float descTop = medCy + medSize * 0.5f + optionDescTopGap;
         var descRect = new Rect(rect.x + optionDescXPad, descTop, rect.width - optionDescXPad * 2f, rect.yMax - descTop - optionDescBottomPad);
 
-        // 이름(Mystery / Heal) — 별도 폰트 크기, 색, 위치 오프셋으로 독립 렌더.
+        // 제목(Mystery / Heal) — 아이콘 위쪽에 별도 배치. nameOffset.y 양수 = 아이콘에서 위로 멀어짐.
         // 호버 스케일은 GUI.matrix 가 처리하므로 폰트/오프셋은 원본 값 그대로 사용.
         int prevNameFS = _optionDescStyle.fontSize;
         var prevNameColor = _optionDescStyle.normal.textColor;
         _optionDescStyle.fontSize = nameFontSize;
-        float nameH = _optionDescStyle.CalcHeight(new GUIContent(name), descRect.width);
-        var nameRect = new Rect(descRect.x + nameOffset.x, descRect.y + nameOffset.y, descRect.width, nameH);
+        float nameAreaW = nameWidthOverride > 0f ? nameWidthOverride : rect.width - optionDescXPad * 2f;
+        float nameAutoH = _optionDescStyle.CalcHeight(new GUIContent(name), nameAreaW);
+        float nameH = nameHeightOverride > 0f ? nameHeightOverride : nameAutoH;
+        float nameY = (medCy - medSize * 0.5f) - nameOffset.y - nameH;
+        // 제목 폭이 오버라이드되면 카드 중앙 기준 정렬, 아니면 좌측 패딩 시작.
+        float nameX = nameWidthOverride > 0f
+            ? rect.center.x - nameAreaW * 0.5f + nameOffset.x
+            : rect.x + optionDescXPad + nameOffset.x;
+        var nameRect = new Rect(nameX, nameY, nameAreaW, nameH);
 
         // 이름 외곽선 — 4/8방향 오프셋.
         if (nameOutlineEnabled && nameOutlineThickness > 0f && !string.IsNullOrEmpty(name))
@@ -896,8 +589,11 @@ public class VillageUI : MonoBehaviour
         _optionDescStyle.fontSize = baseBodyFS;
         _optionDescStyle.normal.textColor = prevNameColor;
         LockStateColors(_optionDescStyle);
-        float bodyTop = nameRect.y + nameH + bodyOffset.y;
-        var bodyRect = new Rect(descRect.x + bodyOffset.x, bodyTop, descRect.width, descRect.yMax - bodyTop);
+        float bodyTop = descRect.y + bodyOffset.y;
+        float bodyW = bodyWidthOverride > 0f ? bodyWidthOverride : descRect.width;
+        float bodyMaxH = descRect.yMax - bodyTop;
+        float bodyH = bodyHeightOverride > 0f ? Mathf.Min(bodyHeightOverride, bodyMaxH) : bodyMaxH;
+        var bodyRect = new Rect(descRect.x + bodyOffset.x, bodyTop, bodyW, bodyH);
 
         // 본문도 외곽선 (이름과 같은 설정 재사용).
         if (nameOutlineEnabled && nameOutlineThickness > 0f && !string.IsNullOrEmpty(description))
@@ -945,16 +641,6 @@ public class VillageUI : MonoBehaviour
         GUI.matrix = prevMatrix;
     }
 
-    // 주어진 두께로 rect의 4변 외곽선 그리기 (t<=0이면 생략)
-    private static void DrawBorderRect(Rect r, float t, Color c)
-    {
-        if (t <= 0f) return;
-        DrawFilledRect(new Rect(r.x, r.y, r.width, t), c);
-        DrawFilledRect(new Rect(r.x, r.yMax - t, r.width, t), c);
-        DrawFilledRect(new Rect(r.x, r.y, t, r.height), c);
-        DrawFilledRect(new Rect(r.xMax - t, r.y, t, r.height), c);
-    }
-
     // =========================================================
     // 리소스 / 스타일
     // =========================================================
@@ -963,42 +649,22 @@ public class VillageUI : MonoBehaviour
     {
         if (_stylesReady) return;
 
-        // VillageUI 전용 에셋 폴더 — 다른 UI에서 분리되어 독립적으로 튜닝 가능.
-        _panelTex        = Resources.Load<Texture2D>("VillageUI/Panel");
-        _rowTex          = Resources.Load<Texture2D>("VillageUI/RowButton");
-        _medallionTex    = Resources.Load<Texture2D>("VillageUI/MedallionRing");
-        _continueTex     = Resources.Load<Texture2D>("VillageUI/ContinueButton");
-        _campIconTex     = Resources.Load<Texture2D>("VillageUI/Node_Camp");
+        // VillageUI 전용 에셋 — 5종만. 헤더(상단 네비)는 BattleUI.DrawTopBar 가 InGame/ 자산을 그대로 사용.
         _treasureIconTex = Resources.Load<Texture2D>("VillageUI/TreasureChest");
         _restIconTex     = Resources.Load<Texture2D>("VillageUI/RestHeart");
-        _hpIconTex       = Resources.Load<Texture2D>("VillageUI/HP");
         _bgTex           = Resources.Load<Texture2D>("VillageUI/BackGround");
         _npcTex          = Resources.Load<Texture2D>("VillageUI/NPC");
         _optionCardTex   = Resources.Load<Texture2D>("VillageUI/OptionCardPanel");
 
-        _displayFont = Resources.Load<Font>("Fonts/Cinzel-VariableFont_wght");
+        _displayFont = Resources.Load<Font>(fontResourcePath)
+                    ?? Resources.Load<Font>("Fonts/Cinzel-VariableFont_wght"); // 폰트 경로 오타 대비 폴백
+        _loadedFontPath = fontResourcePath;
 
         _glowTex = CreateRadialGlowTexture(64);
 
-        _titleStyle = new GUIStyle(GUI.skin.label)
-        {
-            font = _displayFont, alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold,
-        };
-        _subStyle = new GUIStyle(GUI.skin.label)
-        {
-            font = _displayFont, alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold,
-        };
-        _optionTitleStyle = new GUIStyle(GUI.skin.label)
-        {
-            font = _displayFont, alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold,
-        };
         _optionDescStyle = new GUIStyle(GUI.skin.label)
         {
             font = _displayFont, alignment = TextAnchor.UpperCenter, fontStyle = FontStyle.Bold, wordWrap = true, richText = true,
-        };
-        _hpStyle = new GUIStyle(GUI.skin.label)
-        {
-            font = _displayFont, alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold,
         };
 
         ApplyStyleValues();
@@ -1008,24 +674,25 @@ public class VillageUI : MonoBehaviour
     // Inspector 값이 바뀌면 매 프레임 스타일에 반영
     private void ApplyStyleValues()
     {
-        if (_titleStyle == null) return;
-        _titleStyle.fontSize = titleFontSize;
-        _titleStyle.normal.textColor = titleColor;
-        _subStyle.fontSize = subtitleFontSize;
-        _subStyle.normal.textColor = creamColor;
-        _optionTitleStyle.fontSize = optionTitleFontSize;
-        _optionTitleStyle.normal.textColor = optionTitleColor;
+        if (_optionDescStyle == null) return;
+
+        // 폰트 핫스왑 — 인스펙터에서 fontResourcePath 변경 시 즉시 반영.
+        if (_loadedFontPath != fontResourcePath)
+        {
+            var newFont = Resources.Load<Font>(fontResourcePath);
+            if (newFont != null)
+            {
+                _displayFont = newFont;
+                _optionDescStyle.font = _displayFont;
+            }
+            _loadedFontPath = fontResourcePath;
+        }
+
         _optionDescStyle.fontSize = optionDescFontSize;
         _optionDescStyle.normal.textColor = optionDescColor;
-        _hpStyle.fontSize = hpFontSize;
-        _hpStyle.normal.textColor = hpTextColor;
 
         // 호버/액티브 시 색 변경 방지 — 모든 state에 동일 색 복사
-        LockStateColors(_titleStyle);
-        LockStateColors(_subStyle);
-        LockStateColors(_optionTitleStyle);
         LockStateColors(_optionDescStyle);
-        LockStateColors(_hpStyle);
     }
 
     private static void LockStateColors(GUIStyle s)
@@ -1044,12 +711,6 @@ public class VillageUI : MonoBehaviour
     // =========================================================
     // Util
     // =========================================================
-
-    private static Rect Scale(Rect r, float s) => new Rect(
-        r.center.x - r.width * s * 0.5f,
-        r.center.y - r.height * s * 0.5f,
-        r.width * s,
-        r.height * s);
 
     private static void DrawFilledRect(Rect r, Color c)
     {

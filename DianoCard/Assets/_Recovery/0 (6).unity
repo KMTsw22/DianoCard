@@ -1,0 +1,884 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!29 &1
+OcclusionCullingSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_OcclusionBakeSettings:
+    smallestOccluder: 5
+    smallestHole: 0.25
+    backfaceThreshold: 100
+  m_SceneGUID: 00000000000000000000000000000000
+  m_OcclusionCullingData: {fileID: 0}
+--- !u!104 &2
+RenderSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 10
+  m_Fog: 0
+  m_FogColor: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  m_FogMode: 3
+  m_FogDensity: 0.01
+  m_LinearFogStart: 0
+  m_LinearFogEnd: 300
+  m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
+  m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
+  m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
+  m_AmbientIntensity: 1
+  m_AmbientMode: 3
+  m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
+  m_SkyboxMaterial: {fileID: 0}
+  m_HaloStrength: 0.5
+  m_FlareStrength: 1
+  m_FlareFadeSpeed: 3
+  m_HaloTexture: {fileID: 0}
+  m_SpotCookie: {fileID: 10001, guid: 0000000000000000e000000000000000, type: 0}
+  m_DefaultReflectionMode: 0
+  m_DefaultReflectionResolution: 128
+  m_ReflectionBounces: 1
+  m_ReflectionIntensity: 1
+  m_CustomReflection: {fileID: 0}
+  m_Sun: {fileID: 0}
+  m_UseRadianceAmbientProbe: 0
+--- !u!157 &3
+LightmapSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 13
+  m_BakeOnSceneLoad: 0
+  m_GISettings:
+    serializedVersion: 2
+    m_BounceScale: 1
+    m_IndirectOutputScale: 1
+    m_AlbedoBoost: 1
+    m_EnvironmentLightingMode: 0
+    m_EnableBakedLightmaps: 0
+    m_EnableRealtimeLightmaps: 0
+  m_LightmapEditorSettings:
+    serializedVersion: 12
+    m_Resolution: 2
+    m_BakeResolution: 40
+    m_AtlasSize: 1024
+    m_AO: 0
+    m_AOMaxDistance: 1
+    m_CompAOExponent: 1
+    m_CompAOExponentDirect: 0
+    m_ExtractAmbientOcclusion: 0
+    m_Padding: 2
+    m_LightmapParameters: {fileID: 0}
+    m_LightmapsBakeMode: 1
+    m_TextureCompression: 1
+    m_ReflectionCompression: 2
+    m_MixedBakeMode: 2
+    m_BakeBackend: 1
+    m_PVRSampling: 1
+    m_PVRDirectSampleCount: 32
+    m_PVRSampleCount: 512
+    m_PVRBounces: 2
+    m_PVREnvironmentSampleCount: 256
+    m_PVREnvironmentReferencePointCount: 2048
+    m_PVRFilteringMode: 1
+    m_PVRDenoiserTypeDirect: 1
+    m_PVRDenoiserTypeIndirect: 1
+    m_PVRDenoiserTypeAO: 1
+    m_PVRFilterTypeDirect: 0
+    m_PVRFilterTypeIndirect: 0
+    m_PVRFilterTypeAO: 0
+    m_PVREnvironmentMIS: 1
+    m_PVRCulling: 1
+    m_PVRFilteringGaussRadiusDirect: 1
+    m_PVRFilteringGaussRadiusIndirect: 5
+    m_PVRFilteringGaussRadiusAO: 2
+    m_PVRFilteringAtrousPositionSigmaDirect: 0.5
+    m_PVRFilteringAtrousPositionSigmaIndirect: 2
+    m_PVRFilteringAtrousPositionSigmaAO: 1
+    m_ExportTrainingData: 0
+    m_TrainingDataDestination: TrainingData
+    m_LightProbeSampleCountMultiplier: 4
+  m_LightingDataAsset: {fileID: 0}
+  m_LightingSettings: {fileID: 0}
+--- !u!196 &4
+NavMeshSettings:
+  serializedVersion: 2
+  m_ObjectHideFlags: 0
+  m_BuildSettings:
+    serializedVersion: 3
+    agentTypeID: 0
+    agentRadius: 0.5
+    agentHeight: 2
+    agentSlope: 45
+    agentClimb: 0.4
+    ledgeDropHeight: 0
+    maxJumpAcrossDistance: 0
+    minRegionArea: 2
+    manualCellSize: 0
+    cellSize: 0.16666667
+    manualTileSize: 0
+    tileSize: 256
+    buildHeightMesh: 0
+    maxJobWorkers: 0
+    preserveTilesOutsideBounds: 0
+    debug:
+      m_Flags: 0
+  m_NavMeshData: {fileID: 0}
+--- !u!1 &519420028
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 519420032}
+  - component: {fileID: 519420031}
+  - component: {fileID: 519420029}
+  - component: {fileID: 519420030}
+  m_Layer: 0
+  m_Name: Main Camera
+  m_TagString: MainCamera
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!81 &519420029
+AudioListener:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+--- !u!114 &519420030
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a79441f348de89743a2939f4d699eac1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_RenderShadows: 1
+  m_RequiresDepthTextureOption: 2
+  m_RequiresOpaqueTextureOption: 2
+  m_CameraType: 0
+  m_Cameras: []
+  m_RendererIndex: -1
+  m_VolumeLayerMask:
+    serializedVersion: 2
+    m_Bits: 1
+  m_VolumeTrigger: {fileID: 0}
+  m_VolumeFrameworkUpdateModeOption: 2
+  m_RenderPostProcessing: 0
+  m_Antialiasing: 0
+  m_AntialiasingQuality: 2
+  m_StopNaN: 0
+  m_Dithering: 0
+  m_ClearDepth: 1
+  m_AllowXRRendering: 1
+  m_AllowHDROutput: 1
+  m_UseScreenCoordOverride: 0
+  m_ScreenSizeOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_ScreenCoordScaleBias: {x: 0, y: 0, z: 0, w: 0}
+  m_RequiresDepthTexture: 0
+  m_RequiresColorTexture: 0
+  m_TaaSettings:
+    m_Quality: 3
+    m_FrameInfluence: 0.1
+    m_JitterScale: 1
+    m_MipBias: 0
+    m_VarianceClampScale: 0.9
+    m_ContrastAdaptiveSharpening: 0
+  m_Version: 2
+--- !u!20 &519420031
+Camera:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  m_Enabled: 1
+  serializedVersion: 2
+  m_ClearFlags: 2
+  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_projectionMatrixMode: 1
+  m_GateFitMode: 2
+  m_FOVAxisMode: 0
+  m_Iso: 200
+  m_ShutterSpeed: 0.005
+  m_Aperture: 16
+  m_FocusDistance: 10
+  m_FocalLength: 50
+  m_BladeCount: 5
+  m_Curvature: {x: 2, y: 11}
+  m_BarrelClipping: 0.25
+  m_Anamorphism: 0
+  m_SensorSize: {x: 36, y: 24}
+  m_LensShift: {x: 0, y: 0}
+  m_NormalizedViewPortRect:
+    serializedVersion: 2
+    x: 0
+    y: 0
+    width: 1
+    height: 1
+  near clip plane: 0.3
+  far clip plane: 1000
+  field of view: 34
+  orthographic: 1
+  orthographic size: 5
+  m_Depth: -1
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RenderingPath: -1
+  m_TargetTexture: {fileID: 0}
+  m_TargetDisplay: 0
+  m_TargetEye: 0
+  m_HDR: 1
+  m_AllowMSAA: 0
+  m_AllowDynamicResolution: 0
+  m_ForceIntoRT: 0
+  m_OcclusionCulling: 0
+  m_StereoConvergence: 10
+  m_StereoSeparation: 0.022
+--- !u!4 &519420032
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 519420028}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: -10}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &619394800
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 619394802}
+  - component: {fileID: 619394801}
+  m_Layer: 0
+  m_Name: Global Light 2D
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!114 &619394801
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 619394800}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 073797afb82c5a1438f328866b10b3f0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_ComponentVersion: 2
+  m_LightType: 4
+  m_BlendStyleIndex: 0
+  m_FalloffIntensity: 0.5
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
+  m_Intensity: 1
+  m_LightVolumeIntensity: 1
+  m_LightVolumeEnabled: 0
+  m_ApplyToSortingLayers: 00000000
+  m_LightCookieSprite: {fileID: 0}
+  m_DeprecatedPointLightCookieSprite: {fileID: 0}
+  m_LightOrder: 0
+  m_AlphaBlendOnOverlap: 0
+  m_OverlapOperation: 0
+  m_NormalMapDistance: 3
+  m_NormalMapQuality: 2
+  m_UseNormalMap: 0
+  m_ShadowsEnabled: 0
+  m_ShadowIntensity: 0.75
+  m_ShadowSoftness: 0
+  m_ShadowSoftnessFalloffIntensity: 0.5
+  m_ShadowVolumeIntensityEnabled: 0
+  m_ShadowVolumeIntensity: 0.75
+  m_LocalBounds:
+    m_Center: {x: 0, y: -0.00000011920929, z: 0}
+    m_Extent: {x: 0.9985302, y: 0.99853027, z: 0}
+  m_PointLightInnerAngle: 360
+  m_PointLightOuterAngle: 360
+  m_PointLightInnerRadius: 0
+  m_PointLightOuterRadius: 1
+  m_ShapeLightParametricSides: 5
+  m_ShapeLightParametricAngleOffset: 0
+  m_ShapeLightParametricRadius: 1
+  m_ShapeLightFalloffSize: 0.5
+  m_ShapeLightFalloffOffset: {x: 0, y: 0}
+  m_ShapePath:
+  - {x: -0.5, y: -0.5, z: 0}
+  - {x: 0.5, y: -0.5, z: 0}
+  - {x: 0.5, y: 0.5, z: 0}
+  - {x: -0.5, y: 0.5, z: 0}
+--- !u!4 &619394802
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 619394800}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &727273073
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 727273075}
+  - component: {fileID: 727273076}
+  - component: {fileID: 727273077}
+  - component: {fileID: 727273078}
+  - component: {fileID: 727273079}
+  m_Layer: 0
+  m_Name: GameObject
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &727273075
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 727273073}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &727273076
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 727273073}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 49c6eb16b6942ee4bb9b36e33c8843f3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::BattleUI
+  hudStripEnabled: 1
+  hudStripHeight: 74
+  hudStripBgColorBattle: {r: 0.03, g: 0.05, b: 0.08, a: 1}
+  hudStripBgColorMap: {r: 0.03, g: 0.05, b: 0.08, a: 1}
+  hudStripBgColorVillage: {r: 0.03, g: 0.05, b: 0.08, a: 1}
+  hudStripAlphaBattle: 0.5
+  hudStripAlphaMap: 0.84
+  hudStripAlphaVillage: 0.88
+  hudDividerCenterY: 78
+  hudDividerHeight: 120
+  hudDividerOverscan: 600
+  hudDividerWidth: 0
+  hudDividerTint: {r: 0.412, g: 0.412, b: 0.412, a: 1}
+  hudBattleBottomLineColor: {r: 0.81960785, g: 0.6784314, b: 0.38039216, a: 0.20392157}
+  hudBattleBottomLineThickness: 3
+  navBarMasterScale: 0.95
+  topBarTexEnabled: 1
+  topBarTexHeight: 90
+  topBarTexYOffset: -5
+  topBarTexHorizontalInset: 0
+  hudSlotIconSize: 45
+  hudSlotIconLabelGap: 5.13
+  hudSlotGap: 25
+  cornerDeckPileSize: 65
+  cornerDiscardPileSize: 65
+  cornerPileTopFromBottom: 110
+  cornerPileLeftX: 22
+  cornerPileRightInset: 95
+  endTurnButtonWidth: 190
+  endTurnButtonHeight: 95
+  endTurnButtonRightOffset: 280
+  endTurnButtonBottomOffset: 100
+  handCardWidth: 157.5
+  handCardHeight: 219.45
+  hudSlotLeftPadX: 17.1
+  hudRightPad: 23.94
+  hudRightSlotGap: 47.88
+  _vfxHitA: {fileID: 4021103657954561961, guid: 5c755f9bc5253ea418e919994537dcc7, type: 3}
+  _vfxHitD: {fileID: 5880797563127281583, guid: 265d3a5ba69981a4698ceabcedf368b0, type: 3}
+  _vfxSmokeF: {fileID: 141433446842962269, guid: 9fe8f8b3288e45a44af36ff8aa04486e, type: 3}
+  _vfxZDistance: 10
+  _entityShadowHeight: 0.1
+  _entityShadowWidthScale: 1
+  _entityShadowOffsetX: -0.106
+  _entityShadowOffsetY: 0.106
+  _entityShadowAlpha: 1
+  _enemyShadowEnabled: 1
+  _enemyShadowHeight: 0.1
+  _enemyShadowWidthScale: 1
+  _enemyShadowOffsetX: 0
+  _enemyShadowOffsetY: 0
+  _enemyShadowAlpha: 1
+  dinoSize: 180
+  dinoSingleX: 530
+  dinoSingleFootY: 542
+  dinoTwoSlot0X: 420
+  dinoTwoSlot0FootY: 580
+  pairOverlapPct: 0.55
+  pairStaggerYPct: 0.28
+  pairMinSpacingPct: 0.4
+  pairSizeStaggerBoost: 0.8
+  hpBarSpriteRatio: 0.6
+  hpBarMinWidth: 110
+  hpBarMaxWidth: 170
+  hpBarHeight: 18
+  handBottomOffset: 55
+  handAnglePerCard: 6.5
+  handFanRadius: 1250
+  cardArtRectV2Pct: {x: 0.05, y: 0.2, z: 0.9, w: 0.5}
+  cardNameOnRibbonRectPct: {x: 0.16, y: 0.075, z: 0.68, w: 0.12}
+  cardBodyV2RectPct: {x: 0.11, y: 0.75, z: 0.78, w: 0.24}
+  cardCostOrbPct: {x: 0.115, y: 0.2, z: 0.22}
+  cardArtTint: {r: 1, g: 1, b: 1, a: 1}
+  cardArtPlaceholderTint: {r: 0.5, g: 0.5, b: 0.5, a: 0.35}
+  cardDisabledDim: {r: 0.55, g: 0.55, b: 0.55, a: 0.9}
+  cardNameTextTint: {r: 1, g: 1, b: 1, a: 1}
+  cardNameOutline: {r: 0, g: 0, b: 0, a: 0.9}
+  cardNameOutlineThickness: 1
+  cardBodyTextColor: {r: 1, g: 1, b: 1, a: 1}
+  cardBodyOutline: {r: 0, g: 0, b: 0, a: 0.7}
+  cardBodyOutlineThickness: 0
+  cardCostTextColor: {r: 1, g: 1, b: 1, a: 1}
+  cardCostOutline: {r: 0, g: 0, b: 0, a: 0.95}
+  cardCostOutlineThickness: 1.2
+  cardNameDisabledColor: {r: 0.75, g: 0.75, b: 0.75, a: 0.9}
+  cardCostDisabledColor: {r: 0.75, g: 0.75, b: 0.75, a: 0.9}
+  cardNameFontSize: 14
+  cardNameFontSizeSmall: 11
+  cardBodyFontSize: 10
+  cardCostFontSizeRatio: 0.57
+  cardCostTextOffsetPct: {x: 0.001, y: -0.042}
+  cardCostTextRectShrinkPct: 0
+  manaOrbSize: 125
+  manaOrbCenterX: 200
+  manaOrbBottomOffset: 70
+  manaOrbFontSizeRatio: 0.18
+  manaOrbTextOffsetXPct: 0
+  manaOrbTextOffsetYPct: -0.034
+  _bgFxEntries:
+  - backgroundName: Normal
+    prefab: {fileID: 5642766282230003982, guid: b5c8ca7ed10b61e499cce8ec3b6e2e4c, type: 3}
+    guiPos: {x: 870, y: 420}
+    scale: 0.18
+    intensity: 0.25
+  - backgroundName: Normal
+    prefab: {fileID: 5642766282230003982, guid: b5c8ca7ed10b61e499cce8ec3b6e2e4c, type: 3}
+    guiPos: {x: 760, y: 400}
+    scale: 0.2
+    intensity: 0.2
+  - backgroundName: Normal
+    prefab: {fileID: 7305185502956871417, guid: 85b062a5517cf8345bb6784ffbed4877, type: 3}
+    guiPos: {x: 860, y: 100}
+    scale: 0.2
+    intensity: 0.04
+  - backgroundName: Normal
+    prefab: {fileID: 4364354964670000192, guid: 3801a320e9ae1bf44a14efa194c86c3f, type: 3}
+    guiPos: {x: 640, y: 300}
+    scale: 0.25
+    intensity: 0.2
+  - backgroundName: Elite
+    prefab: {fileID: 7305185502956871417, guid: 85b062a5517cf8345bb6784ffbed4877, type: 3}
+    guiPos: {x: 640, y: 100}
+    scale: 0.3
+    intensity: 0.2
+  - backgroundName: Elite
+    prefab: {fileID: 1652143759095011289, guid: e2c1ac940434a5242b54d72b66654687, type: 3}
+    guiPos: {x: 640, y: 280}
+    scale: 0.2
+    intensity: 0.25
+  - backgroundName: Elite
+    prefab: {fileID: 5642766282230003982, guid: b5c8ca7ed10b61e499cce8ec3b6e2e4c, type: 3}
+    guiPos: {x: 640, y: 360}
+    scale: 0.18
+    intensity: 0.2
+  - backgroundName: Boss
+    prefab: {fileID: 5642766282230003982, guid: b5c8ca7ed10b61e499cce8ec3b6e2e4c, type: 3}
+    guiPos: {x: 640, y: 350}
+    scale: 0.2
+    intensity: 0.3
+  - backgroundName: Boss
+    prefab: {fileID: 1652143759095011289, guid: e2c1ac940434a5242b54d72b66654687, type: 3}
+    guiPos: {x: 320, y: 280}
+    scale: 0.12
+    intensity: 0.2
+  - backgroundName: Boss
+    prefab: {fileID: 1652143759095011289, guid: e2c1ac940434a5242b54d72b66654687, type: 3}
+    guiPos: {x: 900, y: 280}
+    scale: 0.12
+    intensity: 0.2
+  _bgVineEntries:
+  - backgroundName: Normal
+    resourcePath: FX/Shared/Vines/Vine1
+    guiPos: {x: 180, y: 40}
+    scale: 0.45
+    sortingOrder: -50
+    swayAngle: 1.2
+    swaySpeed: 0.35
+    swayPhase: 0
+    flipX: 0
+    color: {r: 0.5, g: 0.6, b: 0.55, a: 0.85}
+    useGodRay: 0
+    godRayMinAlpha: 0.15
+    godRayMaxAlpha: 0.45
+    godRayPulseSpeed: 0.6
+  - backgroundName: Normal
+    resourcePath: FX/Shared/Vines/Vine2
+    guiPos: {x: 450, y: 50}
+    scale: 0.5
+    sortingOrder: -50
+    swayAngle: 1.5
+    swaySpeed: 0.45
+    swayPhase: 1
+    flipX: 0
+    color: {r: 0.45, g: 0.55, b: 0.5, a: 0.8}
+    useGodRay: 0
+    godRayMinAlpha: 0.15
+    godRayMaxAlpha: 0.45
+    godRayPulseSpeed: 0.6
+  - backgroundName: Normal
+    resourcePath: FX/Shared/Vines/Vine3
+    guiPos: {x: 640, y: 35}
+    scale: 0.4
+    sortingOrder: -50
+    swayAngle: 1
+    swaySpeed: 0.3
+    swayPhase: 2
+    flipX: 1
+    color: {r: 0.5, g: 0.6, b: 0.55, a: 0.8}
+    useGodRay: 0
+    godRayMinAlpha: 0.15
+    godRayMaxAlpha: 0.45
+    godRayPulseSpeed: 0.6
+  - backgroundName: Normal
+    resourcePath: FX/Shared/Vines/Vine4
+    guiPos: {x: 860, y: 50}
+    scale: 0.5
+    sortingOrder: -50
+    swayAngle: 1.3
+    swaySpeed: 0.4
+    swayPhase: 0.5
+    flipX: 0
+    color: {r: 0.45, g: 0.55, b: 0.5, a: 0.85}
+    useGodRay: 0
+    godRayMinAlpha: 0.15
+    godRayMaxAlpha: 0.45
+    godRayPulseSpeed: 0.6
+  - backgroundName: Normal
+    resourcePath: FX/Shared/Vines/Vine5
+    guiPos: {x: 1100, y: 45}
+    scale: 0.4
+    sortingOrder: -50
+    swayAngle: 1.2
+    swaySpeed: 0.35
+    swayPhase: 1.5
+    flipX: 0
+    color: {r: 0.5, g: 0.6, b: 0.55, a: 0.85}
+    useGodRay: 0
+    godRayMinAlpha: 0.15
+    godRayMaxAlpha: 0.45
+    godRayPulseSpeed: 0.6
+  _normal1FogEnabled: 1
+  _normal1FogCount: 9
+  _normal1FogSpawnRect:
+    serializedVersion: 2
+    x: 0
+    y: 580
+    width: 1280
+    height: 30
+  _normal1FogSizeRange: {x: 30, y: 55}
+  _normal1FogRiseHeight: 120
+  _normal1FogRiseSpeed: 0.15
+  _normal1FogSwayAmount: 25
+  _normal1FogSwayFrequency: 0.4
+  _normal1FogInnerColor: {r: 0.6, g: 0.55, b: 0.55, a: 1}
+  _normal1FogOuterColor: {r: 0.35, g: 0.32, b: 0.32, a: 1}
+  _normal1FogAlphaMul: 0.35
+  _normal1FogFlickerSpeed: 2
+  _normal1FogFlickerDepth: 0.2
+  _normal1FogBloomScale: 4.5
+  _normal1FogBloomAlphaMul: 0.55
+--- !u!114 &727273077
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 727273073}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1dd3e82c0bab70498d0fd81dfdcd324, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DianoCard.Game.GameStateManager
+--- !u!114 &727273078
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 727273073}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc62423eed0cc4a499d01a7b187b4021, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::DianoCard.FX.BatTest
+  spritePath: FX/Normal_Battle/Bats/Bat
+  batCount: 2
+  scale: 0.18
+  alpha: 0.9
+  startX: -10
+  endX: 10
+  minY: 2
+  maxY: 3.5
+  minSpeed: 2.5
+  maxSpeed: 3.5
+  wobbleAmplitude: 0.3
+  wobbleFrequency: 3
+  flapFrequency: 11
+  flapDepth: 0.4
+  sortingLayer: Default
+  sortingOrder: 10
+--- !u!114 &727273079
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 727273073}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dfc427db2ab8b7e4dae0ae428f5065b9, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ShopUI
+  deskClickX: 360
+  deskClickY: 320
+  deskClickW: 560
+  deskClickH: 280
+  drawDeskHoverHint: 1
+  deskHoverTint: {r: 1, g: 0.85, b: 0.5, a: 0.12}
+  deskHoverLabel: Click the desk
+  goldOverlayCenterX: 1180
+  goldOverlayCenterY: 52
+  goldOverlayWidth: 130
+  goldOverlayHeight: 52
+  goldOverlayPatchAlpha: 0
+  goldOverlayUsePlaque: 1
+  goldIconSize: 35
+  goldIconTextGap: 16
+  goldIconLeftPad: 14
+  goldFontSize: 22
+  goldTextColor: {r: 1, g: 0.92, b: 0.55, a: 1}
+  showTitlePanel: 1
+  titlePanelCenterX: 640
+  titlePanelTargetY: -40
+  titlePanelWidth: 360
+  titlePanelHeight: 180
+  titlePanelDropDuration: 0.8
+  titlePanelDropFrom: 220
+  cardsCenterX: 700
+  cardsCenterY: 280
+  cardWidth: 155
+  cardHeight: 240
+  cardSpacing: 25
+  cardHoverScale: 1.04
+  slimFrameScaleX: 1
+  slimFrameScaleY: 1
+  slimFrameOffsetY: 0
+  framePaddingX: 4
+  framePaddingY: 9
+  slimTopBandHeight: 24
+  slimBottomBandHeight: 28
+  slimBandCornerRadius: 3
+  slimArtPadding: 4
+  slimBandAlpha: 0.92
+  slimBandTintAmount: 0.25
+  slimBandDarkBase: {r: 0.05, g: 0.04, b: 0.08, a: 1}
+  slimInnerColor: {r: 0.07, g: 0.05, b: 0.1, a: 0.98}
+  slimTypeFontSize: 12
+  slimNameFontSize: 10
+  slimCostSize: 28
+  slimCostOffset: 4
+  slimCostCornerRadius: 14
+  slimCostBorderThickness: 1.5
+  slimCostFontSize: 16
+  slimColorSummon: {r: 0.55, g: 0.28, b: 0.75, a: 1}
+  slimColorMagic: {r: 0.22, g: 0.42, b: 0.85, a: 1}
+  slimColorBuff: {r: 0.18, g: 0.62, b: 0.4, a: 1}
+  slimColorRitual: {r: 0.65, g: 0.18, b: 0.22, a: 1}
+  slimColorUtility: {r: 0.55, g: 0.28, b: 0.75, a: 1}
+  slimColorDefault: {r: 0.3, g: 0.26, b: 0.28, a: 1}
+  plaqueWidth: 70
+  plaqueHeight: 38
+  plaqueYOffset: -11
+  plaqueFontSize: 16
+  plaqueIconSize: 18
+  plaqueIconLeftPad: 8
+  plaqueTextLeftGap: 10
+  plaqueAffordColor: {r: 1, g: 0.92, b: 0.55, a: 1}
+  plaqueExpensiveColor: {r: 1, g: 0.55, b: 0.55, a: 1}
+  potionPriceUsePlaque: 1
+  potionPlaqueWidth: 70
+  potionPlaqueHeight: 25
+  potionPlaqueFontSize: 16
+  potionPlaqueIconSize: 18
+  potionPlaqueIconLeftPad: 8
+  potionPlaqueTextGap: 10
+  potion0X: 180
+  potion0Y: 495
+  potion0W: 348
+  potion0H: 50
+  potion0IconSize: 42
+  potion0NameX: 238
+  potion0NameY: 495
+  potion0PriceX: 330
+  potion0PriceY: 505
+  potion1X: 160
+  potion1Y: 555
+  potion1W: 348
+  potion1H: 50
+  potion1IconSize: 42
+  potion1NameX: 218
+  potion1NameY: 555
+  potion1PriceX: 310
+  potion1PriceY: 565
+  potion2X: 140
+  potion2Y: 615
+  potion2W: 348
+  potion2H: 50
+  potion2IconSize: 42
+  potion2NameX: 198
+  potion2NameY: 615
+  potion2PriceX: 290
+  potion2PriceY: 630
+  relic0X: 470
+  relic0Y: 490
+  relic0W: 109
+  relic0H: 60
+  relic0IconSize: 50
+  relic0PriceX: 470
+  relic0PriceY: 552
+  relic1X: 550
+  relic1Y: 490
+  relic1W: 109
+  relic1H: 60
+  relic1IconSize: 50
+  relic1PriceX: 550
+  relic1PriceY: 552
+  relic2X: 630
+  relic2Y: 490
+  relic2W: 109
+  relic2H: 60
+  relic2IconSize: 50
+  relic2PriceX: 630
+  relic2PriceY: 552
+  relic3X: 456
+  relic3Y: 580
+  relic3W: 109
+  relic3H: 60
+  relic3IconSize: 50
+  relic3PriceX: 456
+  relic3PriceY: 642
+  relic4X: 536
+  relic4Y: 580
+  relic4W: 109
+  relic4H: 60
+  relic4IconSize: 50
+  relic4PriceX: 536
+  relic4PriceY: 642
+  relic5X: 616
+  relic5Y: 580
+  relic5W: 109
+  relic5H: 60
+  relic5IconSize: 50
+  relic5PriceX: 616
+  relic5PriceY: 642
+  relicsIconLeftPad: 4
+  relicPriceUsePlaque: 1
+  relicPlaqueWidth: 64
+  relicPlaqueHeight: 25
+  relicPlaqueIconLeftPad: 5
+  relicPlaqueTextGap: 8
+  relicPlaqueIconSize: 16
+  relicPlaqueFontSize: 14
+  servicesX: 730
+  servicesY: 510
+  servicesW: 220
+  servicesH: 130
+  servicesContentPadX: 0
+  servicesContentTopY: 30
+  serviceIconSize: 74
+  serviceNameOverride: 1
+  serviceNameX: 798
+  serviceNameY: 540
+  serviceNameW: 110
+  serviceNameH: 50
+  servicePriceUsePlaque: 1
+  servicePlaqueWidth: 65
+  servicePlaqueHeight: 34
+  servicePlaqueXOffset: -17.5
+  servicePlaqueYOffset: 10
+  servicePlaqueFontSize: 16
+  servicePlaqueIconSize: 18
+  servicePlaqueIconLeftPad: 8
+  servicePlaqueTextGap: 10
+  itemRowHeight: 50
+  itemIconSize: 42
+  itemNameFontSize: 14
+  itemPriceFontSize: 15
+  itemPriceIconSize: 18
+  itemPriceIconGap: 4
+  itemHoverScale: 1.04
+  plaqueHoverScale: 1.12
+  itemNameColor: {r: 0.95, g: 0.92, b: 0.78, a: 1}
+  itemIconLeftPad: 4
+  itemNameLeftGap: 12
+  itemNameRightReserve: 70
+  itemPriceRightOffset: 60
+  itemPriceWidth: 56
+  leaveShopCenterX: 1135
+  leaveShopCenterY: 656
+  leaveShopWidth: 231
+  leaveShopHeight: 79.8
+  leaveShopHoverScale: 1.05
+  tooltipWidth: 240
+  tooltipFill: {r: 0.05, g: 0.07, b: 0.1, a: 0.95}
+  tooltipBorder: {r: 0.8, g: 0.62, b: 0.3, a: 0.9}
+  tooltipCorner: 6
+  tooltipTitleFont: 14
+  tooltipBodyFont: 12
+--- !u!1660057539 &9223372036854775807
+SceneRoots:
+  m_ObjectHideFlags: 0
+  m_Roots:
+  - {fileID: 519420032}
+  - {fileID: 619394802}
+  - {fileID: 727273075}

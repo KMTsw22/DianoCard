@@ -83,6 +83,33 @@ namespace DianoCard.Battle
                 s.hasAttackedThisTurn = false;
                 s.block = 0;
                 if (s.skillCooldownRemaining > 0) s.skillCooldownRemaining--;
+
+                // 융합 각인 잔여 버프 틱 — 리셋 직후에 다시 채워줘야 한다.
+                // 격노(C154): tempAttackBonus 재충전, 카운트 소진 시 값 정리.
+                if (s.fuseAtkRefreshTurns > 0)
+                {
+                    s.tempAttackBonus += s.fuseAtkRefreshValue;
+                    s.fuseAtkRefreshTurns--;
+                    if (s.fuseAtkRefreshTurns == 0) s.fuseAtkRefreshValue = 0;
+                }
+                // 가호(C155): block 재충전.
+                if (s.fuseBlockRefreshTurns > 0)
+                {
+                    s.block += s.fuseBlockRefreshValue;
+                    s.fuseBlockRefreshTurns--;
+                    if (s.fuseBlockRefreshTurns == 0) s.fuseBlockRefreshValue = 0;
+                }
+                // 생명(C153): 만료 시 maxHp 환원, 현재 HP 클램프.
+                if (s.fuseHpBonusTurns > 0)
+                {
+                    s.fuseHpBonusTurns--;
+                    if (s.fuseHpBonusTurns == 0)
+                    {
+                        s.maxHp = Math.Max(1, s.maxHp - s.fuseHpBonusValue);
+                        if (s.hp > s.maxHp) s.hp = s.maxHp;
+                        s.fuseHpBonusValue = 0;
+                    }
+                }
             }
 
             // 적 인텐트(이번 턴 행동) 결정 + 보스 페이즈 체크 + 적 방어도 리셋
@@ -437,8 +464,43 @@ namespace DianoCard.Battle
                 state.field.Add(result);
             }
 
-            Log($"    🦖 융합! {aBase} T{aTier}+T{bTier} → {nextData.nameKr} (ATK {result.attack} / HP {result.hp}/{result.maxHp}, cost {totalCost})");
+            // 각인 보너스 — 촉매 카드(C153/C154/C155)에 따라 결과체에 추가 효과 부여.
+            ApplySigilBonus(catalyst, result);
+
+            Log($"    🦖 융합! {aBase} T{aTier}+T{bTier} → {nextData.nameKr} (ATK {result.TotalAttack} / HP {result.hp}/{result.maxHp}, cost {totalCost})");
             return true;
+        }
+
+        /// <summary>융합 각인 촉매(C153/C154/C155)의 잔여 효과를 결과 SummonInstance에 부여.
+        /// 즉시 적용분은 여기서 직접 더하고, 다음 턴 1회 재적용분은 fuseXxxRefreshTurns에 1로 기록 → 총 2턴 지속.</summary>
+        private void ApplySigilBonus(CardData catalyst, SummonInstance result)
+        {
+            if (catalyst == null || result == null) return;
+            int v = catalyst.value;
+            if (v <= 0) return;
+
+            switch (catalyst.id)
+            {
+                case "C153": // 생명의 각인 — 결과체 HP +v (2턴)
+                    result.maxHp += v;
+                    result.hp = Math.Min(result.hp + v, result.maxHp);
+                    result.fuseHpBonusValue = v;
+                    result.fuseHpBonusTurns = 2;
+                    Log($"    ✨ {catalyst.nameKr}: +{v} HP (2T) → maxHP {result.maxHp}, HP {result.hp}");
+                    break;
+                case "C154": // 격노의 각인 — 결과체 ATK +v (2턴)
+                    result.tempAttackBonus += v;
+                    result.fuseAtkRefreshValue = v;
+                    result.fuseAtkRefreshTurns = 1;
+                    Log($"    ✨ {catalyst.nameKr}: +{v} ATK (2T) → 이번 턴 ATK {result.TotalAttack}");
+                    break;
+                case "C155": // 가호의 각인 — 결과체 방어 +v (2턴)
+                    result.block += v;
+                    result.fuseBlockRefreshValue = v;
+                    result.fuseBlockRefreshTurns = 1;
+                    Log($"    ✨ {catalyst.nameKr}: +{v} 방어 (2T) → 이번 턴 BLOCK {result.block}");
+                    break;
+            }
         }
 
         /// <summary>필드 재료 하나를 다음 티어로 변형 — HP 비율 유지 + minHp/3 보장 + 승계 버프 적용.</summary>

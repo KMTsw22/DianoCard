@@ -142,6 +142,20 @@ namespace DianoCard.Battle
         // BATTLE 쿨다운 스킬을 이번 전투에서 이미 썼는지 — 한 번 true면 이 전투 동안 재사용 불가.
         public bool skillUsedThisBattle;
 
+        // === 융합 각인 잔여 버프 (C153/C154/C155 — 융합 후 결과체에 부여, "2T" 지속) ===
+        // 격노의 각인(C154): tempAttackBonus를 매 StartTurn마다 fuseAtkRefreshValue만큼 다시 채워준다.
+        // 즉시 +값은 TryPlayFusion에서 tempAttackBonus에 직접 적용, 잔여 1턴 분만 여기에 기록 → turns=1.
+        public int fuseAtkRefreshValue;
+        public int fuseAtkRefreshTurns;
+        // 가호의 각인(C155): block을 매 StartTurn마다 fuseBlockRefreshValue만큼 다시 채워준다.
+        // 즉시 +값은 TryPlayFusion에서 block에 직접 적용 → turns=1로 다음 턴 한 번 더 충전.
+        public int fuseBlockRefreshValue;
+        public int fuseBlockRefreshTurns;
+        // 생명의 각인(C153): maxHp를 fuseHpBonusValue만큼 일시적으로 늘리고, 만료되면 환원한다.
+        // turns가 0으로 떨어지는 StartTurn에 maxHp -= value, hp는 새 maxHp로 클램프. 적용 즉시 hp도 +value 회복.
+        public int fuseHpBonusValue;
+        public int fuseHpBonusTurns;
+
         public bool CanAttack => !IsDead && !hasAttackedThisTurn && silencedTurns <= 0;
         public bool IsTaunting => !IsDead && tauntTurns > 0;
         public int TotalAttack => attack + tempAttackBonus;

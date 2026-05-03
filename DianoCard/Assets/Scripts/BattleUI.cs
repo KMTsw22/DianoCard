@@ -214,8 +214,7 @@ public class BattleUI : MonoBehaviour
     private Texture2D _endTurnButtonAkane; // CH002 아케네 전용
     private Texture2D _endTurnButtonRinne; // CH002B 린네 전용
     private Texture2D _hudDividerTexMap;     // 맵 전용 구분선 — Map/divider_map
-    private Texture2D _hudDividerTexVillage; // 마을 전용 구분선 — VillageUI/divider_village
-    private Texture2D _hudDividerTexBattle;  // 전투 전용 구분선 — InGame/divider_battle (없으면 스킵)
+    private Texture2D _hudDividerTexBattle;  // 전투/마을 공용 구분선 — InGame/divider_battle (없으면 스킵)
     private float _endTurnHoverScale = 1f;
 
     // 카드 위에 표시되는 일러스트 (카드 id → 텍스처). 카테고리별 CardArt/{Spell|Summon|Utility}/.
@@ -255,18 +254,14 @@ public class BattleUI : MonoBehaviour
     [SerializeField] private bool hudStripEnabled = true;
     [Tooltip("HUD 스트립 높이 (px).")]
     [SerializeField, Range(40f, 300f)] private float hudStripHeight = 74f;
-    [Tooltip("배틀 화면용 HUD 스트립 배경색. 알파는 아래 Alpha Battle 슬라이더가 최종값을 결정.")]
+    [Tooltip("배틀/마을 공용 HUD 스트립 배경색. 알파는 아래 Alpha Battle 슬라이더가 최종값을 결정.")]
     [SerializeField] private Color hudStripBgColorBattle = new(0.059f, 0.043f, 0.137f, 1f);
     [Tooltip("맵 화면용 HUD 스트립 배경색. 알파는 아래 Alpha Map 슬라이더가 최종값을 결정.")]
     [SerializeField] private Color hudStripBgColorMap = new(0.059f, 0.043f, 0.137f, 1f);
-    [Tooltip("마을(캠프) 화면용 HUD 스트립 배경색. 알파는 아래 Alpha Village 슬라이더가 최종값을 결정.")]
-    [SerializeField] private Color hudStripBgColorVillage = new(0.03f, 0.05f, 0.08f, 1f);
-    [Tooltip("배틀 HUD 스트립 최종 알파. 0=완전 투명, 1=완전 불투명.")]
+    [Tooltip("배틀/마을 공용 HUD 스트립 최종 알파. 0=완전 투명, 1=완전 불투명.")]
     [SerializeField, Range(0f, 1f)] private float hudStripAlphaBattle = 0.5f;
     [Tooltip("맵 HUD 스트립 최종 알파. 0=완전 투명, 1=완전 불투명.")]
     [SerializeField, Range(0f, 1f)] private float hudStripAlphaMap = 0.84f;
-    [Tooltip("마을 HUD 스트립 최종 알파. 0=완전 투명, 1=완전 불투명.")]
-    [SerializeField, Range(0f, 1f)] private float hudStripAlphaVillage = 0.88f;
     [Tooltip("구분선 중심 Y (px). 기본적으로 스트립 하단 경계와 맞춤.")]
     [SerializeField, Range(0f, 400f)] private float hudDividerCenterY = 78f;
     [Tooltip("구분선 높이 (px). 붓자국 두께 느낌.")]
@@ -738,8 +733,7 @@ public class BattleUI : MonoBehaviour
         }
         _topBarBg   = Resources.Load<Texture2D>("InGame/TopBar");
         _hudDividerTexMap     = Resources.Load<Texture2D>("Map/divider_map");
-        _hudDividerTexVillage = Resources.Load<Texture2D>("VillageUI/divider_village");
-        _hudDividerTexBattle  = Resources.Load<Texture2D>("InGame/divider_battle"); // 유저가 넣을 예정 — 없으면 null
+        _hudDividerTexBattle  = Resources.Load<Texture2D>("InGame/divider_battle"); // 전투/마을 공용 — 없으면 null
         _endTurnButtonTex   = Resources.Load<Texture2D>("InGame/EndTurnButton");
         _endTurnButtonAkane = Resources.Load<Texture2D>("InGame/EndTurnButton_Akane");
         _endTurnButtonRinne = Resources.Load<Texture2D>("InGame/EndTurnButton_Rinne");
@@ -2369,7 +2363,9 @@ public class BattleUI : MonoBehaviour
         // 가운데 정렬 — 폭 미리 계산해서 row 가로 중앙에 배치
         int count = (s.tauntTurns > 0 ? 1 : 0)
                   + (s.silencedTurns > 0 ? 1 : 0)
-                  + (s.tempAttackBonus > 0 ? 1 : 0);
+                  + (s.tempAttackBonus > 0 ? 1 : 0)
+                  + (s.fuseHpBonusTurns > 0 ? 1 : 0)
+                  + (s.fuseBlockRefreshTurns > 0 ? 1 : 0);
         if (count == 0) return;
 
         float totalW = count * chipSize + (count - 1) * chipGap;
@@ -2394,10 +2390,29 @@ public class BattleUI : MonoBehaviour
         }
         if (s.tempAttackBonus > 0)
         {
+            // 격노의 각인이 활성이면 다음 턴 재충전 예정임을 안내.
+            string atkBody = s.fuseAtkRefreshTurns > 0
+                ? $"이번 턴 ATK +{s.tempAttackBonus}. 격노의 각인으로 다음 턴에도 +{s.fuseAtkRefreshValue} 유지."
+                : $"이번 턴 ATK +{s.tempAttackBonus}.";
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("STRENGTH"), s.tempAttackBonus,
-                         "공격 강화",
-                         $"이번 턴 ATK +{s.tempAttackBonus}.");
+                         "공격 강화", atkBody);
+            x += chipSize + chipGap;
+        }
+        if (s.fuseHpBonusTurns > 0)
+        {
+            DrawIconChip(new Rect(x, y, chipSize, chipSize),
+                         HeadIcon("HEAL"), s.fuseHpBonusValue,
+                         "생명의 각인",
+                         $"최대 HP +{s.fuseHpBonusValue}. {s.fuseHpBonusTurns}턴 후 환원.");
+            x += chipSize + chipGap;
+        }
+        if (s.fuseBlockRefreshTurns > 0)
+        {
+            DrawIconChip(new Rect(x, y, chipSize, chipSize),
+                         HeadIcon("SHIELD"), s.fuseBlockRefreshValue,
+                         "가호의 각인",
+                         $"턴 시작 시 방어 +{s.fuseBlockRefreshValue} 충전. {s.fuseBlockRefreshTurns}턴 더 적용.");
             x += chipSize + chipGap;
         }
     }
@@ -4604,25 +4619,12 @@ public class BattleUI : MonoBehaviour
     {
         if (!hudStripEnabled) return;
 
-        Color bg = ctx switch
-        {
-            HudContext.Map     => hudStripBgColorMap,
-            HudContext.Village => hudStripBgColorVillage,
-            _                  => hudStripBgColorBattle,
-        };
-        // 컨텍스트별 최종 알파 — 색 필드의 알파는 무시하고 슬라이더 값을 직접 사용.
-        bg.a = Mathf.Clamp01(ctx switch
-        {
-            HudContext.Map     => hudStripAlphaMap,
-            HudContext.Village => hudStripAlphaVillage,
-            _                  => hudStripAlphaBattle,
-        });
-        Texture2D divTex = ctx switch
-        {
-            HudContext.Map     => null, // 맵은 노란 디바이더 제거 — 검은 바만 사용
-            HudContext.Village => _hudDividerTexVillage,
-            _                  => _hudDividerTexBattle,
-        };
+        // 마을은 전투와 동일하게 처리 — bg/alpha/divider/topBar/하단라인 모두 공유.
+        Color bg = ctx == HudContext.Map ? hudStripBgColorMap : hudStripBgColorBattle;
+        bg.a = Mathf.Clamp01(ctx == HudContext.Map ? hudStripAlphaMap : hudStripAlphaBattle);
+        Texture2D divTex = ctx == HudContext.Map
+            ? null // 맵은 노란 디바이더 제거 — 검은 바만 사용
+            : _hudDividerTexBattle; // 전투/마을 공용
 
         // 마스터 스케일 적용 — 모든 사이즈를 한 번에 비례 조절.
         float s = navBarMasterScale;
@@ -4636,8 +4638,8 @@ public class BattleUI : MonoBehaviour
         // 1) 바 배경 채우기. 한 번만 — 이중 fill은 알파 반투명을 깨뜨림.
         FillRect(new Rect(0f, 0f, RefW, effStripH), bg);
 
-        // 1.5) 장식 텍스처 (있으면 배틀 컨텍스트에서 fill 위에 오버레이) — 알파가 fill을 통과시켜 톤은 유지.
-        if (_topBarBg != null && ctx == HudContext.Battle && topBarTexEnabled)
+        // 1.5) 장식 텍스처 — 전투/마을 공통. 알파가 fill을 통과시켜 톤은 유지.
+        if (_topBarBg != null && (ctx == HudContext.Battle || ctx == HudContext.Village) && topBarTexEnabled)
         {
             float texW = Mathf.Max(0f, RefW - topBarTexHorizontalInset * 2f);
             var texRect = new Rect(topBarTexHorizontalInset, effTexY, texW, effTexH);
@@ -4661,9 +4663,8 @@ public class BattleUI : MonoBehaviour
         }
         // 텍스처 없으면 아예 선 생략 — 호출 측에서 나중에 따로 붙이도록.
 
-        // 바 하단 골드 트림 — 전투/맵 공용 (마을은 모닥불 톤 충돌로 제외). 두께 0이거나 알파 0이면 스킵.
-        if ((ctx == HudContext.Battle || ctx == HudContext.Map)
-            && effBottomLineT > 0f && hudBattleBottomLineColor.a > 0f)
+        // 바 하단 골드 트림 — 전투/맵/마을 공용. 두께 0이거나 알파 0이면 스킵.
+        if (effBottomLineT > 0f && hudBattleBottomLineColor.a > 0f)
         {
             FillRect(new Rect(0f, effStripH - effBottomLineT, RefW, effBottomLineT),
                      hudBattleBottomLineColor);
