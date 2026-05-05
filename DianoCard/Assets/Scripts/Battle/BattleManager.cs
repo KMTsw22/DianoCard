@@ -26,14 +26,15 @@ namespace DianoCard.Battle
         // 전투 시작 / 턴 시작
         // =========================================================
 
-        public void StartBattle(List<CardData> startingDeck, List<EnemyData> enemyPool, int maxMana = 3, int playerHp = 70, int maxFieldSize = 2, float normalHpScale = 1f, float normalDamageScale = 1f)
+        public void StartBattle(List<CardData> startingDeck, List<EnemyData> enemyPool, int maxMana = 3, int playerHp = 70, int maxFieldSize = 2, float normalHpScale = 1f, float normalDamageScale = 1f, int playerCurrentHp = -1)
         {
             state = new BattleState();
             state.maxFieldSize = maxFieldSize;
+            int initHp = playerCurrentHp >= 0 ? System.Math.Clamp(playerCurrentHp, 1, playerHp) : playerHp;
             state.player = new Player
             {
                 maxHp = playerHp,
-                hp = playerHp,
+                hp = initHp,
                 maxMana = maxMana,
                 baseMana = maxMana,
             };
@@ -968,15 +969,15 @@ namespace DianoCard.Battle
                 summon.passiveConsumed = true;
                 Log($"  [Passive] {summon.data.nameKr} 기습: 첫 공격 2배 ({dmg})");
             }
-            // EXECUTE: 적 HP ≤ threshold면 즉사
-            if (summon.data?.passiveType == DinoPassiveType.EXECUTE && target.hp <= summon.data.passiveValue)
-            {
-                dmg = target.hp + target.block;
-                Log($"  [Passive] {summon.data.nameKr} 처형: {target.data.nameKr} HP {target.hp} ≤ {summon.data.passiveValue}");
-            }
             target.TakeDamage(dmg);
             summon.hasAttackedThisTurn = true;
             Log($"  {summon.data.nameKr} attacks {target.data.nameKr} for {dmg} (HP {target.hp})");
+            // EXECUTE: 공격 후 HP ≤ threshold면 즉사
+            if (!target.IsDead && summon.data?.passiveType == DinoPassiveType.EXECUTE && target.hp <= summon.data.passiveValue)
+            {
+                Log($"  [Passive] {summon.data.nameKr} 처형: {target.data.nameKr} HP {target.hp} ≤ {summon.data.passiveValue}");
+                target.hp = 0;
+            }
             ApplyOnAttackPassive(summon, target);
             if (target.IsDead)
             {
@@ -1039,15 +1040,15 @@ namespace DianoCard.Battle
                 summon.passiveConsumed = true;
                 Log($"  [Passive] {summon.data.nameKr} 기습: 첫 공격 2배 ({dmg})");
             }
-            // EXECUTE: 적 HP ≤ threshold면 즉사
-            if (summon.data?.passiveType == DinoPassiveType.EXECUTE && target.hp <= summon.data.passiveValue)
-            {
-                dmg = target.hp + target.block;
-                Log($"  [Passive] {summon.data.nameKr} 처형: {target.data.nameKr} HP {target.hp} ≤ {summon.data.passiveValue}");
-            }
             target.TakeDamage(dmg);
             summon.hasAttackedThisTurn = true;
             Log($"  [Command] {summon.data.nameKr} attacks {target.data.nameKr} for {dmg} (HP {target.hp})");
+            // EXECUTE: 공격 후 HP ≤ threshold면 즉사
+            if (!target.IsDead && summon.data?.passiveType == DinoPassiveType.EXECUTE && target.hp <= summon.data.passiveValue)
+            {
+                Log($"  [Passive] {summon.data.nameKr} 처형: {target.data.nameKr} HP {target.hp} ≤ {summon.data.passiveValue}");
+                target.hp = 0;
+            }
             ApplyOnAttackPassive(summon, target);
             if (target.IsDead)
             {
@@ -1498,6 +1499,17 @@ namespace DianoCard.Battle
             }
         }
 
+        /// <summary>BattleUI 코루틴에서 적 행동 종료 후 호출. 소환수 침묵/도발 카운트다운.</summary>
+        public void TickSummonStatuses()
+        {
+            foreach (var s in state.field)
+            {
+                if (s.IsDead) continue;
+                if (s.silencedTurns > 0) s.silencedTurns--;
+                if (s.tauntTurns > 0) s.tauntTurns--;
+            }
+        }
+
         /// <summary>턴 종료 정리: 죽은 소환수 제거(바인딩 카드 복귀), 패 버림더미로.</summary>
         public void EndTurnCleanup()
         {
@@ -1783,6 +1795,7 @@ namespace DianoCard.Battle
                 phaseSetId = "",
             };
             var add = new EnemyInstance(addData);
+            add.isMinion = true;
             state.enemies.Add(add);
             // 쫄도 인텐트를 즉시 결정해서 Intent UI에 노출
             RollIntent(add);

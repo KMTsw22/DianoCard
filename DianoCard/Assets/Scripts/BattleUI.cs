@@ -1423,10 +1423,8 @@ public class BattleUI : MonoBehaviour
             run.playerMaxHp,
             maxFieldSize,
             hpScale,
-            dmgScale);
-
-        // 현재 run의 HP로 플레이어 초기화 (이전 전투 잔존 HP 반영)
-        _battle.state.player.hp = Mathf.Clamp(run.playerCurrentHp, 1, run.playerMaxHp);
+            dmgScale,
+            run.playerCurrentHp);
 
         PrepareEnemyViews();
         SpawnBackgroundFX();
@@ -2376,6 +2374,16 @@ public class BattleUI : MonoBehaviour
                 DrawIconChip(new Rect(x, y, chipSize, chipSize), tex, badge, title, body);
                 x += chipSize + chipGap;
             }
+        }
+
+        // 3) 취약 — 공룡 TENDERIZE 패시브나 스펠로 부여. 아이콘이 없으면 플레이어 취약과 동일하게 표시.
+        if (e.vulnerableTurns > 0 && x + chipSize <= rowRect.xMax)
+        {
+            DrawIconChip(new Rect(x, y, chipSize, chipSize),
+                         HeadIcon("VULNERABLE"), e.vulnerableTurns,
+                         "취약 (Vulnerable)",
+                         $"받는 피해 50% 증가. {e.vulnerableTurns}턴 남음.");
+            x += chipSize + chipGap;
         }
     }
 
@@ -4075,6 +4083,19 @@ public class BattleUI : MonoBehaviour
             GUI.Label(iconRect, "✦", _centerStyle);
             _centerStyle.normal.textColor = prevTextCol;
             _centerStyle.fontSize = prevFontSize;
+        }
+
+        // 데미지 숫자 — 검 뱃지와 동일 패턴으로 우하단(쿨다운 없을 때) 또는 좌하단(쿨다운 있을 때).
+        if (skill.damage > 0)
+        {
+            const float dmgW = 22f, dmgH = 18f;
+            bool hasCdChip = onCooldown || used;
+            var dmgRect = hasCdChip
+                ? new Rect(iconRect.x - dmgW * 0.3f, iconRect.yMax - dmgH * 0.7f, dmgW, dmgH)   // 좌하단
+                : new Rect(iconRect.xMax - dmgW * 0.7f, iconRect.yMax - dmgH * 0.7f, dmgW, dmgH); // 우하단
+            Color dmgCol = ready ? new Color(1f, 0.85f, 0.35f) : new Color(0.75f, 0.65f, 0.40f);
+            DrawTextWithOutline(dmgRect, skill.damage.ToString(), _intentNumberStyle,
+                                dmgCol, new Color(0f, 0f, 0f, 0.95f), 1.4f);
         }
 
         // 우하단 칩 — 쿨다운 N 또는 사용 완료 ✓. ATTACK 뱃지 숫자와 동일 톤.
@@ -6337,6 +6358,9 @@ public class BattleUI : MonoBehaviour
             _attackingUnit = null;
             yield break;
         }
+
+        // 소환수 침묵/도발 카운트다운 — 적 행동 후, 다음 턴 시작 전
+        _battle.TickSummonStatuses();
 
         // Phase 3: 손패 → (중앙 모임 → 머뭄 → 더미) 3단계 비행 애니메이션
         if (state.hand.Count > 0)

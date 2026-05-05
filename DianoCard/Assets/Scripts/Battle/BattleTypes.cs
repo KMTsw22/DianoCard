@@ -239,6 +239,9 @@ namespace DianoCard.Battle
         // 0이면 phase 1 on_enter도 배틀 시작 시 1회 실행됨.
         public int phasesEntered = 0;        // 이미 진입한 페이즈 수 (다음 임계 비교용)
 
+        // 전투 중 적이 소환한 쫄 — true면 AllEnemiesDead 계산에서 제외 (쫄만 남으면 승리).
+        public bool isMinion;
+
         // === E901 이끼 수호석상 기믹 ===
         public bool isMoss;                  // 이끼 쫄 (보호막 계산에 사용)
         public bool isBossProtected;         // true + 이끼 생존 시 본체 타겟 불가
