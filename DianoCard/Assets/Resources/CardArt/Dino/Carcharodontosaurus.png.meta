@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 45ab51a5104ae6440b6e41883e32ef6f
+guid: d23501f635498c342a2ca4baa5acbde9
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -7502062308896307587
-    second: Carcharodontosaurus_0
+      213: 3223231097227769923
+    second: Carcharodontosaurus_T0_5_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,7 +126,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Carcharodontosaurus_0
+      name: Carcharodontosaurus_T0_5_0
       rect:
         serializedVersion: 2
         x: 0
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: d768363e31253e790800000000000000
-      internalID: -7502062308896307587
+      spriteID: 348f0430b973bbc20800000000000000
+      internalID: 3223231097227769923
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Carcharodontosaurus_0: -7502062308896307587
+      Carcharodontosaurus_T0_5_0: 3223231097227769923
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

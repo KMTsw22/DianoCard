@@ -1,22 +1,22 @@
-id,name_kr,name_en,rarity,source,trigger,effect_type,value,description,archetype_lock
-R001,고대의 뼈,Ancient Bone,COMMON,START,PASSIVE,MAX_HP,10,최대 HP +10으로 시작.
-R002,화석 펜던트,Fossil Pendant,COMMON,START,BATTLE_START,DRAW,1,전투 시작 시 카드 1장 추가 드로우.
-R003,호박 보석,Amber Gem,COMMON,START,BATTLE_START,MANA,1,전투 시작 시 마나 +1 (첫 턴).
-R004,약초꾼의 가방,Herbalist Bag,COMMON,SHOP,PASSIVE,POTION_SLOT,1,물약 슬롯 +1.
-R005,가죽 장갑,Leather Gloves,COMMON,START,PASSIVE,ATTACK,1,모든 아군 공격력 +1.
-R006,골격 방패,Bone Shield,UNCOMMON,ELITE,TURN_START,DEFENSE,3,매 턴 시작 시 방어도 +3.
-R007,발톱 목걸이,Claw Necklace,UNCOMMON,ELITE,SUMMON,ATTACK_BUFF,2,소환 시 해당 공룡 공격력 +2.
-R008,비늘 망토,Scale Cloak,UNCOMMON,ELITE,BATTLE_START,HEAL,5,전투 시작 시 HP +5.
-R009,티라노의 이빨,Tyrant Tooth,UNCOMMON,ELITE,KILL,GOLD,3,적 처치 시 골드 +3.
-R010,화산재,Volcanic Ash,UNCOMMON,SHOP,BATTLE_START,BURN,3,전투 시작 시 모든 적에게 화상 3.
-R011,공룡의 심장,Dino Heart,RARE,BOSS,PASSIVE,MAX_HP,25,최대 HP +25.
-R012,태초의 알,Primal Egg,RARE,BOSS,BATTLE_END,CARD,0,전투 승리 시 랜덤 공룡 카드 1장 획득 (일시).
-R014,왕의 왕관,King's Crown,RARE,BOSS,PASSIVE,MANA,1,매 턴 마나 +1.
-R015,영원의 모래시계,Eternal Hourglass,RARE,BOSS,BATTLE_START,DRAW,3,전투 시작 시 3장 추가 드로우.
-R016,광폭의 부적,Rage Amulet,RARE,EVENT,HP_LOW,ATTACK_BUFF,3,HP 50% 이하 시 공격력 +3.
-R017,고고학자의 일지,Archaeologist Log,SHOP,SHOP,NODE_ENTER,GOLD,5,새 노드 진입 시 골드 +5.
-R018,어린 무리,Young Pack,COMMON,START,BATTLE_START,SUMMON_COMPY,1,전투 시작 시 콤프소그나투스 1마리 무료 소환.,CARN
-R019,사냥꾼 본능,Hunter Instinct,COMMON,EVENT,KILL,HEAL_KILLER,2,적 처치 시 처치한 아군 공룡 HP +2.,
-R020,분노의 핏줄,Rage Vein,UNCOMMON,EVENT,HP_CRITICAL,MANA,1,HP 30% 이하 시 매 턴 마나 +1.,
-R021,균열의 인장,Rift Seal,RARE,BOSS,PASSIVE,FUSION_REFUND,1,융합 카드 사용 시 마나 1 환급.,
-R022,타락한 성유물,Tainted Relic,RARE,BOSS,PASSIVE,MAX_HP,15,최대 HP +15 / HP 회복량 -25% (저주).,
+id,name_kr,name_en,rarity,source,trigger,effect_type,value,description_kr,description_en,archetype_lock
+R001,고대의 뼈,Ancient Bone,COMMON,START,PASSIVE,MAX_HP,10,최대 HP +10으로 시작.,Start with +10 max HP.,
+R002,화석 펜던트,Fossil Pendant,COMMON,START,BATTLE_START,DRAW,1,전투 시작 시 카드 1장 추가 드로우.,Draw 1 extra card at the start of combat.,
+R003,호박 보석,Amber Gem,COMMON,START,BATTLE_START,MANA,1,전투 시작 시 마나 +1 (첫 턴).,Gain +1 mana on the first turn of combat.,
+R004,약초꾼의 가방,Herbalist Bag,COMMON,SHOP,PASSIVE,POTION_SLOT,1,물약 슬롯 +1.,Gain 1 additional potion slot.,
+R005,가죽 장갑,Leather Gloves,COMMON,START,PASSIVE,ATTACK,1,모든 아군 공격력 +1.,All allied dinosaurs gain +1 attack.,
+R006,골격 방패,Bone Shield,UNCOMMON,ELITE,TURN_START,DEFENSE,3,매 턴 시작 시 방어도 +3.,Gain 3 Block at the start of each turn.,
+R007,발톱 목걸이,Claw Necklace,UNCOMMON,ELITE,SUMMON,ATTACK_BUFF,2,소환 시 해당 공룡 공격력 +2.,When a dinosaur is summoned gain +2 attack.,
+R008,비늘 망토,Scale Cloak,UNCOMMON,ELITE,BATTLE_START,HEAL,5,전투 시작 시 HP +5.,Heal 5 HP at the start of combat.,
+R009,티라노의 이빨,Tyrant Tooth,UNCOMMON,ELITE,KILL,GOLD,3,적 처치 시 골드 +3.,Gain 3 Gold whenever an enemy is killed.,
+R010,화산재,Volcanic Ash,UNCOMMON,SHOP,BATTLE_START,BURN,3,전투 시작 시 모든 적에게 화상 3.,Apply Burn 3 to all enemies at the start of combat.,
+R011,공룡의 심장,Dino Heart,RARE,BOSS,PASSIVE,MAX_HP,25,최대 HP +25.,Start with +25 max HP.,
+R012,태초의 알,Primal Egg,RARE,BOSS,BATTLE_END,CARD,0,전투 승리 시 랜덤 공룡 카드 1장 획득 (일시).,After winning a battle gain a random dinosaur card (temporary).,
+R014,왕의 왕관,King's Crown,RARE,BOSS,PASSIVE,MANA,1,매 턴 마나 +1.,Gain +1 mana each turn.,
+R015,영원의 모래시계,Eternal Hourglass,RARE,BOSS,BATTLE_START,DRAW,3,전투 시작 시 3장 추가 드로우.,Draw 3 extra cards at the start of combat.,
+R016,광폭의 부적,Rage Amulet,RARE,EVENT,HP_LOW,ATTACK_BUFF,3,HP 50% 이하 시 공격력 +3.,When below 50% HP all allies gain +3 attack.,
+R017,고고학자의 일지,Archaeologist Log,SHOP,SHOP,NODE_ENTER,GOLD,5,새 노드 진입 시 골드 +5.,Gain 5 Gold whenever you enter a new node.,
+R018,어린 무리,Young Pack,COMMON,START,BATTLE_START,SUMMON_COMPY,1,전투 시작 시 콤프소그나투스 1마리 무료 소환.,Summon 1 free Compy at the start of each combat.,CARN
+R019,사냥꾼 본능,Hunter Instinct,COMMON,EVENT,KILL,HEAL_KILLER,2,적 처치 시 처치한 아군 공룡 HP +2.,When an ally kills an enemy that ally heals 2 HP.,
+R020,분노의 핏줄,Rage Vein,UNCOMMON,EVENT,HP_CRITICAL,MANA,1,HP 30% 이하 시 매 턴 마나 +1.,When below 30% HP gain +1 mana each turn.,
+R021,균열의 인장,Rift Seal,RARE,BOSS,PASSIVE,FUSION_REFUND,1,융합 카드 사용 시 마나 1 환급.,Refund 1 mana whenever you play a fusion card.,
+R022,타락한 성유물,Tainted Relic,RARE,BOSS,PASSIVE,MAX_HP,15,최대 HP +15 / HP 회복량 -25% (저주).,+15 max HP but all healing is reduced by 25% (curse).,

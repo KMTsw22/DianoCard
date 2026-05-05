@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 4e6f8f48e3e6c324386f93dc616ea00a
+guid: 4d6144e6706884a4cb3b63977cc54507
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 1295689941878535976
-    second: Gallimimus_0
+      213: -4197022418316539009
+    second: Gallimimus_T0_4_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,7 +126,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Gallimimus_0
+      name: Gallimimus_T0_4_0
       rect:
         serializedVersion: 2
         x: 0
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 82777b423273bf110800000000000000
-      internalID: 1295689941878535976
+      spriteID: f7b44e9e85e21c5c0800000000000000
+      internalID: -4197022418316539009
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Gallimimus_0: 1295689941878535976
+      Gallimimus_T0_4_0: -4197022418316539009
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

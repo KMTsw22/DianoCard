@@ -227,6 +227,8 @@ public class BattleUI : MonoBehaviour
     private readonly Dictionary<string, Texture2D> _cardSprites = new();
     // 필드 위에 그려지는 공룡 스프라이트 (투명 배경). Dinos/ 폴더.
     private readonly Dictionary<string, Texture2D> _fieldDinoSprites = new();
+    // 공룡 패시브 타입 아이콘. Dinos/passive/<lowercase_enum>.png
+    private readonly Dictionary<DinoPassiveType, Texture2D> _passiveIcons = new();
 
     // 적 스프라이트 (적 id → 텍스처). Start()에서 한 번만 로드.
     private readonly Dictionary<string, Texture2D> _enemySprites = new();
@@ -405,23 +407,30 @@ public class BattleUI : MonoBehaviour
     [Range(100f, 400f)]
     [SerializeField] private float dinoSize = 180f;
 
-    // ── 1마리일 때 ──────────────────────────────────────
-    [Tooltip("1마리일 때 공룡의 X 중심. 캐릭터(x=230)에 붙는 정도. 작을수록 캐릭터 가까이.")]
-    [Range(300f, 900f)]
-    [SerializeField] private float dinoSingleX = 430f;
+    // ── 플레이어 캐릭터 위치 ────────────────────────────────
+    [Header("Player Position")]
+    [Tooltip("플레이어 캐릭터 X 중심.")]
+    [Range(0f, 600f)]
+    [SerializeField] private float playerX = 190f;
 
-    [Tooltip("1마리일 때 공룡 발끝 Y. GroundY=560(캐릭터 발끝)을 기준으로 +면 캐릭터보다 아래(앞쪽).")]
-    [Range(400f, 700f)]
-    [SerializeField] private float dinoSingleFootY = 575f;
+    // ── 1마리일 때 ──────────────────────────────────────
+    [Header("Dino Position")]
+    [Tooltip("1마리일 때 공룡의 X 중심.")]
+    [Range(300f, 900f)]
+    [SerializeField] private float dinoSingleX = 400f;
+
+    [Tooltip("1마리일 때 공룡 발끝 Y.")]
+    [Range(300f, 700f)]
+    [SerializeField] private float dinoSingleFootY = 485f;
 
     // ── 2마리일 때 (각 슬롯 독립 컨트롤) ─────────────────────
-    [Tooltip("2마리 시 슬롯 0 (앞쪽 공룡) X 중심. 뒤 공룡은 이 위치에서 자동 패킹됨.")]
+    [Tooltip("2마리 시 슬롯 0 (앞쪽 공룡) X 중심.")]
     [Range(300f, 900f)]
-    [SerializeField] private float dinoTwoSlot0X = 420f;
+    [SerializeField] private float dinoTwoSlot0X = 380f;
 
-    [Tooltip("2마리 시 슬롯 0 (앞쪽 공룡) 발끝 Y. GroundY=560 기준. 뒤 공룡은 이 발끝에서 절대 픽셀(dinoSize×staggerPct)만큼 위로.")]
-    [Range(400f, 700f)]
-    [SerializeField] private float dinoTwoSlot0FootY = 590f;
+    [Tooltip("2마리 시 슬롯 0 (앞쪽 공룡) 발끝 Y.")]
+    [Range(300f, 700f)]
+    [SerializeField] private float dinoTwoSlot0FootY = 500f;
 
     // ── 페어 자동 패킹 (공룡별 크기는 card.csv field_scale에서 로드) ───
     [Tooltip("2마리 페어의 가로 겹침 비율. 0.55가 기존 dinoTwoSlot1X=500 셋팅과 동일한 느낌. 0=떨어져, 0.7=많이 겹침.")]
@@ -478,6 +487,10 @@ public class BattleUI : MonoBehaviour
     [Tooltip("카드 사이 각도(도). 값↑ = 부채꼴 더 펼쳐짐. 기본 6.5")]
     [Range(0f, 20f)]
     [SerializeField] private float handAnglePerCard = 6.5f;
+
+    [Tooltip("손패 부채꼴 최대 총 각도(도). 카드 수가 늘어도 이 값을 초과하지 않도록 간격 자동 축소. 기본 26(=4×6.5, 5장 기준)")]
+    [Range(10f, 80f)]
+    [SerializeField] private float handMaxTotalAngle = 26f;
 
     [Tooltip("부채꼴 가상 원 반지름. 값↑ = 곡률 줄어듦(평평해짐). 기본 1100")]
     [Range(400f, 2500f)]
@@ -981,6 +994,14 @@ public class BattleUI : MonoBehaviour
                 if (fieldTex != null) _fieldDinoSprites[card.id] = fieldTex;
                 else Debug.LogWarning($"[BattleUI] Field dino sprite not found: Dinos/{filename}");
             }
+        }
+
+        // 패시브 타입 아이콘 — Dinos/passive/<lowercase_enum>.png
+        foreach (DinoPassiveType pt in System.Enum.GetValues(typeof(DinoPassiveType)))
+        {
+            if (pt == DinoPassiveType.NONE) continue;
+            var ptex = Resources.Load<Texture2D>("Dinos/passive/" + pt.ToString().ToLower());
+            if (ptex != null) _passiveIcons[pt] = ptex;
         }
 
         // 정적 폴백 스프라이트 — attack 시퀀스가 없을 때만 사용. 없어도 PlayerView는 시퀀스로 만들 수 있음.
@@ -2332,7 +2353,7 @@ public class BattleUI : MonoBehaviour
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("STRENGTH"), e.extraAttack,
-                         "Strength",
+                         "강화 (Strength)",
                          $"이 적의 공격력이 영구 +{e.extraAttack} 누적되었습니다.");
             x += chipSize + chipGap;
         }
@@ -2348,7 +2369,7 @@ public class BattleUI : MonoBehaviour
                 string iconId = (p != null && !string.IsNullOrEmpty(p.icon)) ? p.icon : "DEBUFF";
                 var tex = HeadIcon(iconId) ?? HeadIcon("DEBUFF");
 
-                string title = p != null ? p.nameKr : pid;
+                string title = p != null ? p.name : pid;
                 string body  = p != null ? p.description : pid;
                 int badge = PassiveBadgeNumber(pid);
 
@@ -2373,7 +2394,7 @@ public class BattleUI : MonoBehaviour
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("POISON"), p.poisonStacks,
-                         "Poison",
+                         "독 (Poison)",
                          $"턴 종료마다 {p.poisonStacks} 피해. 매 턴 1씩 감소.");
             x += chipSize + chipGap;
         }
@@ -2381,7 +2402,7 @@ public class BattleUI : MonoBehaviour
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("WEAK"), p.weakTurns,
-                         "Weak",
+                         "약화 (Weak)",
                          $"가하는 피해 25% 감소. {p.weakTurns}턴 남음.");
             x += chipSize + chipGap;
         }
@@ -2389,7 +2410,7 @@ public class BattleUI : MonoBehaviour
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("VULNERABLE"), p.vulnerableTurns,
-                         "Vulnerable",
+                         "취약 (Vulnerable)",
                          $"받는 피해 50% 증가. {p.vulnerableTurns}턴 남음.");
             x += chipSize + chipGap;
         }
@@ -2411,17 +2432,33 @@ public class BattleUI : MonoBehaviour
 
         const float chipSize = 22f;
         const float chipGap  = 3f;
-        // 가운데 정렬 — 폭 미리 계산해서 row 가로 중앙에 배치
-        int count = (s.tauntTurns > 0 ? 1 : 0)
+
+        // 패시브는 소멸(passiveConsumed)하지 않은 경우에만 표시
+        bool showPassive = s.data?.passiveType != DinoPassiveType.NONE
+                        && !s.passiveConsumed
+                        && _passiveIcons.ContainsKey(s.data.passiveType);
+
+        int count = (showPassive ? 1 : 0)
+                  + (s.tauntTurns > 0 ? 1 : 0)
                   + (s.silencedTurns > 0 ? 1 : 0)
                   + (s.tempAttackBonus > 0 ? 1 : 0)
                   + (s.fuseHpBonusTurns > 0 ? 1 : 0)
                   + (s.fuseBlockRefreshTurns > 0 ? 1 : 0);
         if (count == 0) return;
 
-        float totalW = count * chipSize + (count - 1) * chipGap;
-        float x = rowRect.x + (rowRect.width - totalW) * 0.5f;
+        // HP바 왼쪽에서 오른쪽으로 쌓임
+        float x = rowRect.x;
         float y = rowRect.y + (rowRect.height - chipSize) * 0.5f;
+
+        // 패시브 — 항상 맨 앞 (영구 특성이므로 숫자 뱃지 없음)
+        if (showPassive)
+        {
+            (string ptitle, string pbody) = GetDinoPassiveTooltip(s.data);
+            DrawIconChip(new Rect(x, y, chipSize, chipSize),
+                         _passiveIcons[s.data.passiveType], 0,
+                         ptitle, pbody);
+            x += chipSize + chipGap;
+        }
 
         if (s.tauntTurns > 0)
         {
@@ -2501,6 +2538,45 @@ public class BattleUI : MonoBehaviour
         }
     }
 
+    private static (string title, string body) GetDinoPassiveTooltip(CardData d)
+    {
+        int v = d.passiveValue;
+        return d.passiveType switch
+        {
+            DinoPassiveType.LACERATE      => ("열상 (Lacerate)",
+                $"공격마다 적에게 출혈 +{v} 스택.\n출혈은 매 턴 종료 시 스택만큼 피해 후 1 감소."),
+            DinoPassiveType.TENDERIZE     => ("연육 (Tenderize)",
+                $"공격 전 적에게 취약 +{v}턴 부여 후 타격.\n취약 상태의 적은 받는 피해 +50%."),
+            DinoPassiveType.APEX_PRESENCE => ("정점의 위압 (Apex Presence)",
+                $"매 턴 시작, 모든 적에게 약화 {v}턴 부여.\n약화 상태의 적은 가하는 피해 -25%."),
+            DinoPassiveType.SCOUT         => ("정찰 (Scout)",
+                $"매 턴 시작, 카드 +{v}장 추가 드로우."),
+            DinoPassiveType.BLOOD_FRENZY  => ("피의 광란 (Blood Frenzy)",
+                $"자신 HP가 50% 이하일 때 ATK +{v} (자동 발동)."),
+            DinoPassiveType.CANNIBAL      => ("카니발 (Cannibal)",
+                $"적 처치 시 자신 HP +{v} 회복."),
+            DinoPassiveType.REAPER        => ("수확 (Reaper)",
+                $"공격마다 자신 방어도 +{v}."),
+            DinoPassiveType.COUNTER       => ("반격 (Counter)",
+                $"공격받을 때마다 공격자에게 {v} 반격 피해."),
+            DinoPassiveType.TOXIC_SLASH   => ("독성 베기 (Toxic Slash)",
+                $"공격마다 적에게 출혈 +{v} 및 독 +{v}.\n출혈·독 모두 매 턴 종료 시 스택만큼 피해 후 1 감소."),
+            DinoPassiveType.SWIFT_DODGE   => ("기민한 회피 (Swift Dodge)",
+                $"매 턴 시작, 방어도 +{v} 충전."),
+            DinoPassiveType.ENRAGE        => ("분노 (Enrage)",
+                $"피격마다 ATK 영구 +{v} (누적 무제한)."),
+            DinoPassiveType.AMBUSH        => ("매복 기습 (Ambush)",
+                "소환 후 첫 공격만 2배 데미지.\n발동 후 소멸 (1회 한정)."),
+            DinoPassiveType.RAMPAGE       => ("난동 (Rampage)",
+                "적 처치 시 즉시 다음 적에게 추가 공격 1회."),
+            DinoPassiveType.INTIMIDATE    => ("위협 (Intimidate)",
+                $"공격마다 목표 적 ATK 영구 -{v}.\n적 ATK는 0 이하로 내려가지 않음."),
+            DinoPassiveType.EXECUTE       => ("처형 (Execute)",
+                $"목표 적 HP가 {v} 이하이면 즉시 처치."),
+            _                             => (d.nameKr, ""),
+        };
+    }
+
     private void EnsurePassiveStyles()
     {
         if (_passiveChipStyle == null)
@@ -2561,7 +2637,7 @@ public class BattleUI : MonoBehaviour
     {
         if (_targetingSummonIndex < 0 || _targetingSummonIndex >= state.field.Count) return;
         var s = state.field[_targetingSummonIndex];
-        string text = $"▶ {s.data.nameKr} 공격 — 적을 클릭하세요  (우클릭: 취소)";
+        string text = $"▶ {s.data.name} 공격 — 적을 클릭하세요  (우클릭: 취소)";
         float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 2.2f);
         float alpha = Mathf.Lerp(0.35f, 0.95f, pulse);
         var prev = GUI.color;
@@ -2576,7 +2652,7 @@ public class BattleUI : MonoBehaviour
         var s = state.field[_targetingSummonSkillIndex];
         var skill = DianoCard.Data.DataManager.Instance.GetSkill(s.data.id);
         if (skill == null) return;
-        string text = $"✦ {s.data.nameKr} {skill.nameKr} — 적을 클릭하세요  (우클릭: 취소)";
+        string text = $"✦ {s.data.name} {skill.name} — 적을 클릭하세요  (우클릭: 취소)";
         float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 2.2f);
         float alpha = Mathf.Lerp(0.35f, 0.95f, pulse);
         var prev = GUI.color;
@@ -2593,16 +2669,16 @@ public class BattleUI : MonoBehaviour
         if (CardNeedsFusionTargets(c))
         {
             text = _fusionMaterialAPicked
-                ? $"▶ {c.nameKr} — 두 번째 재료(같은 종·같은 티어)를 클릭  (우클릭: 취소)"
-                : $"▶ {c.nameKr} — 융합할 육식공룡 두 마리 중 첫 재료를 클릭 (필드/손)  (우클릭: 취소)";
+                ? $"▶ {c.name} — 두 번째 재료(같은 종·같은 티어)를 클릭  (우클릭: 취소)"
+                : $"▶ {c.name} — 융합할 육식공룡 두 마리 중 첫 재료를 클릭 (필드/손)  (우클릭: 취소)";
         }
         else if (CardNeedsAllyTarget(c))
         {
-            text = $"▶ {c.nameKr} 사용 중 — 아군 공룡을 클릭하세요  (우클릭: 취소)";
+            text = $"▶ {c.name} 사용 중 — 아군 공룡을 클릭하세요  (우클릭: 취소)";
         }
         else
         {
-            text = $"▶ {c.nameKr} 사용 중 — 적을 클릭하세요  (우클릭: 취소)";
+            text = $"▶ {c.name} 사용 중 — 적을 클릭하세요  (우클릭: 취소)";
         }
 
         // 살짝 보였다 사라졌다 하는 알파 펄스 (sin 0~1 → 0.35~0.95)
@@ -2980,7 +3056,7 @@ public class BattleUI : MonoBehaviour
 
     // 지면 라인 — 플레이어 캐릭터 발끝이 닿는 GUI Y. 카드 상단(≈567) 약간 위로 잡아 HP 바 겹침 방지.
     // 공룡 발끝 위치는 모두 이 라인 기준으로 계산 (사람 기준).
-    private const float GroundY = 560f;
+    private const float GroundY = 470f;
 
     private void ComputeSlotPositions(BattleState state)
     {
@@ -2989,7 +3065,7 @@ public class BattleUI : MonoBehaviour
 
         _slotPositions.Clear();
         _mossDepthScale.Clear();
-        _slotPositions[state.player] = new Vector2(230, GroundY - PlayerHalfH - 10);
+        _slotPositions[state.player] = new Vector2(playerX, GroundY - PlayerHalfH - 10);
 
         int fieldCount = state.field.Count;
         CardData front = fieldCount > 0 ? state.field[0].data : null;
@@ -3289,7 +3365,7 @@ public class BattleUI : MonoBehaviour
             case DianoCard.Data.EnemyAction.DEFEND:           return "DEFEND";
             case DianoCard.Data.EnemyAction.BLOCK_BOSS:       return "DEFEND";
             case DianoCard.Data.EnemyAction.POISON:           return "POISON";
-            case DianoCard.Data.EnemyAction.DRAIN:            return "POISON";
+            case DianoCard.Data.EnemyAction.DRAIN:            return "ATTACK";
             case DianoCard.Data.EnemyAction.WEAK:             return "WEAK";
             case DianoCard.Data.EnemyAction.VULNERABLE:       return "VULNERABLE";
             case DianoCard.Data.EnemyAction.SILENCE:          return "BIND";
@@ -3366,38 +3442,38 @@ public class BattleUI : MonoBehaviour
         string atkTarget = liveTarget != null
             ? (!string.IsNullOrEmpty(liveTarget.data?.nameKr)
                 ? liveTarget.data.nameKr
-                : "your dino")
-            : "the player";
+                : "아군 공룡")
+            : "플레이어";
 
         // 카운트다운 잔여 턴 표기 — 0/1을 자연스럽게 분기.
         string countdownPhrase =
-            t <= 0 ? "this turn" :
-            t == 1 ? "next turn" :
-                     $"in {t} turns";
+            t <= 0 ? "이번 턴" :
+            t == 1 ? "다음 턴" :
+                     $"{t}턴 후";
 
         switch (e.intentAction)
         {
-            case DianoCard.Data.EnemyAction.ATTACK:           return ("Attack",          $"Deals {v} damage to {atkTarget}.");
-            case DianoCard.Data.EnemyAction.MULTI_ATTACK:     return ("Multi Attack",    $"Hits {atkTarget} {c} times for {v} damage each.");
-            case DianoCard.Data.EnemyAction.DEFEND:           return ("Defend",          $"Gains {v} block.");
-            case DianoCard.Data.EnemyAction.POISON:           return ("Apply Poison",    $"Adds {v} poison to the player. Each turn: takes that many damage, then poison −1.");
-            case DianoCard.Data.EnemyAction.WEAK:             return ("Weak",            $"Player weakened for {v} turn(s) — deals 25% less damage.");
-            case DianoCard.Data.EnemyAction.VULNERABLE:       return ("Vulnerable",      $"Player vulnerable for {v} turn(s) — takes 50% more damage.");
-            case DianoCard.Data.EnemyAction.DRAIN:            return ("Drain",           $"Deals {v} damage to the player and heals self for the same.");
-            case DianoCard.Data.EnemyAction.SILENCE:          return ("Silence",         $"Silences your dinos for {v} turn(s) — they cannot act.");
-            case DianoCard.Data.EnemyAction.STEAL_SUMMON:     return ("Steal Dino",      "Converts one of your dinos to the enemy side. Can be cleansed.");
-            case DianoCard.Data.EnemyAction.SUMMON:           return ("Summon",          $"Summons {Mathf.Max(1, v)} minion(s).");
-            case DianoCard.Data.EnemyAction.REFILL_MOSS:      return ("Refill Moss",     $"Refills moss spirits up to {v}.");
-            case DianoCard.Data.EnemyAction.BUFF_SELF:        return ("Self Buff",       $"Permanent +{v} attack to self.");
-            case DianoCard.Data.EnemyAction.EMPOWER_BOSS:     return ("Empower Boss",    $"+{v} damage on the boss's next attack.");
-            case DianoCard.Data.EnemyAction.ARMOR_UP:         return ("Armor Up",        $"Permanent +{v} block refreshed each turn.");
-            case DianoCard.Data.EnemyAction.HEAL_BOSS:        return ("Heal Boss",       $"Boss recovers {v} HP.");
-            case DianoCard.Data.EnemyAction.BLOCK_BOSS:       return ("Block Boss",      $"Grants the boss +{v} block.");
-            case DianoCard.Data.EnemyAction.COUNTDOWN_ATTACK: return ("Charging Strike", $"Strikes {atkTarget} for {v} damage {countdownPhrase}.");
-            case DianoCard.Data.EnemyAction.COUNTDOWN_AOE:    return ("Charging AOE",    $"Hits player and all dinos for {v} damage {countdownPhrase}.");
-            case DianoCard.Data.EnemyAction.CLOG_DECK:        return ("Clog Deck",       $"Adds {v} status card(s) to the player's discard pile.");
-            case DianoCard.Data.EnemyAction.IDLE:             return ("Idle",            "Does nothing this turn.");
-            default:                                          return ("Unknown",         "Next action is unknown.");
+            case DianoCard.Data.EnemyAction.ATTACK:           return ("공격",         $"{atkTarget}에게 {v} 피해.");
+            case DianoCard.Data.EnemyAction.MULTI_ATTACK:     return ("다중 공격",    $"{atkTarget}에게 {v} 피해 × {c}회.");
+            case DianoCard.Data.EnemyAction.DEFEND:           return ("방어",         $"자신 방어도 +{v}.");
+            case DianoCard.Data.EnemyAction.POISON:           return ("독 부여",      $"플레이어에게 독 +{v}.\n독은 매 턴 종료 시 스택만큼 피해 후 1씩 감소.");
+            case DianoCard.Data.EnemyAction.WEAK:             return ("약화 부여",    $"플레이어를 {v}턴 약화.\n약화 상태에서는 가하는 피해 -25%.");
+            case DianoCard.Data.EnemyAction.VULNERABLE:       return ("취약 부여",    $"플레이어를 {v}턴 취약.\n취약 상태에서는 받는 피해 +50%.");
+            case DianoCard.Data.EnemyAction.DRAIN:            return ("흡혈",         $"플레이어에게 {v} 피해 후 자신 HP를 같은 양만큼 회복.");
+            case DianoCard.Data.EnemyAction.SILENCE:          return ("침묵",         $"아군 공룡 전체를 {v}턴 침묵.\n침묵된 공룡은 행동 불가.");
+            case DianoCard.Data.EnemyAction.STEAL_SUMMON:     return ("공룡 강탈",    "아군 공룡 1체를 적 진영으로 전환.\n정화(PURIFY) 효과로 되찾을 수 있음.");
+            case DianoCard.Data.EnemyAction.SUMMON:           return ("소환",         $"쫄 {Mathf.Max(1, v)}체 소환.");
+            case DianoCard.Data.EnemyAction.REFILL_MOSS:      return ("이끼 보충",    $"이끼 정령을 최대 {v}체까지 보충.");
+            case DianoCard.Data.EnemyAction.BUFF_SELF:        return ("자가 강화",    $"자신 ATK 영구 +{v}.");
+            case DianoCard.Data.EnemyAction.EMPOWER_BOSS:     return ("보스 강화",    $"보스의 다음 공격 피해 +{v}.");
+            case DianoCard.Data.EnemyAction.ARMOR_UP:         return ("장갑",         $"매 턴 시작 방어도 +{v} (영구).");
+            case DianoCard.Data.EnemyAction.HEAL_BOSS:        return ("보스 회복",    $"보스 HP {v} 회복.");
+            case DianoCard.Data.EnemyAction.BLOCK_BOSS:       return ("보스 방어",    $"보스 방어도 +{v}.");
+            case DianoCard.Data.EnemyAction.COUNTDOWN_ATTACK: return ("예고 강타",    $"{countdownPhrase}에 {atkTarget}에게 {v} 피해.");
+            case DianoCard.Data.EnemyAction.COUNTDOWN_AOE:    return ("예고 광역",    $"{countdownPhrase}에 플레이어 및 모든 공룡에게 {v} 피해.");
+            case DianoCard.Data.EnemyAction.CLOG_DECK:        return ("방해 카드",    $"플레이어 버림더미에 잡초 카드 {v}장 추가.");
+            case DianoCard.Data.EnemyAction.IDLE:             return ("대기",         "이번 턴 행동하지 않음.");
+            default:                                          return ("?",           "다음 행동을 알 수 없음.");
         }
     }
 
@@ -3490,10 +3566,13 @@ public class BattleUI : MonoBehaviour
     private static string BuildEnemyStatusLine(EnemyInstance e)
     {
         var parts = new System.Collections.Generic.List<string>();
-        if (e.poisonStacks    > 0) parts.Add($"Poison {e.poisonStacks}");
-        if (e.weakTurns       > 0) parts.Add($"Weak {e.weakTurns}");
-        if (e.vulnerableTurns > 0) parts.Add($"Vulnerable {e.vulnerableTurns}");
-        return parts.Count == 0 ? "" : "On this enemy:  " + string.Join("  ·  ", parts);
+        if (e.poisonStacks    > 0) parts.Add($"독 {e.poisonStacks}");
+        if (e.bleedStacks     > 0) parts.Add($"출혈 {e.bleedStacks}");
+        if (e.burnStacks      > 0) parts.Add($"화상 {e.burnStacks}");
+        if (e.weakTurns       > 0) parts.Add($"약화 {e.weakTurns}턴");
+        if (e.vulnerableTurns > 0) parts.Add($"취약 {e.vulnerableTurns}턴");
+        if (e.stunTurns       > 0) parts.Add($"기절 {e.stunTurns}턴");
+        return parts.Count == 0 ? "" : "상태이상:  " + string.Join("  ·  ", parts);
     }
 
     // 인텐트 아이콘 우상단 코너에 작은 타겟 뱃지(플레이어/공룡) 표시.
@@ -3779,22 +3858,26 @@ public class BattleUI : MonoBehaviour
             DrawBlockBadge(new Vector2(summonHpRect.x, summonHpRect.center.y), s.block, 40f, HeadIcon("DEFEND"));
         }
 
-        // 티어/스택 인디케이터 — 육식: 현재 티어 (T0/T1/T2·MAX). 초식: 덮어쓰기 누적 스택.
-        // 육식 진화는 스택이 아니라 "진화의 각인" 카드로 트리거되므로 "합성까지 N장" 표시 없음.
+
+        // 티어/스택 인디케이터 — T0는 숨기고 T1/T2 진화체만 표시. 초식: 누적 스택.
         string stackText = null;
         if (s.data.subType == CardSubType.CARNIVORE)
         {
             if (s.data.id.EndsWith("_T2"))      stackText = "T2 · MAX";
             else if (s.data.id.EndsWith("_T1")) stackText = "T1";
-            else                                 stackText = "T0";
         }
         else if (s.stacks > 0)
         {
             stackText = $"스택 {s.stacks}";
         }
+
+        // 상태 칩 — HP바 바로 아래, HP바 왼쪽 끝에서 오른쪽으로 쌓임.
+        DrawSummonStatusChips(new Rect(summonHpRect.x, summonHpRect.yMax + 4f, summonHpRect.width, 26f), s);
+
+        // T1/T2·스택 텍스트는 칩 아래에 표시
         if (!string.IsNullOrEmpty(stackText))
         {
-            var stackRect = new Rect(rect.x, summonHpRect.yMax + 3f, rect.width, 16f);
+            var stackRect = new Rect(rect.x, summonHpRect.yMax + 32f, rect.width, 16f);
             var prev = _centerStyle.normal.textColor;
             _centerStyle.normal.textColor = new Color(0f, 0f, 0f, 0.8f);
             GUI.Label(new Rect(stackRect.x + 1, stackRect.y + 1, stackRect.width, stackRect.height), stackText, _centerStyle);
@@ -3828,9 +3911,6 @@ public class BattleUI : MonoBehaviour
                 _targetingSummonIndex = (_targetingSummonIndex == summonIndex) ? -1 : summonIndex;
             }
         }
-
-        // 상태 칩 — 도발 / 침묵 / 일시 공격 강화. 공격 완료는 공룡 sprite dimmed로 표현되므로 칩 생략.
-        DrawSummonStatusChips(new Rect(rect.x, summonHpRect.yMax + 22f, rect.width, 26f), s);
 
         // 스킬 아이콘 — T1+ 진화 공룡만 (DinoSkillData 존재 시). 평타와 별개 자원.
         // 위치: 검 우측에 같은 높이로 나란히. 위 pairOffset으로 한 쌍이 공룡 중앙에 정렬됨.
@@ -5414,9 +5494,10 @@ public class BattleUI : MonoBehaviour
         float fanOriginX  = RefW * 0.5f;
         float fanOriginY  = centerCardY + fanRadius;
 
-        // 카드 간 각도 고정 (좌우 완전 대칭)
-        float anglePerCard = handAnglePerCard;
-        float totalAngle = (n - 1) * anglePerCard;
+        // 카드 간 각도 — 카드 수가 많아지면 handMaxTotalAngle을 초과하지 않도록 간격 자동 축소
+        float totalAngle = (n - 1) * handAnglePerCard;
+        if (totalAngle > handMaxTotalAngle) totalAngle = handMaxTotalAngle;
+        float anglePerCard = n > 1 ? totalAngle / (n - 1) : handAnglePerCard;
         float startAngle = -totalAngle * 0.5f;
 
         // 드로우 순서: 가장자리 카드부터, 중앙 카드가 마지막(최상단)에 오도록
@@ -5898,6 +5979,18 @@ public class BattleUI : MonoBehaviour
 
         if (c == null) return;
 
+        // 패시브 아이콘 — SUMMON 카드 우상단, 코스트 보석과 대칭. 호버 시 툴팁 표시.
+        if (c.cardType == CardType.SUMMON
+            && c.passiveType != DinoPassiveType.NONE
+            && _passiveIcons.TryGetValue(c.passiveType, out var passiveHandTex))
+        {
+            float ps = rect.width * 0.13f;
+            float pm = rect.width * 0.04f;
+            var pr = new Rect(rect.xMax - ps - pm, rect.y + pm, ps, ps);
+            (string ptitle, string pbody) = GetDinoPassiveTooltip(c);
+            DrawIconChip(pr, passiveHandTex, 0, ptitle, pbody);
+        }
+
         // 4) 카드명 — 폰트 크기는 카드 폭에 비례해 자동 스케일.
         // 손패/호버/치트 어디서든 같은 시각 비율이 보이도록 reference width(187)로 정규화한다.
         // 그 다음 텍스트 폭이 rect 폭을 넘으면 추가 축소(두 줄 깨짐 방지).
@@ -6192,6 +6285,15 @@ public class BattleUI : MonoBehaviour
             yield break;
         }
 
+        // 플레이어 상태이상 틱 (적 행동 전)
+        _battle.TickPlayerStatuses();
+        if (state.PlayerLost)
+        {
+            _endTurnAnimating = false;
+            _attackingUnit = null;
+            yield break;
+        }
+
         // 적이 차례대로 행동 — 공격 계열만 lunge 애니메이션.
         var enemies = new List<EnemyInstance>(state.enemies);
         foreach (var e in enemies)
@@ -6199,7 +6301,8 @@ public class BattleUI : MonoBehaviour
             if (e.IsDead) continue;
             if (state.PlayerLost) break;
 
-            bool active = e.telegraphRemaining <= 0;
+            // 카운트다운/속박/각성 중인 적은 실제 행동 없음 → 공격 애니메이션도 스킵.
+            bool active = e.telegraphRemaining <= 0 && e.stunTurns <= 0;
 
             // MULTI_ATTACK은 hit별로 애니메이션 반복 — 시각적으로 N회 공격이 명확히 보이게.
             // 데미지 처리는 DealEnemyMultiAttackHit가 hit 단위로 적용, DoEnemyAction은 호출하지 않음.
@@ -6216,11 +6319,14 @@ public class BattleUI : MonoBehaviour
             }
             else
             {
-                // 카운트다운 진행 중(telegraphRemaining > 0)이면 실제 데미지 발동 안 함 → 모션도 재생 안 함.
+                // 카운트다운/속박 진행 중이면 실제 데미지 발동 안 함 → 모션도 재생 안 함.
                 if (IsAttackAction(e.intentAction) && active)
                     yield return AnimateEnemyAttack(e);
                 _battle.DoEnemyAction(e);
             }
+
+            // 적 상태이상 틱: DoT 데미지 + 독/출혈/약화/취약/기절 감소
+            _battle.TickEnemyStatuses(e);
 
             yield return new WaitForSeconds(BetweenAttacksPause);
         }

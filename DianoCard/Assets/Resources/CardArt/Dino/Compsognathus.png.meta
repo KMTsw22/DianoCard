@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: bef13e1fc7b1f60458a350881957b106
+guid: f98a8b7ae81087e4baada1682462e531
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 4554629367736185834
-    second: Compsognathus_0
+      213: 3630297762222942417
+    second: Compsognathus_T0_2_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,7 +126,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Compsognathus_0
+      name: Compsognathus_T0_2_0
       rect:
         serializedVersion: 2
         x: 0
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: ae33a7b474b453f30800000000000000
-      internalID: 4554629367736185834
+      spriteID: 1d8a132a498616230800000000000000
+      internalID: 3630297762222942417
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Compsognathus_0: 4554629367736185834
+      Compsognathus_T0_2_0: 3630297762222942417
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

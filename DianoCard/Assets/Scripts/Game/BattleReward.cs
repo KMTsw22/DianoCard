@@ -13,5 +13,6 @@ namespace DianoCard.Game
         public List<CardData> cardChoices = new(); // 3장 중 택1 (스킵 가능)
         public PotionData potion;                  // null이면 물약 드랍 없음
         public RelicData relic;                    // null이면 유물 없음 (엘리트/보스만 생성)
+        public bool cardRemoveOffer;               // true면 카드 1장 무료 제거 기회 (일반 전투 확률 지급)
     }
 }

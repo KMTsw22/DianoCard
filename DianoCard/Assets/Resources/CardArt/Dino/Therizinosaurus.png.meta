@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: e8d36ea915797b842b4cbc43eec48d4c
+guid: f2b321eb7aa05ad4dac6e770ef465ccb
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -154926421503278514
-    second: Therizinosaurus_0
+      213: 5048042897853841353
+    second: Therizinosaurus_T0_3_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,7 +126,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Therizinosaurus_0
+      name: Therizinosaurus_T0_3_0
       rect:
         serializedVersion: 2
         x: 0
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: e4289ff8d3799ddf0800000000000000
-      internalID: -154926421503278514
+      spriteID: 9cff28915404e0640800000000000000
+      internalID: 5048042897853841353
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Therizinosaurus_0: -154926421503278514
+      Therizinosaurus_T0_3_0: 5048042897853841353
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -5,11 +5,13 @@ namespace DianoCard.Data
     [System.Serializable]
     public class EventChoice
     {
-        public string text;
+        public string textKr;
+        public string textEn;
         public string effect;
         public int value;
 
-        public bool IsEmpty => string.IsNullOrEmpty(text);
+        public string text => LocaleSettings.Pick(textKr, textEn);
+        public bool IsEmpty => string.IsNullOrEmpty(textKr) && string.IsNullOrEmpty(textEn);
     }
 
     [System.Serializable]
@@ -19,10 +21,14 @@ namespace DianoCard.Data
         public string nameKr;
         public string nameEn;
         public int chapter;
-        public string description;
+        public string descriptionKr;
+        public string descriptionEn;
         public EventChoice choice1;
         public EventChoice choice2;
         public EventChoice choice3;
+
+        public string name => LocaleSettings.Pick(nameKr, nameEn);
+        public string description => LocaleSettings.Pick(descriptionKr, descriptionEn);
 
         public IEnumerable<EventChoice> Choices
         {
@@ -42,22 +48,26 @@ namespace DianoCard.Data
                 nameKr = CSVUtil.GetString(row, "name_kr"),
                 nameEn = CSVUtil.GetString(row, "name_en"),
                 chapter = CSVUtil.GetInt(row, "chapter"),
-                description = CSVUtil.GetString(row, "description"),
+                descriptionKr = CSVUtil.GetString(row, "description_kr"),
+                descriptionEn = CSVUtil.GetString(row, "description_en"),
                 choice1 = new EventChoice
                 {
-                    text = CSVUtil.GetString(row, "choice1_text"),
+                    textKr = CSVUtil.GetString(row, "choice1_text_kr"),
+                    textEn = CSVUtil.GetString(row, "choice1_text_en"),
                     effect = CSVUtil.GetString(row, "choice1_effect"),
                     value = CSVUtil.GetInt(row, "choice1_value"),
                 },
                 choice2 = new EventChoice
                 {
-                    text = CSVUtil.GetString(row, "choice2_text"),
+                    textKr = CSVUtil.GetString(row, "choice2_text_kr"),
+                    textEn = CSVUtil.GetString(row, "choice2_text_en"),
                     effect = CSVUtil.GetString(row, "choice2_effect"),
                     value = CSVUtil.GetInt(row, "choice2_value"),
                 },
                 choice3 = new EventChoice
                 {
-                    text = CSVUtil.GetString(row, "choice3_text"),
+                    textKr = CSVUtil.GetString(row, "choice3_text_kr"),
+                    textEn = CSVUtil.GetString(row, "choice3_text_en"),
                     effect = CSVUtil.GetString(row, "choice3_effect"),
                     value = CSVUtil.GetInt(row, "choice3_value"),
                 },

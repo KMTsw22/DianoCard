@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 48f6948bc35122d4a9bd7a1a671447ca
+guid: eb776eddfb2577f489b341996c283393
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 8015268349640243863
-    second: T-Rex_0
+      213: 4981625279428072546
+    second: T-Rex_T0_1_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,7 +126,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: T-Rex_0
+      name: T-Rex_T0_1_0
       rect:
         serializedVersion: 2
         x: 0
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 79afcb7e814fb3f60800000000000000
-      internalID: 8015268349640243863
+      spriteID: 2649a604cc9422540800000000000000
+      internalID: 4981625279428072546
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      T-Rex_0: 8015268349640243863
+      T-Rex_T0_1_0: 4981625279428072546
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

@@ -995,6 +995,13 @@ namespace DianoCard.Game
             }
         }
 
+        /// <summary>보상 카드 제거 — 골드 비용 없이 덱에서 카드 1장 제거.</summary>
+        public void TakeCardRemoveReward(CardData card)
+        {
+            if (card != null && CurrentRun != null && CurrentRun.deck.Contains(card))
+                CurrentRun.deck.Remove(card);
+        }
+
         public void TakePotionReward(PotionData potion)
         {
             if (potion != null && CurrentRun != null && !CurrentRun.PotionSlotFull)

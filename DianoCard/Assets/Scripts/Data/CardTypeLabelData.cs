@@ -12,14 +12,18 @@ namespace DianoCard.Data
     public class CardTypeLabelData
     {
         public string id;
-        public string label;
+        public string labelKr;
+        public string labelEn;
+
+        public string label => LocaleSettings.Pick(labelKr, labelEn);
 
         public static CardTypeLabelData FromRow(Dictionary<string, string> row)
         {
             return new CardTypeLabelData
             {
                 id = CSVUtil.GetString(row, "id"),
-                label = CSVUtil.GetString(row, "label"),
+                labelKr = CSVUtil.GetString(row, "label_kr"),
+                labelEn = CSVUtil.GetString(row, "label_en"),
             };
         }
 

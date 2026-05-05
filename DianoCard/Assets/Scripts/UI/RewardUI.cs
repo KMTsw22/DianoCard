@@ -110,8 +110,8 @@ public class RewardUI : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float cardGlowAlphaHover = 0.65f;
     [SerializeField] private Color cardGlowColor = new(1f, 0.82f, 0.42f);
 
-    private enum View { List, CardPicker }
-    private enum RowKind { Gold, Card, Potion, Relic }
+    private enum View { List, CardPicker, CardRemovePicker }
+    private enum RowKind { Gold, Card, Potion, Relic, CardRemove }
 
     private View _view = View.List;
 
@@ -128,6 +128,8 @@ public class RewardUI : MonoBehaviour
     private bool _cardDone;
     private bool _potionDone;
     private bool _relicDone;
+    private bool _cardRemoveDone;
+    private float _removeScrollY;
 
     // 어떤 BattleReward 인스턴스에 대해 이미 ResetForNewReward를 돌렸는지 추적.
     // 상태 엣지(_prevState != Reward → Reward) 기반으로 판정하면 텍트리/덱 화면 갔다 복귀할 때
@@ -147,6 +149,7 @@ public class RewardUI : MonoBehaviour
     private Texture2D _iconCard;
     private Texture2D _iconPotion;
     private Texture2D _iconRelic;
+    private Texture2D _iconCardRemove;
     private readonly Dictionary<string, Texture2D> _itemIconCache = new();
 
     // Sprites (Card picker view) — 카드 본체는 BattleUI에 위임하므로 타이틀/스킵 자산만 보유
@@ -233,6 +236,8 @@ public class RewardUI : MonoBehaviour
         _cardDone = false;
         _potionDone = false;
         _relicDone = false;
+        _cardRemoveDone = false;
+        _removeScrollY = 0f;
     }
 
     void OnGUI()
@@ -260,8 +265,10 @@ public class RewardUI : MonoBehaviour
 
         if (_view == View.List)
             DrawListView(gsm, run, reward);
-        else
+        else if (_view == View.CardPicker)
             DrawCardPicker(gsm, reward);
+        else
+            DrawCardRemovePicker(gsm, run, reward);
     }
 
     // =========================================================
@@ -335,13 +342,18 @@ public class RewardUI : MonoBehaviour
         {
             string pLabel = run.PotionSlotFull
                 ? dm.GetUIString("reward.row.potion_full")
-                : dm.GetUIString("reward.row.potion", EnName(reward.potion.nameEn, reward.potion.nameKr));
+                : dm.GetUIString("reward.row.potion", reward.potion.name);
             DrawRewardRow(new Rect(rowX, y, rowW, rowH), GetItemIcon(reward.potion.id, true), pLabel, RowKind.Potion);
             y += rowH + rowGap;
         }
         if (!_relicDone && reward.relic != null)
         {
-            DrawRewardRow(new Rect(rowX, y, rowW, rowH), GetItemIcon(reward.relic.id, false), dm.GetUIString("reward.row.relic", EnName(reward.relic.nameEn, reward.relic.nameKr)), RowKind.Relic);
+            DrawRewardRow(new Rect(rowX, y, rowW, rowH), GetItemIcon(reward.relic.id, false), dm.GetUIString("reward.row.relic", reward.relic.name), RowKind.Relic);
+            y += rowH + rowGap;
+        }
+        if (!_cardRemoveDone && reward.cardRemoveOffer)
+        {
+            DrawRewardRow(new Rect(rowX, y, rowW, rowH), _iconCardRemove ?? _iconCard, dm.GetUIString("reward.row.card_remove"), RowKind.CardRemove);
             y += rowH + rowGap;
         }
 
@@ -463,6 +475,16 @@ public class RewardUI : MonoBehaviour
             gsm.TakeRelicReward(reward.relic);
             _relicDone = true;
         }
+        else if (!_cardRemoveDone && reward.cardRemoveOffer)
+        {
+            if (run.deck.Count > 0)
+            {
+                _view = View.CardRemovePicker;
+                _removeScrollY = 0f;
+                return;
+            }
+            _cardRemoveDone = true;
+        }
 
         // 처리 후 남은 게 없으면 즉시 다음 단계로 (한 번 더 Continue 안 눌러도 됨)
         if (_view == View.List && IsAllRowsDone(reward))
@@ -477,6 +499,7 @@ public class RewardUI : MonoBehaviour
         if (!_cardDone && reward.cardChoices != null && reward.cardChoices.Count > 0) return false;
         if (!_potionDone && reward.potion != null) return false;
         if (!_relicDone && reward.relic != null) return false;
+        if (!_cardRemoveDone && reward.cardRemoveOffer) return false;
         return true;
     }
 
@@ -601,6 +624,98 @@ public class RewardUI : MonoBehaviour
         }
     }
 
+    // =========================================================
+    // 카드 제거 서브뷰 (무료 purge)
+    // =========================================================
+
+    private void DrawCardRemovePicker(GameStateManager gsm, RunState run, BattleReward reward)
+    {
+        SyncStyleFontSizes();
+
+        var prev = GUI.color;
+        GUI.color = new Color(0f, 0f, 0f, 0.75f);
+        GUI.DrawTexture(new Rect(0, 0, RefW, RefH), Texture2D.whiteTexture);
+        GUI.color = prev;
+
+        var dm = DataManager.Instance;
+        GUI.Label(new Rect(0, 22f, RefW, 44f), dm.GetUIString("reward.remove.title"), _pickerTitleStyle);
+        GUI.Label(new Rect(0, 70f, RefW, 24f), dm.GetUIString("reward.remove.subtitle"), _pickerSubStyle);
+
+        if (run.deck.Count == 0)
+        {
+            _pending.Add(() => { _cardRemoveDone = true; _view = View.List; });
+            return;
+        }
+
+        var ev = Event.current;
+        if (ev.type == EventType.ScrollWheel) { _removeScrollY += ev.delta.y * 30f; ev.Use(); }
+
+        const int cols = 6;
+        float cardW = 150f, cardH = 209f, gap = 14f;
+        float totalW = cols * cardW + (cols - 1) * gap;
+        float startX = (RefW - totalW) * 0.5f;
+        float gridTop = 102f;
+        float gridAreaH = RefH - gridTop - 110f;
+
+        int rowCount = Mathf.CeilToInt(run.deck.Count / (float)cols);
+        float contentH = rowCount * cardH + Mathf.Max(0, rowCount - 1) * gap;
+        float maxScroll = Mathf.Max(0f, contentH - gridAreaH);
+        _removeScrollY = Mathf.Clamp(_removeScrollY, -maxScroll, 0f);
+
+        GUI.BeginGroup(new Rect(0, gridTop, RefW, gridAreaH));
+
+        if (_battleUICache == null) _battleUICache = UnityEngine.Object.FindFirstObjectByType<BattleUI>();
+
+        for (int i = 0; i < run.deck.Count; i++)
+        {
+            int col = i % cols;
+            int row = i / cols;
+            var rect = new Rect(startX + col * (cardW + gap), row * (cardH + gap) + _removeScrollY, cardW, cardH);
+            if (rect.yMax < 0 || rect.y > gridAreaH) continue;
+
+            if (_battleUICache != null) _battleUICache.DrawCardPreview(rect, run.deck[i]);
+            else DrawFilledRect(rect, new Color(0.10f, 0.14f, 0.20f, 0.96f));
+
+            var pill = new Rect(rect.x + 8f, rect.yMax - 38f, rect.width - 16f, 28f);
+            DrawFilledRect(pill, new Color(0.55f, 0.05f, 0.05f, 0.75f));
+            var pillStyle = new GUIStyle(_rowLabelStyle) { alignment = TextAnchor.MiddleCenter, fontSize = 12 };
+            GUI.Label(pill, "PURGE", pillStyle);
+
+            if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
+            {
+                var cardToRemove = run.deck[i];
+                _pending.Add(() =>
+                {
+                    GameStateManager.Instance?.TakeCardRemoveReward(cardToRemove);
+                    _cardRemoveDone = true;
+                    _view = View.List;
+                });
+            }
+        }
+
+        GUI.EndGroup();
+
+        float skipW = cardPickerSkipSize.x;
+        float skipH = cardPickerSkipSize.y;
+        var skipRect = new Rect((RefW - skipW) * 0.5f, RefH - skipH - 24f, skipW, skipH);
+        bool skipHover = skipRect.Contains(Event.current.mousePosition);
+        Rect skipDraw = skipRect;
+        if (skipHover)
+        {
+            float s = continueHoverScale;
+            skipDraw = new Rect(
+                skipRect.center.x - skipRect.width * s * 0.5f,
+                skipRect.center.y - skipRect.height * s * 0.5f,
+                skipRect.width * s,
+                skipRect.height * s);
+        }
+        if (_skipButtonTex != null) GUI.DrawTexture(skipDraw, _skipButtonTex, ScaleMode.ScaleToFit);
+        else DrawFilledRect(skipDraw, new Color(0.10f, 0.14f, 0.20f, 0.96f));
+        GUI.Label(skipDraw, dm.GetUIString("reward.remove.skip"), _skipButtonStyle);
+        if (GUI.Button(skipRect, GUIContent.none, GUIStyle.none))
+            _pending.Add(() => { _cardRemoveDone = true; _view = View.List; });
+    }
+
     private BattleUI _battleUICache;
 
     private void DrawCardChoice(Rect rect, CardData card, bool hover)
@@ -670,10 +785,11 @@ public class RewardUI : MonoBehaviour
     {
         switch (kind)
         {
-            case RowKind.Gold:   return new Color(1.00f, 0.82f, 0.35f);
-            case RowKind.Card:   return new Color(0.55f, 0.70f, 1.00f);
-            case RowKind.Potion: return new Color(1.00f, 0.35f, 0.35f);
-            case RowKind.Relic:  return new Color(0.40f, 0.95f, 0.95f);
+            case RowKind.Gold:       return new Color(1.00f, 0.82f, 0.35f);
+            case RowKind.Card:       return new Color(0.55f, 0.70f, 1.00f);
+            case RowKind.Potion:     return new Color(1.00f, 0.35f, 0.35f);
+            case RowKind.Relic:      return new Color(0.40f, 0.95f, 0.95f);
+            case RowKind.CardRemove: return new Color(0.85f, 0.25f, 0.25f);
         }
         return Color.white;
     }
@@ -682,18 +798,17 @@ public class RewardUI : MonoBehaviour
     {
         switch (kind)
         {
-            case RowKind.Gold:   return 0f;
-            case RowKind.Card:   return 1.2f;
-            case RowKind.Potion: return 2.4f;
-            case RowKind.Relic:  return 3.6f;
+            case RowKind.Gold:       return 0f;
+            case RowKind.Card:       return 1.2f;
+            case RowKind.Potion:     return 2.4f;
+            case RowKind.Relic:      return 3.6f;
+            case RowKind.CardRemove: return 4.8f;
         }
         return 0f;
     }
 
-    private static string EnName(string en, string kr)
-    {
-        return string.IsNullOrWhiteSpace(en) ? kr : en;
-    }
+    private static string EnName(string en, string kr) =>
+        DianoCard.Data.LocaleSettings.Pick(kr, en);
 
     private void SyncStyleFontSizes()
     {
@@ -719,6 +834,7 @@ public class RewardUI : MonoBehaviour
         _iconCard = Resources.Load<Texture2D>("Reward/Deck");
         _iconPotion = Resources.Load<Texture2D>("Reward/Potion_Bottle");
         _iconRelic = Resources.Load<Texture2D>("Reward/RelicIcon");
+        _iconCardRemove = Resources.Load<Texture2D>("Reward/Purge"); // 없으면 _iconCard fallback
 
         _skipButtonTex = Resources.Load<Texture2D>("Reward/CardPicker/SkipButton");
         _textChooseCardTex = Resources.Load<Texture2D>("Reward/CardPicker/TextChooseCard");

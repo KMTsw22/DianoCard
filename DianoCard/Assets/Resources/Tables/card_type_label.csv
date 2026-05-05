@@ -1,9 +1,9 @@
-id,label
-SUMMON_HERBIVORE,Herbivore
-SUMMON_CARNIVORE,Carnivore
-SUMMON_OMNIVORE,Omnivore
-MAGIC_ATTACK,Spell (Attack)
-MAGIC_DEFENSE,Spell (Defense)
-BUFF,Buff
-UTILITY,Utility
-RITUAL,Ritual
+id,label_en,label_kr
+SUMMON_HERBIVORE,Herbivore,초식
+SUMMON_CARNIVORE,Carnivore,육식
+SUMMON_OMNIVORE,Omnivore,잡식
+MAGIC_ATTACK,Spell (Attack),마법 (공격)
+MAGIC_DEFENSE,Spell (Defense),마법 (방어)
+BUFF,Buff,버프
+UTILITY,Utility,유틸
+RITUAL,Ritual,의식

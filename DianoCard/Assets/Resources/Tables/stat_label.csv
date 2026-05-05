@@ -1,6 +1,6 @@
-id,label,full_name
-ATK,ATK,Attack
-HP,HP,Hit Points
-DMG,DMG,Damage
-BLOCK,Block,Block
-COST,Cost,Cost
+id,label_en,label_kr,full_name_en,full_name_kr
+ATK,ATK,공격,Attack,공격력
+HP,HP,체력,Hit Points,체력
+DMG,DMG,피해,Damage,피해
+BLOCK,Block,방어,Block,방어도
+COST,Cost,비용,Cost,비용

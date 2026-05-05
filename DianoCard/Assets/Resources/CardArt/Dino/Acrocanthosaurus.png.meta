@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 44322c7a405fcc344ba9079a1821abda
+guid: 0652cb5ace303ee428506f08f1e1a762
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -8424786427898099322
-    second: Acrocanthosaurus_0
+      213: 5874345007578856475
+    second: Acrocanthosaurus_T0_1_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,7 +126,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Acrocanthosaurus_0
+      name: Acrocanthosaurus_T0_1_0
       rect:
         serializedVersion: 2
         x: 0
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 6890a985165251b80800000000000000
-      internalID: -8424786427898099322
+      spriteID: b1cb3d829add58150800000000000000
+      internalID: 5874345007578856475
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Acrocanthosaurus_0: -8424786427898099322
+      Acrocanthosaurus_T0_1_0: 5874345007578856475
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

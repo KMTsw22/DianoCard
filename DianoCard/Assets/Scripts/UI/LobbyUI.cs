@@ -200,6 +200,8 @@ public class LobbyUI : MonoBehaviour
         },
     };
 
+    private bool _settingsOpen;
+
     private readonly List<Action> _pending = new();
 
     private Texture2D _bgTexture;
@@ -306,6 +308,7 @@ public class LobbyUI : MonoBehaviour
         DrawButtons(gsm);
         DrawVersion();
         DrawDevTools(gsm);
+        if (_settingsOpen) DrawSettingsPanel();
     }
 
     private void DrawCharacter()
@@ -548,7 +551,10 @@ public class LobbyUI : MonoBehaviour
             _pending.Add(() => StartSinglePlay(gsm));
         }
 
-        DrawTextMenuItem(new Rect(x, startY + (btnH + gap) * 1, btnW, btnH), "Settings", "SETTINGS", false);
+        if (DrawTextMenuItem(new Rect(x, startY + (btnH + gap) * 1, btnW, btnH), "Settings", "SETTINGS", true))
+        {
+            _settingsOpen = !_settingsOpen;
+        }
 
         if (DrawTextMenuItem(new Rect(x, startY + (btnH + gap) * 2, btnW, btnH), "Quit", "QUIT", true))
         {
@@ -638,6 +644,96 @@ public class LobbyUI : MonoBehaviour
         float w = r.width * s;
         float h = r.height * s;
         return new Rect(r.x - (w - r.width) * 0.5f, r.y - (h - r.height) * 0.5f, w, h);
+    }
+
+    private void DrawSettingsPanel()
+    {
+        const float pw = 360f;
+        const float ph = 220f;
+        float px = (RefW - pw) * 0.5f;
+        float py = (RefH - ph) * 0.5f;
+
+        // 패널 배경 — 반투명 어두운 박스
+        var prev = GUI.color;
+        GUI.color = new Color(0.06f, 0.04f, 0.10f, 0.92f);
+        GUI.DrawTexture(new Rect(px, py, pw, ph), Texture2D.whiteTexture);
+        GUI.color = prev;
+
+        // 테두리
+        GUI.color = new Color(0.7f, 0.55f, 0.25f, 0.8f);
+        GUI.DrawTexture(new Rect(px, py, pw, 2f), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(px, py + ph - 2f, pw, 2f), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(px, py, 2f, ph), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(px + pw - 2f, py, 2f, ph), Texture2D.whiteTexture);
+        GUI.color = prev;
+
+        var titleStyle = new GUIStyle(GUI.skin.label)
+        {
+            font = _displayFont,
+            fontSize = 22,
+            alignment = TextAnchor.MiddleCenter,
+            normal = { textColor = new Color(0.93f, 0.86f, 0.66f, 1f) },
+        };
+        var labelStyle = new GUIStyle(GUI.skin.label)
+        {
+            fontSize = 16,
+            alignment = TextAnchor.MiddleCenter,
+            normal = { textColor = new Color(0.8f, 0.78f, 0.7f, 1f) },
+        };
+        var activeBtnStyle = new GUIStyle(GUI.skin.button)
+        {
+            fontSize = 18,
+            fontStyle = FontStyle.Bold,
+            normal = { textColor = new Color(0.1f, 0.06f, 0.18f), background = Texture2D.whiteTexture },
+        };
+        var inactiveBtnStyle = new GUIStyle(GUI.skin.button)
+        {
+            fontSize = 18,
+            normal = { textColor = new Color(0.65f, 0.60f, 0.45f) },
+        };
+
+        GUI.Label(new Rect(px, py + 18f, pw, 30f), "SETTINGS / 설정", titleStyle);
+        GUI.Label(new Rect(px, py + 64f, pw, 24f), "Language / 언어", labelStyle);
+
+        var isKR = DianoCard.Data.LocaleSettings.Current == DianoCard.Data.Language.KR;
+        float btnW = 120f;
+        float btnH = 44f;
+        float btnGap = 20f;
+        float btnTotalW = btnW * 2 + btnGap;
+        float btnX = px + (pw - btnTotalW) * 0.5f;
+        float btnY = py + 100f;
+
+        // KR 버튼
+        var krStyle = isKR ? activeBtnStyle : inactiveBtnStyle;
+        if (isKR)
+        {
+            GUI.color = new Color(0.85f, 0.70f, 0.30f, 1f);
+            GUI.DrawTexture(new Rect(btnX, btnY, btnW, btnH), Texture2D.whiteTexture);
+            GUI.color = prev;
+        }
+        if (GUI.Button(new Rect(btnX, btnY, btnW, btnH), "한국어", krStyle))
+            DianoCard.Data.LocaleSettings.Set(DianoCard.Data.Language.KR);
+
+        // EN 버튼
+        float enX = btnX + btnW + btnGap;
+        var enStyle = !isKR ? activeBtnStyle : inactiveBtnStyle;
+        if (!isKR)
+        {
+            GUI.color = new Color(0.85f, 0.70f, 0.30f, 1f);
+            GUI.DrawTexture(new Rect(enX, btnY, btnW, btnH), Texture2D.whiteTexture);
+            GUI.color = prev;
+        }
+        if (GUI.Button(new Rect(enX, btnY, btnW, btnH), "English", enStyle))
+            DianoCard.Data.LocaleSettings.Set(DianoCard.Data.Language.EN);
+
+        // 닫기
+        var closeStyle = new GUIStyle(GUI.skin.button)
+        {
+            fontSize = 14,
+            normal = { textColor = new Color(0.7f, 0.60f, 0.45f) },
+        };
+        if (GUI.Button(new Rect(px + (pw - 100f) * 0.5f, py + ph - 50f, 100f, 32f), "CLOSE / 닫기", closeStyle))
+            _settingsOpen = false;
     }
 
     private void DrawVersion()

@@ -1,24 +1,28 @@
-id,value
-reward.title,CHOOSE A CARD
-reward.subtitle,"Pick one card to add to your deck, or skip"
-reward.skip,SKIP
-reward.row.gold,+{0} Gold
-reward.row.card,Choose a card
-reward.row.potion_full,Potion slots full
-reward.row.potion,Potion: {0}
-reward.row.relic,Relic: {0}
-shop.title,MERCHANT
-shop.subtitle,
-shop.section.cards,CARDS
-shop.section.potions,POTIONS
-shop.section.relics,RELICS
-shop.section.services,SERVICES
-shop.sold_out,SOLD
-shop.not_enough_gold,Not enough gold
-shop.potion_full,Potion Full
-shop.owned,Owned
-shop.remove_card,Card Remove
-shop.remove_card_used,Removed
-shop.remove_card_pick,Pick a card to remove
-shop.cancel,CANCEL
-shop.exit,LEAVE SHOP
+id,value_en,value_kr
+reward.title,CHOOSE A CARD,카드 선택
+reward.subtitle,"Pick one card to add to your deck, or skip","덱에 추가할 카드를 한 장 선택하거나 건너뛰세요"
+reward.skip,SKIP,건너뛰기
+reward.row.gold,+{0} Gold,+{0} 골드
+reward.row.card,Choose a card,카드 선택
+reward.row.potion_full,Potion slots full,물약 슬롯 가득
+reward.row.potion,Potion: {0},물약: {0}
+reward.row.relic,Relic: {0},유물: {0}
+reward.row.card_remove,Purge a card (free!),카드 제거 (무료!)
+reward.remove.title,PURGE A CARD,카드 제거
+reward.remove.subtitle,Remove one card from your deck permanently — for free,덱에서 카드 한 장을 영구히 제거합니다 — 무료
+reward.remove.skip,SKIP,건너뛰기
+shop.title,MERCHANT,상인
+shop.subtitle,,
+shop.section.cards,CARDS,카드
+shop.section.potions,POTIONS,물약
+shop.section.relics,RELICS,유물
+shop.section.services,SERVICES,서비스
+shop.sold_out,SOLD,매진
+shop.not_enough_gold,Not enough gold,골드 부족
+shop.potion_full,Potion Full,물약 가득
+shop.owned,Owned,보유중
+shop.remove_card,Card Remove,카드 제거
+shop.remove_card_used,Removed,제거됨
+shop.remove_card_pick,Pick a card to remove,제거할 카드를 선택하세요
+shop.cancel,CANCEL,취소
+shop.exit,LEAVE SHOP,상점 나가기

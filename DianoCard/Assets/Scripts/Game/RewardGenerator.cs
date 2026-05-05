@@ -49,6 +49,12 @@ namespace DianoCard.Game
                 reward.relic = PickRelic(RelicSource.BOSS, run);
             }
 
+            // === 카드 제거 기회 (일반 전투만 15% — 엘리트/보스는 유물로 대신) ===
+            if (enemy.enemyType == EnemyType.NORMAL && run.deck.Count > 0)
+            {
+                reward.cardRemoveOffer = Random.value < 0.15f;
+            }
+
             return reward;
         }
 

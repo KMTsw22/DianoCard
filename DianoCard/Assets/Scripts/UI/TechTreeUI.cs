@@ -197,7 +197,7 @@ public class TechTreeUI : MonoBehaviour
         DrawConnectors(gsm);
         DrawCenterRoot();
 
-        _hoverNodeId = null;
+        if (Event.current.type == EventType.Repaint) _hoverNodeId = null;
         DrawNodes(gsm);
 
         // ── 고정 UI: scale 전용 (패닝 없음) ──────────────
@@ -254,12 +254,17 @@ public class TechTreeUI : MonoBehaviour
             _isDragging = false;
         }
 
-        // 좌클릭 드래그: 노드 위가 아닐 때 패닝
+        // 좌클릭 드래그: 노드 위가 아닐 때 패닝 (뒤로가기 버튼 영역은 제외)
         if (e.type == EventType.MouseDown && e.button == 0 && string.IsNullOrEmpty(_hoverNodeId))
         {
-            _dragStart      = e.mousePosition;
-            _isLeftDragging = true;
-            e.Use();
+            var scaledBackRect = new Rect(backBtnX * baseScale, backBtnY * baseScale,
+                backBtnSize * baseScale, backBtnSize * baseScale);
+            if (!scaledBackRect.Contains(e.mousePosition))
+            {
+                _dragStart      = e.mousePosition;
+                _isLeftDragging = true;
+                e.Use();
+            }
         }
         else if (e.type == EventType.MouseDrag && e.button == 0 && _isLeftDragging)
         {

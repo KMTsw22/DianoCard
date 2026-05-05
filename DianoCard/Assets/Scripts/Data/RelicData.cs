@@ -13,8 +13,12 @@ namespace DianoCard.Data
         public RelicTrigger trigger;
         public string effectType;
         public int value;
-        public string description;
+        public string descriptionKr;
+        public string descriptionEn;
         public string archetypeLock;
+
+        public string name => LocaleSettings.Pick(nameKr, nameEn);
+        public string description => LocaleSettings.Pick(descriptionKr, descriptionEn);
 
         public static RelicData FromRow(Dictionary<string, string> row)
         {
@@ -28,7 +32,8 @@ namespace DianoCard.Data
                 trigger = CSVUtil.GetEnum(row, "trigger", RelicTrigger.PASSIVE),
                 effectType = CSVUtil.GetString(row, "effect_type"),
                 value = CSVUtil.GetInt(row, "value"),
-                description = CSVUtil.GetString(row, "description"),
+                descriptionKr = CSVUtil.GetString(row, "description_kr"),
+                descriptionEn = CSVUtil.GetString(row, "description_en"),
                 archetypeLock = CSVUtil.GetString(row, "archetype_lock"),
             };
         }

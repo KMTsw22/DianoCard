@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 3fdfff894a7f91e41b8274607c788992
+guid: 906fba14b75afb14b88bc18ab64b814d
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 8457527045882543405
-    second: Allosaurus_0
+      213: -8572114179549917399
+    second: Allosaurus_T0_5_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,7 +126,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Allosaurus_0
+      name: Allosaurus_T0_5_0
       rect:
         serializedVersion: 2
         x: 0
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: d2d7610d90c2f5570800000000000000
-      internalID: 8457527045882543405
+      spriteID: 92f86d9129bb90980800000000000000
+      internalID: -8572114179549917399
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Allosaurus_0: 8457527045882543405
+      Allosaurus_T0_5_0: -8572114179549917399
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

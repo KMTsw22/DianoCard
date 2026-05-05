@@ -13,8 +13,12 @@ namespace DianoCard.Data
         public TargetType target;
         public int value;
         public int price;
-        public string description;
+        public string descriptionKr;
+        public string descriptionEn;
         public bool buyable;
+
+        public string name => LocaleSettings.Pick(nameKr, nameEn);
+        public string description => LocaleSettings.Pick(descriptionKr, descriptionEn);
 
         public static PotionData FromRow(Dictionary<string, string> row)
         {
@@ -28,7 +32,8 @@ namespace DianoCard.Data
                 target = CSVUtil.GetEnum(row, "target", TargetType.NONE),
                 value = CSVUtil.GetInt(row, "value"),
                 price = CSVUtil.GetInt(row, "price"),
-                description = CSVUtil.GetString(row, "description"),
+                descriptionKr = CSVUtil.GetString(row, "description_kr"),
+                descriptionEn = CSVUtil.GetString(row, "description_en"),
                 buyable = CSVUtil.GetBool(row, "buyable"),
             };
         }

@@ -2,22 +2,22 @@ using System.Collections.Generic;
 
 namespace DianoCard.Data
 {
-    /// <summary>
-    /// dino_skill.csv 한 행 — 진화 공룡(T1/T2)의 시그니처 스킬.
-    /// T0는 스킬 없음(이 테이블에 행이 없음). 카드 에너지와 분리된 턴 단위 쿨다운으로 동작.
-    /// </summary>
     [System.Serializable]
     public class DinoSkillData
     {
-        public string cardId;        // 대상 카드 id (C004_T1 등)
+        public string cardId;
         public string nameKr;
         public string nameEn;
-        public TargetType target;    // ENEMY / ALL_ENEMY / SELF
-        public int damage;           // 1히트당 피해. 0이면 비공격형
-        public int hits;             // 타격 횟수
-        public int cooldownTurns;    // 재사용 대기 턴. 0 = once-per-battle (isOnceBattle 참조)
-        public bool isOnceBattle;    // cooldown == "BATTLE"
-        public string description;
+        public TargetType target;
+        public int damage;
+        public int hits;
+        public int cooldownTurns;
+        public bool isOnceBattle;
+        public string descriptionKr;
+        public string descriptionEn;
+
+        public string name => LocaleSettings.Pick(nameKr, nameEn);
+        public string description => LocaleSettings.Pick(descriptionKr, descriptionEn);
 
         // "bleed:1;vulnerable:2" 식 파싱된 효과 페어. 키는 lower-case.
         public List<(string key, int value)> effects = new();
@@ -32,7 +32,8 @@ namespace DianoCard.Data
                 target = CSVUtil.GetEnum(row, "target", TargetType.ENEMY),
                 damage = CSVUtil.GetInt(row, "damage"),
                 hits = CSVUtil.GetInt(row, "hits", 1),
-                description = CSVUtil.GetString(row, "description"),
+                descriptionKr = CSVUtil.GetString(row, "description_kr"),
+                descriptionEn = CSVUtil.GetString(row, "description_en"),
             };
 
             var rawCooldown = CSVUtil.GetString(row, "cooldown").Trim();

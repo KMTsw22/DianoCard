@@ -19,10 +19,19 @@ namespace DianoCard.Data
         public string bossId;
         public List<string> normalEnemyPool;
         public List<string> eliteEnemyPool;
-        public string description;
+        public string descriptionKr;
+        public string descriptionEn;
+
+        public string name => LocaleSettings.Pick(nameKr, nameEn);
+        public string description => LocaleSettings.Pick(descriptionKr, descriptionEn);
 
         public static ChapterData FromRow(Dictionary<string, string> row)
         {
+            // description_kr 우선, 없으면 구버전 'description' 컬럼 폴백
+            string descKr = CSVUtil.GetString(row, "description_kr");
+            if (string.IsNullOrEmpty(descKr))
+                descKr = CSVUtil.GetString(row, "description");
+
             return new ChapterData
             {
                 id = CSVUtil.GetString(row, "id"),
@@ -39,7 +48,8 @@ namespace DianoCard.Data
                 bossId = CSVUtil.GetString(row, "boss_id"),
                 normalEnemyPool = CSVUtil.GetStringList(row, "normal_enemy_pool"),
                 eliteEnemyPool = CSVUtil.GetStringList(row, "elite_enemy_pool"),
-                description = CSVUtil.GetString(row, "description"),
+                descriptionKr = descKr,
+                descriptionEn = CSVUtil.GetString(row, "description_en"),
             };
         }
     }

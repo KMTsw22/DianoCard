@@ -962,14 +962,14 @@ namespace DianoCard.Battle
             bool wasAlive = !target.IsDead;
             int dmg = ApplyPlayerWeak(summon.TotalAttack);
             // AMBUSH: 소환 후 첫 공격 2배
-            if (summon.data?.passiveType == Data.DinoPassiveType.AMBUSH && !summon.passiveConsumed)
+            if (summon.data?.passiveType == DinoPassiveType.AMBUSH && !summon.passiveConsumed)
             {
                 dmg *= 2;
                 summon.passiveConsumed = true;
                 Log($"  [Passive] {summon.data.nameKr} 기습: 첫 공격 2배 ({dmg})");
             }
             // EXECUTE: 적 HP ≤ threshold면 즉사
-            if (summon.data?.passiveType == Data.DinoPassiveType.EXECUTE && target.hp <= summon.data.passiveValue)
+            if (summon.data?.passiveType == DinoPassiveType.EXECUTE && target.hp <= summon.data.passiveValue)
             {
                 dmg = target.hp + target.block;
                 Log($"  [Passive] {summon.data.nameKr} 처형: {target.data.nameKr} HP {target.hp} ≤ {summon.data.passiveValue}");
@@ -983,7 +983,7 @@ namespace DianoCard.Battle
                 Log($"    x {target.data.nameKr} defeated");
                 if (wasAlive) DianoCard.Game.RelicEffects.OnEnemyKilled(this, run, summon, target);
                 // RAMPAGE: 처치 후 즉시 다음 적 추가 공격
-                if (summon.data?.passiveType == Data.DinoPassiveType.RAMPAGE)
+                if (summon.data?.passiveType == DinoPassiveType.RAMPAGE)
                 {
                     var rampageTarget = FirstTargetableEnemy();
                     if (rampageTarget != null)
@@ -1033,14 +1033,14 @@ namespace DianoCard.Battle
             bool wasAlive = !target.IsDead;
             int dmg = ApplyPlayerWeak(summon.TotalAttack);
             // AMBUSH: 소환 후 첫 공격 2배
-            if (summon.data?.passiveType == Data.DinoPassiveType.AMBUSH && !summon.passiveConsumed)
+            if (summon.data?.passiveType == DinoPassiveType.AMBUSH && !summon.passiveConsumed)
             {
                 dmg *= 2;
                 summon.passiveConsumed = true;
                 Log($"  [Passive] {summon.data.nameKr} 기습: 첫 공격 2배 ({dmg})");
             }
             // EXECUTE: 적 HP ≤ threshold면 즉사
-            if (summon.data?.passiveType == Data.DinoPassiveType.EXECUTE && target.hp <= summon.data.passiveValue)
+            if (summon.data?.passiveType == DinoPassiveType.EXECUTE && target.hp <= summon.data.passiveValue)
             {
                 dmg = target.hp + target.block;
                 Log($"  [Passive] {summon.data.nameKr} 처형: {target.data.nameKr} HP {target.hp} ≤ {summon.data.passiveValue}");
@@ -1054,7 +1054,7 @@ namespace DianoCard.Battle
                 Log($"    x {target.data.nameKr} defeated");
                 if (wasAlive) DianoCard.Game.RelicEffects.OnEnemyKilled(this, run, summon, target);
                 // RAMPAGE: 처치 후 즉시 다음 적 추가 공격
-                if (summon.data?.passiveType == Data.DinoPassiveType.RAMPAGE)
+                if (summon.data?.passiveType == DinoPassiveType.RAMPAGE)
                 {
                     var rampageTarget = FirstTargetableEnemy();
                     if (rampageTarget != null)
@@ -1092,24 +1092,24 @@ namespace DianoCard.Battle
             if (attacker?.data == null || target == null || target.IsDead) return;
             switch (attacker.data.passiveType)
             {
-                case Data.DinoPassiveType.LACERATE:
+                case DinoPassiveType.LACERATE:
                     target.bleedStacks += attacker.data.passiveValue;
                     Log($"  [Passive] {attacker.data.nameKr} 열상: {target.data.nameKr} 출혈 +{attacker.data.passiveValue} (총 {target.bleedStacks})");
                     break;
-                case Data.DinoPassiveType.TENDERIZE:
+                case DinoPassiveType.TENDERIZE:
                     target.vulnerableTurns += attacker.data.passiveValue;
                     Log($"  [Passive] {attacker.data.nameKr} 연육: {target.data.nameKr} 취약 +{attacker.data.passiveValue}T (총 {target.vulnerableTurns}T)");
                     break;
-                case Data.DinoPassiveType.REAPER:
+                case DinoPassiveType.REAPER:
                     attacker.block += attacker.data.passiveValue;
                     Log($"  [Passive] {attacker.data.nameKr} 낫질: 자신 방어 +{attacker.data.passiveValue} (총 {attacker.block})");
                     break;
-                case Data.DinoPassiveType.TOXIC_SLASH:
+                case DinoPassiveType.TOXIC_SLASH:
                     target.bleedStacks += attacker.data.passiveValue;
                     target.poisonStacks += attacker.data.passiveValue;
                     Log($"  [Passive] {attacker.data.nameKr} 독발톱: {target.data.nameKr} 출혈 +{attacker.data.passiveValue} / 독 +{attacker.data.passiveValue}");
                     break;
-                case Data.DinoPassiveType.INTIMIDATE:
+                case DinoPassiveType.INTIMIDATE:
                     target.extraAttack = System.Math.Max(-target.data.attack, target.extraAttack - attacker.data.passiveValue);
                     Log($"  [Passive] {attacker.data.nameKr} 위협: {target.data.nameKr} ATK -{attacker.data.passiveValue} (총 {target.TotalAttack})");
                     break;
@@ -1129,7 +1129,7 @@ namespace DianoCard.Battle
                 if (summon.IsDead) continue;
                 switch (summon.data.passiveType)
                 {
-                    case Data.DinoPassiveType.APEX_PRESENCE:
+                    case DinoPassiveType.APEX_PRESENCE:
                         int weakened = 0;
                         foreach (var e in state.enemies)
                         {
@@ -1140,18 +1140,18 @@ namespace DianoCard.Battle
                         if (weakened > 0)
                             Log($"  [Passive] {summon.data.nameKr} 군주의 위압: 적 {weakened}체 약화 +{summon.data.passiveValue}T");
                         break;
-                    case Data.DinoPassiveType.SCOUT:
+                    case DinoPassiveType.SCOUT:
                         Draw(summon.data.passiveValue);
                         Log($"  [Passive] {summon.data.nameKr} 정찰: +{summon.data.passiveValue}장 드로우");
                         break;
-                    case Data.DinoPassiveType.BLOOD_FRENZY:
+                    case DinoPassiveType.BLOOD_FRENZY:
                         if (summon.hp <= summon.maxHp / 2)
                         {
                             summon.tempAttackBonus += summon.data.passiveValue;
                             Log($"  [Passive] {summon.data.nameKr} 광분: HP 절반 이하 — ATK +{summon.data.passiveValue} (총 {summon.TotalAttack})");
                         }
                         break;
-                    case Data.DinoPassiveType.HERD_RALLY:
+                    case DinoPassiveType.HERD_RALLY:
                         int rallied = 0;
                         foreach (var ally in state.field)
                         {
@@ -1161,7 +1161,7 @@ namespace DianoCard.Battle
                         }
                         Log($"  [Passive] {summon.data.nameKr} 군가: 아군 {rallied}체 ATK +{summon.data.passiveValue} (1턴)");
                         break;
-                    case Data.DinoPassiveType.SWIFT_DODGE:
+                    case DinoPassiveType.SWIFT_DODGE:
                         summon.block += summon.data.passiveValue;
                         Log($"  [Passive] {summon.data.nameKr} 쾌속: 자신 방어 +{summon.data.passiveValue} (총 {summon.block})");
                         break;
@@ -1479,6 +1479,25 @@ namespace DianoCard.Battle
             return !state.PlayerLost;
         }
 
+        /// <summary>BattleUI 코루틴에서 적 행동 전에 호출. 플레이어 상태이상 틱.</summary>
+        public void TickPlayerStatuses()
+        {
+            state.player.TickStatuses();
+        }
+
+        /// <summary>BattleUI 코루틴에서 각 적 행동 후에 호출. DoT 적용 + 상태이상 감소. DoT 사망 시 OnEnemyKilled 발동.</summary>
+        public void TickEnemyStatuses(EnemyInstance e)
+        {
+            if (e == null) return;
+            bool wasAlive = !e.IsDead;
+            e.TickStatuses();
+            if (wasAlive && e.IsDead)
+            {
+                Log($"    x {e.data.nameKr} defeated (DoT)");
+                DianoCard.Game.RelicEffects.OnEnemyKilled(this, run, null, e);
+            }
+        }
+
         /// <summary>턴 종료 정리: 죽은 소환수 제거(바인딩 카드 복귀), 패 버림더미로.</summary>
         public void EndTurnCleanup()
         {
@@ -1722,7 +1741,7 @@ namespace DianoCard.Battle
                 string flavor = target.IsTaunting ? "[도발] " : "";
                 Log($"  {attacker.data.nameKr} → {target.data.nameKr} {flavor}{dmg} (HP {target.hp})");
                 // COUNTER 패시브 — 살아있는 공룡이 공격받으면 공격자에게 반격 피해.
-                if (!target.IsDead && target.data?.passiveType == Data.DinoPassiveType.COUNTER)
+                if (!target.IsDead && target.data?.passiveType == DinoPassiveType.COUNTER)
                 {
                     int counterDmg = target.data.passiveValue;
                     attacker.TakeDamage(counterDmg);
@@ -1734,7 +1753,7 @@ namespace DianoCard.Battle
                     }
                 }
                 // ENRAGE 패시브 — 살아있는 공룡이 공격받으면 ATK 영구 증가.
-                if (!target.IsDead && target.data?.passiveType == Data.DinoPassiveType.ENRAGE)
+                if (!target.IsDead && target.data?.passiveType == DinoPassiveType.ENRAGE)
                 {
                     target.attack += target.data.passiveValue;
                     Log($"  [Passive] {target.data.nameKr} 분노: 피격 → ATK +{target.data.passiveValue} (총 {target.attack})");

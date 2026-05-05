@@ -541,7 +541,7 @@ public class ShopUI : MonoBehaviour
             bool cardHover = rect.Contains(Event.current.mousePosition) || plaqueClickRect.Contains(Event.current.mousePosition);
             if (cardHover)
             {
-                _tooltipTitle = EnName(entry.card.nameEn, entry.card.nameKr);
+                _tooltipTitle = entry.card.name;
                 _tooltipBody = BuildCardTooltipBody(entry.card);
             }
 
@@ -627,7 +627,7 @@ public class ShopUI : MonoBehaviour
         // 하단 띠 — 이름 (긴 이름은 자동으로 폰트 축소)
         var botBand = new Rect(inner.x, inner.yMax - slimBottomBandHeight, inner.width, slimBottomBandHeight);
         DrawRoundedFilledRect(botBand, bandColor, slimBandCornerRadius);
-        string name = EnName(card.nameEn, card.nameKr);
+        string name = card.name;
         if (!string.IsNullOrEmpty(name)) name = name.ToUpperInvariant();
         if (!string.IsNullOrEmpty(name))
         {
@@ -880,7 +880,7 @@ public class ShopUI : MonoBehaviour
             bool plaqueHover = purchasable && priceRect.Contains(Event.current.mousePosition);
             bool tooltipHover = r.Contains(Event.current.mousePosition) || priceRect.Contains(Event.current.mousePosition);
 
-            DrawItemRow(r, GetPotionIconTex(entry.potion.id), EnName(entry.potion.nameEn, entry.potion.nameKr),
+            DrawItemRow(r, GetPotionIconTex(entry.potion.id), entry.potion.name,
                         entry.price, entry.sold, run.gold >= entry.price, plaqueHover, iconS,
                         nameRect, priceRect,
                         plaqueTex: potionPriceUsePlaque ? _pricePlaqueTex : null,
@@ -891,7 +891,7 @@ public class ShopUI : MonoBehaviour
 
             if (tooltipHover)
             {
-                _tooltipTitle = EnName(entry.potion.nameEn, entry.potion.nameKr);
+                _tooltipTitle = entry.potion.name;
                 _tooltipBody = BuildPotionTooltipBody(entry.potion);
             }
             if (purchasable && GUI.Button(priceRect, GUIContent.none, GUIStyle.none))
@@ -970,7 +970,7 @@ public class ShopUI : MonoBehaviour
 
             if (tooltipHover)
             {
-                _tooltipTitle = EnName(entry.relic.nameEn, entry.relic.nameKr);
+                _tooltipTitle = entry.relic.name;
                 _tooltipBody = BuildRelicTooltipBody(entry.relic);
             }
             if (purchasable && GUI.Button(plaqueRect, GUIContent.none, GUIStyle.none))
@@ -1415,5 +1415,5 @@ public class ShopUI : MonoBehaviour
     }
 
     private static string EnName(string en, string kr) =>
-        string.IsNullOrWhiteSpace(en) ? kr : en;
+        DianoCard.Data.LocaleSettings.Pick(kr, en);
 }

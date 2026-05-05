@@ -440,10 +440,10 @@ MonoBehaviour:
   _entityShadowOffsetY: 0.106
   _entityShadowAlpha: 1
   dinoSize: 180
-  dinoSingleX: 530
-  dinoSingleFootY: 542
-  dinoTwoSlot0X: 420
-  dinoTwoSlot0FootY: 580
+  dinoSingleX: 400
+  dinoSingleFootY: 485
+  dinoTwoSlot0X: 380
+  dinoTwoSlot0FootY: 500
   dinoTwoSlot1X: 500
   dinoTwoSlot1FootY: 530
   hpBarSpriteRatio: 0.6

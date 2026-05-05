@@ -2,9 +2,6 @@ using System.Collections.Generic;
 
 namespace DianoCard.Data
 {
-    /// <summary>
-    /// character.csv 한 행에 대응하는 런타임 데이터.
-    /// </summary>
     [System.Serializable]
     public class CharacterData
     {
@@ -13,15 +10,23 @@ namespace DianoCard.Data
         public string nameEn;
         public int maxHp;
         public int startGold;
-        public string description;
-        public string passiveName;
-        public string passiveDescription;
+        public string descriptionEn;
+        public string descriptionKr;
+        public string passiveNameEn;
+        public string passiveNameKr;
+        public string passiveDescriptionEn;
+        public string passiveDescriptionKr;
         public string cardPortrait;
         public string fieldPortrait;
-        public string selectChar;  // 캐릭터 선택 화면 우측 전신 일러 — Resources/CharSelect/Background/<selectChar>.png + <selectChar>_anim/ 폴더
+        public string selectChar;
         public bool unlocked;
-        public string archetype;  // "HERB" or "CARN" — 덱/보상 풀 분기에 사용
-        public string linkedForm; // 같은 인물의 다른 모드(아케네↔린네). 비어있으면 모드 토글 없음.
+        public string archetype;
+        public string linkedForm;
+
+        public string name => LocaleSettings.Pick(nameKr, nameEn);
+        public string description => LocaleSettings.Pick(descriptionKr, descriptionEn);
+        public string passiveName => LocaleSettings.Pick(passiveNameKr, passiveNameEn);
+        public string passiveDescription => LocaleSettings.Pick(passiveDescriptionKr, passiveDescriptionEn);
 
         public static CharacterData FromRow(Dictionary<string, string> row)
         {
@@ -32,9 +37,12 @@ namespace DianoCard.Data
                 nameEn = CSVUtil.GetString(row, "name_en"),
                 maxHp = CSVUtil.GetInt(row, "max_hp"),
                 startGold = CSVUtil.GetInt(row, "start_gold"),
-                description = CSVUtil.GetString(row, "description"),
-                passiveName = CSVUtil.GetString(row, "passive_name"),
-                passiveDescription = CSVUtil.GetString(row, "passive_description"),
+                descriptionEn = CSVUtil.GetString(row, "description_en"),
+                descriptionKr = CSVUtil.GetString(row, "description_kr"),
+                passiveNameEn = CSVUtil.GetString(row, "passive_name_en"),
+                passiveNameKr = CSVUtil.GetString(row, "passive_name_kr"),
+                passiveDescriptionEn = CSVUtil.GetString(row, "passive_description_en"),
+                passiveDescriptionKr = CSVUtil.GetString(row, "passive_description_kr"),
                 cardPortrait = CSVUtil.GetString(row, "card_portrait"),
                 fieldPortrait = CSVUtil.GetString(row, "field_portrait"),
                 selectChar = CSVUtil.GetString(row, "select_char"),

@@ -6,14 +6,18 @@ namespace DianoCard.Data
     public class UIStringData
     {
         public string id;
-        public string value;
+        public string valueKr;
+        public string valueEn;
+
+        public string value => LocaleSettings.Pick(valueKr, valueEn);
 
         public static UIStringData FromRow(Dictionary<string, string> row)
         {
             return new UIStringData
             {
                 id = CSVUtil.GetString(row, "id"),
-                value = CSVUtil.GetString(row, "value"),
+                valueKr = CSVUtil.GetString(row, "value_kr"),
+                valueEn = CSVUtil.GetString(row, "value_en"),
             };
         }
     }

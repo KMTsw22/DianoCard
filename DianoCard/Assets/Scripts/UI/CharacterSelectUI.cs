@@ -1387,7 +1387,7 @@ public class CharacterSelectUI : MonoBehaviour
         var ch = _selectedCharacter;
 
         // 타이틀 — character.name_en
-        string titleText = ch != null ? ch.nameEn : "";
+        string titleText = ch != null ? ch.name : "";
         GUI.Label(new Rect(inner.x, y, inner.width, 44), titleText, _titleStyle);
         y += 50;
 
@@ -1433,7 +1433,7 @@ public class CharacterSelectUI : MonoBehaviour
         // 캐릭터별 매핑된 패시브 아이콘. 매핑되지 않은 패시브는 아이콘 없이 표시.
         Texture2D passiveTex = null;
         if (ch != null && _iconPassiveByName != null
-            && _iconPassiveByName.TryGetValue(ch.passiveName, out var mapped))
+            && _iconPassiveByName.TryGetValue(ch.passiveNameEn, out var mapped))
             passiveTex = mapped;
         if (passiveTex != null)
             GUI.DrawTexture(passiveIconRect, passiveTex, ScaleMode.ScaleToFit, alphaBlend: true);

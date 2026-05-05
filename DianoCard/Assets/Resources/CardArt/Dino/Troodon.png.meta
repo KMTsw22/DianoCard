@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: a49b28f19061a8b47a78a8e686cd90f5
+guid: fd3243710883ca449ae350727dd63382
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 6142696896714518074
-    second: Troodon_0
+      213: 2186036904641999449
+    second: Troodon_T0_1_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,7 +126,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Troodon_0
+      name: Troodon_T0_1_0
       rect:
         serializedVersion: 2
         x: 0
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: a3e209b384e3f3550800000000000000
-      internalID: 6142696896714518074
+      spriteID: 952b41f8bfc565e10800000000000000
+      internalID: 2186036904641999449
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Troodon_0: 6142696896714518074
+      Troodon_T0_1_0: 2186036904641999449
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

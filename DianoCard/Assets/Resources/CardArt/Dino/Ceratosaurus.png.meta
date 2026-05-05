@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 3b967f2224f8ffb43907beb6aacfa77f
+guid: 4ce51cd94e244434b853e73d4908bf03
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 194528393970784890
-    second: Ceratosaurus_0
+      213: -8295513636063360041
+    second: Ceratosaurus_T0_2_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,7 +126,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Ceratosaurus_0
+      name: Ceratosaurus_T0_2_0
       rect:
         serializedVersion: 2
         x: 0
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: a7a1b5d2b8a13b200800000000000000
-      internalID: 194528393970784890
+      spriteID: 7dbc80dac4a60ec80800000000000000
+      internalID: -8295513636063360041
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Ceratosaurus_0: 194528393970784890
+      Ceratosaurus_T0_2_0: -8295513636063360041
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

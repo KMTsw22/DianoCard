@@ -161,7 +161,8 @@ public class MapUI : MonoBehaviour
     private Texture2D _nodeStartTex;
     private Texture2D _ropeTex;
     private Texture2D _legendPanelTex;
-    private Texture2D _relicPickIcon;  // 유물 선택 패널 아이콘 (ShopUI/Relics 재활용)
+    private Texture2D _relicPickIcon;  // 유물 선택 패널 폴백 아이콘 (ShopUI/Relics)
+    private readonly Dictionary<string, Texture2D> _relicPickIconCache = new();
 
     private GUIStyle _smallStyle;
     private GUIStyle _backButtonStyle;
@@ -805,11 +806,15 @@ public class MapUI : MonoBehaviour
                 haloSize, haloSize), _circleTexture);
             GUI.color = prev;
 
-            bool hover = rect.Contains(Event.current.mousePosition);
-            if (hover && Event.current.type == EventType.MouseDown)
+            // 패널이 이미 열려 있으면 StartDeco 클릭을 처리하지 않음 — 유물 카드 클릭 영역과 겹치기 때문
+            if (!_starterRelicPanelOpen)
             {
-                _starterRelicPanelOpen = true;
-                Event.current.Use();
+                bool hover = rect.Contains(Event.current.mousePosition);
+                if (hover && Event.current.type == EventType.MouseDown)
+                {
+                    _starterRelicPanelOpen = true;
+                    Event.current.Use();
+                }
             }
         }
 
@@ -880,16 +885,21 @@ public class MapUI : MonoBehaviour
             GUI.DrawTexture(cardRect, Texture2D.whiteTexture);
             GUI.color = prevColor;
 
-            // 아이콘 (ShopUI의 Relics.jpg 재활용)
-            if (_relicPickIcon != null)
+            // 아이콘 — 유물별 고유 아이콘, 없으면 폴백
+            if (!_relicPickIconCache.TryGetValue(relic.id, out var relicIcon))
+            {
+                relicIcon = Resources.Load<Texture2D>($"InGame/RelicArt/{relic.id}") ?? _relicPickIcon;
+                _relicPickIconCache[relic.id] = relicIcon;
+            }
+            if (relicIcon != null)
             {
                 float iconS = 48f;
                 GUI.DrawTexture(new Rect(cx + (CardW - iconS) * 0.5f, panelY + 8f, iconS, iconS),
-                    _relicPickIcon, ScaleMode.ScaleToFit);
+                    relicIcon, ScaleMode.ScaleToFit);
             }
 
             // 이름
-            GUI.Label(new Rect(cx + 4f, panelY + 58f, CardW - 8f, 24f), relic.nameKr,
+            GUI.Label(new Rect(cx + 4f, panelY + 58f, CardW - 8f, 24f), relic.name,
                 new GUIStyle(GUI.skin.label)
                 {
                     fontSize = 13, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter,

@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 596d886b765ef0c4ebc21f20174bd054
+guid: 0784862a89eda56458c7e6b5f0eeb3ff
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 1988717679103711872
-    second: Majungasaurus_0
+      213: -2232608369026465887
+    second: Majungasaurus_T0_5_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,7 +126,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Majungasaurus_0
+      name: Majungasaurus_T0_5_0
       rect:
         serializedVersion: 2
         x: 0
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 08a14854138599b10800000000000000
-      internalID: 1988717679103711872
+      spriteID: 1affc99648e2401e0800000000000000
+      internalID: -2232608369026465887
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      Majungasaurus_0: 1988717679103711872
+      Majungasaurus_T0_5_0: -2232608369026465887
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
