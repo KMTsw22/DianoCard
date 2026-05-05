@@ -46,6 +46,8 @@ namespace DianoCard.Battle
         public int block;
         public int mana;
         public int maxMana = 3;
+        // 이 전투의 기본 마나 상한 — StartBattle에서 1회 세팅. StartTurn마다 maxMana를 이 값으로 복구해 일시 보너스가 누적되지 않게 한다.
+        public int baseMana = 3;
 
         // === 디버프 (rough MVP) ===
         public int poisonStacks;     // 매 턴 종료 시 poisonStacks만큼 피해, 1 감소
@@ -141,6 +143,8 @@ namespace DianoCard.Battle
         public int skillCooldownRemaining;
         // BATTLE 쿨다운 스킬을 이번 전투에서 이미 썼는지 — 한 번 true면 이 전투 동안 재사용 불가.
         public bool skillUsedThisBattle;
+        // AMBUSH 패시브 소모 여부 — 소환 후 첫 공격에만 발동, 이후 영구 소모.
+        public bool passiveConsumed;
 
         // === 융합 각인 잔여 버프 (C153/C154/C155 — 융합 후 결과체에 부여, "2T" 지속) ===
         // 격노의 각인(C154): tempAttackBonus를 매 StartTurn마다 fuseAtkRefreshValue만큼 다시 채워준다.
@@ -160,7 +164,7 @@ namespace DianoCard.Battle
         public bool IsTaunting => !IsDead && tauntTurns > 0;
         public int TotalAttack => attack + tempAttackBonus;
         public bool IsDead => hp <= 0;
-        public bool IsHerbivore => data.subType == CardSubType.HERBIVORE;
+        public bool IsHerbivore => data.subType == CardSubType.HERBIVORE || data.subType == CardSubType.OMNIVORE;
         public bool IsCarnivore => data.subType == CardSubType.CARNIVORE;
 
         public SummonInstance(CardData data)
@@ -223,9 +227,12 @@ namespace DianoCard.Battle
         public int weakTurns;
         // 출혈 스택 — 매 턴 종료 시 stacks만큼 피해, 1 감소. 독과 별도 필드(향후 분기 가능).
         public int bleedStacks;
+        // 화상 스택 — 매 턴 종료 시 stacks만큼 피해, 1 감소. R010 화산재 유물 등이 부여.
+        public int burnStacks;
         // 취약: >0이면 받는 피해 +50% (TakeDamage에서 적용).
         public int vulnerableTurns;
         // 기절: >0이면 행동 스킵. ExecuteIntent에서 체크, TickStatuses에서 감소.
+        // P014 빙결 물약, 보스 패턴 등이 부여.
         public int stunTurns;
 
         // === 페이즈 전환 추적 (보스용) ===
@@ -304,6 +311,11 @@ namespace DianoCard.Battle
             {
                 hp = Math.Max(0, hp - poisonStacks);
                 poisonStacks--;
+            }
+            if (burnStacks > 0)
+            {
+                hp = Math.Max(0, hp - burnStacks);
+                burnStacks--;
             }
             if (bleedStacks > 0)
             {

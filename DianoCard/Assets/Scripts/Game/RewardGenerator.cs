@@ -107,8 +107,8 @@ namespace DianoCard.Game
                 // SUMMON 공룡은 캐릭터 archetype과 sub_type 일치 필요 — 다른 공룡 획득 불가.
                 if (c.cardType == CardType.SUMMON)
                 {
-                    bool matchHerb = c.subType == CardSubType.HERBIVORE;
-                    bool matchCarn = c.subType == CardSubType.CARNIVORE;
+                    bool matchHerb = c.subType == CardSubType.HERBIVORE || c.subType == CardSubType.OMNIVORE;
+                    bool matchCarn = c.subType == CardSubType.CARNIVORE || c.subType == CardSubType.OMNIVORE;
                     if (isHerb && !matchHerb) continue;
                     if (!isHerb && !matchCarn) continue;
                 }

@@ -29,7 +29,9 @@ namespace DianoCard.Data
             switch (cardType)
             {
                 case CardType.SUMMON:
-                    return subType == CardSubType.CARNIVORE ? "SUMMON_CARNIVORE" : "SUMMON_HERBIVORE";
+                    if (subType == CardSubType.CARNIVORE) return "SUMMON_CARNIVORE";
+                    if (subType == CardSubType.OMNIVORE)  return "SUMMON_OMNIVORE";
+                    return "SUMMON_HERBIVORE";
                 case CardType.MAGIC:
                     return subType == CardSubType.ATTACK ? "MAGIC_ATTACK" : "MAGIC_DEFENSE";
                 default:

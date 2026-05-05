@@ -382,6 +382,12 @@ public class VillageUI : MonoBehaviour
 
         // 덱 뷰어 오버레이 — 상단 덱 버튼 클릭 시 열림.
         battleUI.DrawDeckViewerOverlay(gsm);
+
+        // 유물 뷰어 오버레이 — 상단 유물 슬롯 클릭 시 열림.
+        battleUI.DrawRelicViewerOverlay(gsm);
+
+        // 포션 뷰어 오버레이 — 상단 포션 슬롯 클릭 시 열림.
+        battleUI.DrawPotionViewerOverlay(gsm);
     }
 
     private void DrawOptions(GameStateManager gsm, RunState run)

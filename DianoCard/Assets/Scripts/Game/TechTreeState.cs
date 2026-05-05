@@ -54,6 +54,8 @@ namespace DianoCard.Game
         public int points;
         public List<NodeRankEntry> ranks = new();
 
+        [NonSerialized] public bool hasNewPoints;
+
         public static TechTreeState Load()
         {
             string json = PlayerPrefs.GetString(PrefsKey, "");
@@ -137,6 +139,7 @@ namespace DianoCard.Game
         {
             if (amount == 0) return;
             points = Mathf.Max(0, points + amount);
+            hasNewPoints = true;
             Save();
         }
 

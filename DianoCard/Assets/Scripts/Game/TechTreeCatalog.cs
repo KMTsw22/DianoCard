@@ -83,26 +83,26 @@ namespace DianoCard.Game
                 isCapstone = true,
             },
 
-            // ── 상단: 경제 (Up) ─────────────────────────────────
+            // ── 상단: 공룡 (Up) ─────────────────────────────────
             new TechNode {
-                id = "E1", name = "부의 손길", description = "Run 시작 시 골드 +5",
+                id = "N1", name = "원시의 각성", description = "Run 시작 시 공룡 카드 1장 강화",
                 direction = TechDirection.Up, maxRank = 3, perRankCost = 1,
                 prereqId = RootId, pos = new Vector2(CenterX, CenterY - 130f),
             },
             new TechNode {
-                id = "E2", name = "흥정", description = "상점 가격 5% 할인",
+                id = "N2", name = "진화 가속", description = "진화 비용 1 감소",
                 direction = TechDirection.Up, maxRank = 3, perRankCost = 1,
-                prereqId = "E1", pos = new Vector2(CenterX - 60f, CenterY - 240f),
+                prereqId = "N1", pos = new Vector2(CenterX - 60f, CenterY - 240f),
             },
             new TechNode {
-                id = "E3", name = "풍성한 보상", description = "전투 보상 카드 후보 +1장",
+                id = "N3", name = "야수의 유대", description = "공룡 소환 시 +1 ATK 부여",
                 direction = TechDirection.Up, maxRank = 1, perRankCost = 2,
-                prereqId = "E1", pos = new Vector2(CenterX + 60f, CenterY - 240f),
+                prereqId = "N1", pos = new Vector2(CenterX + 60f, CenterY - 240f),
             },
             new TechNode {
-                id = "E4", name = "보스 사냥꾼", description = "[캡스톤] 보스 처치 골드 ×1.5",
+                id = "N4", name = "정점의 군주", description = "[캡스톤] 공룡 전원에게 매 전투 시작 ATK +2",
                 direction = TechDirection.Up, maxRank = 1, perRankCost = 5,
-                prereqId = "E2", pos = new Vector2(CenterX, CenterY - 350f),
+                prereqId = "N2", pos = new Vector2(CenterX, CenterY - 350f),
                 isCapstone = true,
             },
 
@@ -118,7 +118,7 @@ namespace DianoCard.Game
                 prereqId = "U1", pos = new Vector2(CenterX - 60f, CenterY + 240f),
             },
             new TechNode {
-                id = "U3", name = "정화의 물결", description = "시작 덱에 정화 카드 +1",
+                id = "U3", name = "상인의 감각", description = "상점 가격 10% 할인",
                 direction = TechDirection.Down, maxRank = 1, perRankCost = 2,
                 prereqId = "U1", pos = new Vector2(CenterX + 60f, CenterY + 240f),
             },

@@ -41,6 +41,10 @@ public class BattleUI : MonoBehaviour
     private int _targetingSummonSkillIndex = -1;
     // 공룡 교체 모드: 필드 꽉 찬 상태에서 SUMMON 카드 클릭 후 교체할 필드 공룡 클릭 대기 중 (-1 = 비활성).
     private int _swapFromCardIndex = -1;
+    // 포션 사용 타겟팅: 상단 슬롯 포션 클릭 후 적/아군 클릭 대기 중 (-1 = 비활성).
+    // ENEMY 타겟 포션 → 적 클릭, ALLY 타겟 포션 → 아군 공룡 클릭.
+    // SELF / ALL_* 포션은 즉시 사용되어 이 값이 켜지지 않음.
+    private int _targetingPotionIndex = -1;
 
     // 직전 프레임에 호버된 손패 인덱스. 호버 시 카드가 확대되어 원본 부채꼴 영역을 벗어날 수 있어,
     // 확대된 hoverRect 기준으로 hover를 유지(끈적이게)하기 위한 sticky 상태.
@@ -200,6 +204,8 @@ public class BattleUI : MonoBehaviour
     private Texture2D _iconDiscardRinne;  // CH002B 린네 전용 초록 젬 디스카드
     private Texture2D _iconCardBackRinne; // CH002B 린네 전용 초록 젬 카드백
     private Texture2D _iconFloor;
+    private Texture2D _iconTechTree;
+    private Texture2D _iconTurn;
     // 인텐트/상태이상이 공유하는 머리 위·HP바 아래 아이콘 풀 (Resources/InGame/HeadIcon/<ID>.png)
     private Dictionary<string, Texture2D> _headIcons;
     private static readonly string[] HeadIconIds = {
@@ -660,6 +666,15 @@ public class BattleUI : MonoBehaviour
     private int _deckViewerSortMode;  // 0=획득순, 1=유형, 2=비용, 3=이름순
     private Vector2 _deckViewerScroll;
 
+    // 유물 뷰어 — 상단 바 유물 슬롯 클릭 시 오픈.
+    private bool _relicViewerOpen;
+    private Vector2 _relicViewerScroll;
+    private readonly Dictionary<string, Texture2D> _relicIconCache = new();
+
+    // 포션 뷰어 — 상단 바 포션 슬롯 클릭 시 오픈.
+    private bool _potionViewerOpen;
+    private Vector2 _potionViewerScroll;
+
     private class DamageFloater
     {
         public object anchor;
@@ -720,7 +735,9 @@ public class BattleUI : MonoBehaviour
         _iconDeck    = Resources.Load<Texture2D>("InGame/Icon/Deck");
         _iconDiscard = Resources.Load<Texture2D>("InGame/Icon/Discard");
         _iconCardBack = Resources.Load<Texture2D>("InGame/Icon/CardBack");
-        _iconFloor   = Resources.Load<Texture2D>("InGame/Icon/Floor");
+        _iconFloor    = Resources.Load<Texture2D>("InGame/Icon/Floor");
+        _iconTechTree = Resources.Load<Texture2D>("InGame/Icon/TechTree");
+        _iconTurn     = Resources.Load<Texture2D>("InGame/Icon/Turn");
         _iconDeckRinne     = Resources.Load<Texture2D>("InGame/Icon/Deck_Rinne");
         _iconDiscardRinne  = Resources.Load<Texture2D>("InGame/Icon/Discard_Rinne");
         _iconCardBackRinne = Resources.Load<Texture2D>("InGame/Icon/CardBack_Rinne");
@@ -1359,6 +1376,7 @@ public class BattleUI : MonoBehaviour
         _targetingSummonIndex = -1;
         _targetingSummonSkillIndex = -1;
         _swapFromCardIndex = -1;
+        _targetingPotionIndex = -1;
 
         var chapter = DataManager.Instance.GetChapter(run.chapterId);
         int mana = chapter?.mana ?? 3;
@@ -1375,6 +1393,8 @@ public class BattleUI : MonoBehaviour
         float dmgScale = DianoCard.Game.GameStateManager.NormalEnemyDamageScaleForFloor(floor);
 
         _battle = new BattleManager();
+        // 유물/포션 디스패처가 RunState를 참조해야 함 — StartBattle 호출 전에 세팅.
+        _battle.run = run;
         _battle.StartBattle(
             new List<CardData>(run.deck),
             new List<EnemyData>(enemies), // 복사본 전달
@@ -2105,17 +2125,19 @@ public class BattleUI : MonoBehaviour
 
         if (active)
         {
-            // 우클릭으로 타겟팅 취소 (카드/공룡/공룡스킬/교체/융합 모두)
-            if ((_targetingCardIndex >= 0 || _targetingSummonIndex >= 0 || _targetingSummonSkillIndex >= 0 || _swapFromCardIndex >= 0)
+            // 우클릭으로 타겟팅 취소 (카드/공룡/공룡스킬/교체/융합/포션 모두)
+            if ((_targetingCardIndex >= 0 || _targetingSummonIndex >= 0 || _targetingSummonSkillIndex >= 0 || _swapFromCardIndex >= 0 || _targetingPotionIndex >= 0)
                 && Event.current.type == EventType.MouseDown
                 && Event.current.button == 1)
             {
                 if (_targetingSummonIndex >= 0) ShowToast("공격을 취소합니다");
                 else if (_targetingSummonSkillIndex >= 0) ShowToast("스킬을 취소합니다");
+                else if (_targetingPotionIndex >= 0) ShowToast("포션 사용을 취소합니다");
                 _targetingCardIndex = -1;
                 _targetingSummonIndex = -1;
                 _targetingSummonSkillIndex = -1;
                 _swapFromCardIndex = -1;
+                _targetingPotionIndex = -1;
                 _fusionMaterialAPicked = false;
                 Event.current.Use();
             }
@@ -2156,6 +2178,26 @@ public class BattleUI : MonoBehaviour
             // 공룡 공격 타겟팅과 스킬 타겟팅도 상호 배타
             if (_targetingSummonIndex >= 0) _targetingSummonSkillIndex = -1;
             if (_targetingSummonSkillIndex >= 0) _targetingSummonIndex = -1;
+
+            // 포션 타겟팅 — 슬롯이 사라졌거나 포션이 null이면 리셋. 다른 타겟팅과도 상호 배타.
+            var runForPotion = GameStateManager.Instance?.CurrentRun;
+            if (_targetingPotionIndex >= 0)
+            {
+                if (runForPotion == null
+                    || _targetingPotionIndex >= runForPotion.potions.Count
+                    || runForPotion.potions[_targetingPotionIndex] == null)
+                {
+                    _targetingPotionIndex = -1;
+                }
+                else
+                {
+                    // 포션 타겟팅 활성 시 다른 타겟팅 모드 자동 해제.
+                    _targetingCardIndex = -1;
+                    _targetingSummonIndex = -1;
+                    _targetingSummonSkillIndex = -1;
+                    _swapFromCardIndex = -1;
+                }
+            }
         }
 
         // 1) 배경은 스크린 원본 좌표로 꽉 채움
@@ -2181,13 +2223,16 @@ public class BattleUI : MonoBehaviour
             var map = gsm.CurrentMap;
             int totalFloors = map != null ? map.totalFloors : 5;
             DrawTopBar(HudContext.Battle, run, run.currentFloor, totalFloors,
-                       hpCurrent: state.player.hp, hpMax: state.player.maxHp);
+                       hpCurrent: state.player.hp, hpMax: state.player.maxHp,
+                       turnNumber: state.turn);
+            // 상단 네비 아래 포션 슬롯 — 클릭 → 효과 적용 (타겟 필요시 픽커 모드).
+            DrawPotionSlots(run, state, active && !_deckViewerOpen && !_relicViewerOpen && !_potionViewerOpen);
         }
         DrawTurnInfo(state);
 
         // Reward 상태에서는 상호작용 UI(손패/턴 종료/타겟팅 힌트) 숨김.
         // 덱 뷰어가 열려있을 때도 손패 상호작용을 막아 오버레이 아래 카드 클릭이 새지 않게 함.
-        if (active && !_deckViewerOpen)
+        if (active && !_deckViewerOpen && !_relicViewerOpen && !_potionViewerOpen)
         {
             DrawHand(state);
             DrawHandHideToggle();
@@ -2211,6 +2256,12 @@ public class BattleUI : MonoBehaviour
 
         // 덱 뷰어 오버레이 — 모든 UI 위에 그려짐.
         DrawDeckViewerOverlay(gsm);
+
+        // 유물 뷰어 오버레이 — 덱 뷰어와 동일 레이어.
+        DrawRelicViewerOverlay(gsm);
+
+        // 포션 뷰어 오버레이 — 유물 뷰어와 동일 레이어.
+        DrawPotionViewerOverlay(gsm);
 
         // 패시브 호버 툴팁 — 최상단에 그려야 다른 UI 위로 나옴.
         DrawPassiveTooltip();
@@ -2410,7 +2461,7 @@ public class BattleUI : MonoBehaviour
         if (s.fuseBlockRefreshTurns > 0)
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
-                         HeadIcon("SHIELD"), s.fuseBlockRefreshValue,
+                         HeadIcon("DEFEND"), s.fuseBlockRefreshValue,
                          "가호의 각인",
                          $"턴 시작 시 방어 +{s.fuseBlockRefreshValue} 충전. {s.fuseBlockRefreshTurns}턴 더 적용.");
             x += chipSize + chipGap;
@@ -2813,13 +2864,13 @@ public class BattleUI : MonoBehaviour
             || c.subType == CardSubType.DEBUFF;
     }
 
-    // ALLY 단일 타겟 카드 — 수호 마법(MAGIC/DEFENSE + ALLY)만 해당.
+    // ALLY 단일 타겟 카드 — 수호 마법(DEFENSE) 또는 도발(TAUNT) + ALLY.
     // 융합(UTILITY/FUSION)은 2개 재료 지정이 필요해 별도 흐름으로 처리 (CardNeedsFusionTargets).
     private static bool CardNeedsAllyTarget(CardData c)
     {
         if (c.target != TargetType.ALLY) return false;
-        if (c.cardType != CardType.MAGIC) return false;
-        return c.subType == CardSubType.DEFENSE;
+        if (c.cardType != CardType.MAGIC && c.cardType != CardType.BUFF) return false;
+        return c.subType == CardSubType.DEFENSE || c.subType == CardSubType.TAUNT;
     }
 
     // 융합 카드 — 재료 2개(필드/손 자유 조합) 지정 필요.
@@ -2880,7 +2931,11 @@ public class BattleUI : MonoBehaviour
             aTier = GetCarnivoreTierFromCardId(aInst.data.id);
         }
 
-        return candidateBaseId == aBaseId && candidateTier == aTier;
+        if (candidateBaseId != aBaseId) return false;
+        // 같은 티어 또는 T1+T0 교차 허용
+        int tMax = Math.Max(candidateTier, aTier);
+        int tMin = Math.Min(candidateTier, aTier);
+        return candidateTier == aTier || (tMax == 1 && tMin == 0);
     }
 
     private void HandleFusionMaterialClick(DianoCard.Battle.FusionMaterial m)
@@ -3832,6 +3887,20 @@ public class BattleUI : MonoBehaviour
                     _pending.Add(() => { _battle.PlayCard(cardIdx, -1, -1, allyIdx); });
                 }
             }
+            else if (_targetingPotionIndex >= 0 && CurrentPotionTargetsAlly())
+            {
+                // 포션 ALLY 타겟팅: 이 공룡에게 포션 사용 (P013 강화 / P015 각성).
+                DrawTargetFootGlow(rect, hovered);
+                _arrowTargetRects.Add(rect);
+                if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && hovered)
+                {
+                    ev.Use();
+                    int slotIdx = _targetingPotionIndex;
+                    int allyIdx = summonIndex;
+                    _targetingPotionIndex = -1;
+                    _pending.Add(() => _battle.UsePotion(slotIdx, allyIdx));
+                }
+            }
             else if (fusionModeField)
             {
                 if (isFusionMaterialAField)
@@ -4149,6 +4218,41 @@ public class BattleUI : MonoBehaviour
                 _pending.Add(() => StartCoroutine(ManualSummonSkillCoroutine(summon, eIdx)));
             }
         }
+        // 포션 타겟팅 모드 (target=ENEMY 포션): 선택된 포션이 이 적에게 적용
+        else if (_targetingPotionIndex >= 0 && CurrentPotionTargetsEnemy())
+        {
+            var ev = Event.current;
+            bool hovered = rect.Contains(ev.mousePosition);
+            DrawTargetEnemyRing(rect, hovered);
+            _arrowTargetRects.Add(rect);
+
+            if (ev.type == EventType.MouseDown && ev.button == 0 && hovered)
+            {
+                ev.Use();
+                int slotIdx = _targetingPotionIndex;
+                int eIdx = enemyIndex;
+                _targetingPotionIndex = -1;
+                _pending.Add(() => _battle.UsePotion(slotIdx, eIdx));
+            }
+        }
+    }
+
+    /// <summary>현재 타겟팅 중인 포션의 target이 ENEMY인가? (DrawEnemy의 분기 조건).</summary>
+    private bool CurrentPotionTargetsEnemy()
+    {
+        var run = GameStateManager.Instance?.CurrentRun;
+        if (run == null || _targetingPotionIndex < 0 || _targetingPotionIndex >= run.potions.Count) return false;
+        var p = run.potions[_targetingPotionIndex];
+        return p != null && p.target == DianoCard.Data.TargetType.ENEMY;
+    }
+
+    /// <summary>현재 타겟팅 중인 포션의 target이 ALLY인가? (DrawSummon의 분기 조건).</summary>
+    private bool CurrentPotionTargetsAlly()
+    {
+        var run = GameStateManager.Instance?.CurrentRun;
+        if (run == null || _targetingPotionIndex < 0 || _targetingPotionIndex >= run.potions.Count) return false;
+        var p = run.potions[_targetingPotionIndex];
+        return p != null && p.target == DianoCard.Data.TargetType.ALLY;
     }
 
     /// <summary>수동 소환수 공격 — lunge 애니메이션 후 데미지 적용.</summary>
@@ -4675,7 +4779,7 @@ public class BattleUI : MonoBehaviour
     private void DrawRightSlots(
         Rect barRect, float barY, float barH,
         float iconY, float iconSize, float iconLabelGap,
-        string floorLabel, int deckCount = -1)
+        string floorLabel, int deckCount = -1, HudContext ctx = HudContext.Battle, int turnNumber = -1)
     {
         float rightPad = hudRightPad * navBarMasterScale;         // 화면 우측 가장자리 여백 (padX보다 살짝 크게)
         float rightSlotGap = hudRightSlotGap * navBarMasterScale; // 슬롯 사이 간격 (좌측 slotGap보다 넓게)
@@ -4683,9 +4787,18 @@ public class BattleUI : MonoBehaviour
         float right = barRect.xMax - rightPad;
         bool anyDrawn = false;
 
-        // Floor 슬롯 (가장 오른쪽) — 계단은 아주 미세하게 좌우로 기울음
+        // Turn 슬롯 (가장 오른쪽) — 전투 중에만 표시
+        if (turnNumber >= 0)
+        {
+            right = DrawRightSlot(right, barY, barH, iconY, iconSize, iconLabelGap,
+                _iconTurn, turnNumber.ToString(), new Color(0.75f, 0.90f, 1f), wobblePhase: 1.8f);
+            anyDrawn = true;
+        }
+
+        // Floor 슬롯 — 계단은 아주 미세하게 좌우로 기울음
         if (floorLabel != null)
         {
+            if (anyDrawn) right -= rightSlotGap;
             right = DrawRightSlot(right, barY, barH, iconY, iconSize, iconLabelGap,
                 _iconFloor, floorLabel, new Color(1f, 0.82f, 0.35f), wobblePhase: 2.4f);
             anyDrawn = true;
@@ -4699,10 +4812,9 @@ public class BattleUI : MonoBehaviour
             anyDrawn = true;
         }
 
-        // 테크트리 진입 슬롯 — 덱 왼쪽. 별도 아이콘 에셋이 없어서 절차적으로 그림(임시 UI).
-        // 보유 포인트가 1 이상이면 따뜻하게 강조 + 라벨로 카운트 표시.
+        // 테크트리 진입 슬롯 — 맵 화면에서만 표시 (전투 중 진입 시 상태 초기화 방지).
         var gsm = GameStateManager.Instance;
-        if (gsm != null && gsm.TechTree != null)
+        if (ctx == HudContext.Map && gsm != null && gsm.TechTree != null)
         {
             if (anyDrawn) right -= rightSlotGap;
             DrawTechTreeRightSlot(right, barY, barH, iconY, iconSize, iconLabelGap, gsm.TechTree.points);
@@ -4789,17 +4901,31 @@ public class BattleUI : MonoBehaviour
 
         DrawIconGlow(iconRect, glowTint, glowIntensity);
 
-        // 절차적 트리 아이콘 — 살짝 좌우 흔들 (다른 우측 아이콘과 동일한 패턴)
+        // 살짝 좌우 흔들 (다른 우측 아이콘과 동일한 패턴)
         float angle = Mathf.Sin(Time.time * 0.7f + 0.6f) * 0.32f;
         var prevMatrix = GUI.matrix;
         GUIUtility.RotateAroundPivot(angle, iconRect.center);
-        DrawTechTreeProcIcon(iconRect, hover, totalPoints > 0);
+        if (_iconTechTree != null)
+            GUI.DrawTexture(iconRect, _iconTechTree, ScaleMode.ScaleToFit);
+        else
+            DrawTechTreeProcIcon(iconRect, hover, totalPoints > 0);
         GUI.matrix = prevMatrix;
 
         if (!string.IsNullOrEmpty(label))
         {
             var labelRect = new Rect(labelX, barY + (barH - labelSize.y) * 0.5f, labelSize.x + 2f, labelSize.y);
             GUI.Label(labelRect, label, _labelStyle);
+        }
+
+        // 새 포인트 획득 알림 레드닷
+        var gsmDot = GameStateManager.Instance;
+        if (gsmDot?.TechTree != null && gsmDot.TechTree.hasNewPoints)
+        {
+            float dotR = iconSize * 0.22f;
+            var dotRect = new Rect(iconRect.xMax - dotR * 1.1f, iconRect.y - dotR * 0.4f, dotR * 2f, dotR * 2f);
+            float pulse = 0.85f + 0.15f * Mathf.Sin(Time.time * 5f);
+            DrawIconGlow(dotRect, new Color(1f, 0.1f, 0.1f, pulse), 1.8f);
+            FillRect(dotRect, new Color(0.95f, 0.12f, 0.12f, pulse));
         }
 
         if (hover && ev.type == EventType.MouseDown && ev.button == 0)
@@ -4886,7 +5012,7 @@ public class BattleUI : MonoBehaviour
     // 맵·마을에서는 RunState 값을 그대로 쓴다.
     // =========================================================
     public void DrawTopBar(HudContext ctx, RunState run, int currentFloor, int totalFloors,
-                           int? hpCurrent = null, int? hpMax = null)
+                           int? hpCurrent = null, int? hpMax = null, int turnNumber = -1)
     {
         if (run == null) return;
         EnsureStyles();
@@ -4927,11 +5053,175 @@ public class BattleUI : MonoBehaviour
         int hpCap = hpMax ?? run.playerMaxHp;
         DrawSlot(_iconHP,     $"{hpNow}/{hpCap}",                          new Color(1f, 0.55f, 0.50f), 1.6f);
         DrawSlot(_iconGold,   $"{run.gold}",                               new Color(1f, 0.82f, 0.35f));
-        DrawSlot(_iconPotion, $"{run.potions.Count}/{RunState.MaxPotionSlots}", new Color(0.55f, 1f, 0.65f));
-        DrawSlot(_iconRelic,  $"{run.relics.Count}",                       new Color(0.85f, 0.55f, 1f));
+        // 포션 슬롯 — 호버 시 아이콘 확대 + 클릭 시 포션 패널 열기
+        {
+            var evP = Event.current;
+            string potionLabel = $"{run.potions.Count}/{run.MaxPotionSlots}";
+            var potionLabelSz = _labelStyle.CalcSize(new GUIContent(potionLabel));
+            float totalPotionW = (_iconPotion != null ? iconSize + iconLabelGap : 0f) + potionLabelSz.x;
+            var potionHitRect = new Rect(cursorX - 4f, barY, totalPotionW + 12f, barH);
+            bool potionHov = potionHitRect.Contains(evP.mousePosition);
+
+            if (potionHov || _potionViewerOpen)
+                FillRect(potionHitRect, new Color(0.25f, 0.75f, 0.35f, _potionViewerOpen ? 0.14f : 0.08f));
+
+            if (_iconPotion != null)
+            {
+                float potionIconScale = (potionHov || _potionViewerOpen) ? 1.18f : 1f;
+                float scaledSzP = iconSize * potionIconScale;
+                float offXP = (iconSize - scaledSzP) * 0.5f;
+                float offYP = (iconSize - scaledSzP) * 0.5f;
+                var potionIconRect = new Rect(cursorX + offXP, iconY + offYP, scaledSzP, scaledSzP);
+                Color potionGlowTint = _potionViewerOpen ? new Color(0.55f, 1f, 0.65f)
+                                     : (potionHov ? new Color(0.45f, 0.95f, 0.55f) : new Color(0.35f, 0.85f, 0.45f));
+                DrawIconGlow(potionIconRect, potionGlowTint, _potionViewerOpen ? 1.7f : (potionHov ? 1.4f : 1f));
+                GUI.DrawTexture(potionIconRect, _iconPotion, ScaleMode.ScaleToFit);
+                cursorX += iconSize + iconLabelGap;
+            }
+            var potionLabelRect = new Rect(cursorX, barY + (barH - potionLabelSz.y) * 0.5f,
+                                           potionLabelSz.x + 2f, potionLabelSz.y);
+            GUI.Label(potionLabelRect, potionLabel, _labelStyle);
+            cursorX += potionLabelSz.x + slotGap;
+
+            if (potionHov && evP.type == EventType.MouseDown && evP.button == 0)
+            {
+                _potionViewerOpen = !_potionViewerOpen;
+                _potionViewerScroll = Vector2.zero;
+                if (_potionViewerOpen) _relicViewerOpen = false;
+                evP.Use();
+            }
+        }
+        // 유물 슬롯 — 호버 시 아이콘 확대 + 클릭 시 유물 패널 열기
+        {
+            var evR = Event.current;
+            string relicLabel = $"{run.relics.Count}";
+            var relicLabelSz = _labelStyle.CalcSize(new GUIContent(relicLabel));
+            float totalRelicW = (_iconRelic != null ? iconSize + iconLabelGap : 0f) + relicLabelSz.x;
+            var relicHitRect = new Rect(cursorX - 4f, barY, totalRelicW + 12f, barH);
+            bool relicHov = relicHitRect.Contains(evR.mousePosition);
+
+            if (relicHov || _relicViewerOpen)
+                FillRect(relicHitRect, new Color(0.85f, 0.55f, 1f, _relicViewerOpen ? 0.14f : 0.08f));
+
+            if (_iconRelic != null)
+            {
+                float relicIconScale = (relicHov || _relicViewerOpen) ? 1.18f : 1f;
+                float scaledSz = iconSize * relicIconScale;
+                float offX = (iconSize - scaledSz) * 0.5f;
+                float offY = (iconSize - scaledSz) * 0.5f;
+                var relicIconRect = new Rect(cursorX + offX, iconY + offY, scaledSz, scaledSz);
+                Color relicGlowTint = _relicViewerOpen ? new Color(1f, 0.55f, 1f)
+                                    : (relicHov ? new Color(0.90f, 0.55f, 1f) : new Color(0.85f, 0.55f, 1f));
+                DrawIconGlow(relicIconRect, relicGlowTint, _relicViewerOpen ? 1.7f : (relicHov ? 1.4f : 1f));
+                GUI.DrawTexture(relicIconRect, _iconRelic, ScaleMode.ScaleToFit);
+                cursorX += iconSize + iconLabelGap;
+            }
+            var relicLabelRect = new Rect(cursorX, barY + (barH - relicLabelSz.y) * 0.5f,
+                                          relicLabelSz.x + 2f, relicLabelSz.y);
+            GUI.Label(relicLabelRect, relicLabel, _labelStyle);
+            cursorX += relicLabelSz.x + slotGap;
+
+            if (relicHov && evR.type == EventType.MouseDown && evR.button == 0)
+            {
+                _relicViewerOpen = !_relicViewerOpen;
+                _relicViewerScroll = Vector2.zero;
+                if (_relicViewerOpen) _potionViewerOpen = false;
+                evR.Use();
+            }
+        }
 
         DrawRightSlots(barRect, barY, barH, iconY, iconSize, iconLabelGap,
-            $"{currentFloor}/{totalFloors}", deckCount: run.deck.Count);
+            $"{currentFloor}/{totalFloors}", deckCount: run.deck.Count, ctx: ctx, turnNumber: turnNumber);
+    }
+
+    // =========================================================
+    // 포션 슬롯 — 상단 네비 바로 아래에 보유 포션 아이콘 row.
+    // 클릭 시:
+    //   - SELF / ALL_*  → 즉시 사용 (BattleManager.UsePotion)
+    //   - ENEMY / ALLY → 타겟팅 모드 진입 (_targetingPotionIndex)
+    // 우클릭/ESC 로 취소(다른 타겟팅 취소 흐름 공용).
+    // =========================================================
+    private Texture2D _potionFallbackIcon;
+    private readonly Dictionary<string, Texture2D> _potionIconCache = new();
+
+    private Texture2D GetPotionIcon(string potionId)
+    {
+        if (string.IsNullOrEmpty(potionId)) return _potionFallbackIcon ??= Resources.Load<Texture2D>("InGame/Icon/Potion_Bottle");
+        if (_potionIconCache.TryGetValue(potionId, out var cached)) return cached;
+        // 개별 아이콘 (Resources/InGame/PotionArt/{id}.png) — 없으면 공용 폴백.
+        var tex = Resources.Load<Texture2D>($"InGame/PotionArt/{potionId}");
+        if (tex == null) tex = _potionFallbackIcon ??= Resources.Load<Texture2D>("InGame/Icon/Potion_Bottle");
+        _potionIconCache[potionId] = tex;
+        return tex;
+    }
+
+    /// <summary>
+    /// 상단 네비 아래 포션 슬롯 row. 보유 포션을 좌→우로 클릭 가능한 아이콘으로 표시.
+    /// interactive=false면 시각만 (전투 외 / 덱뷰어 열림 등).
+    /// </summary>
+    private void DrawPotionSlots(RunState run, BattleState state, bool interactive)
+    {
+        if (run == null || run.potions == null || run.potions.Count == 0) return;
+
+        const float slotSize = 44f;
+        const float slotGap = 10f;
+        const float startX = 14f;
+        const float startY = 78f; // 상단 네비 바 바로 아래.
+
+        var ev = Event.current;
+        for (int i = 0; i < run.potions.Count; i++)
+        {
+            var p = run.potions[i];
+            if (p == null) continue;
+            var rect = new Rect(startX + i * (slotSize + slotGap), startY, slotSize, slotSize);
+            bool isTargeting = (_targetingPotionIndex == i);
+            bool hovered = interactive && ev != null && rect.Contains(ev.mousePosition);
+
+            // 글로우 — 타겟팅 중이면 진한 노랑, 호버 시 옅은 녹색.
+            var glow = isTargeting ? new Color(1f, 0.82f, 0.35f, 0.85f)
+                       : hovered    ? new Color(0.55f, 1f, 0.65f, 0.55f)
+                                    : new Color(0.55f, 1f, 0.65f, 0.25f);
+            DrawIconGlow(rect, glow, intensity: isTargeting ? 1.8f : (hovered ? 1.3f : 0.9f));
+
+            // 아이콘 본체.
+            var icon = GetPotionIcon(p.id);
+            if (icon != null) GUI.DrawTexture(rect, icon, ScaleMode.ScaleToFit);
+            else
+            {
+                FillRect(rect, new Color(0.10f, 0.20f, 0.10f, 0.85f));
+                DrawBorder(rect, 1.5f, new Color(0.55f, 1f, 0.65f, 0.6f));
+            }
+
+            // 호버 툴팁 — 포션 이름 + 설명.
+            if (hovered && !string.IsNullOrEmpty(p.nameKr))
+            {
+                var label = string.IsNullOrEmpty(p.description) ? p.nameKr : $"{p.nameKr}\n{p.description}";
+                var size = _labelStyle.CalcSize(new GUIContent(label));
+                var tipRect = new Rect(rect.x, rect.yMax + 4f, Mathf.Max(160f, size.x + 16f), size.y + 12f);
+                FillRect(tipRect, new Color(0.05f, 0.05f, 0.08f, 0.92f));
+                DrawBorder(tipRect, 1f, new Color(0.55f, 1f, 0.65f, 0.6f));
+                GUI.Label(new Rect(tipRect.x + 8f, tipRect.y + 4f, tipRect.width - 16f, tipRect.height - 8f),
+                          label, _labelStyle);
+            }
+
+            // 클릭 처리.
+            if (interactive && ev != null && ev.type == EventType.MouseDown && ev.button == 0 && hovered)
+            {
+                ev.Use();
+                if (DianoCard.Game.PotionEffects.RequiresTarget(p))
+                {
+                    // 타겟 필요 — 픽커 모드 진입 (이미 같은 슬롯 타겟팅 중이면 토글 해제).
+                    _targetingPotionIndex = (_targetingPotionIndex == i) ? -1 : i;
+                    // 다른 타겟팅 모드는 자동 해제 (위 OnGUI 가드에서 처리).
+                }
+                else
+                {
+                    // SELF/ALL_* — 즉시 사용.
+                    int slotIdx = i;
+                    _pending.Add(() => _battle.UsePotion(slotIdx, -1));
+                }
+            }
+        }
     }
 
     // 한 슬롯을 right 기준으로 우→좌로 그리고, 이 슬롯의 left x를 반환
@@ -5496,7 +5786,14 @@ public class BattleUI : MonoBehaviour
             counts.TryGetValue(key, out int n);
             counts[key] = n + 1;
         }
-        foreach (var n in counts.Values) if (n >= 2) return true;
+        // 같은 티어 쌍 확인
+        foreach (var kvp in counts) if (kvp.Value >= 2) return true;
+        // 교차 티어(T1+T0) 쌍 확인
+        foreach (var kvp in counts)
+        {
+            if (kvp.Key.Item2 == 1 && counts.TryGetValue((kvp.Key.Item1, 0), out _))
+                return true;
+        }
         return false;
     }
 
@@ -5771,24 +6068,7 @@ public class BattleUI : MonoBehaviour
         };
     }
 
-    // 카드 상단 명판(제목): 마법은 Attack/Defense/Debuff/Purify 카테고리, 그 외는 카드 고유 이름.
-    // 활성 언어(LocaleSettings.Current)에 따라 한/영 자동 전환.
-    private static string GetCardTypeLabel(CardData c)
-    {
-        if (c.cardType == CardType.MAGIC)
-        {
-            bool kr = LocaleSettings.Current == Language.KR;
-            switch (c.subType)
-            {
-                case CardSubType.ATTACK:  return kr ? "공격"   : "Attack";
-                case CardSubType.DEFENSE: return kr ? "방어"   : "Defense";
-                case CardSubType.DEBUFF:  return kr ? "디버프" : "Debuff";
-                case CardSubType.PURIFY:  return kr ? "정화"   : "Purify";
-                default:                  return kr ? "마법"   : "Magic";
-            }
-        }
-        return c.name;
-    }
+    private static string GetCardTypeLabel(CardData c) => c.name;
 
     private static string GetCardBody(CardData c)
     {
@@ -6719,6 +6999,505 @@ public class BattleUI : MonoBehaviour
         }
 
         GUI.color = prevColor;
+    }
+
+    // =========================================================
+    // 유물 뷰어 오버레이 — 상단 바 유물 슬롯 클릭 시 보유 유물 전체 보기 팝업
+    // =========================================================
+
+    private Texture2D GetRelicIcon(string relicId)
+    {
+        if (string.IsNullOrEmpty(relicId)) return _iconRelic;
+        if (_relicIconCache.TryGetValue(relicId, out var cached)) return cached;
+        var tex = Resources.Load<Texture2D>($"InGame/RelicArt/{relicId}");
+        if (tex == null) tex = _iconRelic;
+        _relicIconCache[relicId] = tex;
+        return tex;
+    }
+
+    private static Color RelicRarityColor(Rarity r)
+    {
+        return r switch
+        {
+            Rarity.UNCOMMON => new Color(0.40f, 0.82f, 1.00f),
+            Rarity.RARE     => new Color(1.00f, 0.82f, 0.35f),
+            Rarity.SHOP     => new Color(0.55f, 1.00f, 0.65f),
+            _               => new Color(0.72f, 0.72f, 0.72f),  // COMMON — 실버
+        };
+    }
+
+    private static string RelicRarityLabel(Rarity r)
+    {
+        return r switch
+        {
+            Rarity.UNCOMMON => "언커먼",
+            Rarity.RARE     => "레어",
+            Rarity.SHOP     => "상점",
+            _               => "커먼",
+        };
+    }
+
+    // Map/Village 화면에서도 호출할 수 있도록 public.
+    public void DrawRelicViewerOverlay(GameStateManager gsm)
+    {
+        if (!_relicViewerOpen) return;
+        var run = gsm?.CurrentRun;
+        if (run == null) { _relicViewerOpen = false; return; }
+
+        EnsureStyles();
+        var ev = Event.current;
+
+        // 1) 전체 어두운 배경 — 입력 차단
+        FillRect(new Rect(0f, 0f, RefW, RefH), new Color(0f, 0f, 0f, 0.72f));
+
+        // 2) 패널
+        const float PanelW = 900f;
+        const float PanelH = 540f;
+        var panelRect = new Rect((RefW - PanelW) * 0.5f, (RefH - PanelH) * 0.5f, PanelW, PanelH);
+        FillRect(panelRect, new Color(0.06f, 0.03f, 0.14f, 0.97f));
+        DrawBorder(panelRect, 2f, new Color(0.72f, 0.40f, 1.00f, 0.90f));
+
+        // 상단 골드 가로줄 (덱 뷰어 스타일 일관성)
+        FillRect(new Rect(panelRect.x + 2f, panelRect.y + 2f, panelRect.width - 4f, 2f),
+                 new Color(0.72f, 0.40f, 1.00f, 0.50f));
+
+        // 3) 제목
+        int prevFS = _labelStyle.fontSize;
+        _labelStyle.fontSize = 24;
+        GUI.Label(new Rect(panelRect.x + 28f, panelRect.y + 12f, PanelW - 120f, 34f),
+                  $"유물 · {run.relics.Count}개", _labelStyle);
+        _labelStyle.fontSize = prevFS;
+
+        // 4) 닫기 버튼 (×)
+        var closeRect = new Rect(panelRect.xMax - 44f, panelRect.y + 10f, 34f, 34f);
+        bool closeHov = closeRect.Contains(ev.mousePosition);
+        FillRect(closeRect, closeHov ? new Color(0.55f, 0.18f, 0.18f, 1f) : new Color(0.18f, 0.10f, 0.20f, 0.90f));
+        DrawBorder(closeRect, 1f, new Color(0.72f, 0.40f, 1.00f, 0.9f));
+        int prevCFS = _centerStyle.fontSize;
+        var prevCC = _centerStyle.normal.textColor;
+        _centerStyle.fontSize = 20;
+        _centerStyle.normal.textColor = closeHov ? Color.white : new Color(0.92f, 0.80f, 1.00f);
+        GUI.Label(closeRect, "×", _centerStyle);
+        _centerStyle.fontSize = prevCFS;
+        _centerStyle.normal.textColor = prevCC;
+
+        if (closeHov && ev.type == EventType.MouseDown && ev.button == 0)
+        {
+            _relicViewerOpen = false;
+            ev.Use();
+            return;
+        }
+
+        // 5) 구분선
+        FillRect(new Rect(panelRect.x + 20f, panelRect.y + 52f, PanelW - 40f, 1f),
+                 new Color(0.72f, 0.40f, 1.00f, 0.35f));
+
+        // 6) 유물 없음 메시지
+        if (run.relics.Count == 0)
+        {
+            int prevEFS = _centerStyle.fontSize;
+            var prevEC = _centerStyle.normal.textColor;
+            _centerStyle.fontSize = 16;
+            _centerStyle.normal.textColor = new Color(0.60f, 0.55f, 0.65f);
+            GUI.Label(new Rect(panelRect.x, panelRect.y + PanelH * 0.45f, PanelW, 30f),
+                      "보유 유물 없음", _centerStyle);
+            _centerStyle.fontSize = prevEFS;
+            _centerStyle.normal.textColor = prevEC;
+        }
+        else
+        {
+            // 7) 유물 카드 그리드 — 3열, 스크롤
+            const int Cols = 3;
+            const float CardW = 260f;
+            const float CardH = 108f;
+            const float ColGap = 20f;
+            const float RowGap = 14f;
+            const float IconSz = 60f;
+            const float Pad = 10f;
+
+            float gridX = panelRect.x + (PanelW - (Cols * CardW + (Cols - 1) * ColGap)) * 0.5f;
+            const float GridTopY = 62f;
+            float gridInnerH = panelRect.height - GridTopY - 10f;
+
+            int rows = Mathf.CeilToInt(run.relics.Count / (float)Cols);
+            float contentH = rows * CardH + (rows - 1) * RowGap;
+
+            var viewportRect = new Rect(panelRect.x + 10f, panelRect.y + GridTopY, PanelW - 20f, gridInnerH);
+            var contentRect  = new Rect(0f, 0f, PanelW - 36f, Mathf.Max(contentH, gridInnerH));
+
+            _relicViewerScroll = GUI.BeginScrollView(viewportRect, _relicViewerScroll, contentRect,
+                                                      false, contentH > gridInnerH);
+
+            float innerGridX = gridX - panelRect.x - 10f;
+
+            for (int i = 0; i < run.relics.Count; i++)
+            {
+                var relic = run.relics[i];
+                if (relic == null) continue;
+
+                int col = i % Cols;
+                int row = i / Cols;
+                float cx = innerGridX + col * (CardW + ColGap);
+                float cy = row * (CardH + RowGap);
+                var cardRect = new Rect(cx, cy, CardW, CardH);
+
+                bool cardHov = cardRect.Contains(ev.mousePosition);
+                Color rarityCol = RelicRarityColor(relic.rarity);
+
+                // 카드 배경
+                FillRect(cardRect, cardHov
+                    ? new Color(0.16f, 0.08f, 0.30f, 1f)
+                    : new Color(0.10f, 0.05f, 0.20f, 0.95f));
+
+                // 좌측 컬러 세로 바 (희귀도 표시)
+                FillRect(new Rect(cardRect.x, cardRect.y, 3f, cardRect.height), rarityCol * new Color(1, 1, 1, 0.85f));
+
+                // 테두리
+                DrawBorder(cardRect, 1f, cardHov
+                    ? new Color(rarityCol.r, rarityCol.g, rarityCol.b, 0.85f)
+                    : new Color(0.45f, 0.25f, 0.65f, 0.55f));
+
+                // 아이콘
+                float iconX = cardRect.x + Pad + 3f;
+                float iconY2 = cardRect.y + (CardH - IconSz) * 0.5f;
+                var iconRect = new Rect(iconX, iconY2, IconSz, IconSz);
+                float hoverIconScale = cardHov ? 1.12f : 1f;
+                float scaledIcon = IconSz * hoverIconScale;
+                var scaledIconRect = new Rect(iconX + (IconSz - scaledIcon) * 0.5f,
+                                              iconY2 + (IconSz - scaledIcon) * 0.5f,
+                                              scaledIcon, scaledIcon);
+                DrawIconGlow(scaledIconRect, rarityCol, cardHov ? 1.3f : 0.7f);
+                var relicTex = GetRelicIcon(relic.id);
+                if (relicTex != null)
+                    GUI.DrawTexture(scaledIconRect, relicTex, ScaleMode.ScaleToFit);
+                else
+                {
+                    // 아이콘 없음 — 희귀도 색 원형 플레이스홀더
+                    FillRect(iconRect, new Color(rarityCol.r * 0.4f, rarityCol.g * 0.4f, rarityCol.b * 0.4f, 0.9f));
+                    DrawBorder(iconRect, 1.5f, rarityCol * new Color(1, 1, 1, 0.6f));
+                }
+
+                // 텍스트 영역
+                float textX = iconX + IconSz + Pad;
+                float textW = CardW - IconSz - Pad * 3f - 3f;
+
+                // 이름 (14px bold)
+                int prevNFS = _labelStyle.fontSize;
+                var prevNC = _labelStyle.normal.textColor;
+                FontStyle prevNStyle = _labelStyle.fontStyle;
+                _labelStyle.fontSize = 14;
+                _labelStyle.fontStyle = FontStyle.Bold;
+                _labelStyle.normal.textColor = cardHov ? Color.white : new Color(0.95f, 0.88f, 1.00f);
+                GUI.Label(new Rect(textX, cardRect.y + 10f, textW, 20f), relic.nameKr, _labelStyle);
+                _labelStyle.fontSize = prevNFS;
+                _labelStyle.fontStyle = prevNStyle;
+                _labelStyle.normal.textColor = prevNC;
+
+                // 희귀도 뱃지
+                string rarityStr = RelicRarityLabel(relic.rarity);
+                int prevRFS = _labelStyle.fontSize;
+                var prevRC = _labelStyle.normal.textColor;
+                _labelStyle.fontSize = 10;
+                _labelStyle.normal.textColor = rarityCol;
+                GUI.Label(new Rect(textX, cardRect.y + 28f, textW, 16f), rarityStr, _labelStyle);
+                _labelStyle.fontSize = prevRFS;
+                _labelStyle.normal.textColor = prevRC;
+
+                // 설명 (11px, wordWrap)
+                bool prevWrap = _labelStyle.wordWrap;
+                int prevDFS = _labelStyle.fontSize;
+                var prevDC = _labelStyle.normal.textColor;
+                _labelStyle.wordWrap = true;
+                _labelStyle.fontSize = 11;
+                _labelStyle.normal.textColor = new Color(0.80f, 0.76f, 0.88f);
+                GUI.Label(new Rect(textX, cardRect.y + 44f, textW, CardH - 54f),
+                          relic.description ?? "", _labelStyle);
+                _labelStyle.wordWrap = prevWrap;
+                _labelStyle.fontSize = prevDFS;
+                _labelStyle.normal.textColor = prevDC;
+            }
+
+            GUI.EndScrollView();
+        }
+
+        // 8) 패널 밖 클릭 → 닫기 / ESC → 닫기
+        if (ev.type == EventType.MouseDown && ev.button == 0
+            && !panelRect.Contains(ev.mousePosition))
+        {
+            _relicViewerOpen = false;
+            ev.Use();
+        }
+        else if (ev.type == EventType.KeyDown && ev.keyCode == KeyCode.Escape)
+        {
+            _relicViewerOpen = false;
+            ev.Use();
+        }
+    }
+
+    // =========================================================
+    // 포션 뷰어 오버레이 — 상단 바 포션 슬롯 클릭 시 보유 포션 목록 + 마시기 버튼.
+    // Map/Village 화면에서도 호출할 수 있도록 public.
+    // 전투 중(_battle != null)일 때만 마시기 버튼 활성화.
+    // =========================================================
+    public void DrawPotionViewerOverlay(GameStateManager gsm)
+    {
+        if (!_potionViewerOpen) return;
+        var run = gsm?.CurrentRun;
+        if (run == null) { _potionViewerOpen = false; return; }
+
+        EnsureStyles();
+        var ev = Event.current;
+        bool inBattle = _battle != null;
+
+        // 1) 전체 어두운 배경 — 입력 차단
+        FillRect(new Rect(0f, 0f, RefW, RefH), new Color(0f, 0f, 0f, 0.72f));
+
+        // 2) 패널
+        const float PanelW = 860f;
+        const float PanelH = 520f;
+        var panelRect = new Rect((RefW - PanelW) * 0.5f, (RefH - PanelH) * 0.5f, PanelW, PanelH);
+        FillRect(panelRect, new Color(0.04f, 0.10f, 0.06f, 0.97f));
+        DrawBorder(panelRect, 2f, new Color(0.35f, 0.85f, 0.45f, 0.90f));
+
+        // 상단 강조 가로줄
+        FillRect(new Rect(panelRect.x + 2f, panelRect.y + 2f, panelRect.width - 4f, 2f),
+                 new Color(0.35f, 0.85f, 0.45f, 0.50f));
+
+        // 3) 제목
+        int prevFS = _labelStyle.fontSize;
+        _labelStyle.fontSize = 24;
+        GUI.Label(new Rect(panelRect.x + 28f, panelRect.y + 12f, PanelW - 120f, 34f),
+                  $"포션 · {run.potions.Count}개", _labelStyle);
+        _labelStyle.fontSize = prevFS;
+
+        // 전투 외에는 안내 문구
+        if (!inBattle)
+        {
+            int prevSFS = _labelStyle.fontSize;
+            var prevSC = _labelStyle.normal.textColor;
+            _labelStyle.fontSize = 11;
+            _labelStyle.normal.textColor = new Color(0.60f, 0.80f, 0.60f, 0.70f);
+            GUI.Label(new Rect(panelRect.x + 28f, panelRect.y + 40f, PanelW - 56f, 18f),
+                      "전투 중에만 사용 가능합니다.", _labelStyle);
+            _labelStyle.fontSize = prevSFS;
+            _labelStyle.normal.textColor = prevSC;
+        }
+
+        // 4) 닫기 버튼 (×)
+        var closeRect = new Rect(panelRect.xMax - 44f, panelRect.y + 10f, 34f, 34f);
+        bool closeHov = closeRect.Contains(ev.mousePosition);
+        FillRect(closeRect, closeHov ? new Color(0.45f, 0.14f, 0.14f, 1f) : new Color(0.08f, 0.16f, 0.10f, 0.90f));
+        DrawBorder(closeRect, 1f, new Color(0.35f, 0.85f, 0.45f, 0.9f));
+        int prevCFS = _centerStyle.fontSize;
+        var prevCC = _centerStyle.normal.textColor;
+        _centerStyle.fontSize = 20;
+        _centerStyle.normal.textColor = closeHov ? Color.white : new Color(0.75f, 1.00f, 0.80f);
+        GUI.Label(closeRect, "×", _centerStyle);
+        _centerStyle.fontSize = prevCFS;
+        _centerStyle.normal.textColor = prevCC;
+
+        if (closeHov && ev.type == EventType.MouseDown && ev.button == 0)
+        {
+            _potionViewerOpen = false;
+            ev.Use();
+            return;
+        }
+
+        // 5) 구분선
+        FillRect(new Rect(panelRect.x + 20f, panelRect.y + 52f, PanelW - 40f, 1f),
+                 new Color(0.35f, 0.85f, 0.45f, 0.35f));
+
+        // 6) 포션 없음 메시지
+        if (run.potions.Count == 0)
+        {
+            int prevEFS = _centerStyle.fontSize;
+            var prevEC = _centerStyle.normal.textColor;
+            _centerStyle.fontSize = 16;
+            _centerStyle.normal.textColor = new Color(0.50f, 0.65f, 0.52f);
+            GUI.Label(new Rect(panelRect.x, panelRect.y + PanelH * 0.45f, PanelW, 30f),
+                      "보유 포션 없음", _centerStyle);
+            _centerStyle.fontSize = prevEFS;
+            _centerStyle.normal.textColor = prevEC;
+        }
+        else
+        {
+            // 7) 포션 카드 그리드 — 3열, 스크롤. 각 카드 하단에 [마시기] 버튼.
+            const int Cols = 3;
+            const float CardW = 248f;
+            const float CardH = 130f;
+            const float ColGap = 18f;
+            const float RowGap = 14f;
+            const float IconSz = 56f;
+            const float Pad = 10f;
+            const float BtnH = 28f;
+
+            float gridX = panelRect.x + (PanelW - (Cols * CardW + (Cols - 1) * ColGap)) * 0.5f;
+            const float GridTopY = 62f;
+            float gridInnerH = panelRect.height - GridTopY - 10f;
+
+            int rows = Mathf.CeilToInt(run.potions.Count / (float)Cols);
+            float contentH = rows * CardH + (rows - 1) * RowGap;
+
+            var viewportRect = new Rect(panelRect.x + 10f, panelRect.y + GridTopY, PanelW - 20f, gridInnerH);
+            var contentRect  = new Rect(0f, 0f, PanelW - 36f, Mathf.Max(contentH, gridInnerH));
+
+            _potionViewerScroll = GUI.BeginScrollView(viewportRect, _potionViewerScroll, contentRect,
+                                                       false, contentH > gridInnerH);
+
+            float innerGridX = gridX - panelRect.x - 10f;
+
+            for (int i = 0; i < run.potions.Count; i++)
+            {
+                var p = run.potions[i];
+                if (p == null) continue;
+
+                int col = i % Cols;
+                int row = i / Cols;
+                float cx = innerGridX + col * (CardW + ColGap);
+                float cy = row * (CardH + RowGap);
+                var cardRect = new Rect(cx, cy, CardW, CardH);
+
+                bool cardHov = cardRect.Contains(ev.mousePosition);
+                Color rarityCol = RelicRarityColor(p.rarity);
+                Color typeCol   = PotionTypeColor(p.potionType);
+
+                // 카드 배경
+                FillRect(cardRect, cardHov
+                    ? new Color(0.10f, 0.22f, 0.12f, 1f)
+                    : new Color(0.06f, 0.14f, 0.08f, 0.95f));
+
+                // 좌측 컬러 세로 바 (포션 타입 색)
+                FillRect(new Rect(cardRect.x, cardRect.y, 3f, cardRect.height), typeCol * new Color(1, 1, 1, 0.85f));
+
+                // 테두리
+                DrawBorder(cardRect, 1f, cardHov
+                    ? new Color(typeCol.r, typeCol.g, typeCol.b, 0.85f)
+                    : new Color(0.25f, 0.55f, 0.30f, 0.55f));
+
+                // 아이콘
+                float iconX = cardRect.x + Pad + 3f;
+                float iconY2 = cardRect.y + (CardH - BtnH - Pad - IconSz) * 0.5f + 4f;
+                float hoverIconScale = cardHov ? 1.12f : 1f;
+                float scaledIcon = IconSz * hoverIconScale;
+                var scaledIconRect = new Rect(iconX + (IconSz - scaledIcon) * 0.5f,
+                                              iconY2 + (IconSz - scaledIcon) * 0.5f,
+                                              scaledIcon, scaledIcon);
+                DrawIconGlow(scaledIconRect, typeCol, cardHov ? 1.3f : 0.7f);
+                var potionTex = GetPotionIcon(p.id);
+                if (potionTex != null)
+                    GUI.DrawTexture(scaledIconRect, potionTex, ScaleMode.ScaleToFit);
+                else
+                {
+                    FillRect(new Rect(iconX, iconY2, IconSz, IconSz),
+                             new Color(typeCol.r * 0.4f, typeCol.g * 0.4f, typeCol.b * 0.4f, 0.9f));
+                    DrawBorder(new Rect(iconX, iconY2, IconSz, IconSz), 1.5f, typeCol * new Color(1, 1, 1, 0.6f));
+                }
+
+                // 텍스트 영역
+                float textX = iconX + IconSz + Pad;
+                float textW = CardW - IconSz - Pad * 3f - 3f;
+
+                // 이름 (14px bold)
+                int prevNFS = _labelStyle.fontSize;
+                var prevNC = _labelStyle.normal.textColor;
+                FontStyle prevNStyle = _labelStyle.fontStyle;
+                _labelStyle.fontSize = 14;
+                _labelStyle.fontStyle = FontStyle.Bold;
+                _labelStyle.normal.textColor = cardHov ? Color.white : new Color(0.88f, 1.00f, 0.90f);
+                GUI.Label(new Rect(textX, cardRect.y + 10f, textW, 20f), p.nameKr ?? p.id, _labelStyle);
+                _labelStyle.fontSize = prevNFS;
+                _labelStyle.fontStyle = prevNStyle;
+                _labelStyle.normal.textColor = prevNC;
+
+                // 희귀도 뱃지
+                int prevRFS = _labelStyle.fontSize;
+                var prevRC = _labelStyle.normal.textColor;
+                _labelStyle.fontSize = 10;
+                _labelStyle.normal.textColor = rarityCol;
+                GUI.Label(new Rect(textX, cardRect.y + 28f, textW, 16f), RelicRarityLabel(p.rarity), _labelStyle);
+                _labelStyle.fontSize = prevRFS;
+                _labelStyle.normal.textColor = prevRC;
+
+                // 설명 (11px, wordWrap)
+                bool prevWrap = _labelStyle.wordWrap;
+                int prevDFS = _labelStyle.fontSize;
+                var prevDC = _labelStyle.normal.textColor;
+                _labelStyle.wordWrap = true;
+                _labelStyle.fontSize = 11;
+                _labelStyle.normal.textColor = new Color(0.72f, 0.88f, 0.74f);
+                float descH = CardH - BtnH - Pad * 2f - 50f;
+                GUI.Label(new Rect(textX, cardRect.y + 44f, textW, descH),
+                          p.description ?? "", _labelStyle);
+                _labelStyle.wordWrap = prevWrap;
+                _labelStyle.fontSize = prevDFS;
+                _labelStyle.normal.textColor = prevDC;
+
+                // [마시기] 버튼 — 카드 하단 전체 폭
+                float btnY = cardRect.yMax - BtnH - 6f;
+                var btnRect = new Rect(cardRect.x + 6f, btnY, CardW - 12f, BtnH);
+                bool btnHov = inBattle && btnRect.Contains(ev.mousePosition);
+                Color btnBg = !inBattle  ? new Color(0.12f, 0.18f, 0.13f, 0.70f)
+                            : btnHov     ? new Color(0.20f, 0.65f, 0.30f, 1f)
+                                         : new Color(0.10f, 0.40f, 0.18f, 0.90f);
+                Color btnBorder = !inBattle ? new Color(0.25f, 0.35f, 0.26f, 0.50f)
+                                : btnHov    ? new Color(0.55f, 1f, 0.65f, 1f)
+                                            : new Color(0.35f, 0.75f, 0.45f, 0.80f);
+                FillRect(btnRect, btnBg);
+                DrawBorder(btnRect, 1f, btnBorder);
+
+                int prevBFS = _centerStyle.fontSize;
+                var prevBCo = _centerStyle.normal.textColor;
+                _centerStyle.fontSize = 12;
+                bool needsTarget = inBattle && PotionEffects.RequiresTarget(p);
+                _centerStyle.normal.textColor = !inBattle  ? new Color(0.40f, 0.50f, 0.41f)
+                                               : btnHov     ? Color.white
+                                                            : new Color(0.75f, 1f, 0.80f);
+                string btnLabel = !inBattle ? "전투 중에만 사용" : (needsTarget ? "타겟 선택" : "마시기");
+                GUI.Label(btnRect, btnLabel, _centerStyle);
+                _centerStyle.fontSize = prevBFS;
+                _centerStyle.normal.textColor = prevBCo;
+
+                if (inBattle && btnHov && ev.type == EventType.MouseDown && ev.button == 0)
+                {
+                    ev.Use();
+                    _potionViewerOpen = false;
+                    int slotIdx = i;
+                    if (needsTarget)
+                    {
+                        _targetingPotionIndex = slotIdx;
+                    }
+                    else
+                    {
+                        _pending.Add(() => _battle.UsePotion(slotIdx, -1));
+                    }
+                }
+            }
+
+            GUI.EndScrollView();
+        }
+
+        // 8) 패널 밖 클릭 → 닫기 / ESC → 닫기
+        if (ev.type == EventType.MouseDown && ev.button == 0
+            && !panelRect.Contains(ev.mousePosition))
+        {
+            _potionViewerOpen = false;
+            ev.Use();
+        }
+        else if (ev.type == EventType.KeyDown && ev.keyCode == KeyCode.Escape)
+        {
+            _potionViewerOpen = false;
+            ev.Use();
+        }
+    }
+
+    private static Color PotionTypeColor(PotionType t)
+    {
+        return t switch
+        {
+            PotionType.ATTACK  => new Color(1.00f, 0.45f, 0.35f),
+            PotionType.DEFENSE => new Color(0.35f, 0.65f, 1.00f),
+            _                  => new Color(0.55f, 1.00f, 0.65f),  // UTILITY
+        };
     }
 
     // =========================================================

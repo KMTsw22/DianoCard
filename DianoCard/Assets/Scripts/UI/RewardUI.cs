@@ -147,6 +147,7 @@ public class RewardUI : MonoBehaviour
     private Texture2D _iconCard;
     private Texture2D _iconPotion;
     private Texture2D _iconRelic;
+    private readonly Dictionary<string, Texture2D> _itemIconCache = new();
 
     // Sprites (Card picker view) — 카드 본체는 BattleUI에 위임하므로 타이틀/스킵 자산만 보유
     private Texture2D _skipButtonTex;
@@ -335,12 +336,12 @@ public class RewardUI : MonoBehaviour
             string pLabel = run.PotionSlotFull
                 ? dm.GetUIString("reward.row.potion_full")
                 : dm.GetUIString("reward.row.potion", EnName(reward.potion.nameEn, reward.potion.nameKr));
-            DrawRewardRow(new Rect(rowX, y, rowW, rowH), _iconPotion, pLabel, RowKind.Potion);
+            DrawRewardRow(new Rect(rowX, y, rowW, rowH), GetItemIcon(reward.potion.id, true), pLabel, RowKind.Potion);
             y += rowH + rowGap;
         }
         if (!_relicDone && reward.relic != null)
         {
-            DrawRewardRow(new Rect(rowX, y, rowW, rowH), _iconRelic, dm.GetUIString("reward.row.relic", EnName(reward.relic.nameEn, reward.relic.nameKr)), RowKind.Relic);
+            DrawRewardRow(new Rect(rowX, y, rowW, rowH), GetItemIcon(reward.relic.id, false), dm.GetUIString("reward.row.relic", EnName(reward.relic.nameEn, reward.relic.nameKr)), RowKind.Relic);
             y += rowH + rowGap;
         }
 
@@ -367,6 +368,17 @@ public class RewardUI : MonoBehaviour
         {
             _pending.Add(() => OnContinuePressed(gsm, run, reward));
         }
+    }
+
+    private Texture2D GetItemIcon(string id, bool isPotion)
+    {
+        if (string.IsNullOrEmpty(id)) return isPotion ? _iconPotion : _iconRelic;
+        if (_itemIconCache.TryGetValue(id, out var cached)) return cached;
+        var folder = isPotion ? "PotionArt" : "RelicArt";
+        var tex = Resources.Load<Texture2D>($"InGame/{folder}/{id}");
+        if (tex == null) tex = isPotion ? _iconPotion : _iconRelic;
+        _itemIconCache[id] = tex;
+        return tex;
     }
 
     private void DrawRewardRow(Rect rect, Texture2D icon, string label, RowKind kind)

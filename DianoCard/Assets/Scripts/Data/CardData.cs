@@ -27,6 +27,9 @@ namespace DianoCard.Data
         public int chapter;
         // 필드 그릴 때 dinoSize에 곱하는 배율. SUMMON 카드만 의미 있음. CSV 비어있거나 0이면 1.0으로 처리.
         public float fieldScale;
+        // 공룡 고유 패시브. NONE이면 패시브 없음 (스펠/버프 카드 포함).
+        public DinoPassiveType passiveType;
+        public int passiveValue;
 
         // 활성언어 기준 본문/이름. 외부에서 c.description, c.name으로 읽으면 LocaleSettings 기준 폴백.
         public string description => LocaleSettings.Pick(descriptionKr, descriptionEn);
@@ -58,6 +61,8 @@ namespace DianoCard.Data
                 image = CSVUtil.GetString(row, "image"),
                 chapter = CSVUtil.GetInt(row, "chapter"),
                 fieldScale = CSVUtil.GetFloat(row, "field_scale", 1f),
+                passiveType = CSVUtil.GetEnum(row, "passive_type", DinoPassiveType.NONE),
+                passiveValue = CSVUtil.GetInt(row, "passive_value"),
             };
         }
 

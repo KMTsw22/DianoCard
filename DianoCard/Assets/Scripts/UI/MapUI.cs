@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DianoCard.Data;
 using DianoCard.Game;
 using UnityEngine;
 
@@ -76,41 +77,39 @@ public class MapUI : MonoBehaviour
     [Tooltip("층 라벨 색.")]
     [SerializeField] private Color scrollbarFloorLabelColor = new(0.92f, 0.85f, 0.70f, 1f);
 
-    [Header("Node Layout — 가로 퍼짐 폭 (양피지 영역에 맞춰 조정)")]
-    [Tooltip("노드 3개일 때 좌↔우 총 폭 (px). 높일수록 양옆으로 넓게 퍼짐. 화면 폭 1280, 범례 패널 고려 시 ~900까지 안전.")]
-    [SerializeField, Range(200f, 1100f)] private float nodeSpan3 = 640f;
-    [Tooltip("노드 4개일 때 좌↔우 총 폭 (px).")]
-    [SerializeField, Range(200f, 1100f)] private float nodeSpan4 = 780f;
-    [Tooltip("노드 5개일 때 좌↔우 총 폭 (px).")]
-    [SerializeField, Range(200f, 1100f)] private float nodeSpan5 = 900f;
-    [Tooltip("노드 가로 jitter 배율. 1=기본, 0=jitter 없음 (양피지 넘침 방지). 이웃 노드끼리 너무 가까워 보이면 이 값을 낮춰 컬럼 간격을 고르게.")]
-    [SerializeField, Range(0f, 1.5f)] private float nodeJitterXScale = 0.25f;
+    [Header("Node Layout — StS-style 7컬럼 격자 (양피지 영역에 맞춰 조정)")]
+    [Tooltip("7컬럼 좌↔우 총 폭 (px). 화면 폭 1280에서 양옆 패딩을 뺀 값 이하로 설정.")]
+    [SerializeField, Range(600f, 1200f)] private float gridSpan7 = 780f;
+
+    [Tooltip("노드 가로 jitter 배율. 1=기본, 0=jitter 없음 (컬럼 정렬 깔끔). 7컬럼은 간격이 좁아 기본값 작게.")]
+    [SerializeField, Range(0f, 1.5f)] private float nodeJitterXScale = 0.18f;
     [Tooltip("노드 세로 jitter 배율.")]
     [SerializeField, Range(0f, 1.5f)] private float nodeJitterYScale = 1f;
+
+    private const int MapWidth = 7;
 
     // =========================================================
     private const float RefW = 1280f;
     private const float RefH = 720f;
 
-    private const float NodeSize = 67.72f;
+    private const float NodeSize = 50f;
     private const float BossSize = 98.01f;
     private const float StartSize = 71.28f;
-    private const float HighlightPad = 20f;
+    private const float HighlightPad = 16f;
 
-    private const float RopeWidth = 6f;       // 얇게 — 시선이 노드에 가게
-    private const float RopeNodeInset = 4f;
-    private const float RopeAlpha = 0.55f;    // 살짝 흐리게
+    private const float RopeWidth = 6f;
+    private const float RopeNodeInset = 3f;
+    private const float RopeAlpha = 0.60f;
 
     // 스크롤 가능한 맵 컨텐츠 영역 (스크린 가상 좌표)
     // 화면 전체를 차지 — 상단 HUD / 하단 버튼은 그 위에 오버레이로 그린다
     private const float MapAreaY = 0f;
     private const float MapAreaH = RefH;
 
-    // 그룹 좌표계 기준 — floor 1이 그룹 하단 근처, 최상층이 그룹 상단 방향
-    // 층 간격을 넉넉히 잡아 노드가 시원하게 흩뿌려진 인상. 화면을 넘으면 휠로 스크롤.
+    // 층 간격 250px — 15층 맵이 화면을 넘어가므로 스크롤로 탐색.
     private const float Floor1Y = 500f;
     private const float FloorSpacing = 250f;
-    private const float StartDecoBaseY = 660f;  // start 데코를 1층보다 더 아래로 (gap ~160)
+    private const float StartDecoBaseY = 660f;  // floor 1 바로 아래
 
     // 층별 노드 수에 따른 컬럼 x 좌표를 GetColumnX로 계산. 중심은 항상 640.
     // 3개 → spacing 260, 4개 → 220, 5개 → 200 (화면 가장자리까지 여유 확보).
@@ -127,6 +126,22 @@ public class MapUI : MonoBehaviour
     // 세로 스크롤 (그룹 좌표계 안에서 컨텐츠를 +y 방향으로 밀어내는 양)
     private float _scrollY;
     private int _lastSnappedFloor = -1;
+
+    // 맵 입장 인트로 패닝 — 보스에서 시작지점까지 카메라가 내려오는 연출
+    private bool _introPlaying;
+    private float _introFrom;
+    private float _introTo;
+    private float _introStartTime;
+    private const float IntroDuration = 2.4f;
+
+    // 이전 프레임 GameState — Map 진입 감지용
+    private GameState _prevGuiState = (GameState)(-1);
+
+    // 인트로를 재생한 MapState — 같은 맵 재진입(전투 후 복귀 등)에서는 인트로 생략
+    private MapState _lastIntroMap;
+
+    // 시작 유물 선택 패널 — 시작 데코 클릭 시 열림, 유물 선택 후 닫힘.
+    private bool _starterRelicPanelOpen;
 
     // 미리보기: 미래 노드 클릭 시 현재 층 → 해당 노드까지의 가능 경로 강조
     private MapNode _previewTarget;
@@ -146,6 +161,7 @@ public class MapUI : MonoBehaviour
     private Texture2D _nodeStartTex;
     private Texture2D _ropeTex;
     private Texture2D _legendPanelTex;
+    private Texture2D _relicPickIcon;  // 유물 선택 패널 아이콘 (ShopUI/Relics 재활용)
 
     private GUIStyle _smallStyle;
     private GUIStyle _backButtonStyle;
@@ -187,6 +203,7 @@ public class MapUI : MonoBehaviour
         _nodeEventTex    = Resources.Load<Texture2D>("Map/Node_Event");
         _nodeMerchantTex = Resources.Load<Texture2D>("Map/Node_Merchant");
         _nodeStartTex    = Resources.Load<Texture2D>("Map/Node_Start_V2");
+        _relicPickIcon   = Resources.Load<Texture2D>("ShopUI/Relics");
 
         _ropeTex = Resources.Load<Texture2D>("Map/Rope");
         if (_ropeTex != null) _ropeTex.wrapMode = TextureWrapMode.Repeat;
@@ -362,13 +379,23 @@ public class MapUI : MonoBehaviour
     void OnGUI()
     {
         var gsm = GameStateManager.Instance;
-        if (gsm == null || gsm.State != GameState.Map) return;
+
+        // 상태를 매 프레임 추적 — Map 바깥에서도 갱신해야 재진입 시 인트로가 올바르게 트리거됨
+        GameState curState = gsm != null ? gsm.State : (GameState)(-1);
+        bool justEnteredMap = _prevGuiState != GameState.Map && curState == GameState.Map;
+        _prevGuiState = curState;
+
+        if (gsm == null || curState != GameState.Map) return;
         if (gsm.CurrentMap == null) return;
 
         if (!_assetsLoaded) LoadAssets();
         EnsureStyles();
 
         var map = gsm.CurrentMap;
+
+        // 맵 진입 감지 — 이전 상태가 Map이 아니었다가 Map이 된 첫 프레임에 인트로 시작
+        if (justEnteredMap)
+            TriggerIntroPan(map);
 
         // 1) 배경 맵 이미지 — 스크린 원본 좌표로 꽉 채움 (스크롤 영향 없음)
         GUI.matrix = Matrix4x4.identity;
@@ -384,6 +411,9 @@ public class MapUI : MonoBehaviour
         // 3) 현재 층이 바뀌면 보이는 영역 안으로 자동 정렬
         HandleScrollAutoSnap(map);
 
+        // 3.5) 인트로 패닝 업데이트 — AutoSnap 이후에 _scrollY 오버라이드
+        UpdateIntroPan();
+
         // 4) 휠 스크롤 입력
         HandleScrollInput(map);
 
@@ -392,6 +422,7 @@ public class MapUI : MonoBehaviour
         GUI.BeginGroup(new Rect(0f, MapAreaY, RefW, MapAreaH));
         DrawMapDecor();
         DrawRopes(map);
+        DrawStartDeco();
         DrawNodes(gsm);
         GUI.EndGroup();
 
@@ -404,9 +435,21 @@ public class MapUI : MonoBehaviour
         DrawBackButton(gsm);
         DrawScrollbar(map);
 
+        // 7) 시작 유물 선택 패널 — 시작 데코 클릭으로 열림. 모든 UI 위에 오버레이.
+        if (_starterRelicPanelOpen && !map.starterRelicChosen)
+            DrawStarterRelicPanel(gsm);
+
         // 덱 뷰어 오버레이 — 상단 덱 버튼 클릭 시 열림. 모든 UI 위에 그려져야 해서 맨 마지막.
         if (battleUI != null)
             battleUI.DrawDeckViewerOverlay(gsm);
+
+        // 유물 뷰어 오버레이 — 상단 유물 슬롯 클릭 시 열림.
+        if (battleUI != null)
+            battleUI.DrawRelicViewerOverlay(gsm);
+
+        // 포션 뷰어 오버레이 — 상단 포션 슬롯 클릭 시 열림.
+        if (battleUI != null)
+            battleUI.DrawPotionViewerOverlay(gsm);
     }
 
     private float GetFloorY(int floor)
@@ -422,7 +465,7 @@ public class MapUI : MonoBehaviour
     private void GetScrollBounds(int totalFloors, out float minScroll, out float maxScroll)
     {
         // 컨텐츠의 절대 위·아래 가장자리 (그룹 좌표계, _scrollY 미적용)
-        float contentTop = Floor1Y - (totalFloors - 1) * FloorSpacing - BossSize * 0.5f;
+        float contentTop = Floor1Y - totalFloors * FloorSpacing - BossSize * 0.5f;
         float contentBottom = StartDecoBaseY + StartSize * 0.5f;
 
         // contentBottom + scrollY <= MapAreaH - ScrollBottomPad  → 컨텐츠 하단이 그룹 안에 머무는 최소 스크롤
@@ -554,6 +597,8 @@ public class MapUI : MonoBehaviour
 
     private void HandleScrollInput(MapState map)
     {
+        if (_introPlaying) return; // 인트로 패닝 중에는 스크롤 입력 차단
+
         var ev = Event.current;
         if (ev.type != EventType.ScrollWheel) return;
 
@@ -562,6 +607,35 @@ public class MapUI : MonoBehaviour
         GetScrollBounds(map.totalFloors, out float lo, out float hi);
         _scrollY = Mathf.Clamp(_scrollY, lo, hi);
         ev.Use();
+    }
+
+    // 맵에 입장할 때 보스 위치(상단)에서 시작지점(하단)으로 카메라를 내리는 인트로 시작
+    private void TriggerIntroPan(MapState map)
+    {
+        if (map == null) return;
+        if (map == _lastIntroMap) return; // 같은 맵 재진입(전투 후 복귀 등) — 인트로 생략
+        _lastIntroMap = map;
+        GetScrollBounds(map.totalFloors, out float lo, out float hi);
+
+        _introFrom = hi; // 맵 최상단 = 보스가 보이는 위치
+        _introTo   = lo; // 맵 최하단 = 시작 노드가 보이는 끝
+
+        _scrollY = _introFrom;
+        _introStartTime = Time.time;
+        _introPlaying = true;
+
+        // AutoSnap이 인트로를 덮어쓰지 않도록 현재 층을 미리 기록
+        _lastSnappedFloor = map.currentFloor;
+    }
+
+    // 인트로 패닝 진행 — ease-out cubic으로 부드럽게 감속
+    private void UpdateIntroPan()
+    {
+        if (!_introPlaying) return;
+        float t = Mathf.Clamp01((Time.time - _introStartTime) / IntroDuration);
+        float eased = t * t; // ease-in quadratic — 처음엔 천천히, 점점 가속
+        _scrollY = Mathf.Lerp(_introFrom, _introTo, eased);
+        if (t >= 1f) _introPlaying = false;
     }
 
     private void HandleScrollAutoSnap(MapState map)
@@ -621,6 +695,7 @@ public class MapUI : MonoBehaviour
         (NodeKind.Boss,     "보스"),
         (NodeKind.Camp,     "휴식"),
         (NodeKind.Merchant, "상인"),
+        (NodeKind.Treasure, "보물"),
         (NodeKind.Unknown,  "미지"),
     };
 
@@ -706,13 +781,41 @@ public class MapUI : MonoBehaviour
 
     private void DrawStartDeco()
     {
-        // 바닥 중앙의 START 장식 (클릭 불가, 플레이어 시작 지점 표시)
         if (_nodeStartTex == null) return;
+        var map = GameStateManager.Instance?.CurrentMap;
+
+        float size = StartSize;
         var rect = new Rect(
-            StartDecoPos.x - StartSize / 2f,
-            StartDecoPos.y - StartSize / 2f,
-            StartSize, StartSize);
+            StartDecoPos.x - size * 0.5f,
+            StartDecoPos.y - size * 0.5f,
+            size, size);
+
+        var prev = GUI.color;
+
+        // 유물 미선택 상태 → 황금 박동 글로우 + 클릭 가능
+        bool needsRelic = map != null && !map.starterRelicChosen;
+        if (needsRelic)
+        {
+            float pulse = 0.7f + 0.3f * Mathf.Sin(Time.time * 3f);
+            float haloSize = size + 28f;
+            GUI.color = new Color(1f, 0.85f, 0.2f, 0.55f * pulse);
+            GUI.DrawTexture(new Rect(
+                StartDecoPos.x - haloSize * 0.5f,
+                StartDecoPos.y - haloSize * 0.5f,
+                haloSize, haloSize), _circleTexture);
+            GUI.color = prev;
+
+            bool hover = rect.Contains(Event.current.mousePosition);
+            if (hover && Event.current.type == EventType.MouseDown)
+            {
+                _starterRelicPanelOpen = true;
+                Event.current.Use();
+            }
+        }
+
+        GUI.color = needsRelic ? new Color(1f, 1f, 1f, 1f) : new Color(0.5f, 0.5f, 0.5f, 0.7f);
         GUI.DrawTexture(rect, _nodeStartTex, ScaleMode.ScaleToFit, alphaBlend: true);
+        GUI.color = prev;
     }
 
     private void DrawNodes(GameStateManager gsm)
@@ -726,88 +829,157 @@ public class MapUI : MonoBehaviour
     }
 
     // ---------------------------------------------------------
+    // 시작 유물 선택 패널 (스크린 좌표, 스크롤 무관)
+    // ---------------------------------------------------------
+
+    private void DrawStarterRelicPanel(GameStateManager gsm)
+    {
+        EnsureStyles();
+        var map = gsm.CurrentMap;
+        if (map == null || map.starterRelicCandidates.Count == 0) return;
+
+        const float PanelW = 780f;
+        const float PanelH = 180f;
+        const float CardW   = 220f;
+        const float CardH   = 140f;
+        const float Gap     = 20f;
+
+        float panelX = (RefW - PanelW) * 0.5f;
+        float panelY = RefH - PanelH - 50f;
+
+        // 반투명 배경
+        var prevColor = GUI.color;
+        GUI.color = new Color(0.05f, 0.02f, 0.1f, 0.88f);
+        GUI.DrawTexture(new Rect(panelX - 10f, panelY - 40f, PanelW + 20f, PanelH + 50f), Texture2D.whiteTexture);
+        GUI.color = prevColor;
+
+        // 제목
+        GUI.Label(new Rect(panelX, panelY - 32f, PanelW, 30f),
+            "시작 유물을 선택하세요",
+            new GUIStyle(GUI.skin.label)
+            {
+                fontSize = 18, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(1f, 0.88f, 0.55f) }
+            });
+
+        // 후보 카드 3개
+        float totalW = map.starterRelicCandidates.Count * CardW + (map.starterRelicCandidates.Count - 1) * Gap;
+        float startX = panelX + (PanelW - totalW) * 0.5f;
+
+        for (int i = 0; i < map.starterRelicCandidates.Count; i++)
+        {
+            var relic = DataManager.Instance.GetRelic(map.starterRelicCandidates[i]);
+            if (relic == null) continue;
+
+            float cx = startX + i * (CardW + Gap);
+            var cardRect = new Rect(cx, panelY, CardW, CardH);
+            bool hover = cardRect.Contains(Event.current.mousePosition);
+
+            // 카드 배경
+            GUI.color = hover ? new Color(0.9f, 0.8f, 0.3f, 0.85f) : new Color(0.2f, 0.15f, 0.35f, 0.85f);
+            GUI.DrawTexture(cardRect, Texture2D.whiteTexture);
+            GUI.color = prevColor;
+
+            // 아이콘 (ShopUI의 Relics.jpg 재활용)
+            if (_relicPickIcon != null)
+            {
+                float iconS = 48f;
+                GUI.DrawTexture(new Rect(cx + (CardW - iconS) * 0.5f, panelY + 8f, iconS, iconS),
+                    _relicPickIcon, ScaleMode.ScaleToFit);
+            }
+
+            // 이름
+            GUI.Label(new Rect(cx + 4f, panelY + 58f, CardW - 8f, 24f), relic.nameKr,
+                new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 13, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter,
+                    normal = { textColor = Color.white }
+                });
+
+            // 설명
+            GUI.Label(new Rect(cx + 4f, panelY + 80f, CardW - 8f, 48f), relic.description,
+                new GUIStyle(GUI.skin.label)
+                {
+                    fontSize = 11, wordWrap = true, alignment = TextAnchor.UpperCenter,
+                    normal = { textColor = new Color(0.85f, 0.85f, 0.85f) }
+                });
+
+            // 클릭
+            if (hover && Event.current.type == EventType.MouseDown)
+            {
+                gsm.PickStarterRelic(relic.id);
+                _starterRelicPanelOpen = false;
+                Event.current.Use();
+            }
+        }
+    }
+
+    // ---------------------------------------------------------
     // 로프 (노드 연결선)
     // ---------------------------------------------------------
 
-    // 현재 층에서 도달 가능한 컬럼 집합을 계산 — 직전 층의 클리어된 노드와 연결된 컬럼만.
-    // 시작 층(floor 0) 또는 직전 층에 클리어 노드가 없으면(엣지 케이스) 전체 허용(fail-open).
+    // 현재 층(cf)에서 클릭 가능한 컬럼 집합. cf==1이고 1층 cleared가 없으면 1층 전부가 시작 선택지.
+    // 그 외에는 직전 층(cf-1)에서 cleared된 노드의 nextColumns만 허용.
+    // starterRelicChosen이 false이면 1층 진입 자체를 막는다(유물 선택 강제).
     private void RecomputeReachableColumns(MapState map)
     {
         _reachableColumns.Clear();
         int cf = map.currentFloor;
-        var currentFloorNodes = map.NodesOnFloor(cf);
 
-        if (cf == 0)
+        // 유물 미선택 → 어떤 노드도 클릭 불가 (유물 패널로 유도).
+        if (!map.starterRelicChosen) return;
+
+        // cf=1 이고 아직 1층에서 어떤 노드도 클리어 안 함 → 1층 전체가 시작 선택지(StS의 "starting room" 행).
+        if (cf == 1)
         {
-            foreach (var n in currentFloorNodes) _reachableColumns.Add(n.column);
-            return;
+            bool anyCleared = false;
+            foreach (var n in map.NodesOnFloor(1)) if (n.cleared) { anyCleared = true; break; }
+            if (!anyCleared)
+            {
+                foreach (var n in map.NodesOnFloor(1)) _reachableColumns.Add(n.column);
+                return;
+            }
         }
 
-        // 직전 층의 클리어된 노드 찾기
-        MapNode fromNode = null;
+        // 일반 케이스: 직전 층의 cleared 노드들이 가리키는 nextColumns만 허용.
         foreach (var n in map.NodesOnFloor(cf - 1))
-            if (n.cleared) { fromNode = n; break; }
-
-        if (fromNode == null)
         {
-            // 데이터 이상 — 안전하게 전체 허용
-            foreach (var n in currentFloorNodes) _reachableColumns.Add(n.column);
-            return;
+            if (!n.cleared) continue;
+            foreach (var nextCol in n.nextColumns) _reachableColumns.Add(nextCol);
         }
 
-        var fromNodes = map.NodesOnFloor(cf - 1);
-        foreach (var (fc, tc) in GetFloorEdges(cf - 1, fromNodes, currentFloorNodes))
+        // fail-open: 데이터 이상으로 도달 가능 컬럼이 비면 현재 층 전체 허용.
+        if (_reachableColumns.Count == 0)
         {
-            if (fc == fromNode.column) _reachableColumns.Add(tc);
+            foreach (var n in map.NodesOnFloor(cf)) _reachableColumns.Add(n.column);
         }
     }
 
     private void DrawRopes(MapState map)
     {
-        for (int f = 0; f < map.totalFloors; f++)
-        {
-            var fromNodes = map.NodesOnFloor(f);
-            var toNodes = map.NodesOnFloor(f + 1);
-            foreach (var (fromCol, toCol) in GetFloorEdges(f, fromNodes, toNodes))
-            {
-                MapNode from = null, to = null;
-                foreach (var n in fromNodes) if (n.column == fromCol) { from = n; break; }
-                foreach (var n in toNodes)   if (n.column == toCol)   { to = n; break; }
-                if (from == null || to == null) continue;
+        // 시작 데코(floor 0 가상 위치) → 1층 모든 노드 fan-out 로프
+        var startPos = StartDecoPos;
+        foreach (var n1 in map.NodesOnFloor(1))
+            DrawRope(startPos, GetNodeCenter(n1, map));
 
-                bool highlighted = _previewEdges.Contains((f, fromCol, toCol));
-                DrawRope(GetNodeCenter(from, map), GetNodeCenter(to, map), highlighted);
+        // 1층 이상 노드들의 nextColumns를 따라 엣지를 그린다 (15→16 보스 fan-in 포함).
+        for (int f = 1; f < map.totalFloors + 1; f++)
+        {
+            foreach (var from in map.NodesOnFloor(f))
+            {
+                foreach (var toCol in from.nextColumns)
+                {
+                    var to = map.GetNode(f + 1, toCol);
+                    if (to == null) continue;
+                    bool highlighted = _previewEdges.Contains((f, from.column, toCol));
+                    DrawRope(GetNodeCenter(from, map), GetNodeCenter(to, map), highlighted);
+                }
             }
         }
     }
 
-    // 층 f → 층 f+1 사이에 실제로 그려지는 엣지 목록.
-    // floor 0 → 1 은 fan-out, pre-boss → boss 는 fan-in, 나머지는 ComputeFloorEdges.
-    private static IEnumerable<(int fromCol, int toCol)> GetFloorEdges(int fromFloor, List<MapNode> fromNodes, List<MapNode> toNodes)
-    {
-        if (fromNodes.Count == 0 || toNodes.Count == 0) yield break;
-
-        bool nextIsBoss = toNodes.Count == 1 && toNodes[0].kind == NodeKind.Boss;
-        if (nextIsBoss)
-        {
-            var bossCol = toNodes[0].column;
-            foreach (var from in fromNodes) yield return (from.column, bossCol);
-            yield break;
-        }
-
-        if (fromFloor == 0)
-        {
-            foreach (var from in fromNodes)
-                foreach (var to in toNodes)
-                    yield return (from.column, to.column);
-            yield break;
-        }
-
-        foreach (var e in ComputeFloorEdges(fromFloor, fromNodes.Count, toNodes.Count))
-            yield return e;
-    }
-
     // 미래 노드를 preview 대상으로 지정하고 현재 층에서 그 노드까지의 모든 가능 경로 엣지를 계산.
+    // 역방향 BFS — target에서 시작해 부모(in-edge가 자신을 가리키는 노드)로 거슬러 올라간다.
     private void SetPreviewTarget(MapState map, MapNode target)
     {
         _previewTarget = target;
@@ -815,96 +987,31 @@ public class MapUI : MonoBehaviour
         if (target == null) return;
         if (target.floor <= map.currentFloor) return;
 
-        // 역방향 도달 가능 컬럼 집합 — target.floor 에서 시작해 currentFloor 까지 내려오며 확장
         var reachable = new HashSet<int> { target.column };
-        for (int f = target.floor - 1; f >= map.currentFloor; f--)
+        for (int f = target.floor - 1; f >= Mathf.Max(map.currentFloor, 1); f--)
         {
-            var fromNodes = map.NodesOnFloor(f);
-            var toNodes = map.NodesOnFloor(f + 1);
-            var next = reachable;
+            var nextReachable = reachable;
             var cur = new HashSet<int>();
-            foreach (var (fromCol, toCol) in GetFloorEdges(f, fromNodes, toNodes))
+            foreach (var from in map.NodesOnFloor(f))
             {
-                if (!next.Contains(toCol)) continue;
-                cur.Add(fromCol);
-                _previewEdges.Add((f, fromCol, toCol));
+                foreach (var toCol in from.nextColumns)
+                {
+                    if (!nextReachable.Contains(toCol)) continue;
+                    cur.Add(from.column);
+                    _previewEdges.Add((f, from.column, toCol));
+                }
             }
             reachable = cur;
             if (reachable.Count == 0) break;
         }
+
+        // currentFloor == 0 일 때 1층 노드들로의 진입은 시작 데코에서 fan-out. preview 강조는 1층까지만.
     }
 
     private void ClearPreview()
     {
         _previewTarget = null;
         _previewEdges.Clear();
-    }
-
-    // 한 층(fromCount) → 다음 층(toCount) 사이 엣지를 교차 없이 계산.
-    // 두 번의 단조(monotone) 패스로 모든 from / to 노드가 최소 1개 엣지를 갖도록 보장:
-    //   1) 각 to-node는 비율상 가장 가까운 from-node로부터 하나 받는다.
-    //   2) 각 from-node는 비율상 가장 가까운 to-node로 하나 보낸다.
-    // 두 패스 모두 인덱스 순으로 단조 증가하므로 결합해도 선분이 교차하지 않음.
-    private static IEnumerable<(int fromCol, int toCol)> ComputeFloorEdges(int floor, int fromCount, int toCount)
-    {
-        var result = new List<(int, int)>(fromCount + toCount);
-        var seen = new HashSet<(int, int)>();
-
-        void Add(int a, int b)
-        {
-            if (seen.Add((a, b))) result.Add((a, b));
-        }
-
-        // to 커버 — 모든 to-node에 최소 1개 in-edge
-        for (int t = 0; t < toCount; t++)
-        {
-            int fi;
-            if (fromCount <= 1) fi = 0;
-            else if (toCount <= 1) fi = 0;
-            else
-            {
-                float pos = (float)t * (fromCount - 1) / (toCount - 1);
-                fi = Mathf.Clamp((int)Mathf.Floor(pos + 0.5f), 0, fromCount - 1);
-            }
-            Add(fi, t);
-        }
-
-        // from 커버 — 모든 from-node에 최소 1개 out-edge
-        for (int fi = 0; fi < fromCount; fi++)
-        {
-            int t;
-            if (toCount <= 1) t = 0;
-            else if (fromCount <= 1) t = 0;
-            else
-            {
-                float pos = (float)fi * (toCount - 1) / (fromCount - 1);
-                t = Mathf.Clamp((int)Mathf.Floor(pos + 0.5f), 0, toCount - 1);
-            }
-            Add(fi, t);
-        }
-
-        // 머지 포인트 — 인접한 두 from-node가 같은 to-node로 수렴해 Y자 합류 모양을 만든다.
-        // 긴 대각선(시각 지저분)은 차단: fi와 fi+1의 primary target이 정확히 1칸 차이일 때만 추가.
-        //   (fi, myPrimary) + (fi+1, myPrimary+1)  →  여기에 (fi, myPrimary+1) 추가 시 myPrimary+1 에서 합류.
-        // 단조성 유지되므로 교차 없음. 층별 해시로 ~50% 확률.
-        for (int fi = 0; fi < fromCount - 1; fi++)
-        {
-            uint h = (uint)(floor * 374761393) ^ (uint)((fi + 1) * 668265263);
-            h ^= h >> 13; h *= 0x85ebca6b; h ^= h >> 16;
-            if ((h & 1u) != 1u) continue;
-
-            int myPrimary = toCount <= 1 ? 0
-                : Mathf.Clamp((int)Mathf.Floor((float)fi * (toCount - 1) / Mathf.Max(1, fromCount - 1) + 0.5f), 0, toCount - 1);
-            int nextPrimary = toCount <= 1 ? 0
-                : Mathf.Clamp((int)Mathf.Floor((float)(fi + 1) * (toCount - 1) / Mathf.Max(1, fromCount - 1) + 0.5f), 0, toCount - 1);
-
-            // 1칸 차이일 때만 — 이웃 컬럼 합류만 허용, 큰 점프는 차단
-            if (nextPrimary - myPrimary != 1) continue;
-
-            Add(fi, nextPrimary); // fi → nextPrimary : fi+1의 타겟과 동일, 머지 포인트 생성
-        }
-
-        return result;
     }
 
     // 노드 사이를 작은 점들로 이은 dashed 트레일.
@@ -990,36 +1097,24 @@ public class MapUI : MonoBehaviour
     {
         float y = GetFloorY(node.floor);
         if (node.kind == NodeKind.Boss) return new Vector2(BossX, y);
-        if (node.floor == 0) return new Vector2(MapCenterX, y); // 시작 노드는 중앙 고정, jitter 없음
-        int count = NodeCountOnFloor(map, node.floor);
-        float cx = GetColumnX(count, node.column);
-        Vector2 jitter = NodeJitter(node.floor, node.column, count);
+        if (node.floor == 0) return new Vector2(MapCenterX, y); // 시작 데코는 중앙 고정 (실제 노드는 floor>=1)
+        float cx = GetColumnX(node.column);
+        Vector2 jitter = NodeJitter(node.floor, node.column);
         return new Vector2(cx + jitter.x * nodeJitterXScale, y + jitter.y * nodeJitterYScale);
     }
 
-    private static int NodeCountOnFloor(MapState map, int floor)
+    // 7컬럼 고정 격자 — column 0..6, 중심 = 640. 격자 폭은 gridSpan7로 조정.
+    private float GetColumnX(int column)
     {
-        int c = 0;
-        foreach (var n in map.nodes) if (n.floor == floor) c++;
-        return c;
-    }
-
-    // 층 노드 수(nodeCount)에 따라 컬럼 중심 x를 반환. 모든 층 중심은 640.
-    private float GetColumnX(int nodeCount, int column)
-    {
-        if (nodeCount <= 1) return MapCenterX;
-        float totalSpan = nodeCount == 3 ? nodeSpan3
-                        : nodeCount == 4 ? nodeSpan4
-                        : nodeSpan5;
-        float leftX = MapCenterX - totalSpan * 0.5f;
-        float spacing = totalSpan / (nodeCount - 1);
-        int idx = Mathf.Clamp(column, 0, nodeCount - 1);
+        float leftX = MapCenterX - gridSpan7 * 0.5f;
+        float spacing = gridSpan7 / (MapWidth - 1);
+        int idx = Mathf.Clamp(column, 0, MapWidth - 1);
         return leftX + idx * spacing;
     }
 
     // (floor, column) → 결정적 ±오프셋. 같은 노드는 항상 같은 위치 → 로프 끝점이 자동으로 일치.
-    // 층의 노드 수가 많아질수록 좌우 여유가 줄어들어 jitter 폭도 함께 줄인다.
-    private static Vector2 NodeJitter(int floor, int column, int nodeCount)
+    // 7컬럼 spacing(~180px)에 비해 jitter는 작게 잡아 컬럼이 명확히 구분되도록 한다.
+    private static Vector2 NodeJitter(int floor, int column)
     {
         unchecked
         {
@@ -1027,8 +1122,7 @@ public class MapUI : MonoBehaviour
             h ^= h >> 13; h *= 0x27d4eb2d; h ^= h >> 15;
             float fx = ((h & 0xFFFF) / 65535f - 0.5f) * 2f;          // -1..1
             float fy = (((h >> 16) & 0xFFFF) / 65535f - 0.5f) * 2f;  // -1..1
-            float jitterX = nodeCount <= 3 ? 75f : (nodeCount == 4 ? 58f : 46f);
-            return new Vector2(fx * jitterX, fy * 55f);
+            return new Vector2(fx * 28f, fy * 45f);
         }
     }
 
@@ -1184,6 +1278,7 @@ public class MapUI : MonoBehaviour
         NodeKind.Event    => _nodeEventTex,
         NodeKind.Unknown  => _nodeEventTex, // 전용 ? 아이콘이 추가될 때까진 Event 아이콘 재활용
         NodeKind.Merchant => _nodeMerchantTex,
+        NodeKind.Treasure => _nodeEventTex, // 전용 보물상자 아이콘 추가 전까진 Event 아이콘 재활용
         _ => null,
     };
 
@@ -1196,6 +1291,7 @@ public class MapUI : MonoBehaviour
         NodeKind.Event    => new Color(0.9f, 0.85f, 0.2f, 0.95f),
         NodeKind.Unknown  => new Color(0.9f, 0.85f, 0.2f, 0.95f),
         NodeKind.Merchant => new Color(0.25f, 0.45f, 0.75f, 0.95f),
+        NodeKind.Treasure => new Color(0.95f, 0.75f, 0.25f, 0.95f), // 황금
         _ => Color.gray,
     };
 
@@ -1209,6 +1305,7 @@ public class MapUI : MonoBehaviour
         NodeKind.Event    => new Color(0.80f, 0.40f, 1.00f), // 보라 (물음표)
         NodeKind.Unknown  => new Color(0.80f, 0.40f, 1.00f), // 보라 (물음표)
         NodeKind.Merchant => new Color(1.00f, 0.80f, 0.30f), // 금 (돈주머니)
+        NodeKind.Treasure => new Color(1.00f, 0.85f, 0.25f), // 황금 (보물상자)
         _ => Color.white,
     };
 

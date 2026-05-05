@@ -23,9 +23,11 @@ namespace DianoCard.Game
     /// <summary>
     /// 전역 게임 상태/플로우 관리 싱글톤.
     ///
-    /// 챕터 구성 (14 floor):
-    /// - Floor 1~13: 각 3~5개 노드, 타입은 node.csv weight 기반 랜덤 (밸런스 룰 적용)
-    /// - Floor 14: 보스 (1개 고정 노드)
+    /// 챕터 구성 (StS-style 7×15 + 보스):
+    /// - Floor 1~15: path-first random walk로 6개 경로를 그린 뒤 그 위에만 노드 배치
+    /// - Floor 16: 보스 (15층 모든 노드가 fan-in)
+    /// - 1층 = 전부 Combat / 9층 = Treasure / 15층 = Camp(Rest) 고정
+    /// - 그 외 층은 저승천 분포(Combat 53 / Elite 8 / Event 22 / Rest 12 / Shop 5)
     ///
     /// UI 컴포넌트(LobbyUI/MapUI/BattleUI/RewardUI/GameOverUI)는 같은 GameObject에
     /// 자동으로 attach되며, 각자 State에 따라 자기 OnGUI를 on/off함.
@@ -49,9 +51,14 @@ namespace DianoCard.Game
         // 이전 코드 호환용 — 리스트의 첫 적 (배경/보상 결정에 사용)
         public EnemyData PrimaryEnemy => CurrentEnemies.Count > 0 ? CurrentEnemies[0] : null;
 
-        // 층 구성: 시작층 제외, 1~13층 + 14층 보스
-        private const int BossFloor = 14;
-        private const int TotalFloors = 14;
+        // 맵 격자: StS와 동일. 1..15층은 일반 + 16층은 보스(별도 단일 노드).
+        // currentFloor=0 은 "아직 어떤 노드도 진입 안 함"이라는 의미로, 1층 노드들이 시작 선택지.
+        private const int MapWidth = 7;
+        private const int TotalFloors = 15;
+        private const int BossFloor = 16;
+        private const int PathCount = 6;
+        private const int TreasureFloor = 9;
+        private const int RestFloor = 15;
 
         void Awake()
         {
@@ -69,7 +76,7 @@ namespace DianoCard.Game
         void Start()
         {
             if (!DataManager.Instance.IsLoaded) DataManager.Instance.Load();
-            if (TechTree == null) TechTree = TechTreeState.Load();
+            if (TechTree == null) TechTree = new TechTreeState();
             State = GameState.Lobby;
         }
 
@@ -109,8 +116,9 @@ namespace DianoCard.Game
         /// <summary>현재 화면에서 테크트리 화면으로 진입. 복귀 시 원래 화면으로 돌아감.</summary>
         public void EnterTechTree()
         {
-            if (TechTree == null) TechTree = TechTreeState.Load();
+            if (TechTree == null) TechTree = new TechTreeState();
             if (State != GameState.TechTree) _stateBeforeTechTree = State;
+            TechTree.hasNewPoints = false;
             State = GameState.TechTree;
             Debug.Log($"[GSM] EnterTechTree (from {_stateBeforeTechTree})");
         }
@@ -132,7 +140,7 @@ namespace DianoCard.Game
             {
                 playerMaxHp = 70,
                 playerCurrentHp = 70,
-                gold = 0,
+                gold = 50,
                 deck = new List<CardData>(), // 캐릭터 확정 시 채움
                 relics = new List<RelicData>(),
                 potions = new List<PotionData>(),
@@ -160,6 +168,41 @@ namespace DianoCard.Game
             CurrentRun.deck = BuildStarterDeck(CurrentRun.characterId);
             CurrentMap = GenerateMap(CurrentRun.chapterId);
             State = GameState.Map;
+        }
+
+        /// <summary>
+        /// 캐릭터 확정 직후 호출 — relic.csv에서 source=START 인 유물을 자동 획득.
+        /// archetype_lock이 있으면 캐릭터 archetype과 일치할 때만 부여.
+        /// 효과는 RelicEffects.OnAcquired가 영구 스탯에 반영.
+        /// </summary>
+        private static void GrantStartingRelics(RunState run)
+        {
+            var dm = DianoCard.Data.DataManager.Instance;
+            if (dm == null) return;
+
+            // 캐릭터 archetype 조회 — 없으면 모든 archetype-lock 무시.
+            string archetype = null;
+            if (!string.IsNullOrEmpty(run.characterId))
+            {
+                var character = dm.GetCharacter(run.characterId);
+                if (character != null) archetype = character.archetype;
+            }
+
+            foreach (var kv in dm.Relics)
+            {
+                var relic = kv.Value;
+                if (relic == null) continue;
+                if (relic.source != DianoCard.Data.RelicSource.START) continue;
+                if (!string.IsNullOrEmpty(relic.archetypeLock)
+                    && !string.IsNullOrEmpty(archetype)
+                    && !relic.archetypeLock.Equals(archetype, System.StringComparison.OrdinalIgnoreCase))
+                {
+                    continue; // archetype 불일치 → 해당 캐릭터는 받지 않음
+                }
+                if (run.relics.Contains(relic)) continue;
+                run.relics.Add(relic);
+                RelicEffects.OnAcquired(run, relic);
+            }
         }
 
         // 캐릭터 archetype별 시작 덱 구성.
@@ -221,10 +264,18 @@ namespace DianoCard.Game
         // Map 생성
         // =========================================================
 
+        // ---------------------------------------------------------
+        // StS-style 맵 생성
+        // ---------------------------------------------------------
+        // 1. 7×15 격자에 6개의 random-walk 경로를 그린다 (좌/직/우 step, 교차 금지, 첫 두 경로는 시작 x 중복 금지).
+        // 2. 경로가 지나간 (floor, column)만 노드로 남기고, 각 노드는 다음 층으로 가는 out-edge(nextColumns)를 갖는다.
+        // 3. 16층 보스 단일 노드를 추가, 15층 모든 노드는 보스로 fan-in.
+        // 4. 1층=전부 Combat, 9층=Treasure, 15층=Camp(Rest), 16층=Boss로 고정.
+        //    그 외 층은 저승천 분포(53/8/22/12/5)로 굴리고 인접/시블링/층 제약을 검증.
+        // 5. Combat/Elite 노드에 적 ID 채우기.
         private MapState GenerateMap(string chapterId)
         {
-            // 시작층(floor 0)부터 — 첫 전투는 약한 일반 적 1마리
-            var map = new MapState { currentFloor = 0, totalFloors = TotalFloors };
+            var map = new MapState { currentFloor = 1, totalFloors = TotalFloors };
 
             var chapter = DataManager.Instance.GetChapter(chapterId);
             if (chapter == null)
@@ -233,155 +284,303 @@ namespace DianoCard.Game
                 return map;
             }
 
-            // Floor 0: 시작 전투 — 단일 노드, 중앙, 일반 적 1마리
-            map.nodes.Add(new MapNode
-            {
-                floor = 0,
-                column = 1,
-                kind = NodeKind.Combat,
-                enemyIds = PickN(chapter.normalEnemyPool, 1),
-            });
-
-            // 층별 노드 타입을 node.csv 기반 가중치 랜덤으로 결정.
-            // 같은 층 안에서 3~5개의 서로 다른 타입이 섞이게 되어 경로 선택에 의미가 생긴다.
-            var nodeTable = new List<NodeData>(DataManager.Instance.Nodes.Values);
-
-            for (int floor = 1; floor <= TotalFloors; floor++)
-            {
-                if (floor == BossFloor)
-                {
-                    map.nodes.Add(new MapNode
-                    {
-                        floor = floor,
-                        column = 1, // 중앙
-                        kind = NodeKind.Boss,
-                        enemyIds = new List<string> { chapter.bossId },
-                    });
-                    continue;
-                }
-
-                int nodeCount = Random.Range(3, 6);
-                var floorKinds = PickFloorNodeKinds(nodeTable, floor, nodeCount);
-
-                // 일반 적 수: 층이 올라갈수록 증가. 첫 전투(층 1)는 무조건 1마리.
-                int normalCount = NormalEnemyCountForFloor(floor);
-
-                for (int col = 0; col < nodeCount; col++)
-                {
-                    NodeKind kind = floorKinds[col];
-                    List<string> enemyIds = kind switch
-                    {
-                        // 쌍둥이류 엘리트는 2체로 등장해야 하므로 ExpandTwinElites로 확장
-                        NodeKind.Elite  => ExpandTwinElites(PickN(chapter.eliteEnemyPool, 1)),
-                        NodeKind.Combat => PickN(chapter.normalEnemyPool, normalCount),
-                        _ => new List<string>(), // 비전투 노드(Camp/Event/Merchant)는 적 없음
-                    };
-
-                    map.nodes.Add(new MapNode
-                    {
-                        floor = floor,
-                        column = col,
-                        kind = kind,
-                        enemyIds = enemyIds,
-                    });
-                }
-            }
-
+            var paths = GeneratePaths();
+            BuildNodesFromPaths(map, paths);
+            AddBossNode(map, chapter);
+            AssignRoomTypes(map);
+            FillEnemyIds(map, chapter);
+            PickStarterRelicCandidates(map);
             return map;
         }
 
-        // 한 층의 노드 타입 배열을 결정. node.csv의 weight/min_floor/max_floor를 존중하며
-        // 밸런스 규칙을 적용:
-        //  - Floor 1: 전원 일반 전투(첫인상 단순하게)
-        //  - 진행을 보장하기 위해 최소 1개는 NORMAL_BATTLE
-        //  - 엘리트/상인/마을/보물은 한 층에 각각 최대 1개
-        //  - TREASURE/UNKNOWN은 전용 아이콘이 없어 Event로 접힘 (MVP)
-        private List<NodeKind> PickFloorNodeKinds(List<NodeData> nodeTable, int floor, int count)
+        // 6개 경로의 column 시퀀스(길이 TotalFloors). path[y]는 floor=y+1에서의 column.
+        // 첫 두 경로는 1층 시작 column이 서로 달라야 한다(StS 규칙: 시작 선택지 ≥ 2).
+        // 같은 (y → y+1) 구간에서 두 경로가 서로 자리를 바꾸는 식의 교차는 금지.
+        private static List<int[]> GeneratePaths()
         {
-            var result = new List<NodeKind>(count);
+            var paths = new List<int[]>(PathCount);
+            var startingXs = new HashSet<int>();
+            // 같은 fromFloor의 기존 엣지들을 모아두고, 새 후보가 어떤 기존 엣지와도 교차하지 않는지 검사.
+            var edgesByFloor = new Dictionary<int, List<(int fromX, int toX)>>();
 
-            if (floor == 1)
+            for (int p = 0; p < PathCount; p++)
             {
-                for (int i = 0; i < count; i++) result.Add(NodeKind.Combat);
-                return result;
-            }
+                var path = new int[TotalFloors];
 
-            // 해당 층에서 뽑을 수 있는 후보 (보스/시작 제외)
-            var candidates = new List<NodeData>();
-            foreach (var nd in nodeTable)
-            {
-                if (nd.nodeType == NodeType.BOSS || nd.nodeType == NodeType.START) continue;
-                if (floor < nd.minFloor || floor > nd.maxFloor) continue;
-                if (nd.weight <= 0) continue;
-                candidates.Add(nd);
-            }
-
-            // 한 층당 단독 타입 카운트 (Elite/Shop/Town/Treasure은 최대 1개씩)
-            var usedOnce = new Dictionary<NodeType, int>();
-            int Cap(NodeType t) => t switch
-            {
-                NodeType.ELITE_BATTLE => 1,
-                NodeType.SHOP         => 1,
-                NodeType.TOWN         => 1,
-                NodeType.TREASURE     => 1,
-                _ => int.MaxValue,
-            };
-
-            for (int i = 0; i < count; i++)
-            {
-                // 캡을 초과한 타입 제외
-                int totalWeight = 0;
-                foreach (var c in candidates)
+                int startX;
+                if (p < 2)
                 {
-                    usedOnce.TryGetValue(c.nodeType, out int used);
-                    if (used >= Cap(c.nodeType)) continue;
-                    totalWeight += c.weight;
-                }
-
-                NodeType picked;
-                if (totalWeight <= 0)
-                {
-                    picked = NodeType.NORMAL_BATTLE;
+                    int guard = 0;
+                    do { startX = Random.Range(0, MapWidth); }
+                    while (startingXs.Contains(startX) && ++guard < 64);
                 }
                 else
                 {
-                    int roll = Random.Range(0, totalWeight);
-                    picked = NodeType.NORMAL_BATTLE;
-                    foreach (var c in candidates)
+                    startX = Random.Range(0, MapWidth);
+                }
+                startingXs.Add(startX);
+                path[0] = startX;
+
+                int x = startX;
+                for (int y = 0; y < TotalFloors - 1; y++)
+                {
+                    var candidates = new List<int>(3);
+                    int cm = Mathf.Clamp(x - 1, 0, MapWidth - 1);
+                    int cz = x;
+                    int cp = Mathf.Clamp(x + 1, 0, MapWidth - 1);
+                    candidates.Add(cm);
+                    if (cz != cm) candidates.Add(cz);
+                    if (cp != cz && cp != cm) candidates.Add(cp);
+                    ShuffleInPlace(candidates);
+
+                    int chosen = -1;
+                    foreach (var nx in candidates)
                     {
-                        usedOnce.TryGetValue(c.nodeType, out int used);
-                        if (used >= Cap(c.nodeType)) continue;
-                        if (roll < c.weight) { picked = c.nodeType; break; }
-                        roll -= c.weight;
+                        if (WouldCross(edgesByFloor, y, x, nx)) continue;
+                        chosen = nx;
+                        break;
                     }
+                    if (chosen < 0) chosen = x; // 모두 교차 시 수직 fallback — (x,x)는 어떤 valid 엣지와도 교차하지 않음
+
+                    if (!edgesByFloor.TryGetValue(y, out var list))
+                    {
+                        list = new List<(int, int)>();
+                        edgesByFloor[y] = list;
+                    }
+                    list.Add((x, chosen));
+
+                    path[y + 1] = chosen;
+                    x = chosen;
                 }
 
-                usedOnce.TryGetValue(picked, out int prev);
-                usedOnce[picked] = prev + 1;
-                result.Add(CsvTypeToKind(picked));
+                paths.Add(path);
             }
 
-            // 진행 보장: 전투/엘리트가 하나도 없으면 첫 칸을 NORMAL_BATTLE로 교체
-            bool hasBattle = false;
-            foreach (var k in result) if (k == NodeKind.Combat || k == NodeKind.Elite) { hasBattle = true; break; }
-            if (!hasBattle) result[0] = NodeKind.Combat;
-
-            return result;
+            return paths;
         }
 
-        // EVENT / TREASURE 도 UNKNOWN과 함께 모두 미지의 노드(Unknown)로 접힘.
-        // 이벤트 시스템과 보물 노드 전용 UI가 추가되면 다시 분리.
-        private static NodeKind CsvTypeToKind(NodeType t) => t switch
+        // 같은 층 사이(y → y+1)에서 두 경로가 X자로 교차하는지 판정.
+        // 한 경로는 왼→오른쪽으로, 다른 경로는 오른→왼쪽으로 가며 자리를 바꾸는 케이스만 막으면 충분.
+        private static bool WouldCross(Dictionary<int, List<(int fromX, int toX)>> edgesByFloor, int fromFloor, int a1, int a2)
         {
-            NodeType.NORMAL_BATTLE => NodeKind.Combat,
-            NodeType.ELITE_BATTLE  => NodeKind.Elite,
-            NodeType.SHOP          => NodeKind.Merchant,
-            NodeType.TOWN          => NodeKind.Camp,
-            NodeType.EVENT         => NodeKind.Unknown,
-            NodeType.UNKNOWN       => NodeKind.Unknown,
-            NodeType.TREASURE      => NodeKind.Unknown,
-            _ => NodeKind.Combat,
-        };
+            if (!edgesByFloor.TryGetValue(fromFloor, out var list)) return false;
+            foreach (var (b1, b2) in list)
+            {
+                if (a1 < b1 && a2 > b2) return true;
+                if (a1 > b1 && a2 < b2) return true;
+            }
+            return false;
+        }
+
+        private static void ShuffleInPlace<T>(IList<T> list)
+        {
+            for (int i = list.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                (list[i], list[j]) = (list[j], list[i]);
+            }
+        }
+
+        // path 시퀀스들을 dedupe하여 노드 그래프로 변환. 같은 (floor, column)이 여러 경로에 등장하면
+        // 한 노드를 공유하고, out-edge(nextColumns)는 합집합으로 누적된다.
+        private static void BuildNodesFromPaths(MapState map, List<int[]> paths)
+        {
+            var nodeByPos = new Dictionary<(int floor, int column), MapNode>();
+
+            foreach (var path in paths)
+            {
+                for (int y = 0; y < path.Length; y++)
+                {
+                    int floor = y + 1;
+                    int col = path[y];
+                    var key = (floor, col);
+                    if (!nodeByPos.TryGetValue(key, out var node))
+                    {
+                        node = new MapNode { floor = floor, column = col };
+                        nodeByPos[key] = node;
+                        map.nodes.Add(node);
+                    }
+                    if (y + 1 < path.Length)
+                    {
+                        int nextCol = path[y + 1];
+                        if (!node.nextColumns.Contains(nextCol)) node.nextColumns.Add(nextCol);
+                    }
+                }
+            }
+        }
+
+        // 16층(BossFloor)에 단일 보스 노드를 추가하고, 15층의 모든 노드가 보스로 fan-in 되도록 nextColumns를 강제 정렬.
+        private static void AddBossNode(MapState map, ChapterData chapter)
+        {
+            int bossCol = MapWidth / 2; // 7 cols → 중앙 = 3
+            var boss = new MapNode
+            {
+                floor = BossFloor,
+                column = bossCol,
+                kind = NodeKind.Boss,
+                enemyIds = new List<string> { chapter.bossId },
+            };
+            map.nodes.Add(boss);
+
+            foreach (var n in map.NodesOnFloor(TotalFloors))
+            {
+                n.nextColumns.Clear();
+                n.nextColumns.Add(bossCol);
+            }
+        }
+
+        // 노드 종류 결정. 고정층(1/9/15)은 먼저 박고, 나머지는 위에서 아래로 굴리며 인접 제약 통과까지 reroll.
+        private static void AssignRoomTypes(MapState map)
+        {
+            var assigned = new HashSet<MapNode>();
+            var unassigned = new List<MapNode>();
+
+            foreach (var n in map.nodes)
+            {
+                if (n.kind == NodeKind.Boss) { assigned.Add(n); continue; }
+                if (n.floor == 1)             { n.kind = NodeKind.Combat;   assigned.Add(n); }
+                else if (n.floor == TreasureFloor) { n.kind = NodeKind.Treasure; assigned.Add(n); }
+                else if (n.floor == RestFloor)     { n.kind = NodeKind.Camp;     assigned.Add(n); }
+                else unassigned.Add(n);
+            }
+
+            // 부모(in-edge) 룩업 — 같은 부모의 형제 검사를 위해서도 사용.
+            var parentsOf = new Dictionary<MapNode, List<MapNode>>();
+            foreach (var n in map.nodes)
+            {
+                foreach (var nextCol in n.nextColumns)
+                {
+                    var child = map.GetNode(n.floor + 1, nextCol);
+                    if (child == null) continue;
+                    if (!parentsOf.TryGetValue(child, out var list))
+                    {
+                        list = new List<MapNode>();
+                        parentsOf[child] = list;
+                    }
+                    list.Add(n);
+                }
+            }
+
+            // 위→아래로 처리해야 부모는 항상 먼저 배정되어 인접 제약 검사가 의미를 갖는다.
+            unassigned.Sort((a, b) => a.floor.CompareTo(b.floor));
+
+            const int MaxAttempts = 32;
+            foreach (var n in unassigned)
+            {
+                NodeKind picked = NodeKind.Combat;
+                bool ok = false;
+                for (int i = 0; i < MaxAttempts; i++)
+                {
+                    picked = RollRoomType();
+                    if (IsValidRoomType(map, n, picked, parentsOf, assigned)) { ok = true; break; }
+                }
+                n.kind = ok ? picked : NodeKind.Combat; // 다 실패하면 안전하게 일반 전투
+                assigned.Add(n);
+            }
+        }
+
+        // 저승천 분포: Combat 53 / Elite 8 / Event(=Unknown) 22 / Rest 12 / Shop 5.
+        // (StS Steam 가이드 기준. 고승천에서는 Elite 16 / Combat 45로 조정.)
+        private static NodeKind RollRoomType()
+        {
+            int r = Random.Range(0, 100);
+            if (r < 53) return NodeKind.Combat;
+            if (r < 61) return NodeKind.Elite;
+            if (r < 83) return NodeKind.Unknown; // EVENT 슬롯 — UI 추가 전까진 Unknown으로 표기
+            if (r < 95) return NodeKind.Camp;    // REST
+            return NodeKind.Merchant;             // SHOP
+        }
+
+        private static bool IsValidRoomType(MapState map, MapNode node, NodeKind kind,
+            Dictionary<MapNode, List<MapNode>> parentsOf, HashSet<MapNode> assigned)
+        {
+            // Elite/Rest는 6층 미만(1~5층)에 배치 불가.
+            if ((kind == NodeKind.Elite || kind == NodeKind.Camp) && node.floor < 6) return false;
+            // Rest는 14층 금지(15층이 어차피 Rest 고정 → 연속 Rest 방지).
+            if (kind == NodeKind.Camp && node.floor == 14) return false;
+
+            // 같은 특수 타입(Elite/Merchant/Camp) 직접 연결 금지 — 부모 중 동일 타입이 있으면 reject.
+            if (kind == NodeKind.Elite || kind == NodeKind.Merchant || kind == NodeKind.Camp)
+            {
+                if (parentsOf.TryGetValue(node, out var parents))
+                {
+                    foreach (var p in parents)
+                    {
+                        if (p.kind == kind) return false;
+                    }
+                }
+            }
+
+            // 한 부모의 자식들은 서로 다른 타입이어야 함(이미 배정된 형제만 검사 — 미배정 형제는 나중에 이 노드를 보게 됨).
+            if (parentsOf.TryGetValue(node, out var parents2))
+            {
+                foreach (var p in parents2)
+                {
+                    foreach (var siblingCol in p.nextColumns)
+                    {
+                        if (siblingCol == node.column) continue;
+                        var sibling = map.GetNode(node.floor, siblingCol);
+                        if (sibling == null) continue;
+                        if (!assigned.Contains(sibling)) continue;
+                        if (sibling.kind == kind) return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private void FillEnemyIds(MapState map, ChapterData chapter)
+        {
+            foreach (var n in map.nodes)
+            {
+                if (n.kind == NodeKind.Combat)
+                {
+                    int normalCount = NormalEnemyCountForFloor(n.floor);
+                    n.enemyIds = PickN(chapter.normalEnemyPool, normalCount);
+                }
+                else if (n.kind == NodeKind.Elite)
+                {
+                    n.enemyIds = ExpandTwinElites(PickN(chapter.eliteEnemyPool, 1));
+                }
+                // Boss는 AddBossNode에서 설정. 그 외 비전투(Camp/Treasure/Merchant/Unknown)는 enemyIds 비움.
+            }
+        }
+
+        // 맵 생성 시 시작 유물 후보 3개를 확정. START source 유물 우선, 없으면 COMMON 풀 전체.
+        private void PickStarterRelicCandidates(MapState map)
+        {
+            var pool = new List<RelicData>();
+            foreach (var r in DataManager.Instance.Relics.Values)
+            {
+                if (r.source == RelicSource.START) pool.Add(r);
+            }
+            if (pool.Count < 3)
+            {
+                // START 유물이 부족하면 COMMON도 포함
+                foreach (var r in DataManager.Instance.Relics.Values)
+                {
+                    if (r.source != RelicSource.START && r.rarity == Rarity.COMMON) pool.Add(r);
+                }
+            }
+            ShuffleInPlace(pool);
+            for (int i = 0; i < Mathf.Min(3, pool.Count); i++)
+                map.starterRelicCandidates.Add(pool[i].id);
+        }
+
+        // 플레이어가 시작 유물을 선택했을 때 MapUI에서 호출.
+        public void PickStarterRelic(string relicId)
+        {
+            if (CurrentMap == null || CurrentRun == null) return;
+            var relic = DataManager.Instance.GetRelic(relicId);
+            if (relic != null)
+            {
+                CurrentRun.relics.Add(relic);
+                RelicEffects.OnAcquired(CurrentRun, relic);
+                Debug.Log($"[GSM] StarterRelic picked: {relic.nameKr}");
+            }
+            CurrentMap.starterRelicChosen = true;
+        }
 
         // 쌍둥이류 엘리트 — 한 ID로 2체가 동시 등장해야 하는 적.
         // ON_PARTNER_DEATH 격노 메커니즘은 같은 patternSetId 인스턴스가 2개 이상일 때만 의미가 있다.
@@ -454,6 +653,24 @@ namespace DianoCard.Game
             }
             if (node.cleared) { Debug.LogWarning("[GSM] Node already cleared"); return; }
 
+            // 유물 NODE_ENTER 트리거 (R017 고고학자의 일지: GOLD +5).
+            // 검증 통과 후·노드별 분기 전에 한 번만 발화.
+            RelicEffects.OnNodeEnter(CurrentRun);
+
+            // === 노드 종류별 분기 ===
+            DispatchNodeKind(node);
+        }
+
+        // SelectMapNode 본문을 두 단계로 쪼갬 — 검증/유물훅과 분기 처리를 분리.
+        private void DispatchNodeKind(MapNode node)
+        {
+            if (node.floor != CurrentMap.currentFloor)
+            {
+                Debug.LogWarning($"[GSM] Wrong floor: node.floor={node.floor}, current={CurrentMap.currentFloor}");
+                return;
+            }
+            if (node.cleared) { Debug.LogWarning("[GSM] Node already cleared"); return; }
+
             // 상인 노드 — Shop 상태로 진입, 재고 생성.
             // 노드 clear 처리는 상점을 빠져나올 때 ExitShop에서 한다.
             if (node.kind == NodeKind.Merchant)
@@ -484,6 +701,19 @@ namespace DianoCard.Game
             if (node.kind == NodeKind.Unknown)
             {
                 ResolveUnknownAndDispatch(node);
+                return;
+            }
+
+            // 보물 노드(9층 고정) — 확정 유물 보상. ProceedAfterReward에서 cleared/Advance 처리.
+            if (node.kind == NodeKind.Treasure)
+            {
+                CurrentMap.currentColumn = node.column;
+                CurrentRun.currentFloor = node.floor;
+                var reward = RewardGenerator.GenerateTreasureChest(CurrentRun);
+                CurrentRun.pendingReward = reward;
+                CurrentRun.gold += reward.gold;
+                State = GameState.Reward;
+                Debug.Log($"[GSM] Treasure F{node.floor} C{node.column} relic={(reward.relic != null ? reward.relic.id : "none")} gold={reward.gold}");
                 return;
             }
 
@@ -653,6 +883,10 @@ namespace DianoCard.Game
 
             if (won)
             {
+                // 유물 BATTLE_END 트리거 — R012 태초의 알 등이 일시 카드를 RunState에 추가.
+                // 보상 화면 전에 호출해서 다음 전투 시작 시 시작 덱에 자동 합류되도록 한다.
+                RelicEffects.OnBattleEnd(CurrentRun, true);
+
                 // 테크 포인트 — 전투 클리어 시 노드 등급별 지급. 일반 +1 / 엘리트 +2 / 보스 +3.
                 // 비전투(상점/휴식/이벤트)는 EndBattle을 거치지 않으므로 0 유지.
                 if (TechTree != null && CurrentMap != null)
@@ -774,6 +1008,7 @@ namespace DianoCard.Game
             if (relic != null && CurrentRun != null && !CurrentRun.relics.Contains(relic))
             {
                 CurrentRun.relics.Add(relic);
+                RelicEffects.OnAcquired(CurrentRun, relic);
             }
         }
 
@@ -840,6 +1075,7 @@ namespace DianoCard.Game
             if (CurrentRun.relics.Contains(entry.relic)) return false;
             CurrentRun.gold -= entry.price;
             CurrentRun.relics.Add(entry.relic);
+            RelicEffects.OnAcquired(CurrentRun, entry.relic);
             entry.sold = true;
             return true;
         }
@@ -1118,7 +1354,7 @@ namespace DianoCard.Game
             EnsureCheatStarterDeck();
 
             // 맵이 없거나 현재 층에 노드가 비면 즉석 미니 맵 — 결과 dispatch만 검증.
-            // 보스층(14)에 배치해 두면 결과 처리 후 AdvanceToNextFloorOrVictory가 Victory로 빠진다.
+            // 보스층(BossFloor=16)에 배치해 두면 결과 처리 후 AdvanceToNextFloorOrVictory가 Victory로 빠진다.
             if (CurrentMap == null || CurrentMap.NodesOnFloor(CurrentMap.currentFloor).Count == 0)
             {
                 CurrentMap = new MapState { currentFloor = BossFloor, totalFloors = TotalFloors };

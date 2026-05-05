@@ -40,6 +40,8 @@ public class ShopUI : MonoBehaviour
     private Texture2D _potionIcon;       // Potion.jpg — 파란 포션 (default)
     private Texture2D _relicIcon;        // Relics.jpg — 그린 포션 (default 유물)
     private Texture2D _removeCardIcon;   // Remove_card.jpg — 카드 'C' 아이콘
+    private readonly Dictionary<string, Texture2D> _relicIconCache = new();
+    private readonly Dictionary<string, Texture2D> _potionIconCache = new();
 
     // ========== Stage 1: Intro ==========
     [Header("Stage 1 — 책상 클릭 영역 (Shop_first 위)")]
@@ -820,6 +822,26 @@ public class ShopUI : MonoBehaviour
         _ => new Vector2(relic0PriceX, relic0PriceY),
     };
 
+    private Texture2D GetRelicIconTex(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return _relicIcon;
+        if (_relicIconCache.TryGetValue(id, out var cached)) return cached;
+        var tex = Resources.Load<Texture2D>($"InGame/RelicArt/{id}");
+        if (tex == null) tex = _relicIcon;
+        _relicIconCache[id] = tex;
+        return tex;
+    }
+
+    private Texture2D GetPotionIconTex(string id)
+    {
+        if (string.IsNullOrEmpty(id)) return _potionIcon;
+        if (_potionIconCache.TryGetValue(id, out var cached)) return cached;
+        var tex = Resources.Load<Texture2D>($"InGame/PotionArt/{id}");
+        if (tex == null) tex = _potionIcon;
+        _potionIconCache[id] = tex;
+        return tex;
+    }
+
     private void DrawPotionsSection(ShopState shop, RunState run)
     {
         const int SLOTS = 3;
@@ -858,7 +880,7 @@ public class ShopUI : MonoBehaviour
             bool plaqueHover = purchasable && priceRect.Contains(Event.current.mousePosition);
             bool tooltipHover = r.Contains(Event.current.mousePosition) || priceRect.Contains(Event.current.mousePosition);
 
-            DrawItemRow(r, _potionIcon, EnName(entry.potion.nameEn, entry.potion.nameKr),
+            DrawItemRow(r, GetPotionIconTex(entry.potion.id), EnName(entry.potion.nameEn, entry.potion.nameKr),
                         entry.price, entry.sold, run.gold >= entry.price, plaqueHover, iconS,
                         nameRect, priceRect,
                         plaqueTex: potionPriceUsePlaque ? _pricePlaqueTex : null,
@@ -915,10 +937,11 @@ public class ShopUI : MonoBehaviour
             bool tooltipHover = r.Contains(Event.current.mousePosition) || plaqueRect.Contains(Event.current.mousePosition);
 
             // 아이콘 (좌) — 크기 고정 (hover에 영향 안 받음)
-            if (_relicIcon != null)
+            var relicTex = GetRelicIconTex(entry.relic.id);
+            if (relicTex != null)
             {
                 GUI.DrawTexture(new Rect(r.x + relicsIconLeftPad, r.y + (r.height - iconS) * 0.5f, iconS, iconS),
-                                _relicIcon, ScaleMode.ScaleToFit);
+                                relicTex, ScaleMode.ScaleToFit);
             }
 
             // plaque hover 시 plaque + 안의 모든 요소가 가운데 기준 확대

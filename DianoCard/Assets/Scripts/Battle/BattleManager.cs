@@ -15,6 +15,10 @@ namespace DianoCard.Battle
     {
         public BattleState state;
 
+        // 이 전투가 속한 run의 상태 — 유물/포션 효과 디스패처가 사용.
+        // BattleUI가 StartBattle 직후 세팅. 치트/테스트 환경에서는 null일 수 있음.
+        public DianoCard.Game.RunState run;
+
         private readonly System.Random _rng = new();
         private const int DrawPerTurn = 5;
 
@@ -31,6 +35,7 @@ namespace DianoCard.Battle
                 maxHp = playerHp,
                 hp = playerHp,
                 maxMana = maxMana,
+                baseMana = maxMana,
             };
 
             // 같은 id가 연속 등장하면 패턴 스텝을 오프셋해 행동이 동기화되지 않도록 한다.
@@ -55,15 +60,34 @@ namespace DianoCard.Battle
                 state.deck.Add(new CardInstance(c));
             }
 
+            // R012 태초의 알 등으로 RunState에 누적된 일시 카드를 시작 덱에 합류시킨 뒤 비운다.
+            // 일시 카드는 이번 전투 한정 — 다음 전투 시작 시 다시 비어있는 상태로 들어감.
+            if (run != null && run.pendingTemporaryCards != null && run.pendingTemporaryCards.Count > 0)
+            {
+                foreach (var c in run.pendingTemporaryCards)
+                {
+                    if (c == null) continue;
+                    state.deck.Add(new CardInstance(c));
+                    Log($"  + 일시 카드 합류: {c.nameKr}");
+                }
+                run.pendingTemporaryCards.Clear();
+            }
+
             Shuffle(state.deck);
 
             Log("=== Battle Start ===");
             StartTurn();
+
+            // 유물 BATTLE_START 트리거 — 첫 StartTurn(드로우/마나 리셋) 직후에 적용.
+            // 이렇게 해야 R002 DRAW +1 같은 보너스가 첫 턴 5장 드로우 위에 추가되고,
+            // R003 MANA +1도 maxMana 리셋 후에 +1 되어 의도대로 동작.
+            DianoCard.Game.RelicEffects.OnBattleStart(this, run);
         }
 
         public void StartTurn()
         {
             state.turn++;
+            state.player.maxMana = state.player.baseMana;
             state.player.mana = state.player.maxMana;
             state.player.block = 0;
             state.player.summonCostReduction = 0;
@@ -125,6 +149,11 @@ namespace DianoCard.Battle
 
             Draw(DrawPerTurn);
 
+            // 유물 TURN_START 트리거 — 드로우/적 인텐트/소환수 리셋 후에 적용.
+            // R006 방어도, R014 매 턴 마나, R016/R020 HP 임계 체크 등.
+            DianoCard.Game.RelicEffects.OnTurnStart(this, run);
+            ApplyOnTurnStartPassives();
+
             Log($"\n--- Turn {state.turn} ---");
             LogState();
         }
@@ -169,7 +198,7 @@ namespace DianoCard.Battle
             // 덮어쓰기 사전 판정 — 초식만 해당. 같은 id 초식 SUMMON이 필드에 있으면 슬롯 체크 건너뛰고
             // ResolveCard에서 스택 증가(같은 몸 강화)로 처리. 육식은 융합의 각인(C152)으로만 티어업.
             bool isOverwrite = card.cardType == CardType.SUMMON
-                && card.subType == CardSubType.HERBIVORE
+                && (card.subType == CardSubType.HERBIVORE || card.subType == CardSubType.OMNIVORE)
                 && FindOverwriteTarget(card.id) != null;
 
             // 필드 슬롯 제한 — 꽉 차면 swapFieldIndex로 교체 가능. 미지정이면 블록. (덮어쓰기는 슬롯 불필요)
@@ -273,6 +302,8 @@ namespace DianoCard.Battle
                         var summon = new SummonInstance(c) { sourceCardInstance = inst };
                         state.field.Add(summon);
                         Log($"    Summoned {c.nameKr} (ATK {c.attack} / HP {c.hp})");
+                        // 유물 SUMMON 트리거 (R005 전체 +1 ATK, R007 소환 시 +2 ATK).
+                        DianoCard.Game.RelicEffects.OnSummon(this, run, summon);
                     }
                     break;
 
@@ -281,7 +312,7 @@ namespace DianoCard.Battle
                     break;
 
                 case CardType.BUFF:
-                    ResolveBuff(c);
+                    ResolveBuff(c, allyTargetIndex);
                     break;
 
                 case CardType.UTILITY:
@@ -352,22 +383,26 @@ namespace DianoCard.Battle
                 return false;
             }
 
-            // 5) 티어 일치 — 필드는 현재 data.id 접미사, 손 카드는 항상 T0
+            // 5) 티어 체크 — 같은 티어 또는 T1+T0 교차 허용
             int aTier = aField != null ? GetCarnivoreRank(aField.data.id) : 0;
             int bTier = bField != null ? GetCarnivoreRank(bField.data.id) : 0;
-            if (aTier != bTier)
+            int maxTier = Math.Max(aTier, bTier);
+            bool tiersOk = aTier == bTier || (maxTier == 1 && Math.Min(aTier, bTier) == 0);
+            if (!tiersOk)
             {
                 Log($"  ! {catalyst.nameKr}: 혼합 티어(T{aTier}+T{bTier}) 불가");
                 return false;
             }
-            if (aTier >= 2)
+            if (maxTier >= 2)
             {
                 Log($"  ! {catalyst.nameKr}: 최종체(T2)는 더 이상 융합 불가");
                 return false;
             }
 
-            // 6) 다음 티어 조회
-            string currentId = aField != null ? aField.data.id : aData.id;
+            // 6) 다음 티어 조회 — 교차 티어(T1+T0) 시 높은 쪽(T1) 기준
+            string currentId = aTier >= bTier
+                ? (aField != null ? aField.data.id : aData.id)
+                : (bField != null ? bField.data.id : bData.id);
             var evo = DataManager.Instance.GetEvolution(currentId);
             var nextData = evo != null ? DataManager.Instance.GetCard(evo.resultCardId) : null;
             if (nextData == null)
@@ -435,22 +470,24 @@ namespace DianoCard.Battle
                 preservedHp = Math.Max(preservedHp, bField.hp);
             }
 
-            // 결과 SummonInstance 결정 — 필드 재료가 하나라도 있으면 그걸 "기본"으로 변형
+            // 결과 SummonInstance 결정 — 교차 티어(T1+T0) 시 높은 쪽(T1)을 기본 인스턴스로 사용
+            SummonInstance primaryField = aTier >= bTier ? aField : bField;
+            SummonInstance secondaryField = aTier >= bTier ? bField : aField;
+
             SummonInstance result;
-            if (aField != null)
+            if (primaryField != null)
             {
-                result = aField;
-                if (bField != null)
+                result = primaryField;
+                if (secondaryField != null)
                 {
-                    // field+field — 두 번째 재료를 필드에서 제거
-                    ReturnBoundCard(bField);
-                    state.field.Remove(bField);
+                    ReturnBoundCard(secondaryField);
+                    state.field.Remove(secondaryField);
                 }
                 ApplyFusionResult(result, nextData, aBase, maxAtkBonus, maxHpBonus, preservedHp);
             }
-            else if (bField != null)
+            else if (secondaryField != null)
             {
-                result = bField;
+                result = secondaryField;
                 ApplyFusionResult(result, nextData, aBase, maxAtkBonus, maxHpBonus, preservedHp);
             }
             else
@@ -462,6 +499,8 @@ namespace DianoCard.Battle
                 result.maxHp  = nextData.hp + maxHpBonus;
                 result.hp     = result.maxHp;
                 state.field.Add(result);
+                // 유물 SUMMON 트리거 — 융합으로 새로 등장한 공룡도 "소환" 취급.
+                DianoCard.Game.RelicEffects.OnSummon(this, run, result);
             }
 
             // 각인 보너스 — 촉매 카드(C153/C154/C155)에 따라 결과체에 추가 효과 부여.
@@ -582,6 +621,7 @@ namespace DianoCard.Battle
                             }
                             e.TakeDamage(dmg);
                             Log($"    -> {e.data.nameKr} takes {dmg} (HP {e.hp})");
+                            if (e.IsDead) DianoCard.Game.RelicEffects.OnEnemyKilled(this, run, null, e);
                             CheckBossPhaseTransition(e);
                             CheckPartnerDeathTrigger(e);
                         }
@@ -592,6 +632,7 @@ namespace DianoCard.Battle
                         {
                             randTarget.TakeDamage(dmg);
                             Log($"    -> {randTarget.data.nameKr} takes {dmg} (HP {randTarget.hp})");
+                            if (randTarget.IsDead) DianoCard.Game.RelicEffects.OnEnemyKilled(this, run, null, randTarget);
                             CheckBossPhaseTransition(randTarget);
                             CheckPartnerDeathTrigger(randTarget);
                         }
@@ -614,6 +655,7 @@ namespace DianoCard.Battle
                         {
                             t.TakeDamage(dmg);
                             Log($"    -> {t.data.nameKr} takes {dmg} (HP {t.hp})");
+                            if (t.IsDead) DianoCard.Game.RelicEffects.OnEnemyKilled(this, run, null, t);
                             CheckBossPhaseTransition(t);
                             CheckPartnerDeathTrigger(t);
                         }
@@ -765,7 +807,7 @@ namespace DianoCard.Battle
             }
         }
 
-        private void ResolveBuff(CardData c)
+        private void ResolveBuff(CardData c, int allyTargetIndex = -1)
         {
             switch (c.subType)
             {
@@ -785,25 +827,22 @@ namespace DianoCard.Battle
                     break;
 
                 case CardSubType.TAUNT:
-                    int applied = 0;
-                    foreach (var s in state.field)
-                    {
-                        if (s.IsDead) continue;
-                        s.tauntTurns += Math.Max(1, c.value);
-                        applied++;
-                    }
-                    Log($"    -> 도발: {applied}체의 공룡 {c.value}턴 도발 상태");
-                    // 이미 롤된 적 인텐트 타겟을 도발 공룡으로 갱신 — UI 화살표/툴팁이 즉시 반영되도록.
                     SummonInstance tauntTarget = null;
-                    foreach (var s in state.field) if (s.IsTaunting) { tauntTarget = s; break; }
-                    if (tauntTarget != null)
+                    if (allyTargetIndex >= 0 && allyTargetIndex < state.field.Count)
+                        tauntTarget = state.field[allyTargetIndex];
+                    if (tauntTarget == null || tauntTarget.IsDead)
                     {
-                        foreach (var en in state.enemies)
-                        {
-                            if (en.IsDead) continue;
-                            if (IsSingleTargetAttackAction(en.intentAction))
-                                en.intentTargetDino = tauntTarget;
-                        }
+                        Log($"    -> 도발: 유효한 대상 없음");
+                        break;
+                    }
+                    tauntTarget.tauntTurns = 1;
+                    Log($"    -> 도발: {tauntTarget.data.nameKr} 1턴 도발");
+                    // 이미 롤된 적 인텐트 타겟을 도발 공룡으로 갱신 — UI 화살표/툴팁 즉시 반영.
+                    foreach (var en in state.enemies)
+                    {
+                        if (en.IsDead) continue;
+                        if (IsSingleTargetAttackAction(en.intentAction))
+                            en.intentTargetDino = tauntTarget;
                     }
                     break;
 
@@ -821,6 +860,34 @@ namespace DianoCard.Battle
                     }
                     break;
             }
+        }
+
+        // =========================================================
+        // 포션 사용
+        // =========================================================
+
+        /// <summary>
+        /// run.potions[slotIndex] 의 포션을 사용한다.
+        /// targetIndex 의미:
+        ///   - target=ENEMY → state.enemies 인덱스
+        ///   - target=ALLY  → state.field 인덱스
+        ///   - 그 외        → 무시 (-1)
+        /// 적용 성공 시 슬롯에서 포션 제거 후 true 반환.
+        /// </summary>
+        public bool UsePotion(int slotIndex, int targetIndex = -1)
+        {
+            if (run == null || run.potions == null) return false;
+            if (slotIndex < 0 || slotIndex >= run.potions.Count) return false;
+            var potion = run.potions[slotIndex];
+            if (potion == null) return false;
+
+            bool ok = DianoCard.Game.PotionEffects.Use(this, run, potion, targetIndex);
+            if (ok)
+            {
+                run.potions.RemoveAt(slotIndex);
+                Log($"  [Potion] {potion.nameKr} 사용 → 슬롯 {slotIndex} 비움 (남은 {run.potions.Count}/{run.MaxPotionSlots})");
+            }
+            return ok;
         }
 
         // =========================================================
@@ -864,7 +931,14 @@ namespace DianoCard.Battle
                     RollIntent(e);
                     DoEnemyAction(e);
                 }
+                bool tickWasAlive = !e.IsDead;
                 e.TickStatuses();
+                // 화상/독/출혈 데미지로 적이 사망한 경우 KILL 트리거. killer는 DoT 출처를 추적할 방법이 없어 null.
+                if (tickWasAlive && e.IsDead)
+                {
+                    Log($"    x {e.data.nameKr} defeated (DoT)");
+                    DianoCard.Game.RelicEffects.OnEnemyKilled(this, run, null, e);
+                }
                 if (state.PlayerLost) { Log("=== DEFEAT ==="); return; }
             }
 
@@ -885,11 +959,43 @@ namespace DianoCard.Battle
             if (summon == null || !summon.CanAttack) return;
             var target = FirstTargetableEnemy();
             if (target == null) return;
+            bool wasAlive = !target.IsDead;
             int dmg = ApplyPlayerWeak(summon.TotalAttack);
+            // AMBUSH: 소환 후 첫 공격 2배
+            if (summon.data?.passiveType == Data.DinoPassiveType.AMBUSH && !summon.passiveConsumed)
+            {
+                dmg *= 2;
+                summon.passiveConsumed = true;
+                Log($"  [Passive] {summon.data.nameKr} 기습: 첫 공격 2배 ({dmg})");
+            }
+            // EXECUTE: 적 HP ≤ threshold면 즉사
+            if (summon.data?.passiveType == Data.DinoPassiveType.EXECUTE && target.hp <= summon.data.passiveValue)
+            {
+                dmg = target.hp + target.block;
+                Log($"  [Passive] {summon.data.nameKr} 처형: {target.data.nameKr} HP {target.hp} ≤ {summon.data.passiveValue}");
+            }
             target.TakeDamage(dmg);
             summon.hasAttackedThisTurn = true;
             Log($"  {summon.data.nameKr} attacks {target.data.nameKr} for {dmg} (HP {target.hp})");
-            if (target.IsDead) Log($"    x {target.data.nameKr} defeated");
+            ApplyOnAttackPassive(summon, target);
+            if (target.IsDead)
+            {
+                Log($"    x {target.data.nameKr} defeated");
+                if (wasAlive) DianoCard.Game.RelicEffects.OnEnemyKilled(this, run, summon, target);
+                // RAMPAGE: 처치 후 즉시 다음 적 추가 공격
+                if (summon.data?.passiveType == Data.DinoPassiveType.RAMPAGE)
+                {
+                    var rampageTarget = FirstTargetableEnemy();
+                    if (rampageTarget != null)
+                    {
+                        int rDmg = ApplyPlayerWeak(summon.TotalAttack);
+                        rampageTarget.TakeDamage(rDmg);
+                        Log($"  [Passive] {summon.data.nameKr} 돌진: {rampageTarget.data.nameKr}에 {rDmg} 추가 공격!");
+                        if (rampageTarget.IsDead) DianoCard.Game.RelicEffects.OnEnemyKilled(this, run, summon, rampageTarget);
+                        CheckBossPhaseTransition(rampageTarget);
+                    }
+                }
+            }
             CheckBossPhaseTransition(target);
             CheckPartnerDeathTrigger(target);
         }
@@ -924,11 +1030,43 @@ namespace DianoCard.Battle
                 else return false;
             }
 
+            bool wasAlive = !target.IsDead;
             int dmg = ApplyPlayerWeak(summon.TotalAttack);
+            // AMBUSH: 소환 후 첫 공격 2배
+            if (summon.data?.passiveType == Data.DinoPassiveType.AMBUSH && !summon.passiveConsumed)
+            {
+                dmg *= 2;
+                summon.passiveConsumed = true;
+                Log($"  [Passive] {summon.data.nameKr} 기습: 첫 공격 2배 ({dmg})");
+            }
+            // EXECUTE: 적 HP ≤ threshold면 즉사
+            if (summon.data?.passiveType == Data.DinoPassiveType.EXECUTE && target.hp <= summon.data.passiveValue)
+            {
+                dmg = target.hp + target.block;
+                Log($"  [Passive] {summon.data.nameKr} 처형: {target.data.nameKr} HP {target.hp} ≤ {summon.data.passiveValue}");
+            }
             target.TakeDamage(dmg);
             summon.hasAttackedThisTurn = true;
             Log($"  [Command] {summon.data.nameKr} attacks {target.data.nameKr} for {dmg} (HP {target.hp})");
-            if (target.IsDead) Log($"    x {target.data.nameKr} defeated");
+            ApplyOnAttackPassive(summon, target);
+            if (target.IsDead)
+            {
+                Log($"    x {target.data.nameKr} defeated");
+                if (wasAlive) DianoCard.Game.RelicEffects.OnEnemyKilled(this, run, summon, target);
+                // RAMPAGE: 처치 후 즉시 다음 적 추가 공격
+                if (summon.data?.passiveType == Data.DinoPassiveType.RAMPAGE)
+                {
+                    var rampageTarget = FirstTargetableEnemy();
+                    if (rampageTarget != null)
+                    {
+                        int rDmg = ApplyPlayerWeak(summon.TotalAttack);
+                        rampageTarget.TakeDamage(rDmg);
+                        Log($"  [Passive] {summon.data.nameKr} 돌진: {rampageTarget.data.nameKr}에 {rDmg} 추가 공격!");
+                        if (rampageTarget.IsDead) DianoCard.Game.RelicEffects.OnEnemyKilled(this, run, summon, rampageTarget);
+                        CheckBossPhaseTransition(rampageTarget);
+                    }
+                }
+            }
             CheckBossPhaseTransition(target);
             CheckPartnerDeathTrigger(target);
             return true;
@@ -939,6 +1077,96 @@ namespace DianoCard.Battle
         {
             if (state.player.weakTurns > 0) return Math.Max(1, (int)(dmg * 0.75f));
             return dmg;
+        }
+
+        // =========================================================
+        // 공룡 고유 패시브
+        // =========================================================
+
+        /// <summary>
+        /// 공룡이 공격을 명령받아 피해를 입힌 직후 호출 (ON_ATTACK 패시브).
+        /// LACERATE: 출혈 부여 / TENDERIZE: 취약 부여.
+        /// </summary>
+        private void ApplyOnAttackPassive(SummonInstance attacker, EnemyInstance target)
+        {
+            if (attacker?.data == null || target == null || target.IsDead) return;
+            switch (attacker.data.passiveType)
+            {
+                case Data.DinoPassiveType.LACERATE:
+                    target.bleedStacks += attacker.data.passiveValue;
+                    Log($"  [Passive] {attacker.data.nameKr} 열상: {target.data.nameKr} 출혈 +{attacker.data.passiveValue} (총 {target.bleedStacks})");
+                    break;
+                case Data.DinoPassiveType.TENDERIZE:
+                    target.vulnerableTurns += attacker.data.passiveValue;
+                    Log($"  [Passive] {attacker.data.nameKr} 연육: {target.data.nameKr} 취약 +{attacker.data.passiveValue}T (총 {target.vulnerableTurns}T)");
+                    break;
+                case Data.DinoPassiveType.REAPER:
+                    attacker.block += attacker.data.passiveValue;
+                    Log($"  [Passive] {attacker.data.nameKr} 낫질: 자신 방어 +{attacker.data.passiveValue} (총 {attacker.block})");
+                    break;
+                case Data.DinoPassiveType.TOXIC_SLASH:
+                    target.bleedStacks += attacker.data.passiveValue;
+                    target.poisonStacks += attacker.data.passiveValue;
+                    Log($"  [Passive] {attacker.data.nameKr} 독발톱: {target.data.nameKr} 출혈 +{attacker.data.passiveValue} / 독 +{attacker.data.passiveValue}");
+                    break;
+                case Data.DinoPassiveType.INTIMIDATE:
+                    target.extraAttack = System.Math.Max(-target.data.attack, target.extraAttack - attacker.data.passiveValue);
+                    Log($"  [Passive] {attacker.data.nameKr} 위협: {target.data.nameKr} ATK -{attacker.data.passiveValue} (총 {target.TotalAttack})");
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// 매 턴 시작 시 호출 (TURN_START 패시브).
+        /// APEX_PRESENCE: 필드의 티렉스가 전체 적에게 약화 부여.
+        /// SCOUT: 콤프가 카드 1장 추가 드로우.
+        /// BLOOD_FRENZY: 알로가 HP 50% 이하면 ATK 버프.
+        /// </summary>
+        private void ApplyOnTurnStartPassives()
+        {
+            foreach (var summon in state.field)
+            {
+                if (summon.IsDead) continue;
+                switch (summon.data.passiveType)
+                {
+                    case Data.DinoPassiveType.APEX_PRESENCE:
+                        int weakened = 0;
+                        foreach (var e in state.enemies)
+                        {
+                            if (e.IsDead) continue;
+                            e.weakTurns += summon.data.passiveValue;
+                            weakened++;
+                        }
+                        if (weakened > 0)
+                            Log($"  [Passive] {summon.data.nameKr} 군주의 위압: 적 {weakened}체 약화 +{summon.data.passiveValue}T");
+                        break;
+                    case Data.DinoPassiveType.SCOUT:
+                        Draw(summon.data.passiveValue);
+                        Log($"  [Passive] {summon.data.nameKr} 정찰: +{summon.data.passiveValue}장 드로우");
+                        break;
+                    case Data.DinoPassiveType.BLOOD_FRENZY:
+                        if (summon.hp <= summon.maxHp / 2)
+                        {
+                            summon.tempAttackBonus += summon.data.passiveValue;
+                            Log($"  [Passive] {summon.data.nameKr} 광분: HP 절반 이하 — ATK +{summon.data.passiveValue} (총 {summon.TotalAttack})");
+                        }
+                        break;
+                    case Data.DinoPassiveType.HERD_RALLY:
+                        int rallied = 0;
+                        foreach (var ally in state.field)
+                        {
+                            if (ally.IsDead) continue;
+                            ally.tempAttackBonus += summon.data.passiveValue;
+                            rallied++;
+                        }
+                        Log($"  [Passive] {summon.data.nameKr} 군가: 아군 {rallied}체 ATK +{summon.data.passiveValue} (1턴)");
+                        break;
+                    case Data.DinoPassiveType.SWIFT_DODGE:
+                        summon.block += summon.data.passiveValue;
+                        Log($"  [Passive] {summon.data.nameKr} 쾌속: 자신 방어 +{summon.data.passiveValue} (총 {summon.block})");
+                        break;
+                }
+            }
         }
 
         // =========================================================
@@ -1013,7 +1241,11 @@ namespace DianoCard.Battle
                         int dmg = ApplyPlayerWeak(skill.damage);
                         t.TakeDamage(dmg);
                         Log($"    -> {t.data.nameKr} -{dmg} (HP {t.hp})");
-                        if (t.IsDead) Log($"    x {t.data.nameKr} defeated");
+                        if (t.IsDead)
+                        {
+                            Log($"    x {t.data.nameKr} defeated");
+                            DianoCard.Game.RelicEffects.OnEnemyKilled(this, run, summon, t);
+                        }
                         CheckBossPhaseTransition(t);
                         CheckPartnerDeathTrigger(t);
                     }
@@ -1489,6 +1721,24 @@ namespace DianoCard.Battle
                 target.TakeDamage(dmg);
                 string flavor = target.IsTaunting ? "[도발] " : "";
                 Log($"  {attacker.data.nameKr} → {target.data.nameKr} {flavor}{dmg} (HP {target.hp})");
+                // COUNTER 패시브 — 살아있는 공룡이 공격받으면 공격자에게 반격 피해.
+                if (!target.IsDead && target.data?.passiveType == Data.DinoPassiveType.COUNTER)
+                {
+                    int counterDmg = target.data.passiveValue;
+                    attacker.TakeDamage(counterDmg);
+                    Log($"  [Passive] {target.data.nameKr} 반격: {attacker.data.nameKr}에게 {counterDmg} 피해 (HP {attacker.hp})");
+                    if (attacker.IsDead)
+                    {
+                        Log($"    x {attacker.data.nameKr} defeated (반격)");
+                        DianoCard.Game.RelicEffects.OnEnemyKilled(this, run, null, attacker);
+                    }
+                }
+                // ENRAGE 패시브 — 살아있는 공룡이 공격받으면 ATK 영구 증가.
+                if (!target.IsDead && target.data?.passiveType == Data.DinoPassiveType.ENRAGE)
+                {
+                    target.attack += target.data.passiveValue;
+                    Log($"  [Passive] {target.data.nameKr} 분노: 피격 → ATK +{target.data.passiveValue} (총 {target.attack})");
+                }
                 if (target.IsDead)
                 {
                     Log($"    x {target.data.nameKr} defeated");
@@ -1888,7 +2138,7 @@ namespace DianoCard.Battle
         // 덱 조작
         // =========================================================
 
-        private void Draw(int count)
+        public void Draw(int count)
         {
             for (int i = 0; i < count; i++)
             {
@@ -2052,6 +2302,8 @@ namespace DianoCard.Battle
 
             int target = Mathf.Clamp(slotIndex, 0, state.maxFieldSize - 1);
             var summon = new SummonInstance(data); // sourceCardInstance = null → 죽어도 카드 복귀 없음
+            // 치트 소환에도 유물 SUMMON 보너스 적용 (테스트 일관성).
+            DianoCard.Game.RelicEffects.OnSummon(this, run, summon);
 
             if (target < state.field.Count)
             {

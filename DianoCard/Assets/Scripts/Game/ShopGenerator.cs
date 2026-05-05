@@ -43,8 +43,8 @@ namespace DianoCard.Game
                 if (evoResults.Contains(c.id)) continue;
                 if (c.cardType == CardType.SUMMON)
                 {
-                    bool matchHerb = c.subType == CardSubType.HERBIVORE;
-                    bool matchCarn = c.subType == CardSubType.CARNIVORE;
+                    bool matchHerb = c.subType == CardSubType.HERBIVORE || c.subType == CardSubType.OMNIVORE;
+                    bool matchCarn = c.subType == CardSubType.CARNIVORE || c.subType == CardSubType.OMNIVORE;
                     if (isHerb && !matchHerb) continue;
                     if (!isHerb && !matchCarn) continue;
                 }

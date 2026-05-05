@@ -15,6 +15,7 @@ namespace DianoCard.Data
         NONE,
         HERBIVORE,
         CARNIVORE,
+        OMNIVORE,  // 초식 스태킹 시스템 사용. 육식 융합 불가. 초식 버프 카드 적용 대상.
         ATTACK,
         DEFENSE,
         HEAL,
@@ -133,6 +134,27 @@ namespace DianoCard.Data
         HP_LOW,
         HP_CRITICAL,
         NODE_ENTER,
+    }
+
+    public enum DinoPassiveType
+    {
+        NONE,
+        LACERATE,       // 공격 시 출혈 +value 스택 (랩터)
+        TENDERIZE,      // 공격 시 취약 +value턴 (카르노)
+        APEX_PRESENCE,  // 턴 시작 시 전체 적 약화 value턴 (티렉스)
+        SCOUT,          // 턴 시작 시 value장 드로우 (콤프)
+        BLOOD_FRENZY,   // 자신 HP ≤ 50%면 ATK +value (알로)
+        CANNIBAL,       // 적 처치 시 자신 HP +value 회복 (마준가)
+        REAPER,         // 공격 시 자신 방어도 +value (테리지노사우루스)
+        COUNTER,        // 공격받을 때 공격자에게 반격 피해 +value (이구아노돈)
+        HERD_RALLY,     // (미사용 예약)
+        TOXIC_SLASH,    // 공격 시 출혈 +value AND 독 +value (케라토사우루스)
+        SWIFT_DODGE,    // 턴 시작 시 자신 방어도 +value (갈리미무스)
+        ENRAGE,         // 공격받을 때마다 자신 ATK +value 영구 증가 (기가노토사우루스)
+        AMBUSH,         // 소환 후 첫 공격이 2배 데미지 (트로오돈)
+        RAMPAGE,        // 적 처치 시 즉시 추가 공격 1회 (바리오닉스)
+        INTIMIDATE,     // 공격 시 적 ATK -value 영구 감소 (아크로칸토사우루스)
+        EXECUTE,        // 공격 시 적 HP ≤ value이면 즉시 처치 (카르카로돈토사우루스)
     }
 
     public enum NodeType
