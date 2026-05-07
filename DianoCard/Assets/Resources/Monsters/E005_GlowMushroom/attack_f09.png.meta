@@ -1,0 +1,559 @@
+fileFormatVersion: 2
+guid: e97e8cafa5da5e24db5eef07a3112548
+TextureImporter:
+  internalIDToNameTable:
+  - first:
+      213: 6663267353334530279
+    second: attack_f09-Photoroom (10)_0
+  - first:
+      213: 6981046321778287097
+    second: attack_f09-Photoroom (10)_1
+  - first:
+      213: -1279598738431973063
+    second: attack_f09-Photoroom (10)_2
+  - first:
+      213: -7469722050087369377
+    second: attack_f09-Photoroom (10)_3
+  - first:
+      213: -4228964281556867421
+    second: attack_f09-Photoroom (10)_4
+  - first:
+      213: -1964858987203745603
+    second: attack_f09-Photoroom (10)_5
+  - first:
+      213: -2445411945191860876
+    second: attack_f09-Photoroom (10)_6
+  - first:
+      213: -8572391511092269380
+    second: attack_f09-Photoroom (10)_7
+  - first:
+      213: -6753427730355858005
+    second: attack_f09-Photoroom (10)_8
+  - first:
+      213: -7485549870162638833
+    second: attack_f09-Photoroom (10)_9
+  - first:
+      213: -7751029495898731417
+    second: attack_f09-Photoroom (10)_10
+  - first:
+      213: 2217136018401935303
+    second: attack_f09-Photoroom (10)_11
+  - first:
+      213: -5221869339009362417
+    second: attack_f09-Photoroom (10)_12
+  - first:
+      213: 4187098381200479093
+    second: attack_f09-Photoroom (10)_13
+  - first:
+      213: 3587524071821720292
+    second: attack_f09-Photoroom (10)_14
+  - first:
+      213: -6696979199528963490
+    second: attack_f09-Photoroom (10)_15
+  externalObjects: {}
+  serializedVersion: 13
+  mipmaps:
+    mipMapMode: 0
+    enableMipMap: 0
+    sRGBTexture: 1
+    linearTexture: 0
+    fadeOut: 0
+    borderMipMap: 0
+    mipMapsPreserveCoverage: 0
+    alphaTestReferenceValue: 0.5
+    mipMapFadeDistanceStart: 1
+    mipMapFadeDistanceEnd: 3
+  bumpmap:
+    convertToNormalMap: 0
+    externalNormalMap: 0
+    heightScale: 0.25
+    normalMapFilter: 0
+    flipGreenChannel: 0
+  isReadable: 0
+  streamingMipmaps: 0
+  streamingMipmapsPriority: 0
+  vTOnly: 0
+  ignoreMipmapLimit: 0
+  grayScaleToAlpha: 0
+  generateCubemap: 6
+  cubemapConvolution: 0
+  seamlessCubemap: 0
+  textureFormat: 1
+  maxTextureSize: 2048
+  textureSettings:
+    serializedVersion: 2
+    filterMode: 1
+    aniso: 1
+    mipBias: 0
+    wrapU: 1
+    wrapV: 1
+    wrapW: 1
+  nPOTScale: 0
+  lightmap: 0
+  compressionQuality: 50
+  spriteMode: 2
+  spriteExtrude: 1
+  spriteMeshType: 1
+  alignment: 0
+  spritePivot: {x: 0.5, y: 0.5}
+  spritePixelsToUnits: 100
+  spriteBorder: {x: 0, y: 0, z: 0, w: 0}
+  spriteGenerateFallbackPhysicsShape: 1
+  alphaUsage: 1
+  alphaIsTransparency: 1
+  spriteTessellationDetail: -1
+  textureType: 8
+  textureShape: 1
+  singleChannelComponent: 0
+  flipbookRows: 1
+  flipbookColumns: 1
+  maxTextureSizeSet: 0
+  compressionQualitySet: 0
+  textureFormatSet: 0
+  ignorePngGamma: 0
+  applyGammaDecoding: 0
+  swizzle: 50462976
+  cookieLightType: 0
+  platformSettings:
+  - serializedVersion: 4
+    buildTarget: DefaultTexturePlatform
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Standalone
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: Android
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  - serializedVersion: 4
+    buildTarget: iOS
+    maxTextureSize: 2048
+    resizeAlgorithm: 0
+    textureFormat: -1
+    textureCompression: 1
+    compressionQuality: 50
+    crunchedCompression: 0
+    allowsAlphaSplitting: 0
+    overridden: 0
+    ignorePlatformSupport: 0
+    androidETC2FallbackOverride: 0
+    forceMaximumCompressionQuality_BC6H_BC7: 0
+  spriteSheet:
+    serializedVersion: 2
+    sprites:
+    - serializedVersion: 2
+      name: attack_f09-Photoroom (10)_0
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 1396
+        width: 219
+        height: 280
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7e046f6ba5ea87c50800000000000000
+      internalID: 6663267353334530279
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: attack_f09-Photoroom (10)_1
+      rect:
+        serializedVersion: 2
+        x: 243
+        y: 1550
+        width: 86
+        height: 77
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 9f1642a74a8a1e060800000000000000
+      internalID: 6981046321778287097
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: attack_f09-Photoroom (10)_2
+      rect:
+        serializedVersion: 2
+        x: 406
+        y: 1553
+        width: 193
+        height: 123
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 93969bc1ab3fd3ee0800000000000000
+      internalID: -1279598738431973063
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: attack_f09-Photoroom (10)_3
+      rect:
+        serializedVersion: 2
+        x: 560
+        y: 1328
+        width: 242
+        height: 348
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f55c3a92f57365890800000000000000
+      internalID: -7469722050087369377
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: attack_f09-Photoroom (10)_4
+      rect:
+        serializedVersion: 2
+        x: 904
+        y: 1587
+        width: 139
+        height: 77
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 3a6ecf55463bf45c0800000000000000
+      internalID: -4228964281556867421
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: attack_f09-Photoroom (10)_5
+      rect:
+        serializedVersion: 2
+        x: 1090
+        y: 1521
+        width: 146
+        height: 155
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: db8acf1592b6bb4e0800000000000000
+      internalID: -1964858987203745603
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: attack_f09-Photoroom (10)_6
+      rect:
+        serializedVersion: 2
+        x: 1012
+        y: 1511
+        width: 27
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 475975dcac6201ed0800000000000000
+      internalID: -2445411945191860876
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: attack_f09-Photoroom (10)_7
+      rect:
+        serializedVersion: 2
+        x: 239
+        y: 1464
+        width: 41
+        height: 39
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: cbe65c1d65fb80980800000000000000
+      internalID: -8572391511092269380
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: attack_f09-Photoroom (10)_8
+      rect:
+        serializedVersion: 2
+        x: 918
+        y: 1483
+        width: 21
+        height: 24
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: ba5dddba2410742a0800000000000000
+      internalID: -6753427730355858005
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: attack_f09-Photoroom (10)_9
+      rect:
+        serializedVersion: 2
+        x: 1014
+        y: 1347
+        width: 37
+        height: 39
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f080c70ad0cfd1890800000000000000
+      internalID: -7485549870162638833
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: attack_f09-Photoroom (10)_10
+      rect:
+        serializedVersion: 2
+        x: 1115
+        y: 1378
+        width: 64
+        height: 88
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 76c816d7dbfce6490800000000000000
+      internalID: -7751029495898731417
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: attack_f09-Photoroom (10)_11
+      rect:
+        serializedVersion: 2
+        x: 353
+        y: 1321
+        width: 29
+        height: 36
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 7cf329b3679d4ce10800000000000000
+      internalID: 2217136018401935303
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: attack_f09-Photoroom (10)_12
+      rect:
+        serializedVersion: 2
+        x: 873
+        y: 1329
+        width: 22
+        height: 29
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: f06d7d8b0813887b0800000000000000
+      internalID: -5221869339009362417
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: attack_f09-Photoroom (10)_13
+      rect:
+        serializedVersion: 2
+        x: 376
+        y: 1275
+        width: 31
+        height: 32
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 57351132bcf8b1a30800000000000000
+      internalID: 4187098381200479093
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: attack_f09-Photoroom (10)_14
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 1103
+        height: 1160
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 4eab814c22279c130800000000000000
+      internalID: 3587524071821720292
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: attack_f09-Photoroom (10)_15
+      rect:
+        serializedVersion: 2
+        x: 491
+        y: 19
+        width: 70
+        height: 41
+      alignment: 0
+      pivot: {x: 0, y: 0}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: e5275ef66ec8f03a0800000000000000
+      internalID: -6696979199528963490
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    outline: []
+    customData: 
+    physicsShape: []
+    bones: []
+    spriteID: 
+    internalID: 0
+    vertices: []
+    indices: 
+    edges: []
+    weights: []
+    secondaryTextures: []
+    spriteCustomMetadata:
+      entries: []
+    nameFileIdTable:
+      attack_f09-Photoroom (10)_0: 6663267353334530279
+      attack_f09-Photoroom (10)_1: 6981046321778287097
+      attack_f09-Photoroom (10)_10: -7751029495898731417
+      attack_f09-Photoroom (10)_11: 2217136018401935303
+      attack_f09-Photoroom (10)_12: -5221869339009362417
+      attack_f09-Photoroom (10)_13: 4187098381200479093
+      attack_f09-Photoroom (10)_14: 3587524071821720292
+      attack_f09-Photoroom (10)_15: -6696979199528963490
+      attack_f09-Photoroom (10)_2: -1279598738431973063
+      attack_f09-Photoroom (10)_3: -7469722050087369377
+      attack_f09-Photoroom (10)_4: -4228964281556867421
+      attack_f09-Photoroom (10)_5: -1964858987203745603
+      attack_f09-Photoroom (10)_6: -2445411945191860876
+      attack_f09-Photoroom (10)_7: -8572391511092269380
+      attack_f09-Photoroom (10)_8: -6753427730355858005
+      attack_f09-Photoroom (10)_9: -7485549870162638833
+  mipmapLimitGroupName: 
+  pSDRemoveMatte: 0
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 

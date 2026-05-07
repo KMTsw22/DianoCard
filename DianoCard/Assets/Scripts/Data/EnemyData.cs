@@ -22,6 +22,7 @@ namespace DianoCard.Data
         public string image;
         public List<string> passiveIds = new();
         public float fieldScale;
+        public bool isDummy;
 
         public string name => LocaleSettings.Pick(nameKr, nameEn);
         public string description => LocaleSettings.Pick(descriptionKr, descriptionEn);
@@ -47,6 +48,7 @@ namespace DianoCard.Data
                 descriptionEn = CSVUtil.GetString(row, "description_en"),
                 image = CSVUtil.GetString(row, "image"),
                 fieldScale = CSVUtil.GetFloat(row, "field_scale", 1f),
+                isDummy = CSVUtil.GetInt(row, "is_dummy") != 0,
             };
 
             var raw = CSVUtil.GetString(row, "passive_ids");

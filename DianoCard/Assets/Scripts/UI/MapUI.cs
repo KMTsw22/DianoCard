@@ -140,9 +140,6 @@ public class MapUI : MonoBehaviour
     // 인트로를 재생한 MapState — 같은 맵 재진입(전투 후 복귀 등)에서는 인트로 생략
     private MapState _lastIntroMap;
 
-    // 시작 유물 선택 패널 — 시작 데코 클릭 시 열림, 유물 선택 후 닫힘.
-    private bool _starterRelicPanelOpen;
-
     // 미리보기: 미래 노드 클릭 시 현재 층 → 해당 노드까지의 가능 경로 강조
     private MapNode _previewTarget;
     private readonly HashSet<(int fromFloor, int fromCol, int toCol)> _previewEdges = new();
@@ -161,8 +158,6 @@ public class MapUI : MonoBehaviour
     private Texture2D _nodeStartTex;
     private Texture2D _ropeTex;
     private Texture2D _legendPanelTex;
-    private Texture2D _relicPickIcon;  // 유물 선택 패널 폴백 아이콘 (ShopUI/Relics)
-    private readonly Dictionary<string, Texture2D> _relicPickIconCache = new();
 
     private GUIStyle _smallStyle;
     private GUIStyle _backButtonStyle;
@@ -204,7 +199,6 @@ public class MapUI : MonoBehaviour
         _nodeEventTex    = Resources.Load<Texture2D>("Map/Node_Event");
         _nodeMerchantTex = Resources.Load<Texture2D>("Map/Node_Merchant");
         _nodeStartTex    = Resources.Load<Texture2D>("Map/Node_Start_V2");
-        _relicPickIcon   = Resources.Load<Texture2D>("ShopUI/Relics");
 
         _ropeTex = Resources.Load<Texture2D>("Map/Rope");
         if (_ropeTex != null) _ropeTex.wrapMode = TextureWrapMode.Repeat;
@@ -435,10 +429,6 @@ public class MapUI : MonoBehaviour
 
         DrawBackButton(gsm);
         DrawScrollbar(map);
-
-        // 7) 시작 유물 선택 패널 — 시작 데코 클릭으로 열림. 모든 UI 위에 오버레이.
-        if (_starterRelicPanelOpen && !map.starterRelicChosen)
-            DrawStarterRelicPanel(gsm);
 
         // 덱 뷰어 오버레이 — 상단 덱 버튼 클릭 시 열림. 모든 UI 위에 그려져야 해서 맨 마지막.
         if (battleUI != null)
@@ -783,7 +773,6 @@ public class MapUI : MonoBehaviour
     private void DrawStartDeco()
     {
         if (_nodeStartTex == null) return;
-        var map = GameStateManager.Instance?.CurrentMap;
 
         float size = StartSize;
         var rect = new Rect(
@@ -791,34 +780,9 @@ public class MapUI : MonoBehaviour
             StartDecoPos.y - size * 0.5f,
             size, size);
 
+        // 시작 데코는 항상 깬 상태(회색 비활성)로 표시 — 시작 유물은 RelicPickerUI에서 받음.
         var prev = GUI.color;
-
-        // 유물 미선택 상태 → 황금 박동 글로우 + 클릭 가능
-        bool needsRelic = map != null && !map.starterRelicChosen;
-        if (needsRelic)
-        {
-            float pulse = 0.7f + 0.3f * Mathf.Sin(Time.time * 3f);
-            float haloSize = size + 28f;
-            GUI.color = new Color(1f, 0.85f, 0.2f, 0.55f * pulse);
-            GUI.DrawTexture(new Rect(
-                StartDecoPos.x - haloSize * 0.5f,
-                StartDecoPos.y - haloSize * 0.5f,
-                haloSize, haloSize), _circleTexture);
-            GUI.color = prev;
-
-            // 패널이 이미 열려 있으면 StartDeco 클릭을 처리하지 않음 — 유물 카드 클릭 영역과 겹치기 때문
-            if (!_starterRelicPanelOpen)
-            {
-                bool hover = rect.Contains(Event.current.mousePosition);
-                if (hover && Event.current.type == EventType.MouseDown)
-                {
-                    _starterRelicPanelOpen = true;
-                    Event.current.Use();
-                }
-            }
-        }
-
-        GUI.color = needsRelic ? new Color(1f, 1f, 1f, 1f) : new Color(0.5f, 0.5f, 0.5f, 0.7f);
+        GUI.color = new Color(0.5f, 0.5f, 0.5f, 0.7f);
         GUI.DrawTexture(rect, _nodeStartTex, ScaleMode.ScaleToFit, alphaBlend: true);
         GUI.color = prev;
     }
@@ -834,110 +798,15 @@ public class MapUI : MonoBehaviour
     }
 
     // ---------------------------------------------------------
-    // 시작 유물 선택 패널 (스크린 좌표, 스크롤 무관)
-    // ---------------------------------------------------------
-
-    private void DrawStarterRelicPanel(GameStateManager gsm)
-    {
-        EnsureStyles();
-        var map = gsm.CurrentMap;
-        if (map == null || map.starterRelicCandidates.Count == 0) return;
-
-        const float PanelW = 780f;
-        const float PanelH = 180f;
-        const float CardW   = 220f;
-        const float CardH   = 140f;
-        const float Gap     = 20f;
-
-        float panelX = (RefW - PanelW) * 0.5f;
-        float panelY = RefH - PanelH - 50f;
-
-        // 반투명 배경
-        var prevColor = GUI.color;
-        GUI.color = new Color(0.05f, 0.02f, 0.1f, 0.88f);
-        GUI.DrawTexture(new Rect(panelX - 10f, panelY - 40f, PanelW + 20f, PanelH + 50f), Texture2D.whiteTexture);
-        GUI.color = prevColor;
-
-        // 제목
-        GUI.Label(new Rect(panelX, panelY - 32f, PanelW, 30f),
-            "시작 유물을 선택하세요",
-            new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 18, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter,
-                normal = { textColor = new Color(1f, 0.88f, 0.55f) }
-            });
-
-        // 후보 카드 3개
-        float totalW = map.starterRelicCandidates.Count * CardW + (map.starterRelicCandidates.Count - 1) * Gap;
-        float startX = panelX + (PanelW - totalW) * 0.5f;
-
-        for (int i = 0; i < map.starterRelicCandidates.Count; i++)
-        {
-            var relic = DataManager.Instance.GetRelic(map.starterRelicCandidates[i]);
-            if (relic == null) continue;
-
-            float cx = startX + i * (CardW + Gap);
-            var cardRect = new Rect(cx, panelY, CardW, CardH);
-            bool hover = cardRect.Contains(Event.current.mousePosition);
-
-            // 카드 배경
-            GUI.color = hover ? new Color(0.9f, 0.8f, 0.3f, 0.85f) : new Color(0.2f, 0.15f, 0.35f, 0.85f);
-            GUI.DrawTexture(cardRect, Texture2D.whiteTexture);
-            GUI.color = prevColor;
-
-            // 아이콘 — 유물별 고유 아이콘, 없으면 폴백
-            if (!_relicPickIconCache.TryGetValue(relic.id, out var relicIcon))
-            {
-                relicIcon = Resources.Load<Texture2D>($"InGame/RelicArt/{relic.id}") ?? _relicPickIcon;
-                _relicPickIconCache[relic.id] = relicIcon;
-            }
-            if (relicIcon != null)
-            {
-                float iconS = 48f;
-                GUI.DrawTexture(new Rect(cx + (CardW - iconS) * 0.5f, panelY + 8f, iconS, iconS),
-                    relicIcon, ScaleMode.ScaleToFit);
-            }
-
-            // 이름
-            GUI.Label(new Rect(cx + 4f, panelY + 58f, CardW - 8f, 24f), relic.name,
-                new GUIStyle(GUI.skin.label)
-                {
-                    fontSize = 13, fontStyle = FontStyle.Bold, alignment = TextAnchor.MiddleCenter,
-                    normal = { textColor = Color.white }
-                });
-
-            // 설명
-            GUI.Label(new Rect(cx + 4f, panelY + 80f, CardW - 8f, 48f), relic.description,
-                new GUIStyle(GUI.skin.label)
-                {
-                    fontSize = 11, wordWrap = true, alignment = TextAnchor.UpperCenter,
-                    normal = { textColor = new Color(0.85f, 0.85f, 0.85f) }
-                });
-
-            // 클릭
-            if (hover && Event.current.type == EventType.MouseDown)
-            {
-                gsm.PickStarterRelic(relic.id);
-                _starterRelicPanelOpen = false;
-                Event.current.Use();
-            }
-        }
-    }
-
-    // ---------------------------------------------------------
     // 로프 (노드 연결선)
     // ---------------------------------------------------------
 
     // 현재 층(cf)에서 클릭 가능한 컬럼 집합. cf==1이고 1층 cleared가 없으면 1층 전부가 시작 선택지.
     // 그 외에는 직전 층(cf-1)에서 cleared된 노드의 nextColumns만 허용.
-    // starterRelicChosen이 false이면 1층 진입 자체를 막는다(유물 선택 강제).
     private void RecomputeReachableColumns(MapState map)
     {
         _reachableColumns.Clear();
         int cf = map.currentFloor;
-
-        // 유물 미선택 → 어떤 노드도 클릭 불가 (유물 패널로 유도).
-        if (!map.starterRelicChosen) return;
 
         // cf=1 이고 아직 1층에서 어떤 노드도 클리어 안 함 → 1층 전체가 시작 선택지(StS의 "starting room" 행).
         if (cf == 1)

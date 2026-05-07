@@ -24,12 +24,16 @@ namespace DianoCard.Game
 
         private static void FillCards(ShopState shop, DataManager dm, RunState run)
         {
-            var common = new List<CardData>();
-            var uncommon = new List<CardData>();
-            var rare = new List<CardData>();
+            // 상점 카드 슬롯: 공룡(SUMMON) 2장 + 스펠(MAGIC) 3장
+            var summonCommon = new List<CardData>();
+            var summonUncommon = new List<CardData>();
+            var magicCommon = new List<CardData>();
+            var magicUncommon = new List<CardData>();
+            var magicRare = new List<CardData>();
 
-            // RewardGenerator와 동일한 풀 규칙: 진화 결과체(T1/T2)는 융합으로만 획득.
-            // archetype별 SUMMON 분리, 힐/융합 분리도 동일하게 적용.
+            // RewardGenerator와 동일한 풀 규칙: T1/T2 공룡은 융합으로만 획득 — 상점에도 절대 노출 금지.
+            // EvolutionResultIds는 dino_evolution.csv + ID suffix(`_T1`/`_T2`) 양쪽으로 채워진 안전망.
+            // archetype별 SUMMON 분리.
             var evoResults = dm.EvolutionResultIds;
             var character = dm.GetCharacter(run.characterId);
             string archetype = character?.archetype ?? "HERB";
@@ -37,30 +41,36 @@ namespace DianoCard.Game
 
             foreach (var c in dm.Cards.Values)
             {
-                if (c.cardType == CardType.RITUAL) continue;
+                if (c.cardType != CardType.SUMMON && c.cardType != CardType.MAGIC) continue;
                 // STATUS(잡초 등) 저주 카드는 상점에 노출되면 안 됨 — 적 강제 추가 전용.
                 if (c.subType == CardSubType.STATUS) continue;
                 if (evoResults.Contains(c.id)) continue;
+
                 if (c.cardType == CardType.SUMMON)
                 {
                     bool matchHerb = c.subType == CardSubType.HERBIVORE || c.subType == CardSubType.OMNIVORE;
                     bool matchCarn = c.subType == CardSubType.CARNIVORE || c.subType == CardSubType.OMNIVORE;
                     if (isHerb && !matchHerb) continue;
                     if (!isHerb && !matchCarn) continue;
+
+                    if (c.rarity == Rarity.COMMON) summonCommon.Add(c);
+                    else if (c.rarity == Rarity.UNCOMMON) summonUncommon.Add(c);
                 }
-                if (!isHerb && c.subType == CardSubType.HEAL) continue;
-                if (isHerb && c.subType == CardSubType.FUSION) continue;
-                switch (c.rarity)
+                else // MAGIC
                 {
-                    case Rarity.COMMON:   common.Add(c);   break;
-                    case Rarity.UNCOMMON: uncommon.Add(c); break;
-                    case Rarity.RARE:     rare.Add(c);     break;
+                    if (c.rarity == Rarity.COMMON) magicCommon.Add(c);
+                    else if (c.rarity == Rarity.UNCOMMON) magicUncommon.Add(c);
+                    else if (c.rarity == Rarity.RARE) magicRare.Add(c);
                 }
             }
 
-            PickCards(common,   3, shop.cards);
-            PickCards(uncommon, 1, shop.cards);
-            PickCards(rare,     1, shop.cards);
+            // SUMMON 2장: COMMON 1 + UNCOMMON 1
+            PickCards(summonCommon,   1, shop.cards);
+            PickCards(summonUncommon, 1, shop.cards);
+            // MAGIC 3장: COMMON 1 + UNCOMMON 1 + RARE 1
+            PickCards(magicCommon,   1, shop.cards);
+            PickCards(magicUncommon, 1, shop.cards);
+            PickCards(magicRare,     1, shop.cards);
         }
 
         private static void PickCards(List<CardData> pool, int count, List<ShopCardEntry> outList)

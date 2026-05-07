@@ -78,6 +78,8 @@ public class TrainingUI : MonoBehaviour
             if (e == null || e.enemyType != type) continue;
             // TBD 패턴은 아직 구현 안 된 후속 챕터 — 숨김
             if (!string.IsNullOrEmpty(e.patternSetId) && e.patternSetId.EndsWith("_TBD")) continue;
+            // 더미는 QA 패널 전용 — 훈련장 리스트에서 숨김
+            if (e.isDummy) continue;
             list.Add(e);
         }
         list.Sort((a, b) => string.Compare(a.id, b.id, System.StringComparison.Ordinal));

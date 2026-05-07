@@ -8,6 +8,7 @@ namespace DianoCard.Game
     {
         Lobby,
         CharacterSelect, // 캐릭터 선택 화면
+        RelicPick,       // 시작 유물 3종 중 1개 선택
         Map,             // 노드 선택 화면
         Battle,
         Reward,
@@ -39,6 +40,7 @@ namespace DianoCard.Game
         public GameState State { get; private set; } = GameState.Lobby;
         public RunState CurrentRun { get; private set; }
         public MapState CurrentMap { get; private set; }
+        public List<RelicData> RelicPickChoices { get; private set; }
         public ShopState CurrentShop { get; private set; }
         public List<EnemyData> CurrentEnemies { get; private set; } = new();
 
@@ -84,6 +86,7 @@ namespace DianoCard.Game
         {
             if (GetComponent<LobbyUI>() == null) gameObject.AddComponent<LobbyUI>();
             if (GetComponent<CharacterSelectUI>() == null) gameObject.AddComponent<CharacterSelectUI>();
+            if (GetComponent<RelicPickerUI>() == null) gameObject.AddComponent<RelicPickerUI>();
             if (GetComponent<MapUI>() == null) gameObject.AddComponent<MapUI>();
             if (GetComponent<BattleUI>() == null) gameObject.AddComponent<BattleUI>();
             if (GetComponent<RewardUI>() == null) gameObject.AddComponent<RewardUI>();
@@ -154,7 +157,7 @@ namespace DianoCard.Game
         }
 
         /// <summary>
-        /// 캐릭터 선택을 확정 → 시작 덱 빌드 + 맵 생성 후 Map 상태로 전환.
+        /// 캐릭터 선택을 확정 → 시작 덱 빌드 + 맵 생성 후 RelicPick 상태로 전환.
         /// </summary>
         public void ConfirmCharacterSelection(string characterId = null)
         {
@@ -167,20 +170,47 @@ namespace DianoCard.Game
             if (!string.IsNullOrEmpty(characterId)) CurrentRun.characterId = characterId;
             CurrentRun.deck = BuildStarterDeck(CurrentRun.characterId);
             CurrentMap = GenerateMap(CurrentRun.chapterId);
-            State = GameState.Map;
+            RelicPickChoices = BuildRelicPickChoices(CurrentRun, 3);
+            _relicPickReturnState = GameState.Map;
+            State = GameState.RelicPick;
         }
 
         /// <summary>
-        /// 캐릭터 확정 직후 호출 — relic.csv에서 source=START 인 유물을 자동 획득.
-        /// archetype_lock이 있으면 캐릭터 archetype과 일치할 때만 부여.
-        /// 효과는 RelicEffects.OnAcquired가 영구 스탯에 반영.
+        /// 유물 선택 화면에서 선택 완료 → 선택한 유물 획득 후 returnState 로 전환.
+        /// chosen이 null이면 아무 유물도 주지 않고 넘어감(선택지가 없는 경우 폴백).
         /// </summary>
-        private static void GrantStartingRelics(RunState run)
+        public void ConfirmRelicPick(RelicData chosen)
+        {
+            if (chosen != null && CurrentRun != null)
+            {
+                if (!CurrentRun.relics.Contains(chosen))
+                {
+                    CurrentRun.relics.Add(chosen);
+                    RelicEffects.OnAcquired(CurrentRun, chosen);
+                }
+            }
+            RelicPickChoices = null;
+            State = _relicPickReturnState;
+        }
+
+        private GameState _relicPickReturnState = GameState.Map;
+
+        /// <summary>
+        /// 이벤트 노드 등 외부에서 직접 유물 선택 화면을 열 때 사용.
+        /// returnState에는 선택 완료 후 돌아갈 상태를 지정 (기본값 Map).
+        /// </summary>
+        public void EnterRelicPick(List<RelicData> choices, GameState returnState = GameState.Map)
+        {
+            RelicPickChoices = choices ?? new List<RelicData>();
+            _relicPickReturnState = returnState;
+            State = GameState.RelicPick;
+        }
+
+        private static List<RelicData> BuildRelicPickChoices(RunState run, int count)
         {
             var dm = DianoCard.Data.DataManager.Instance;
-            if (dm == null) return;
+            if (dm == null) return new List<RelicData>();
 
-            // 캐릭터 archetype 조회 — 없으면 모든 archetype-lock 무시.
             string archetype = null;
             if (!string.IsNullOrEmpty(run.characterId))
             {
@@ -188,21 +218,26 @@ namespace DianoCard.Game
                 if (character != null) archetype = character.archetype;
             }
 
+            var pool = new List<RelicData>();
             foreach (var kv in dm.Relics)
             {
-                var relic = kv.Value;
-                if (relic == null) continue;
-                if (relic.source != DianoCard.Data.RelicSource.START) continue;
-                if (!string.IsNullOrEmpty(relic.archetypeLock)
+                var r = kv.Value;
+                if (r == null || r.source != DianoCard.Data.RelicSource.START) continue;
+                if (!string.IsNullOrEmpty(r.archetypeLock)
                     && !string.IsNullOrEmpty(archetype)
-                    && !relic.archetypeLock.Equals(archetype, System.StringComparison.OrdinalIgnoreCase))
-                {
-                    continue; // archetype 불일치 → 해당 캐릭터는 받지 않음
-                }
-                if (run.relics.Contains(relic)) continue;
-                run.relics.Add(relic);
-                RelicEffects.OnAcquired(run, relic);
+                    && !r.archetypeLock.Equals(archetype, System.StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (run.relics.Contains(r)) continue;
+                pool.Add(r);
             }
+
+            // Fisher-Yates shuffle then take up to count
+            for (int i = pool.Count - 1; i > 0; i--)
+            {
+                int j = UnityEngine.Random.Range(0, i + 1);
+                (pool[i], pool[j]) = (pool[j], pool[i]);
+            }
+            return pool.Count <= count ? pool : pool.GetRange(0, count);
         }
 
         // 캐릭터 archetype별 시작 덱 구성.
@@ -289,7 +324,6 @@ namespace DianoCard.Game
             AddBossNode(map, chapter);
             AssignRoomTypes(map);
             FillEnemyIds(map, chapter);
-            PickStarterRelicCandidates(map);
             return map;
         }
 
@@ -537,7 +571,7 @@ namespace DianoCard.Game
                 if (n.kind == NodeKind.Combat)
                 {
                     int normalCount = NormalEnemyCountForFloor(n.floor);
-                    n.enemyIds = PickN(chapter.normalEnemyPool, normalCount);
+                    n.enemyIds = PickN(chapter.GetNormalPoolForFloor(n.floor), normalCount);
                 }
                 else if (n.kind == NodeKind.Elite)
                 {
@@ -545,41 +579,6 @@ namespace DianoCard.Game
                 }
                 // Boss는 AddBossNode에서 설정. 그 외 비전투(Camp/Treasure/Merchant/Unknown)는 enemyIds 비움.
             }
-        }
-
-        // 맵 생성 시 시작 유물 후보 3개를 확정. START source 유물 우선, 없으면 COMMON 풀 전체.
-        private void PickStarterRelicCandidates(MapState map)
-        {
-            var pool = new List<RelicData>();
-            foreach (var r in DataManager.Instance.Relics.Values)
-            {
-                if (r.source == RelicSource.START) pool.Add(r);
-            }
-            if (pool.Count < 3)
-            {
-                // START 유물이 부족하면 COMMON도 포함
-                foreach (var r in DataManager.Instance.Relics.Values)
-                {
-                    if (r.source != RelicSource.START && r.rarity == Rarity.COMMON) pool.Add(r);
-                }
-            }
-            ShuffleInPlace(pool);
-            for (int i = 0; i < Mathf.Min(3, pool.Count); i++)
-                map.starterRelicCandidates.Add(pool[i].id);
-        }
-
-        // 플레이어가 시작 유물을 선택했을 때 MapUI에서 호출.
-        public void PickStarterRelic(string relicId)
-        {
-            if (CurrentMap == null || CurrentRun == null) return;
-            var relic = DataManager.Instance.GetRelic(relicId);
-            if (relic != null)
-            {
-                CurrentRun.relics.Add(relic);
-                RelicEffects.OnAcquired(CurrentRun, relic);
-                Debug.Log($"[GSM] StarterRelic picked: {relic.nameKr}");
-            }
-            CurrentMap.starterRelicChosen = true;
         }
 
         // 쌍둥이류 엘리트 — 한 ID로 2체가 동시 등장해야 하는 적.
@@ -599,11 +598,12 @@ namespace DianoCard.Game
         }
 
         // 층 진행에 따른 일반 전투 적 수. 첫 전투(층 0/1)는 1마리, 이후 점진 증가.
+        // 5층+는 2~3마리 무작위 — 후반은 개체 자체가 강해서 2마리도 위협적이도록 설계.
         public static int NormalEnemyCountForFloor(int floor)
         {
             if (floor <= 1) return 1;
             if (floor <= 4) return 2;
-            return 3;
+            return Random.Range(0, 2) == 0 ? 2 : 3;
         }
 
         // 층 진행에 따른 일반 적 HP 배율. 보스/엘리트는 별도(BattleManager에서 NORMAL만 적용).
@@ -614,9 +614,11 @@ namespace DianoCard.Game
         }
 
         // 층 진행에 따른 일반 적 데미지 배율. HP보다 약간 부드럽게.
+        // floor 0~1(첫 노드)은 70%로 완화, floor 2부터 정상 스케일.
         public static float NormalEnemyDamageScaleForFloor(int floor)
         {
-            return 1f + 0.04f * Mathf.Max(0, floor);
+            if (floor <= 1) return 0.70f;
+            return 1f + 0.04f * Mathf.Max(0, floor - 2);
         }
 
         private List<string> PickN(List<string> pool, int n)
@@ -793,7 +795,7 @@ namespace DianoCard.Game
                 {
                     var chapter = DataManager.Instance.GetChapter(CurrentRun.chapterId);
                     int unkCount = NormalEnemyCountForFloor(node.floor);
-                    var ids = chapter != null ? PickN(chapter.normalEnemyPool, unkCount) : new List<string>();
+                    var ids = chapter != null ? PickN(chapter.GetNormalPoolForFloor(node.floor), unkCount) : new List<string>();
                     CurrentEnemies.Clear();
                     foreach (var id in ids)
                     {
@@ -985,6 +987,36 @@ namespace DianoCard.Game
             CurrentEnemies.Clear();
             State = GameState.Lobby;
             Debug.Log("[GSM] ExitTraining — 로비로 복귀");
+        }
+
+        /// <summary>치트: 허수아비(E999)와 QA 전투 시작. 훈련 모드로 진입해 RunState를 유지한 채 재사용.</summary>
+        public void Cheat_StartQABattle()
+        {
+            if (!IsTrainingMode || CurrentRun == null) EnterTraining();
+            TrainingStartBattle("E999");
+            Debug.Log("[GSM] Cheat_StartQABattle");
+        }
+
+        /// <summary>치트: 유물을 현재 RunState에 추가하고 OnAcquired 효과 즉시 적용.</summary>
+        public void Cheat_AcquireRelic(string relicId)
+        {
+            if (CurrentRun == null) return;
+            var data = DataManager.Instance.GetRelic(relicId);
+            if (data == null) { Debug.LogWarning($"[GSM] Cheat_AcquireRelic: '{relicId}' 미발견"); return; }
+            CurrentRun.relics.Add(data);
+            RelicEffects.OnAcquired(CurrentRun, data);
+            Debug.Log($"[GSM] Cheat_AcquireRelic: {data.nameKr}");
+        }
+
+        /// <summary>치트: 물약을 현재 RunState에 추가 (슬롯 꽉 차면 무시).</summary>
+        public void Cheat_AcquirePotion(string potionId)
+        {
+            if (CurrentRun == null) return;
+            if (CurrentRun.PotionSlotFull) { Debug.LogWarning("[GSM] Cheat_AcquirePotion: 물약 슬롯 꽉 참"); return; }
+            var data = DataManager.Instance.GetPotion(potionId);
+            if (data == null) { Debug.LogWarning($"[GSM] Cheat_AcquirePotion: '{potionId}' 미발견"); return; }
+            CurrentRun.potions.Add(data);
+            Debug.Log($"[GSM] Cheat_AcquirePotion: {data.nameKr}");
         }
 
         public void TakeCardReward(CardData card)

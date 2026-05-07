@@ -67,14 +67,8 @@ public class CheatWindow : EditorWindow
         // 엘리트/보스 빠른 진입 — 첫 적의 enemy_type 기준 BG 자동 선택됨
         // (BattleUI.LoadBackgroundFor: BOSS→Boss BG, ELITE→Elite BG, NORMAL→random Battle BG)
         EditorGUILayout.LabelField("엘리트 (엘리트 BG 자동 로드)", EditorStyles.miniBoldLabel);
-        EditorGUILayout.BeginHorizontal();
-        if (GUILayout.Button("E101 골렘", GUILayout.Height(26)))
-            gsm.Cheat_StartBattleWith("E101");
-        if (GUILayout.Button("E102 사제", GUILayout.Height(26)))
-            gsm.Cheat_StartBattleWith("E102");
         if (GUILayout.Button("E103 쌍둥이", GUILayout.Height(26)))
             gsm.Cheat_StartBattleWith("E103", "E103");
-        EditorGUILayout.EndHorizontal();
 
         EditorGUILayout.LabelField("보스 (보스 BG 자동 로드)", EditorStyles.miniBoldLabel);
         if (GUILayout.Button("E901 폐허의 군주 (1챕터 보스)", GUILayout.Height(28)))

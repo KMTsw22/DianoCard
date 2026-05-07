@@ -48,6 +48,14 @@ public class CheatUI : MonoBehaviour
     // 인텐트 프리뷰 — 첫 살아있는 적의 intentAction을 EnemyAction 순환으로 강제 변경.
     private int _intentPreviewIdx = 1; // 0=UNKNOWN이라 ATTACK부터 시작
 
+    // QA 획득 치트 패널
+    private int _qaTab;              // 0=카드, 1=유물, 2=물약
+    private string _qaCardSearch = "";
+    private Vector2 _qaCardScroll, _qaRelicScroll, _qaPotionScroll;
+    private List<CardData> _qaAllCards;
+    private List<RelicData> _qaAllRelics;
+    private List<PotionData> _qaAllPotions;
+
     void Update()
     {
         var kb = UnityEngine.InputSystem.Keyboard.current;
@@ -270,10 +278,6 @@ public class CheatUI : MonoBehaviour
 
         // 엘리트 — 첫 적이 ELITE이면 Elite BG 자동 로드
         GUILayout.Label("엘리트", _stateStyle);
-        GUILayout.BeginHorizontal();
-        if (GUILayout.Button("E101 골렘", _btnStyle)) gsm.Cheat_StartBattleWith("E101");
-        if (GUILayout.Button("E102 사제", _btnStyle)) gsm.Cheat_StartBattleWith("E102");
-        GUILayout.EndHorizontal();
         if (GUILayout.Button("E103 쌍둥이 (2체)", _btnStyle))
             gsm.Cheat_StartBattleWith("E103", "E103");
 
@@ -282,12 +286,26 @@ public class CheatUI : MonoBehaviour
         if (GUILayout.Button("E901 폐허의 군주", _btnStyle))
             gsm.Cheat_StartBossBattle();
 
+        // QA — 허수아비 더미 전투
+        GUILayout.Space(4f);
+        if (GUILayout.Button("허수아비 QA 전투", _btnStyle))
+            gsm.Cheat_StartQABattle();
+
         // ===== 전투 중에만 보이는 제어 =====
         var battle = GetActiveBattle();
         if (gsm.State == GameState.Battle && battle != null && battle.state != null)
         {
             GUILayout.Space(10f);
             GUILayout.Label("— 전투 중 제어 —", _stateStyle);
+
+            // 허수아비 HP 표시 (QA 전투 시)
+            var dummyEnemy = battle.state.enemies.FirstOrDefault(e => e.isDummy);
+            if (dummyEnemy != null)
+            {
+                GUILayout.Label($"허수아비  {dummyEnemy.hp:N0} / {dummyEnemy.maxHp:N0}", _stateStyle);
+                if (GUILayout.Button("허수아비 HP 초기화", _btnStyle))
+                    dummyEnemy.hp = dummyEnemy.maxHp;
+            }
 
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("전체 즉사", _btnStyle)) battle.Cheat_KillAllEnemies();
@@ -508,6 +526,9 @@ public class CheatUI : MonoBehaviour
         if (GUILayout.Button("+500G", _btnStyle) && gsm.CurrentRun != null)
             gsm.CurrentRun.gold += 500;
         GUILayout.EndHorizontal();
+
+        // ===== QA 획득 치트 =====
+        DrawQASection(gsm, battle);
 
         // ===== 외부 파일 BG 프리뷰 — 상단 네비 유지한 채 임의 사진 풀스크린 깔기.
         GUILayout.Space(12f);
@@ -850,5 +871,117 @@ public class CheatUI : MonoBehaviour
     void OnDestroy()
     {
         ClearPreviewBg();
+    }
+
+    // =========================================================
+    // QA 획득 치트 패널
+    // =========================================================
+
+    private void DrawQASection(GameStateManager gsm, BattleManager battle)
+    {
+        GUILayout.Space(12f);
+        GUILayout.Label("— QA 획득 치트 —", _stateStyle);
+
+        if (gsm.CurrentRun == null)
+        {
+            GUILayout.Label("(Run 없음 — 허수아비 QA 전투 시작 후 사용)", _stateStyle);
+            return;
+        }
+
+        EnsureQALists();
+
+        // 탭 버튼
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button(_qaTab == 0 ? "▶카드" : "카드", _btnStyle)) _qaTab = 0;
+        if (GUILayout.Button(_qaTab == 1 ? "▶유물" : "유물", _btnStyle)) _qaTab = 1;
+        if (GUILayout.Button(_qaTab == 2 ? "▶물약" : "물약", _btnStyle)) _qaTab = 2;
+        GUILayout.EndHorizontal();
+
+        if (_qaTab == 0) DrawQACardTab(battle);
+        else if (_qaTab == 1) DrawQARelicTab(gsm);
+        else DrawQAPotionTab(gsm);
+    }
+
+    private void EnsureQALists()
+    {
+        if (!DataManager.Instance.IsLoaded) DataManager.Instance.Load();
+        if (_qaAllCards == null)
+            _qaAllCards = DataManager.Instance.Cards.Values.OrderBy(c => c.id).ToList();
+        if (_qaAllRelics == null)
+            _qaAllRelics = DataManager.Instance.Relics.Values.OrderBy(r => r.id).ToList();
+        if (_qaAllPotions == null)
+            _qaAllPotions = DataManager.Instance.Potions.Values.OrderBy(p => p.id).ToList();
+    }
+
+    private void DrawQACardTab(BattleManager battle)
+    {
+        // 검색창
+        GUILayout.BeginHorizontal();
+        GUILayout.Label("검색:", GUILayout.Width(36f));
+        _qaCardSearch = GUILayout.TextField(_qaCardSearch, GUILayout.ExpandWidth(true));
+        if (GUILayout.Button("X", GUILayout.Width(22f))) _qaCardSearch = "";
+        GUILayout.EndHorizontal();
+
+        var search = _qaCardSearch.Trim();
+        var filtered = string.IsNullOrEmpty(search)
+            ? _qaAllCards
+            : _qaAllCards.Where(c =>
+                c.nameKr.Contains(search, System.StringComparison.OrdinalIgnoreCase) ||
+                c.id.Contains(search, System.StringComparison.OrdinalIgnoreCase)).ToList();
+
+        bool inBattle = battle?.state != null;
+        GUILayout.Label(inBattle ? "손패+ : 즉시 손에  /  덱+ : 덱에 삽입" : "덱+ : RunState 덱에 추가", _stateStyle);
+
+        _qaCardScroll = GUILayout.BeginScrollView(_qaCardScroll, GUILayout.Height(200f));
+        foreach (var c in filtered)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label($"{c.id} {c.nameKr}", GUILayout.Width(128f));
+            if (inBattle)
+            {
+                if (GUILayout.Button("손패", _btnStyle, GUILayout.Width(38f)))
+                    battle.Cheat_AddCardToHand(c.id);
+            }
+            if (GUILayout.Button("덱+", _btnStyle, GUILayout.Width(38f)))
+            {
+                if (inBattle) battle.Cheat_AddCardToDeck(c.id);
+                else GameStateManager.Instance.CurrentRun?.deck.Add(c);
+            }
+            GUILayout.EndHorizontal();
+        }
+        GUILayout.EndScrollView();
+    }
+
+    private void DrawQARelicTab(GameStateManager gsm)
+    {
+        GUILayout.Label($"보유: {gsm.CurrentRun.relics.Count}개", _stateStyle);
+        _qaRelicScroll = GUILayout.BeginScrollView(_qaRelicScroll, GUILayout.Height(200f));
+        foreach (var r in _qaAllRelics)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label($"{r.id} {r.nameKr}", GUILayout.Width(168f));
+            if (GUILayout.Button("획득", _btnStyle, GUILayout.Width(48f)))
+                gsm.Cheat_AcquireRelic(r.id);
+            GUILayout.EndHorizontal();
+        }
+        GUILayout.EndScrollView();
+    }
+
+    private void DrawQAPotionTab(GameStateManager gsm)
+    {
+        var run = gsm.CurrentRun;
+        GUILayout.Label($"포션 슬롯: {run.potions.Count}/{run.MaxPotionSlots}", _stateStyle);
+        _qaPotionScroll = GUILayout.BeginScrollView(_qaPotionScroll, GUILayout.Height(200f));
+        foreach (var p in _qaAllPotions)
+        {
+            GUILayout.BeginHorizontal();
+            GUILayout.Label($"{p.id} {p.nameKr}", GUILayout.Width(168f));
+            GUI.enabled = !run.PotionSlotFull;
+            if (GUILayout.Button("획득", _btnStyle, GUILayout.Width(48f)))
+                gsm.Cheat_AcquirePotion(p.id);
+            GUI.enabled = true;
+            GUILayout.EndHorizontal();
+        }
+        GUILayout.EndScrollView();
     }
 }

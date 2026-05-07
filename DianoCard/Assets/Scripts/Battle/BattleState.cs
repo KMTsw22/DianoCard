@@ -25,7 +25,7 @@ namespace DianoCard.Battle
             get
             {
                 foreach (var e in enemies)
-                    if (!e.IsDead && !e.isMinion && !e.isMoss) return false;
+                    if (!e.IsDead && !e.isMinion && !e.isMoss && !e.isDummy) return false;
                 return true;
             }
         }

@@ -459,8 +459,9 @@ namespace DianoCard.Battle
 
         /// <summary>
         /// N프레임 공격 시퀀스를 균등 시간으로 재생.
-        /// 위치는 idle(처음) → 중간 peak에서 최대 전진 → 마지막에 복귀하는 3단 곡선.
-        /// 프레임 개수와 무관하게 동작 (2~8 프레임 모두 OK).
+        /// 위치는 _basePosition 고정 — 시퀀스 자체에 windup/peak/복귀 모션이 들어있으므로
+        /// 추가 lunge offset을 더하면 이중 모션이 되어 부자연스러움. dir/distance는 무시.
+        /// 시퀀스가 없는 단순 spritepath는 AttackRoutine 본체의 4-페이즈 lunge 사용.
         /// </summary>
         private IEnumerator SequenceAttackRoutine(Vector3 dir, float distance, float duration)
         {
@@ -472,17 +473,11 @@ namespace DianoCard.Battle
             // 시퀀스 전체 구간에 스케일 부스트 적용 — 가로형 캔버스에 캐릭터가 일부만 차지할 때 idle과 크기 맞춤.
             _activeScaleMultiplier = _sequenceScaleBoost;
 
-            // 위치 커브: 앞 20% 약간 뒤로(windup) → 60% 지점에서 peak(+distance) → 마지막 20% 복귀
-            float backEnd = duration * 0.20f;   // 이 시점까지 살짝 뒤로
-            float peakT   = duration * 0.60f;   // 이 시점에서 전진 최대
-            float returnStart = duration * 0.85f;
-
             float t = 0f;
             while (t < duration)
             {
                 t += Time.deltaTime;
 
-                // 현재 재생 프레임 = (t / duration) * n
                 int frameIdx = Mathf.Clamp(Mathf.FloorToInt(t / perFrame), 0, n - 1);
                 if (frameIdx != lastFrame)
                 {
@@ -490,34 +485,10 @@ namespace DianoCard.Battle
                     lastFrame = frameIdx;
                     ApplyWorldHeight(); // 프레임별 bounds 높이 차이로 캐릭터가 커/작아 보이는 것 방지
                 }
-
-                // 위치 오프셋 — 모든 프레임에 균일하게 적용되는 앞뒤 모션
-                float offset;
-                if (t < backEnd)
-                {
-                    float p = t / backEnd;
-                    offset = Mathf.Lerp(0f, -distance * 0.15f, p);
-                }
-                else if (t < peakT)
-                {
-                    float p = (t - backEnd) / (peakT - backEnd);
-                    offset = Mathf.Lerp(-distance * 0.15f, distance, Mathf.Pow(p, 0.6f));
-                }
-                else if (t < returnStart)
-                {
-                    offset = distance;
-                }
-                else
-                {
-                    float p = (t - returnStart) / (duration - returnStart);
-                    offset = Mathf.Lerp(distance, 0f, p);
-                }
-                transform.position = _basePosition + dir * offset;
                 yield return null;
             }
 
-            transform.position = _basePosition;
-            // 공격 종료 후 idle 프레임으로 복귀
+            // 공격 종료 후 idle 프레임으로 복귀 (위치는 시퀀스 동안 변경 안 됐으므로 별도 reset 불필요)
             if (_idleSprite != null) _sr.sprite = _idleSprite;
             else if (_attackSequence != null && _attackSequence.Length > 0) _sr.sprite = _attackSequence[0];
             else if (originalSprite != null) _sr.sprite = originalSprite;

@@ -93,7 +93,8 @@ namespace DianoCard.Game
             int chapterIdx = ParseChapterIndex(run.chapterId);
 
             // 현재 챕터 이하 카드만 (RITUAL은 MVP에서 제외 — 제물 의식 같은 특수 효과)
-            // 시작 덱에 이미 들어있는 카드 + 진화 결과체는 보상 풀에서 제외 (중복 수집 / 진화 결과 직접 획득 방지).
+            // 시작 덱에 이미 들어있는 카드 + 진화 결과체(T1/T2 공룡)는 보상 풀에서 절대 제외.
+            // T1/T2 공룡은 오직 융합 메커니즘으로만 획득 가능 — DataManager가 ID suffix 기반으로도 안전망을 채워둠.
             // 캐릭터 archetype에 따라 공룡 종류 분리: HERB는 초식만, CARN은 육식만.
             var evoResults = DataManager.Instance.EvolutionResultIds;
             var character = DataManager.Instance.GetCharacter(run.characterId);

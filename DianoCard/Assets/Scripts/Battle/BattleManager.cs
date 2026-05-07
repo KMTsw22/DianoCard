@@ -148,6 +148,27 @@ namespace DianoCard.Battle
                 RollIntent(e);
             }
 
+            // 동시 공격 수 제한: 살아있는 적이 N명이면 최대 N-1명만 공격 가능.
+            // 초과분은 자신의 패턴에서 비공격 행동으로 교체.
+            var aliveNonBoss = new List<EnemyInstance>();
+            foreach (var e in startTurnSnapshot)
+                if (!e.IsDead && !e.isMinion && !e.isMoss) aliveNonBoss.Add(e);
+
+            int maxAttackers = Math.Max(1, aliveNonBoss.Count - 1);
+            var attackers = new List<EnemyInstance>();
+            foreach (var e in aliveNonBoss)
+                if (IsAttackAction(e.intentAction)) attackers.Add(e);
+
+            if (attackers.Count > maxAttackers)
+            {
+                // 뒤쪽 초과분을 비공격으로 교체 (앞쪽 N-1명은 그대로 공격)
+                for (int i = maxAttackers; i < attackers.Count; i++)
+                {
+                    Log($"  [공격슬롯] {attackers[i].data.nameKr} 공격 슬롯 초과 → 비공격 행동으로 교체");
+                    RerollToNonAttack(attackers[i]);
+                }
+            }
+
             Draw(DrawPerTurn);
 
             // 유물 TURN_START 트리거 — 드로우/적 인텐트/소환수 리셋 후에 적용.
@@ -2071,6 +2092,50 @@ namespace DianoCard.Battle
                 || a == EnemyAction.COUNTDOWN_ATTACK;
         }
 
+        private static bool IsAttackAction(EnemyAction a)
+        {
+            return a == EnemyAction.ATTACK
+                || a == EnemyAction.MULTI_ATTACK
+                || a == EnemyAction.COUNTDOWN_ATTACK
+                || a == EnemyAction.COUNTDOWN_AOE;
+        }
+
+        // 공격 슬롯 초과 시 호출. 기존 패턴에서 비공격 스텝을 찾아 이번 턴 인텐트를 교체.
+        // patternStepCursor는 이미 advance됐으므로 건드리지 않음.
+        private void RerollToNonAttack(EnemyInstance e)
+        {
+            var patternId = e.currentPatternSetId;
+            if (string.IsNullOrEmpty(patternId)) patternId = e.data.patternSetId;
+            var steps = DianoCard.Data.DataManager.Instance.GetPatternSet(patternId);
+
+            if (steps != null)
+            {
+                foreach (var step in steps)
+                {
+                    if (step.stepOrder >= 90) continue;
+                    if (IsAttackAction(step.action)) continue;
+                    if (!CheckCondition(step.condition, e)) continue;
+
+                    e.intentAction = step.action;
+                    e.intentValue = step.value;
+                    e.intentCount = Math.Max(1, step.count);
+                    e.intentTarget = step.target;
+                    e.intentIcon = step.intentIcon;
+                    e.telegraphRemaining = step.telegraphTurns > 0 ? step.telegraphTurns - 1 : 0;
+                    e.intentType = MapIntentType(step.action, step.intentIcon);
+                    e.intentTargetDino = null;
+                    return;
+                }
+            }
+
+            e.intentAction = EnemyAction.IDLE;
+            e.intentType = EnemyIntentType.UNKNOWN;
+            e.intentValue = 0;
+            e.intentCount = 1;
+            e.intentIcon = "IDLE";
+            e.intentTargetDino = null;
+        }
+
         /// <summary>단일 공격 타겟 롤 — 도발 > 필드 비었으면 플레이어 > 30% 플레이어 / 70% 랜덤 공룡.</summary>
         private SummonInstance RollAttackTarget()
         {
@@ -2363,6 +2428,27 @@ namespace DianoCard.Battle
             ReturnBoundCard(s);
             state.field.RemoveAt(slotIndex);
             Log($"[CHEAT] 슬롯 {slotIndex + 1} 비움 ({s.data.nameKr})");
+        }
+
+        /// <summary>치트: 카드를 현재 손패에 즉시 추가.</summary>
+        public void Cheat_AddCardToHand(string cardId)
+        {
+            if (state == null) return;
+            var data = DianoCard.Data.DataManager.Instance.GetCard(cardId);
+            if (data == null) { Log($"[CHEAT] 카드 미발견: {cardId}"); return; }
+            state.hand.Add(new CardInstance(data));
+            Log($"[CHEAT] 손패에 추가: {data.nameKr}");
+        }
+
+        /// <summary>치트: 카드를 덱 임의 위치에 추가.</summary>
+        public void Cheat_AddCardToDeck(string cardId)
+        {
+            if (state == null) return;
+            var data = DianoCard.Data.DataManager.Instance.GetCard(cardId);
+            if (data == null) { Log($"[CHEAT] 카드 미발견: {cardId}"); return; }
+            int idx = _rng.Next(state.deck.Count + 1);
+            state.deck.Insert(idx, new CardInstance(data));
+            Log($"[CHEAT] 덱에 추가: {data.nameKr}");
         }
 
         public void LogState()

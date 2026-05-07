@@ -84,9 +84,14 @@ namespace DianoCard.Data
             _intentIcons = LoadTable("intent_icon", IntentIconData.FromRow, d => d.id);
             _enemyPassives = LoadTable("enemy_passive", EnemyPassiveData.FromRow, d => d.id);
             _dinoEvolutions = LoadTable("dino_evolution", DinoEvolutionData.FromRow, d => d.baseCardId);
+            // T1/T2 공룡은 융합으로만 획득 — 보상/상점 풀에서 무조건 제외.
+            // 1차 소스: dino_evolution.csv의 result_card_id.
+            // 2차 안전망: ID suffix `_T1`/`_T2` (CSV 진화 행 누락 시에도 절대 보상에 노출되지 않게 명시적으로 차단).
             _evolutionResultIds = new HashSet<string>();
             foreach (var evo in _dinoEvolutions.Values)
                 if (!string.IsNullOrEmpty(evo.resultCardId)) _evolutionResultIds.Add(evo.resultCardId);
+            foreach (var c in _cards.Values)
+                if (IsEvolutionTierSuffix(c.id)) _evolutionResultIds.Add(c.id);
             _dinoSkills = LoadTable("dino_skill", DinoSkillData.FromRow, d => d.cardId);
 
             IsLoaded = true;
@@ -96,6 +101,16 @@ namespace DianoCard.Data
                       $"events:{_events.Count} nodes:{_nodes.Count} characters:{_characters.Count} " +
                       $"uiStrings:{_uiStrings.Count} cardTypeLabels:{_cardTypeLabels.Count} statLabels:{_statLabels.Count} " +
                       $"patternSets:{_enemyPatterns.Count} phaseSets:{_enemyPhases.Count} intentIcons:{_intentIcons.Count}");
+        }
+
+        /// <summary>
+        /// 카드 ID가 진화 tier suffix(`_T1`/`_T2`)를 갖는지. 진화 결과체는 융합 메커니즘으로만 획득 가능 —
+        /// 보상/상점 등 어떤 카드 풀에도 등장하면 안 된다.
+        /// </summary>
+        public static bool IsEvolutionTierSuffix(string cardId)
+        {
+            if (string.IsNullOrEmpty(cardId)) return false;
+            return cardId.EndsWith("_T1") || cardId.EndsWith("_T2");
         }
 
         /// <summary>같은 키로 묶이는 행들을 List로 모아 반환. 정렬 후처리도 가능.</summary>

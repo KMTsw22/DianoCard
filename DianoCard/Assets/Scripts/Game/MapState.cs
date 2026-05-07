@@ -43,10 +43,6 @@ namespace DianoCard.Game
         public int currentColumn = -1;      // 직전에 선택한 column (진행 위치 표시용)
         public int totalFloors = 15;        // 1..15 + 보스(16). StS와 동일.
 
-        // 시작 유물 선택 — run 시작 시 3개 후보 중 1개 선택. 선택 완료 전까진 1층 노드 진입 불가.
-        public bool starterRelicChosen;
-        public List<string> starterRelicCandidates = new(); // relic ID × 3
-
         public bool IsBossCleared => currentFloor > totalFloors;
 
         public List<MapNode> NodesOnFloor(int floor)

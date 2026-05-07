@@ -242,6 +242,9 @@ namespace DianoCard.Battle
         // 전투 중 적이 소환한 쫄 — true면 AllEnemiesDead 계산에서 제외 (쫄만 남으면 승리).
         public bool isMinion;
 
+        // QA 훈련 더미 — true면 AllEnemiesDead 계산에서 제외, HP가 1 아래로 내려가지 않음.
+        public bool isDummy;
+
         // === E901 이끼 수호석상 기믹 ===
         public bool isMoss;                  // 이끼 쫄 (보호막 계산에 사용)
         public bool isBossProtected;         // true + 이끼 생존 시 본체 타겟 불가
@@ -296,6 +299,7 @@ namespace DianoCard.Battle
             this.damageScale = damageScale;
             this.block = data.defense;
             this.currentPatternSetId = data.patternSetId;
+            this.isDummy = data.isDummy;
         }
 
         public void TakeDamage(int dmg)
@@ -305,7 +309,8 @@ namespace DianoCard.Battle
             int absorbed = Math.Min(block, adjusted);
             block -= absorbed;
             int remaining = adjusted - absorbed;
-            hp = Math.Max(0, hp - remaining);
+            // 더미는 HP가 1 아래로 내려가지 않아 전투 종료 조건이 발생하지 않음.
+            hp = isDummy ? Math.Max(1, hp - remaining) : Math.Max(0, hp - remaining);
         }
 
         public void TickStatuses()

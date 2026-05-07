@@ -19,7 +19,7 @@ public class MonsterPatternViewer : EditorWindow
     private Vector2 _rightScroll;
     private int _chapterFilter = 1; // 0=All, 1~4=챕터
     private bool _showPlaceholders;  // TBD 패턴셋 가진 적도 보일지
-    private string _spawnIdInput = "E102";
+    private string _spawnIdInput = "E103";
     private int _customDamage = 5;
 
     private GUIStyle _monoStyle;
