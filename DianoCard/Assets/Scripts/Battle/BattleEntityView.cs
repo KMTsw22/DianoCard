@@ -320,6 +320,16 @@ namespace DianoCard.Battle
             StartAnim(HitRoutine(duration));
         }
 
+        /// <summary>
+        /// 비공격 행동(방어/버프/디버프 부여/소환/회복 등) 공통 모션 — 가벼운 호핑.
+        /// 스프라이트 스왑 없이 transform.position만 위로 떴다가 복귀. 캐릭터 크기에 비례한 높이.
+        /// hopFraction: _intendedWorldHeight 대비 점프 최고점 비율 (기본 8%).
+        /// </summary>
+        public void PlayAction(float duration = 0.5f, float hopFraction = 0.08f)
+        {
+            StartAnim(ActionRoutine(duration, hopFraction));
+        }
+
         private void StartAnim(IEnumerator routine)
         {
             if (_currentAnim != null) StopCoroutine(_currentAnim);
@@ -567,6 +577,27 @@ namespace DianoCard.Battle
             if (_idleSprite != null) _sr.sprite = _idleSprite;
             else if (originalSprite != null) _sr.sprite = originalSprite;
             ApplyWorldHeight();
+            _currentAnim = null;
+        }
+
+        private IEnumerator ActionRoutine(float duration, float hopFraction)
+        {
+            // 캐릭터 크기에 비례한 호핑 높이 — 작은 잡몹/큰 보스 모두 시각 비율 일관.
+            float hopHeight = _intendedWorldHeight > 0f
+                ? _intendedWorldHeight * hopFraction
+                : 0.15f;
+
+            float t = 0f;
+            while (t < duration)
+            {
+                t += Time.deltaTime;
+                float p = Mathf.Clamp01(t / duration);
+                // sin(πp): 0 → 1(at p=0.5) → 0. 부드러운 포물선 호핑.
+                float arc = Mathf.Sin(p * Mathf.PI);
+                transform.position = _basePosition + Vector3.up * (hopHeight * arc);
+                yield return null;
+            }
+            transform.position = _basePosition;
             _currentAnim = null;
         }
 

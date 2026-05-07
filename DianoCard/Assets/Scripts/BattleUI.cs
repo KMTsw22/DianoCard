@@ -6375,6 +6375,8 @@ public class BattleUI : MonoBehaviour
                 // 카운트다운/속박 진행 중이면 실제 데미지 발동 안 함 → 모션도 재생 안 함.
                 if (IsAttackAction(e.intentAction) && active)
                     yield return AnimateEnemyAttack(e);
+                else if (active && IsNonAttackActionMotionWorthy(e.intentAction))
+                    yield return AnimateEnemyAction(e);
                 _battle.DoEnemyAction(e);
             }
 
@@ -6453,6 +6455,28 @@ public class BattleUI : MonoBehaviour
             || a == EnemyAction.DRAIN
             || a == EnemyAction.COUNTDOWN_ATTACK
             || a == EnemyAction.COUNTDOWN_AOE;
+    }
+
+    // 공격이 아닌 액션(DEFEND/BUFF/SUMMON/POISON/WEAK/HEAL/...)은 모두 가벼운 호핑 모션 재생 대상.
+    // IDLE/UNKNOWN은 "행동 안 함"이므로 모션 없음.
+    private static bool IsNonAttackActionMotionWorthy(EnemyAction a)
+    {
+        return a != EnemyAction.IDLE
+            && a != EnemyAction.UNKNOWN
+            && !IsAttackAction(a);
+    }
+
+    /// <summary>
+    /// 적 비공격 행동(방어/버프/소환/디버프 등)용 가벼운 호핑 모션. 스프라이트 스왑 없이
+    /// transform Y만 살짝 떴다 복귀. BattleEntityView가 없으면 모션 생략.
+    /// </summary>
+    private IEnumerator AnimateEnemyAction(EnemyInstance e)
+    {
+        if (_enemyViews.TryGetValue(e, out var view) && view != null)
+        {
+            view.PlayAction();
+            yield return new WaitForSeconds(0.4f);
+        }
     }
 
     /// <summary>
