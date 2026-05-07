@@ -190,10 +190,26 @@ namespace DianoCard.Game
                 }
             }
             RelicPickChoices = null;
+
+            // 보물 노드에서 진입한 경우엔 returnState 대신 노드 클리어 + 다음 층 진행을 수행한다.
+            if (_relicPickAdvancesMap)
+            {
+                _relicPickAdvancesMap = false;
+                if (CurrentMap != null)
+                {
+                    var node = CurrentMap.nodes.Find(n =>
+                        n.floor == CurrentMap.currentFloor && n.column == CurrentMap.currentColumn);
+                    if (node != null) node.cleared = true;
+                    AdvanceToNextFloorOrVictory();
+                    return;
+                }
+            }
+
             State = _relicPickReturnState;
         }
 
         private GameState _relicPickReturnState = GameState.Map;
+        private bool _relicPickAdvancesMap = false;
 
         /// <summary>
         /// 이벤트 노드 등 외부에서 직접 유물 선택 화면을 열 때 사용.
@@ -203,6 +219,7 @@ namespace DianoCard.Game
         {
             RelicPickChoices = choices ?? new List<RelicData>();
             _relicPickReturnState = returnState;
+            _relicPickAdvancesMap = false;
             State = GameState.RelicPick;
         }
 
@@ -706,16 +723,16 @@ namespace DianoCard.Game
                 return;
             }
 
-            // 보물 노드(9층 고정) — 확정 유물 보상. ProceedAfterReward에서 cleared/Advance 처리.
+            // 보물 노드(9층 고정) — 시작 유물과 동일한 3택 픽커. 선택 후 ConfirmRelicPick에서 cleared/Advance 처리.
             if (node.kind == NodeKind.Treasure)
             {
                 CurrentMap.currentColumn = node.column;
                 CurrentRun.currentFloor = node.floor;
-                var reward = RewardGenerator.GenerateTreasureChest(CurrentRun);
-                CurrentRun.pendingReward = reward;
-                CurrentRun.gold += reward.gold;
-                State = GameState.Reward;
-                Debug.Log($"[GSM] Treasure F{node.floor} C{node.column} relic={(reward.relic != null ? reward.relic.id : "none")} gold={reward.gold}");
+                RelicPickChoices = BuildRelicPickChoices(CurrentRun, 3);
+                _relicPickReturnState = GameState.Map;
+                _relicPickAdvancesMap = true;
+                State = GameState.RelicPick;
+                Debug.Log($"[GSM] Treasure F{node.floor} C{node.column} → RelicPick ({RelicPickChoices.Count} choices)");
                 return;
             }
 
@@ -752,18 +769,29 @@ namespace DianoCard.Game
         }
 
         // =========================================================
-        // 미지(Unknown) 노드 해석 — Slay the Spire 분포에 가깝게.
+        // 미지(Unknown) 노드 해석 — StS 스타일 분포 + pity 시스템.
         //
-        // StS의 ? 노드는 진입 시 Event/Combat/Treasure/Shop으로 무작위 해석된다.
-        // DianoCard MVP에는 Event UI가 없으므로 Event 비중을 다른 결과로 재분배.
+        // 기본 확률(모든 카운터=0): Event 85% / Combat 10% / Shop 3% / Treasure 2%. Elite 없음.
         //
-        // 분포:
-        //   40% Combat   — 챕터 일반 적 풀에서 2마리 매복 전투
-        //   25% Treasure — 마을 보물상자와 동일 (유물 + 약간의 골드)
-        //   20% Shop     — 일반 상점
-        //   15% Rest     — 평화로운 쉼터, 최대 HP 25% 회복 후 자동 진행
+        // pity: Event가 나올 때마다 Combat/Shop/Treasure 카운터가 +1씩 누적.
+        // 카운터 c일 때 해당 타입 확률 = base × (1 + c). 카운터는 5에서 캡.
+        //   c=0  Combat 10% / Shop  3% / Treasure  2% / Event 85%
+        //   c=1  Combat 20% / Shop  6% / Treasure  4% / Event 70%
+        //   c=2  Combat 30% / Shop  9% / Treasure  6% / Event 55%
+        //   c=3  Combat 40% / Shop 12% / Treasure  8% / Event 40%
+        //   c=4  Combat 50% / Shop 15% / Treasure 10% / Event 25%
+        //   c=5  Combat 60% / Shop 18% / Treasure 12% / Event 10%
+        //
+        // 리셋: 전투/상점/보물이 나오면 그 타입 카운터만 0으로 리셋(타 타입 누적 유지).
+        //       Event는 누적 유지(다음 진입 시 다른 타입 +1단계). 챕터 전환 시 모두 리셋
+        //       — 멀티 챕터는 미구현이므로 새 RunState 생성 시 자연 리셋.
+        //
+        // MVP에는 Event UI가 없어서 Event 결과는 임시로 Rest 처리(HP 25% 회복 + 자동 진행).
+        // 이후 Event UI 추가 시 Event 분기만 교체하면 됨.
         // =========================================================
-        public enum UnknownOutcome { Combat, Treasure, Shop, Rest }
+        public enum UnknownOutcome { Combat, Treasure, Shop, Event }
+
+        private const int UnknownPityCap = 5;
 
         // 디버그/치트로 다음 미지 노드 결과를 강제 — null이면 정상 랜덤.
         public UnknownOutcome? ForcedUnknownOutcome { get; set; }
@@ -776,11 +804,36 @@ namespace DianoCard.Game
                 ForcedUnknownOutcome = null;
                 return f;
             }
+
+            var run = CurrentRun;
+            int combatPct   = 10 * (1 + Mathf.Clamp(run.unknownPityCombat,   0, UnknownPityCap));
+            int shopPct     =  3 * (1 + Mathf.Clamp(run.unknownPityShop,     0, UnknownPityCap));
+            int treasurePct =  2 * (1 + Mathf.Clamp(run.unknownPityTreasure, 0, UnknownPityCap));
+            // Event = 100 - 위 합. 모든 카운터 5캡일 때 60+18+12=90 → Event 10% 최저.
+
             int roll = Random.Range(0, 100);
-            if (roll < 40) return UnknownOutcome.Combat;
-            if (roll < 65) return UnknownOutcome.Treasure;
-            if (roll < 85) return UnknownOutcome.Shop;
-            return UnknownOutcome.Rest;
+            if (roll < combatPct) return UnknownOutcome.Combat;
+            roll -= combatPct;
+            if (roll < shopPct) return UnknownOutcome.Shop;
+            roll -= shopPct;
+            if (roll < treasurePct) return UnknownOutcome.Treasure;
+            return UnknownOutcome.Event;
+        }
+
+        // 결과별로 pity 카운터 갱신 — 해당 타입은 0으로 리셋, Event는 나머지 셋을 +1(5캡).
+        private static void UpdateUnknownPity(RunState run, UnknownOutcome outcome)
+        {
+            switch (outcome)
+            {
+                case UnknownOutcome.Combat:   run.unknownPityCombat = 0; break;
+                case UnknownOutcome.Shop:     run.unknownPityShop = 0; break;
+                case UnknownOutcome.Treasure: run.unknownPityTreasure = 0; break;
+                case UnknownOutcome.Event:
+                    run.unknownPityCombat   = Mathf.Min(run.unknownPityCombat   + 1, UnknownPityCap);
+                    run.unknownPityShop     = Mathf.Min(run.unknownPityShop     + 1, UnknownPityCap);
+                    run.unknownPityTreasure = Mathf.Min(run.unknownPityTreasure + 1, UnknownPityCap);
+                    break;
+            }
         }
 
         private void ResolveUnknownAndDispatch(MapNode node)
@@ -789,6 +842,7 @@ namespace DianoCard.Game
             CurrentRun.currentFloor = node.floor;
 
             var outcome = RollUnknownOutcome();
+            UpdateUnknownPity(CurrentRun, outcome);
             switch (outcome)
             {
                 case UnknownOutcome.Combat:
@@ -821,11 +875,13 @@ namespace DianoCard.Game
                 }
                 case UnknownOutcome.Treasure:
                 {
-                    var reward = RewardGenerator.GenerateTreasureChest(CurrentRun);
-                    CurrentRun.pendingReward = reward;
-                    CurrentRun.gold += reward.gold;
-                    State = GameState.Reward;
-                    Debug.Log($"[GSM] Unknown→Treasure F{node.floor} C{node.column} relic={(reward.relic != null ? reward.relic.id : "none")} gold={reward.gold}");
+                    // 고정 보물 노드와 동일하게 시작 유물 3택 픽커로 진행. ConfirmRelicPick에서 cleared/Advance 처리.
+                    node.kind = NodeKind.Treasure;
+                    RelicPickChoices = BuildRelicPickChoices(CurrentRun, 3);
+                    _relicPickReturnState = GameState.Map;
+                    _relicPickAdvancesMap = true;
+                    State = GameState.RelicPick;
+                    Debug.Log($"[GSM] Unknown→Treasure F{node.floor} C{node.column} → RelicPick ({RelicPickChoices.Count} choices)");
                     break;
                 }
                 case UnknownOutcome.Shop:
@@ -836,13 +892,14 @@ namespace DianoCard.Game
                     Debug.Log($"[GSM] Unknown→Shop F{node.floor} C{node.column}");
                     break;
                 }
-                case UnknownOutcome.Rest:
+                case UnknownOutcome.Event:
                 {
+                    // Event UI 미구현 — 임시로 Rest 효과(HP 25% 회복 + 자동 진행). 추후 UI 붙으면 이 분기 교체.
                     int healAmount = Mathf.Max(1, Mathf.RoundToInt(CurrentRun.playerMaxHp * 0.25f));
                     CurrentRun.playerCurrentHp = Mathf.Min(CurrentRun.playerCurrentHp + healAmount, CurrentRun.playerMaxHp);
-                    node.kind = NodeKind.Camp;
+                    node.kind = NodeKind.Event;
                     node.cleared = true;
-                    Debug.Log($"[GSM] Unknown→Rest F{node.floor} C{node.column} +{healAmount}HP → {CurrentRun.playerCurrentHp}/{CurrentRun.playerMaxHp}");
+                    Debug.Log($"[GSM] Unknown→Event(stub:Rest) F{node.floor} C{node.column} +{healAmount}HP → {CurrentRun.playerCurrentHp}/{CurrentRun.playerMaxHp}");
                     AdvanceToNextFloorOrVictory();
                     break;
                 }

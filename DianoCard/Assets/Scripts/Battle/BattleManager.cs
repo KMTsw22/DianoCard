@@ -106,6 +106,7 @@ namespace DianoCard.Battle
             {
                 s.tempAttackBonus = 0;
                 s.hasAttackedThisTurn = false;
+                s.cannibalUsedThisTurn = false;
                 s.block = 0;
                 if (s.skillCooldownRemaining > 0) s.skillCooldownRemaining--;
 
@@ -504,6 +505,8 @@ namespace DianoCard.Battle
                 {
                     ReturnBoundCard(secondaryField);
                     state.field.Remove(secondaryField);
+                    // 적 인텐트가 융합으로 사라진 공룡을 노리고 있었다면 결과체로 인계.
+                    RetargetEnemyIntents(secondaryField, result);
                 }
                 ApplyFusionResult(result, nextData, aBase, maxAtkBonus, maxHpBonus, preservedHp);
             }
@@ -616,10 +619,10 @@ namespace DianoCard.Battle
                 int baseDmg = c.value;
                 switch (c.id)
                 {
-                    case "C124":  // 분노의 일격: HP 절반 이하면 10
-                        if (state.player.hp * 2 <= state.player.maxHp) baseDmg = 10;
+                    case "C124":  // 광기의 검광: 적 HP 절반 이하면 10 (처형 류)
+                        if (explicitTarget != null && !explicitTarget.IsDead && explicitTarget.hp * 2 <= explicitTarget.maxHp) baseDmg = 10;
                         break;
-                    case "C131":  // 발톱 투척: 필드 공룡 ATK 합
+                    case "C131":  // 발톱 폭우: 필드 공룡 ATK 합
                         int sum = 0;
                         foreach (var s in state.field) if (!s.IsDead) sum += s.TotalAttack;
                         baseDmg = sum;
@@ -834,7 +837,7 @@ namespace DianoCard.Battle
             switch (c.subType)
             {
                 case CardSubType.ATTACK_BUFF:
-                    // "초식 공룡 공격력 +3" 류는 value만큼 한 턴 공격력 증가 (타겟 전체 아군 단순화)
+                    // 필드의 모든 공룡에게 한 턴 공격력 +value
                     foreach (var s in state.field)
                     {
                         s.tempAttackBonus += c.value;
@@ -1281,6 +1284,75 @@ namespace DianoCard.Battle
             if (skill.isOnceBattle) summon.skillUsedThisBattle = true;
             else summon.skillCooldownRemaining = skill.cooldownTurns;
 
+            return true;
+        }
+
+        // =========================================================
+        // 동족포식 (CANNIBAL 패시브)
+        // =========================================================
+
+        /// <summary>
+        /// CANNIBAL 패시브 보유자(마준가사우루스 등)가 이번 턴에 동족포식 발동 가능한지.
+        /// 살아있고, 침묵이 아니며, 이번 턴 아직 안 썼을 때 true.
+        /// </summary>
+        public bool CanFeedCannibal(int eaterIndex)
+        {
+            if (eaterIndex < 0 || eaterIndex >= state.field.Count) return false;
+            var eater = state.field[eaterIndex];
+            if (eater == null || eater.IsDead) return false;
+            if (eater.silencedTurns > 0) return false;
+            if (eater.cannibalUsedThisTurn) return false;
+            if (eater.data?.passiveType != DinoPassiveType.CANNIBAL) return false;
+            // 잡아먹을 다른 살아있는 아군이 최소 1마리 있어야 발동 가능 — 단독 필드면 비활성.
+            for (int i = 0; i < state.field.Count; i++)
+            {
+                if (i == eaterIndex) continue;
+                if (!state.field[i].IsDead) return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// 동족포식 대상으로 적격한지 — 자기 자신 아니고, 살아있는 다른 아군 공룡.
+        /// </summary>
+        public bool IsValidCannibalPrey(int eaterIndex, int preyIndex)
+        {
+            if (eaterIndex == preyIndex) return false;
+            if (preyIndex < 0 || preyIndex >= state.field.Count) return false;
+            var prey = state.field[preyIndex];
+            return prey != null && !prey.IsDead;
+        }
+
+        /// <summary>
+        /// 동족포식 발동 — eater(마준가)가 prey(다른 아군)의 현재 ATK/HP의 30%를 흡수하고 prey는 사망.
+        /// 흡수 효과: eater.attack += prey.attack * 0.3 (영구), eater.maxHp/hp += prey.hp * 0.3 (영구).
+        /// 1턴 1회 제한, 코스트 0. prey의 sourceCardInstance는 discard로 반환.
+        /// </summary>
+        public bool FeedCannibal(int eaterIndex, int preyIndex)
+        {
+            if (!CanFeedCannibal(eaterIndex)) return false;
+            if (!IsValidCannibalPrey(eaterIndex, preyIndex)) return false;
+
+            var eater = state.field[eaterIndex];
+            var prey = state.field[preyIndex];
+
+            int gainedAtk = Math.Max(0, Mathf.RoundToInt(prey.attack * 0.3f));
+            int gainedHp = Math.Max(0, Mathf.RoundToInt(prey.hp * 0.3f));
+
+            eater.attack += gainedAtk;
+            eater.maxHp += gainedHp;
+            eater.hp += gainedHp;
+
+            Log($"  [Passive] {eater.data.nameKr} 동족포식: {prey.data.nameKr} 흡수 (+{gainedAtk} ATK, +{gainedHp} HP / {eater.hp}/{eater.maxHp})");
+
+            // prey 제거 — bound 카드는 discard로 반환, 필드에서 제거.
+            prey.hp = 0;
+            ReturnBoundCard(prey);
+            // eaterIndex는 preyIndex보다 작을 수도 크기도 함. RemoveAt이 인덱스를 바꿀 수 있으니
+            // eater 참조로 다시 찾아 안전 보장.
+            state.field.RemoveAt(preyIndex);
+
+            eater.cannibalUsedThisTurn = true;
             return true;
         }
 
@@ -1738,9 +1810,21 @@ namespace DianoCard.Battle
             }
         }
 
+        /// <summary>필드에서 공룡이 제거/대체될 때 호출 — removed를 노리던 적 인텐트를 replacement로 인계.
+        /// 융합처럼 후계자가 명확할 때 사용. 일반 사망/이탈은 DealAttack의 살아있는 공룡 폴백이 처리.</summary>
+        private void RetargetEnemyIntents(SummonInstance removed, SummonInstance replacement)
+        {
+            if (removed == null) return;
+            foreach (var e in state.enemies)
+            {
+                if (e.IsDead) continue;
+                if (e.intentTargetDino == removed) e.intentTargetDino = replacement;
+            }
+        }
+
         /// <summary>
         /// 적 단발 공격 — 인텐트 롤 시점(RollIntent)에 확정된 attacker.intentTargetDino를 그대로 때림.
-        /// null이면 플레이어. 확정된 공룡이 이미 죽었거나 필드에서 빠졌으면 플레이어로 폴백.
+        /// null이면 플레이어. 확정된 공룡이 사망/이탈했으면 살아있는 다른 공룡으로 폴백, 모두 없으면 플레이어.
         /// 단, 도발 활성 공룡이 있으면 실행 시점에 그쪽으로 강제 리다이렉트(C108 도발이
         /// 인텐트 롤 이후에 발동돼도 같은 턴에 효과가 적용되도록).
         /// </summary>
@@ -1759,9 +1843,16 @@ namespace DianoCard.Battle
             }
 
             var target = taunting ?? attacker.intentTargetDino;
-            // 타겟 유효성 재확인 — 사망 / 필드 이탈 시 플레이어로 폴백.
+            // 원래 공룡 타겟이 사망/이탈했으면 살아있는 다른 공룡으로 인계 — 공룡이 하나도 없을 때만 플레이어로 폴백.
+            // (intentTargetDino가 처음부터 null이면 원래 플레이어 공격이었던 것이므로 그대로 둠)
             if (target != null && (target.IsDead || !state.field.Contains(target)))
+            {
                 target = null;
+                foreach (var s in state.field)
+                {
+                    if (!s.IsDead) { target = s; break; }
+                }
+            }
 
             if (target == null)
             {
@@ -2074,7 +2165,8 @@ namespace DianoCard.Battle
             if (chosen == null) chosen = StepAt(steps, 0);
 
             e.intentAction = chosen.action;
-            e.intentValue = chosen.value;
+            // 공격 계열은 BUFF_SELF로 누적된 extraAttack을 정적 패턴 값에 합산. 비공격 액션은 그대로.
+            e.intentValue = IsAttackAction(chosen.action) ? chosen.value + e.extraAttack : chosen.value;
             e.intentCount = Math.Max(1, chosen.count);
             e.intentTarget = chosen.target;
             e.intentIcon = chosen.intentIcon;

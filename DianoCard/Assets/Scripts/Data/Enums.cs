@@ -144,7 +144,7 @@ namespace DianoCard.Data
         APEX_PRESENCE,  // 턴 시작 시 전체 적 약화 value턴 (티렉스)
         SCOUT,          // 턴 시작 시 value장 드로우 (콤프)
         BLOOD_FRENZY,   // 자신 HP ≤ 50%면 ATK +value (알로)
-        CANNIBAL,       // 적 처치 시 자신 HP +value 회복 (마준가)
+        CANNIBAL,       // 1턴 1회 다른 아군 공룡을 잡아먹어 그 공룡의 현재 ATK/HP를 영구 흡수 (마준가). passiveValue 미사용.
         REAPER,         // 공격 시 자신 방어도 +value (테리지노사우루스)
         COUNTER,        // 공격받을 때 공격자에게 반격 피해 +value (이구아노돈)
         HERD_RALLY,     // (미사용 예약)

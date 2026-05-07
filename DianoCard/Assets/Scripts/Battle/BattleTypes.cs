@@ -82,12 +82,17 @@ namespace DianoCard.Battle
             hp = Math.Min(maxHp, hp + amount);
         }
 
-        /// <summary>턴 종료 시 호출 — 독 데미지 + 약화/취약 카운트다운.</summary>
+        /// <summary>턴 종료 시 호출 — 독 데미지 + 약화/취약 카운트다운. 독은 block에 먼저 흡수된다.</summary>
         public void TickStatuses()
         {
             if (poisonStacks > 0)
             {
-                if (!cheatInvincible) hp = Math.Max(0, hp - poisonStacks);
+                if (!cheatInvincible)
+                {
+                    int absorbed = Math.Min(block, poisonStacks);
+                    block -= absorbed;
+                    hp = Math.Max(0, hp - (poisonStacks - absorbed));
+                }
                 poisonStacks--;
             }
             if (weakTurns > 0) weakTurns--;
@@ -145,6 +150,8 @@ namespace DianoCard.Battle
         public bool skillUsedThisBattle;
         // AMBUSH 패시브 소모 여부 — 소환 후 첫 공격에만 발동, 이후 영구 소모.
         public bool passiveConsumed;
+        // CANNIBAL 패시브: 이번 턴 동족포식(아군 1마리 흡수) 사용 여부. StartTurn에 false로 리셋.
+        public bool cannibalUsedThisTurn;
 
         // === 융합 각인 잔여 버프 (C153/C154/C155 — 융합 후 결과체에 부여, "2T" 지속) ===
         // 격노의 각인(C154): tempAttackBonus를 매 StartTurn마다 fuseAtkRefreshValue만큼 다시 채워준다.
@@ -317,17 +324,23 @@ namespace DianoCard.Battle
         {
             if (poisonStacks > 0)
             {
-                hp = Math.Max(0, hp - poisonStacks);
+                int absorbed = Math.Min(block, poisonStacks);
+                block -= absorbed;
+                hp = Math.Max(0, hp - (poisonStacks - absorbed));
                 poisonStacks--;
             }
             if (burnStacks > 0)
             {
-                hp = Math.Max(0, hp - burnStacks);
+                int absorbed = Math.Min(block, burnStacks);
+                block -= absorbed;
+                hp = Math.Max(0, hp - (burnStacks - absorbed));
                 burnStacks--;
             }
             if (bleedStacks > 0)
             {
-                hp = Math.Max(0, hp - bleedStacks);
+                int absorbed = Math.Min(block, bleedStacks);
+                block -= absorbed;
+                hp = Math.Max(0, hp - (bleedStacks - absorbed));
                 bleedStacks--;
             }
             if (weakTurns > 0) weakTurns--;

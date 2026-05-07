@@ -295,14 +295,7 @@ namespace DianoCard.Game
         {
             if (run == null || victim == null) return;
 
-            // CANNIBAL 패시브: 적 처치 시 자신 HP +value 회복 (마준가사우루스 등)
-            if (killer != null && !killer.IsDead
-                && killer.data?.passiveType == DianoCard.Data.DinoPassiveType.CANNIBAL)
-            {
-                int healed = System.Math.Min(killer.data.passiveValue, killer.maxHp - killer.hp);
-                killer.hp += healed;
-                Debug.Log($"[Passive] {killer.data.nameKr} 동족포식: HP +{healed} ({killer.hp}/{killer.maxHp})");
-            }
+            // (CANNIBAL 패시브는 적 처치가 아니라 아군 동족포식으로 발동 — BattleManager.FeedCannibal 참고)
 
             foreach (var relic in run.relics)
             {

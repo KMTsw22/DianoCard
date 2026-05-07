@@ -59,6 +59,11 @@ public class BattleUI : MonoBehaviour
     private bool _fusionMaterialAPicked;
     private DianoCard.Battle.FusionMaterial _fusionMaterialA;
 
+    // 동족포식 모드: CANNIBAL 패시브 보유자(마준가)의 송곳니 뱃지 클릭 시 활성.
+    // -1이면 비활성, 그 외엔 eater의 필드 인덱스. 다른 아군 클릭 → BattleManager.FeedCannibal.
+    // 우클릭/같은 뱃지 재클릭 → 취소.
+    private int _cannibalFeedFromIndex = -1;
+
     // StS 스타일 타겟팅 화살표 — 매 OnGUI 프레임 리셋되고 DrawHand/DrawSummon이 source를,
     // DrawEnemy/DrawSummon의 타겟팅 브랜치가 target 후보 rect를 채운다. 융합 모드에는 사용하지 않음.
     private bool _arrowSourceValid;
@@ -230,6 +235,10 @@ public class BattleUI : MonoBehaviour
     private readonly Dictionary<string, Texture2D> _cardSprites = new();
     // 필드 위에 그려지는 공룡 스프라이트 (투명 배경). Dinos/ 폴더.
     private readonly Dictionary<string, Texture2D> _fieldDinoSprites = new();
+    // 공룡 평타 모션 프레임. Dinos/animation/<filename>/attack_f01..f12. 카드 id → 프레임 배열.
+    // AnimateLunge가 진행되는 동안 _attackProgress 비율로 프레임 인덱스 계산해 텍스처 스왑.
+    // 폴더가 없는 진화체(_T1/_T2 등)는 키가 없어 폴백으로 정적 idle만 표시됨.
+    private readonly Dictionary<string, Texture2D[]> _fieldDinoAttackFrames = new();
     // 공룡 패시브 타입 아이콘. Dinos/passive/<lowercase_enum>.png
     private readonly Dictionary<DinoPassiveType, Texture2D> _passiveIcons = new();
 
@@ -1001,6 +1010,17 @@ public class BattleUI : MonoBehaviour
                 var fieldTex = Resources.Load<Texture2D>("Dinos/" + filename);
                 if (fieldTex != null) _fieldDinoSprites[card.id] = fieldTex;
                 else Debug.LogWarning($"[BattleUI] Field dino sprite not found: Dinos/{filename}");
+
+                // 평타 모션 12프레임 — Resources/Dinos/animation/<filename>/attack_f01..f12.png.
+                // 끊기는 번호에서 중단 (idle만 있는 카드는 attack_f01 미존재 → 시퀀스 미등록 → 기존 정적 표시).
+                var atkFrames = new System.Collections.Generic.List<Texture2D>();
+                for (int i = 1; i <= 12; i++)
+                {
+                    var f = Resources.Load<Texture2D>($"Dinos/animation/{filename}/attack_f{i:D2}");
+                    if (f == null) break;
+                    atkFrames.Add(f);
+                }
+                if (atkFrames.Count > 0) _fieldDinoAttackFrames[card.id] = atkFrames.ToArray();
             }
         }
 
@@ -2194,9 +2214,11 @@ public class BattleUI : MonoBehaviour
         if (Camera.main == null) return;
         Vector3 world = GuiToWorld(guiPos);
 
-        if (_vfxHitA   != null) Instantiate(_vfxHitA,   world, Quaternion.identity);
-        if (_vfxHitD   != null) Instantiate(_vfxHitD,   world, Quaternion.identity);
-        if (_vfxSmokeF != null) Instantiate(_vfxSmokeF, world, Quaternion.identity);
+        // 프리팹에 자체 destroy 로직이 없을 때 화면에 누적되는 걸 막는 안전망.
+        const float vfxMaxLifetime = 2f;
+        if (_vfxHitA   != null) Destroy(Instantiate(_vfxHitA,   world, Quaternion.identity), vfxMaxLifetime);
+        if (_vfxHitD   != null) Destroy(Instantiate(_vfxHitD,   world, Quaternion.identity), vfxMaxLifetime);
+        if (_vfxSmokeF != null) Destroy(Instantiate(_vfxSmokeF, world, Quaternion.identity), vfxMaxLifetime);
     }
 
     private void AdvanceFloaters()
@@ -2241,14 +2263,15 @@ public class BattleUI : MonoBehaviour
 
         if (active)
         {
-            // 우클릭으로 타겟팅 취소 (카드/공룡/공룡스킬/교체/융합/포션 모두)
-            if ((_targetingCardIndex >= 0 || _targetingSummonIndex >= 0 || _targetingSummonSkillIndex >= 0 || _swapFromCardIndex >= 0 || _targetingPotionIndex >= 0)
+            // 우클릭으로 타겟팅 취소 (카드/공룡/공룡스킬/교체/융합/포션/동족포식 모두)
+            if ((_targetingCardIndex >= 0 || _targetingSummonIndex >= 0 || _targetingSummonSkillIndex >= 0 || _swapFromCardIndex >= 0 || _targetingPotionIndex >= 0 || _cannibalFeedFromIndex >= 0)
                 && Event.current.type == EventType.MouseDown
                 && Event.current.button == 1)
             {
                 if (_targetingSummonIndex >= 0) ShowToast("공격을 취소합니다");
                 else if (_targetingSummonSkillIndex >= 0) ShowToast("스킬을 취소합니다");
                 else if (_targetingPotionIndex >= 0) ShowToast("포션 사용을 취소합니다");
+                else if (_cannibalFeedFromIndex >= 0) ShowToast("동족포식을 취소합니다");
                 _targetingCardIndex = -1;
                 _targetingSummonIndex = -1;
                 _targetingSummonSkillIndex = -1;
@@ -2256,6 +2279,7 @@ public class BattleUI : MonoBehaviour
                 _targetingPotionIndex = -1;
                 _selectedPotionIndex = -1;
                 _fusionMaterialAPicked = false;
+                _cannibalFeedFromIndex = -1;
                 Event.current.Use();
             }
 
@@ -2291,10 +2315,22 @@ public class BattleUI : MonoBehaviour
             {
                 _targetingSummonIndex = -1;
                 _targetingSummonSkillIndex = -1;
+                _cannibalFeedFromIndex = -1;
             }
             // 공룡 공격 타겟팅과 스킬 타겟팅도 상호 배타
             if (_targetingSummonIndex >= 0) _targetingSummonSkillIndex = -1;
             if (_targetingSummonSkillIndex >= 0) _targetingSummonIndex = -1;
+            // 동족포식 모드 — eater가 사라졌거나 더 이상 사용 불가면 리셋. 카드/스킬 타겟팅과도 상호 배타.
+            if (_cannibalFeedFromIndex >= _battle.state.field.Count
+                || (_cannibalFeedFromIndex >= 0 && !_battle.CanFeedCannibal(_cannibalFeedFromIndex)))
+            {
+                _cannibalFeedFromIndex = -1;
+            }
+            if (_cannibalFeedFromIndex >= 0)
+            {
+                _targetingSummonIndex = -1;
+                _targetingSummonSkillIndex = -1;
+            }
 
             // 포션 타겟팅 — 슬롯이 사라졌거나 포션이 null이면 리셋. 다른 타겟팅과도 상호 배타.
             var runForPotion = GameStateManager.Instance?.CurrentRun;
@@ -2356,6 +2392,7 @@ public class BattleUI : MonoBehaviour
             DrawTargetingHint(state);
             DrawSummonAttackHint(state);
             DrawSummonSkillHint(state);
+            DrawCannibalFeedHint(state);
             // 손패/배틀필드 렌더가 끝난 뒤 source/target rect가 다 모인 상태에서 그린다.
             DrawTargetingArrow(state);
         }
@@ -2658,8 +2695,8 @@ public class BattleUI : MonoBehaviour
                 $"매 턴 시작, 카드 +{v}장 추가 드로우."),
             DinoPassiveType.BLOOD_FRENZY  => ("피의 광란 (Blood Frenzy)",
                 $"자신 HP가 50% 이하일 때 ATK +{v} (자동 발동)."),
-            DinoPassiveType.CANNIBAL      => ("카니발 (Cannibal)",
-                $"적 처치 시 자신 HP +{v} 회복."),
+            DinoPassiveType.CANNIBAL      => ("동족포식 (Cannibal)",
+                "필드의 다른 아군 공룡 1마리를 잡아먹는다 (1턴 1회, 코스트 0).\n제물의 현재 ATK·HP를 흡수해 자신의 공격력·최대 HP가 영구 상승.\n발동: 마준가 머리 위 송곳니(牙) 뱃지 클릭 → 잡아먹을 아군 클릭."),
             DinoPassiveType.REAPER        => ("수확 (Reaper)",
                 $"공격마다 자신 방어도 +{v}."),
             DinoPassiveType.COUNTER       => ("반격 (Counter)",
@@ -2762,6 +2799,19 @@ public class BattleUI : MonoBehaviour
         float alpha = Mathf.Lerp(0.35f, 0.95f, pulse);
         var prev = GUI.color;
         GUI.color = new Color(0.85f, 1f, 0.95f, alpha);
+        GUI.Label(new Rect(0, 115, RefW, 30), text, _targetHintStyle);
+        GUI.color = prev;
+    }
+
+    private void DrawCannibalFeedHint(BattleState state)
+    {
+        if (_cannibalFeedFromIndex < 0 || _cannibalFeedFromIndex >= state.field.Count) return;
+        var s = state.field[_cannibalFeedFromIndex];
+        string text = $"🩸 {s.data.name} 동족포식 — 잡아먹을 아군 공룡을 클릭  (우클릭: 취소)";
+        float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 2.2f);
+        float alpha = Mathf.Lerp(0.35f, 0.95f, pulse);
+        var prev = GUI.color;
+        GUI.color = new Color(1f, 0.55f, 0.45f, alpha);
         GUI.Label(new Rect(0, 115, RefW, 30), text, _targetHintStyle);
         GUI.color = prev;
     }
@@ -3506,6 +3556,29 @@ public class BattleUI : MonoBehaviour
         }
     }
 
+    // 인텐트가 데미지 액션이면 실제 BattleManager가 산출하는 피해량(floor 스케일 ± 약화)을 반환.
+    // ATTACK/MULTI/COUNTDOWN_ATTACK은 DealAttack 경유 → scale+weak 둘 다.
+    // COUNTDOWN_AOE는 자체 산출 → scale만.
+    // DRAIN은 raw intentValue 그대로 (스케일/약화 없음).
+    // 비-데미지 액션은 raw intentValue.
+    private static int DisplayedIntentValue(EnemyInstance e)
+    {
+        switch (e.intentAction)
+        {
+            case DianoCard.Data.EnemyAction.ATTACK:
+            case DianoCard.Data.EnemyAction.MULTI_ATTACK:
+            case DianoCard.Data.EnemyAction.COUNTDOWN_ATTACK:
+            {
+                int scaled = Mathf.Max(1, Mathf.RoundToInt(e.intentValue * e.damageScale));
+                return e.weakTurns > 0 ? Mathf.Max(1, Mathf.FloorToInt(scaled * 0.75f)) : scaled;
+            }
+            case DianoCard.Data.EnemyAction.COUNTDOWN_AOE:
+                return Mathf.Max(1, Mathf.RoundToInt(e.intentValue * e.damageScale));
+            default:
+                return e.intentValue;
+        }
+    }
+
     // 적 머리 위 intent 표시 — 18개 아이콘 풀에서 액션별로 매핑된 아이콘 + (선택) 숫자 + hover 툴팁.
     private void DrawEnemyIntent(Vector2 center, EnemyInstance e)
     {
@@ -3513,7 +3586,7 @@ public class BattleUI : MonoBehaviour
 
         if (e.intentType == EnemyIntentType.ATTACK)
         {
-            DrawAttackIconBadge(center, e.intentValue, 0f, boosted: false);
+            DrawAttackIconBadge(center, DisplayedIntentValue(e), 0f, boosted: false);
             drawnAsIcon = true;
         }
         else
@@ -3522,7 +3595,7 @@ public class BattleUI : MonoBehaviour
             var tex = HeadIcon(iconId);
             if (tex != null)
             {
-                int shownValue = IntentShowsNumber(e.intentAction) ? e.intentValue : 0;
+                int shownValue = IntentShowsNumber(e.intentAction) ? DisplayedIntentValue(e) : 0;
                 DrawSideBySideBadge(center, shownValue, tex, 0f, Color.white);
                 drawnAsIcon = true;
             }
@@ -3538,7 +3611,9 @@ public class BattleUI : MonoBehaviour
 
     private (string title, string body) GetIntentTooltipText(EnemyInstance e)
     {
+        // 데미지 액션은 스케일된 실효 피해량(d), 그 외 효과 수치는 raw intentValue(v).
         int v = e.intentValue;
+        int d = DisplayedIntentValue(e);
         int c = e.intentCount;
         int t = e.telegraphRemaining;
 
@@ -3558,13 +3633,13 @@ public class BattleUI : MonoBehaviour
 
         switch (e.intentAction)
         {
-            case DianoCard.Data.EnemyAction.ATTACK:           return ("공격",         $"{atkTarget}에게 {v} 피해.");
-            case DianoCard.Data.EnemyAction.MULTI_ATTACK:     return ("다중 공격",    $"{atkTarget}에게 {v} 피해 × {c}회.");
+            case DianoCard.Data.EnemyAction.ATTACK:           return ("공격",         $"{atkTarget}에게 {d} 피해.");
+            case DianoCard.Data.EnemyAction.MULTI_ATTACK:     return ("다중 공격",    $"{atkTarget}에게 {d} 피해 × {c}회.");
             case DianoCard.Data.EnemyAction.DEFEND:           return ("방어",         $"자신 방어도 +{v}.");
             case DianoCard.Data.EnemyAction.POISON:           return ("독 부여",      $"플레이어에게 독 +{v}.\n독은 매 턴 종료 시 스택만큼 피해 후 1씩 감소.");
             case DianoCard.Data.EnemyAction.WEAK:             return ("약화 부여",    $"플레이어를 {v}턴 약화.\n약화 상태에서는 가하는 피해 -25%.");
             case DianoCard.Data.EnemyAction.VULNERABLE:       return ("취약 부여",    $"플레이어를 {v}턴 취약.\n취약 상태에서는 받는 피해 +50%.");
-            case DianoCard.Data.EnemyAction.DRAIN:            return ("흡혈",         $"플레이어에게 {v} 피해 후 자신 HP를 같은 양만큼 회복.");
+            case DianoCard.Data.EnemyAction.DRAIN:            return ("흡혈",         $"플레이어에게 {d} 피해 후 자신 HP를 같은 양만큼 회복.");
             case DianoCard.Data.EnemyAction.SILENCE:          return ("침묵",         $"아군 공룡 전체를 {v}턴 침묵.\n침묵된 공룡은 행동 불가.");
             case DianoCard.Data.EnemyAction.STEAL_SUMMON:     return ("공룡 강탈",    "아군 공룡 1체를 적 진영으로 전환.\n정화(PURIFY) 효과로 되찾을 수 있음.");
             case DianoCard.Data.EnemyAction.SUMMON:           return ("소환",         $"쫄 {Mathf.Max(1, v)}체 소환.");
@@ -3574,8 +3649,8 @@ public class BattleUI : MonoBehaviour
             case DianoCard.Data.EnemyAction.ARMOR_UP:         return ("장갑",         $"매 턴 시작 방어도 +{v} (영구).");
             case DianoCard.Data.EnemyAction.HEAL_BOSS:        return ("보스 회복",    $"보스 HP {v} 회복.");
             case DianoCard.Data.EnemyAction.BLOCK_BOSS:       return ("보스 방어",    $"보스 방어도 +{v}.");
-            case DianoCard.Data.EnemyAction.COUNTDOWN_ATTACK: return ("예고 강타",    $"{countdownPhrase}에 {atkTarget}에게 {v} 피해.");
-            case DianoCard.Data.EnemyAction.COUNTDOWN_AOE:    return ("예고 광역",    $"{countdownPhrase}에 플레이어 및 모든 공룡에게 {v} 피해.");
+            case DianoCard.Data.EnemyAction.COUNTDOWN_ATTACK: return ("예고 강타",    $"{countdownPhrase}에 {atkTarget}에게 {d} 피해.");
+            case DianoCard.Data.EnemyAction.COUNTDOWN_AOE:    return ("예고 광역",    $"{countdownPhrase}에 플레이어 및 모든 공룡에게 {d} 피해.");
             case DianoCard.Data.EnemyAction.CLOG_DECK:        return ("방해 카드",    $"플레이어 버림더미에 잡초 카드 {v}장 추가.");
             case DianoCard.Data.EnemyAction.IDLE:             return ("대기",         "이번 턴 행동하지 않음.");
             default:                                          return ("?",           "다음 행동을 알 수 없음.");
@@ -3710,14 +3785,20 @@ public class BattleUI : MonoBehaviour
         }
     }
 
-    // BattleManager.DealAttack의 타겟 결정 로직 미러링 — live 도발 > 사전롤 intentTargetDino(사망/이탈 시 무효) > player.
+    // BattleManager.DealAttack의 타겟 결정 로직 미러링 — live 도발 > 사전롤 intentTargetDino(사망/이탈 시 살아있는 공룡으로 폴백) > player.
     // 인텐트 롤 이후 도발 발동/타겟 사망/필드 이탈이 있으면 뱃지가 실제 데미지 행선지와 어긋나는 버그 방지.
+    // 원래 공룡을 노렸는데 그 공룡이 사라진 경우 다른 살아있는 공룡으로 인계 — 공룡이 모두 없을 때만 플레이어 뱃지로 전환.
     private SummonInstance ResolveLiveAttackTarget(EnemyInstance e)
     {
         if (_battle?.state == null) return null;
         foreach (var s in _battle.state.field) if (s.IsTaunting) return s;
         var t = e.intentTargetDino;
-        if (t != null && !t.IsDead && _battle.state.field.Contains(t)) return t;
+        if (t == null) return null;
+        if (!t.IsDead && _battle.state.field.Contains(t)) return t;
+        foreach (var s in _battle.state.field)
+        {
+            if (!s.IsDead) return s;
+        }
         return null;
     }
 
@@ -3941,7 +4022,37 @@ public class BattleUI : MonoBehaviour
         {
             float aspect = tex.width / (float)tex.height;
             var drawRect = ComputeBottomAnchoredDrawRect(rect, aspect);
-            GUI.DrawTexture(drawRect, tex, ScaleMode.StretchToFill, alphaBlend: true);
+
+            // 공격 중이고 attack 시퀀스가 있으면 프레임 스왑 — _attackProgress(0..1) 기준 균등 분배.
+            // attack 캔버스는 idle 캔버스보다 크게 그려져 있어(스윙 여유분 포함) 그대로 idle 슬롯에 fit하면
+            // 캐릭터가 작아 보임. 동일한 idle 영역을 attack 캔버스 안에서 동일 위치(가로 중앙·세로 발맞춤)로
+            // 가정하고, attack 텍스처를 idle 대비 (atkW/idleW, atkH/idleH) 만큼 확대해 그린다.
+            // 결과: attack 캔버스 안에 들어있는 캐릭터의 발 위치 = idle 발 위치, 캐릭터 크기 = idle 크기.
+            bool drewAttackFrame = false;
+            if (ReferenceEquals(_attackingUnit, s)
+                && _fieldDinoAttackFrames.TryGetValue(s.data.id, out var atkFrames)
+                && atkFrames != null && atkFrames.Length > 0)
+            {
+                int frameIdx = Mathf.Clamp(Mathf.FloorToInt(_attackProgress * atkFrames.Length), 0, atkFrames.Length - 1);
+                var atkTex = atkFrames[frameIdx];
+                if (atkTex != null && atkTex.width > 0 && atkTex.height > 0 && tex.width > 0 && tex.height > 0)
+                {
+                    float wScale = atkTex.width  / (float)tex.width;
+                    float hScale = atkTex.height / (float)tex.height;
+                    float atkDrawW = drawRect.width  * wScale;
+                    float atkDrawH = drawRect.height * hScale;
+                    var atkDrawRect = new Rect(
+                        drawRect.center.x - atkDrawW * 0.5f,
+                        drawRect.yMax    - atkDrawH,
+                        atkDrawW,
+                        atkDrawH);
+                    GUI.DrawTexture(atkDrawRect, atkTex, ScaleMode.StretchToFill, alphaBlend: true);
+                    drewAttackFrame = true;
+                }
+            }
+
+            if (!drewAttackFrame)
+                GUI.DrawTexture(drawRect, tex, ScaleMode.StretchToFill, alphaBlend: true);
         }
         else
         {
@@ -3991,13 +4102,17 @@ public class BattleUI : MonoBehaviour
             _centerStyle.normal.textColor = prev;
         }
 
-        // 스킬 유무에 따라 ATK 뱃지 위치가 달라짐 — 둘 다 뜨면 한 쌍을 공룡 정중앙으로 묶고
+        // 스킬/동족포식 뱃지 유무에 따라 ATK 뱃지 위치가 달라짐 — 둘 다 뜨면 한 쌍을 공룡 정중앙으로 묶고
         // 검만 뜨면 그대로 정중앙. 옆 공룡 영역을 침범하던 우측 쏠림 해소.
+        // CANNIBAL 패시브 보유자는 스킬 슬롯 자리에 송곳니 뱃지를 그린다 (스킬과 공존하지 않음 — 마준가는 시그니처 스킬 없음).
         var skillData = DianoCard.Data.DataManager.Instance.GetSkill(s.data.id);
         bool hasSkill = skillData != null;
+        bool hasCannibalBadge = !hasSkill
+            && s.data?.passiveType == DianoCard.Data.DinoPassiveType.CANNIBAL
+            && !s.IsDead;
         const float kBadgeSize = 40f;
         const float kBadgeGap = 8f;
-        float pairOffset = hasSkill ? -(kBadgeSize + kBadgeGap) * 0.5f : 0f;
+        float pairOffset = (hasSkill || hasCannibalBadge) ? -(kBadgeSize + kBadgeGap) * 0.5f : 0f;
 
         // ATK 뱃지 — 머리 위 (적 intent와 미러 대칭). 아군은 검을 +45°로 회전.
         // 이 뱃지를 클릭하면 공격 타겟팅 시작 (예전엔 공룡 전체 클릭). 클릭 영역은 시인성보다 살짝 크게.
@@ -4023,11 +4138,18 @@ public class BattleUI : MonoBehaviour
         {
             DrawSummonSkillBadge(s, summonIndex, skillData, rect, summonHpRect, inReward);
         }
+        else if (hasCannibalBadge)
+        {
+            DrawSummonCannibalBadge(s, summonIndex, rect, inReward);
+        }
 
         // 클릭 처리 우선순위:
         //   1) 교체 모드 (swap) — 필드 꽉 찬 상태에서 SUMMON 카드 플레이 시
         //   2) 아군 타겟 카드 모드 — 수호 마법/먹이 단일 타겟 카드
-        //   3) 일반 summon-attack 선택 토글
+        //   3) 포션 ALLY 타겟 모드
+        //   4) 융합 모드 — 같은 종/티어 재료 선택
+        //   5) 동족포식 모드 — 마준가가 잡아먹을 아군 1마리 선택
+        //   (일반 summon-attack은 검 뱃지로 대체되어 본체 클릭은 무시)
         if (!inReward && _battle?.state != null && !_battle.state.IsOver)
         {
             var ev = Event.current;
@@ -4105,6 +4227,34 @@ public class BattleUI : MonoBehaviour
                     {
                         ev.Use();
                         HandleFusionMaterialClick(DianoCard.Battle.FusionMaterial.Field(summonIndex));
+                    }
+                }
+            }
+            else if (_cannibalFeedFromIndex >= 0)
+            {
+                // 동족포식 모드 — eater(마준가) 외 다른 살아있는 아군이 클릭 가능 타겟.
+                // eater 본인 클릭은 모드 취소로 처리.
+                bool isEater = _cannibalFeedFromIndex == summonIndex;
+                if (isEater)
+                {
+                    DrawFusionSelectedMarker(rect);
+                    if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && hovered)
+                    {
+                        ev.Use();
+                        _cannibalFeedFromIndex = -1;
+                    }
+                }
+                else if (!s.IsDead)
+                {
+                    DrawTargetFootGlow(rect, hovered);
+                    _arrowTargetRects.Add(rect);
+                    if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && hovered)
+                    {
+                        ev.Use();
+                        int eaterIdx = _cannibalFeedFromIndex;
+                        int preyIdx = summonIndex;
+                        _cannibalFeedFromIndex = -1;
+                        _pending.Add(() => _battle.FeedCannibal(eaterIdx, preyIdx));
                     }
                 }
             }
@@ -4243,6 +4393,90 @@ public class BattleUI : MonoBehaviour
             var summon = s;
             _pending.Add(() => StartCoroutine(ManualSummonSkillCoroutine(summon, -1)));
         }
+    }
+
+    /// <summary>
+    /// CANNIBAL 패시브(마준가) 동족포식 발동 뱃지. 스킬 뱃지와 동일 슬롯/스타일을 공유 — 시그니처 스킬 없는
+    /// 공룡에게만 표시된다. 클릭 시 _cannibalFeedFromIndex 세팅 → 다른 아군 공룡 클릭으로 발동.
+    /// 1턴 1회 사용 후 회색 dim + 우하단 ✓ 칩.
+    /// </summary>
+    private void DrawSummonCannibalBadge(SummonInstance s, int summonIndex, Rect summonRect, bool inReward)
+    {
+        if (_battle?.state == null) return;
+
+        bool ready = _battle.CanFeedCannibal(summonIndex);
+        bool used = !ready && s.cannibalUsedThisTurn;
+
+        const float iconSize = 40f;
+        const float swordSize = 40f;
+        const float gap = 8f;
+        Vector2 swordCenter = new Vector2(summonRect.center.x - (swordSize + gap) * 0.5f, summonRect.y - 12f);
+        Vector2 iconCenter = new Vector2(swordCenter.x + (swordSize / 2f) + gap + (iconSize / 2f), swordCenter.y);
+        var iconRect = new Rect(iconCenter.x - iconSize / 2f, iconCenter.y - iconSize / 2f, iconSize, iconSize);
+
+        var prevColor = GUI.color;
+
+        // READY 펄스 글로우 — 깊은 적색 톤(스킬은 청록).
+        if (ready)
+        {
+            float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 4f);
+            float glowSize = iconSize * 1.55f;
+            var glowRect = new Rect(iconCenter.x - glowSize / 2f, iconCenter.y - glowSize / 2f, glowSize, glowSize);
+            FillRect(glowRect, new Color(0.55f, 0.10f, 0.10f, 0.18f * pulse));
+        }
+
+        // 본체 — 크림슨 사각 + 어두운 보더 + 단일 한자 "牙"(이빨/송곳니).
+        FillRect(iconRect, ready ? new Color(0.45f, 0.10f, 0.12f, 0.92f)
+                                 : new Color(0.18f, 0.10f, 0.10f, 0.85f));
+        DrawBorder(iconRect, ready ? 2 : 1,
+                   ready ? new Color(0.95f, 0.55f, 0.45f, 0.95f) : new Color(0.40f, 0.30f, 0.30f, 0.85f));
+
+        var prevTextCol = _centerStyle.normal.textColor;
+        int prevFontSize = _centerStyle.fontSize;
+        _centerStyle.fontSize = 22;
+        _centerStyle.normal.textColor = ready ? new Color(1f, 0.92f, 0.85f) : new Color(0.65f, 0.55f, 0.55f);
+        GUI.Label(iconRect, "牙", _centerStyle);
+        _centerStyle.normal.textColor = prevTextCol;
+        _centerStyle.fontSize = prevFontSize;
+
+        GUI.color = prevColor;
+
+        // 우하단 칩 — 사용 완료 ✓.
+        if (used)
+        {
+            const float chipW = 22f, chipH = 18f;
+            var chipRect = new Rect(iconRect.xMax - chipW * 0.7f, iconRect.yMax - chipH * 0.7f, chipW, chipH);
+            FillRect(new Rect(chipRect.x - 1f, chipRect.y - 1f, chipRect.width + 2f, chipRect.height + 2f),
+                     new Color(0f, 0f, 0f, 0.55f));
+            DrawTextWithOutline(chipRect, "✓", _intentNumberStyle,
+                                Color.white, new Color(0f, 0f, 0f, 0.95f), 1.4f);
+        }
+
+        // 클릭 — 다른 타겟팅 진행 중이면 무시.
+        if (inReward) return;
+        if (_battle.state.IsOver) return;
+        if (!ready) return;
+        if (_targetingCardIndex >= 0 || _swapFromCardIndex >= 0
+            || _targetingSummonSkillIndex >= 0 || _targetingPotionIndex >= 0) return;
+
+        var ev = Event.current;
+        if (ev == null) return;
+        if (ev.type != EventType.MouseDown || ev.button != 0) return;
+        var hitRect = new Rect(iconRect.x - 6f, iconRect.y - 6f, iconRect.width + 12f, iconRect.height + 12f);
+        if (!hitRect.Contains(ev.mousePosition)) return;
+        ev.Use();
+
+        // 동일 뱃지 재클릭 → 모드 토글 해제
+        if (_cannibalFeedFromIndex == summonIndex)
+        {
+            _cannibalFeedFromIndex = -1;
+            return;
+        }
+
+        // 모드 진입 — 다른 모드와 상호 배타.
+        _targetingSummonIndex = -1;
+        _targetingSummonSkillIndex = -1;
+        _cannibalFeedFromIndex = summonIndex;
     }
 
     private void DrawEnemy(EnemyInstance e, int enemyIndex, Vector2 center)
@@ -5892,6 +6126,8 @@ public class BattleUI : MonoBehaviour
             && c.target == TargetType.ALL_ALLY && state.field.Count == 0) return false;
         // 융합 카드: 필드 + 손 조합에 같은 종·같은 티어 육식이 최소 2마리 있어야 재료 확보 가능.
         if (CardNeedsFusionTargets(c) && !HasAnyFusionPair(state)) return false;
+        // C131 발톱 폭우: 필드 ATK 합산이라 빈 필드면 데미지 0 — 마나만 낭비되므로 차단.
+        if (c.id == "C131" && state.field.Count == 0) return false;
         return true;
     }
 

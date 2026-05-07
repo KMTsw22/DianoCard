@@ -24,6 +24,12 @@ namespace DianoCard.Game
         public string chapterId = "CH01";
         public string characterId = "CH001";  // 선택된 캐릭터 id — 시작 덱/보상 풀 분기에 사용
 
+        // 미지(?) 노드 pity 카운터 — 마지막 해당 결과 이후 쌓인 이벤트 수(0~5 캡).
+        // 규칙/표는 GameStateManager.RollUnknownOutcome 주석 참조.
+        public int unknownPityCombat = 0;
+        public int unknownPityShop = 0;
+        public int unknownPityTreasure = 0;
+
         // 직전 전투 클리어 시 생성된 보상 (RewardUI가 읽음)
         public BattleReward pendingReward;
 

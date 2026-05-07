@@ -8,7 +8,7 @@ C008,티렉스,T-Rex,SUMMON,CARNIVORE,RARE,2,15,22,0,FIELD,아펙스. 전장에 
 C010,콤프소그나투스,Compy,SUMMON,CARNIVORE,COMMON,0,2,5,0,FIELD,초소형. 0코. 매 턴 시작 카드 +1장.,Tiny. 0-cost. Draw +1 each turn.,Compsognathus.png,1,0.60,SCOUT,1
 C011,브라키오사우루스,Brachiosaurus,SUMMON,HERBIVORE,RARE,2,3,40,0,FIELD,초식 아펙스. 거대.,Apex herbivore. Massive.,Brachiosaurus.png,1,1.0,NONE,0
 C012,알로사우루스,Allosaurus,SUMMON,CARNIVORE,COMMON,1,11,22,0,FIELD,육식. HP 50%↓ 시 ATK +6.,Carnivore. ATK +6 when HP below 50%.,Allosaurus.png,1,1.1,BLOOD_FRENZY,6
-C014,마준가사우루스,Majungasaurus,SUMMON,CARNIVORE,COMMON,2,9,14,0,FIELD,육식. 무진화. 적 처치 시 HP +5 회복.,Carnivore. No evolution. Heal +5 on kill.,Majungasaurus.png,1,1.0,CANNIBAL,5
+C014,마준가사우루스,Majungasaurus,SUMMON,CARNIVORE,COMMON,2,9,14,0,FIELD,육식. 무진화. 동족포식: 1턴 1회 다른 아군을 잡아먹어 그 공룡의 현재 ATK·HP의 30%를 영구 흡수.,Carnivore. No evolution. Cannibal: once per turn devour another ally to permanently absorb 30% of its current ATK and HP.,Majungasaurus.png,1,1.0,CANNIBAL,0
 C018,기가노토사우루스,Giganotosaurus,SUMMON,CARNIVORE,RARE,2,15,24,0,FIELD,육식. 공격받을 때마다 ATK +2 영구 증가.,Carnivore. Permanently gain +2 ATK when hit.,Giganotosaurus.png,1,1.3,ENRAGE,2
 C019,트로오돈,Troodon,SUMMON,CARNIVORE,COMMON,1,7,12,0,FIELD,육식. 소환 후 첫 공격이 2배 데미지.,Carnivore. First attack after summon deals double damage.,Troodon.png,1,0.70,AMBUSH,1
 C020,바리오닉스,Baryonyx,SUMMON,CARNIVORE,UNCOMMON,2,12,18,0,FIELD,육식. 적 처치 시 즉시 추가 공격 1회.,Carnivore. Immediately attacks again after a kill.,Baryonyx.png,1,1.0,RAMPAGE,1
@@ -30,7 +30,7 @@ C103,폭염 운석,Inferno Meteor,MAGIC,ATTACK,UNCOMMON,2,0,0,12,ENEMY,12 피해
 C104,이중 룬돔,Twin Rune Dome,MAGIC,DEFENSE,UNCOMMON,2,0,0,10,SELF,방어 +10. 다음 턴 +5.,+10 block. +5 next T.,TwinRuneDome.png,1,1.0,NONE,0
 C107,신성의 광구,Sacred Orb,MAGIC,PURIFY,UNCOMMON,1,0,0,0,SELF,공룡 해방. 디버프 제거.,Free stolen. Clear debuffs.,SacredOrb.png,1,1.0,NONE,0
 C108,도발,Taunt,BUFF,TAUNT,COMMON,1,0,0,1,ALLY,선택 공룡 도발 (1턴).,Taunt (1T).,Taunt.png,1,1.0,NONE,0
-C201,공격 강화,Power Up,BUFF,ATTACK_BUFF,COMMON,1,0,0,3,ALLY,초식 ATK +3 (1턴).,+3 ATK (1T).,PowerUp.png,1,1.0,NONE,0
+C201,공격 강화,Power Up,BUFF,ATTACK_BUFF,COMMON,1,0,0,3,ALLY,필드 공룡 ATK +3 (1턴).,All dinos +3 ATK (1T).,PowerUp.png,1,1.0,NONE,0
 C202,공룡 치유,Heal,BUFF,HEAL,COMMON,1,0,0,2,ALL_ALLY,전체 +2 HP.,+2 HP to all.,HealAll.png,1,1.0,NONE,0
 C203,광폭화,Berserk,BUFF,ATTACK_BUFF,UNCOMMON,1,0,0,5,ALLY,ATK +5 (1턴). HP -1.,+5 ATK (1T). -1 HP.,Berserk.png,1,1.0,NONE,0
 C204,광역 공격,Cleave,BUFF,SPECIAL,UNCOMMON,2,0,0,0,ALLY,공격이 광역화.,Attacks become AoE.,Cleave.png,2,1.0,NONE,0
@@ -56,7 +56,7 @@ C111,호위 선풍,Ward Cyclone,MAGIC,DEFENSE,COMMON,1,0,0,7,ALLY,공룡 방어 
 C112,무리의 천막,Pack Canopy,MAGIC,DEFENSE,UNCOMMON,2,0,0,5,ALL_ALLY,전체 방어 +5.,+5 block to all.,PackCanopy.png,1,1.0,NONE,0
 C114,대지의 거석,Bedrock Monolith,MAGIC,DEFENSE,RARE,2,0,0,9,SELF,캐릭터 방어 +9.,+9 block (self).,BedrockMonolith.png,1,1.0,NONE,0
 C121,방패 격돌,Shield Slam,MAGIC,ATTACK,UNCOMMON,2,0,0,7,ENEMY,7 피해. 자신 방어 +5.,Deal 7. Self +5 block.,ShieldSlam.png,1,1.0,NONE,0
-C124,광기의 검광,Frenzy Slash,MAGIC,ATTACK,UNCOMMON,1,0,0,5,ENEMY,5 피해. HP 절반↓: 10.,Deal 5. Half HP: deal 10.,FrenzySlash.png,1,1.0,NONE,0
+C124,광기의 검광,Frenzy Slash,MAGIC,ATTACK,UNCOMMON,1,0,0,5,ENEMY,5 피해. 적 HP ≤ 절반이면 10 피해.,Deal 5. If target HP ≤ 50%: deal 10.,FrenzySlash.png,1,1.0,NONE,0
 C129,천둥 포효,Thunder Roar,MAGIC,ATTACK,UNCOMMON,2,0,0,4,ALL_ENEMY,전체 4 피해. 약화 (1턴).,Deal 4 all. Weak (1T).,ThunderRoar.png,1,1.0,NONE,0
 C131,발톱 폭우,Claw Storm,MAGIC,ATTACK,UNCOMMON,1,0,0,0,ENEMY,필드 ATK 합산 피해.,Deal field total ATK.,ClawStorm.png,1,1.0,NONE,0
 C132,총출동,Full Charge,BUFF,SPECIAL,UNCOMMON,1,0,0,1,SELF,이번 턴 SUMMON 카드 비용 -1.,SUMMON cards cost -1 this turn.,PackCall.png,1,1.0,NONE,0

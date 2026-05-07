@@ -92,9 +92,9 @@ public class MapUI : MonoBehaviour
     private const float RefW = 1280f;
     private const float RefH = 720f;
 
-    private const float NodeSize = 50f;
-    private const float BossSize = 98.01f;
-    private const float StartSize = 71.28f;
+    private const float NodeSize = 46f;
+    private const float BossSize = 90.18f;
+    private const float StartSize = 65.58f;
     private const float HighlightPad = 16f;
 
     private const float RopeWidth = 6f;
@@ -106,9 +106,9 @@ public class MapUI : MonoBehaviour
     private const float MapAreaY = 0f;
     private const float MapAreaH = RefH;
 
-    // 층 간격 250px — 15층 맵이 화면을 넘어가므로 스크롤로 탐색.
+    // 층 간격 235px — 15층 맵이 화면을 넘어가므로 스크롤로 탐색.
     private const float Floor1Y = 500f;
-    private const float FloorSpacing = 250f;
+    private const float FloorSpacing = 235f;
     private const float StartDecoBaseY = 660f;  // floor 1 바로 아래
 
     // 층별 노드 수에 따른 컬럼 x 좌표를 GetColumnX로 계산. 중심은 항상 640.
@@ -165,15 +165,6 @@ public class MapUI : MonoBehaviour
     private bool _stylesReady;
     private bool _assetsLoaded;
 
-    // 절차적 데코 (스크롤과 함께 움직이는 화석/먼지/등고선)
-    private struct DecorMark { public float x, y, size; public Color color; }
-    private List<DecorMark> _decorMarks;
-    private List<float> _decorContourYs;
-
-    // 하늘의 별 — 화면 좌표 고정, 스크롤 영향 없음. 각자 위상차로 반짝임.
-    private struct StarMark { public float x, y, size, phase, freq, baseAlpha; public Color tint; }
-    private List<StarMark> _stars;
-
     void Start()
     {
         LoadAssets();
@@ -209,139 +200,7 @@ public class MapUI : MonoBehaviour
 
         if (_circleTexture == null) _circleTexture = CreateCircleTexture(128);
 
-        GenerateDecor();
-
         _assetsLoaded = true;
-    }
-
-    private void GenerateDecor()
-    {
-        // 시드 고정 — 매 프레임 같은 패턴
-        var rng = new System.Random(7341);
-        _decorMarks = new List<DecorMark>(120);
-
-        // 데코 y 범위: 위로는 보스(많이 잡아 -2400), 아래로는 시작 데코 아래 800
-        // 그룹 좌표계 기준 (그룹 안에서 _scrollY 더해서 그림)
-        const float yMin = -2400f;
-        const float yMax = 900f;
-
-        for (int i = 0; i < 120; i++)
-        {
-            float gray = 0.18f + (float)rng.NextDouble() * 0.18f;
-            _decorMarks.Add(new DecorMark
-            {
-                x = (float)rng.NextDouble() * RefW,
-                y = yMin + (float)rng.NextDouble() * (yMax - yMin),
-                size = 3f + (float)rng.NextDouble() * 9f,
-                color = new Color(gray, gray * 0.7f, gray * 0.4f, 0.35f),
-            });
-        }
-
-        _decorContourYs = new List<float>();
-        for (float y = yMin; y < yMax; y += 68f)
-            _decorContourYs.Add(y + (float)rng.NextDouble() * 12f);
-
-        GenerateStars();
-    }
-
-    private void GenerateStars()
-    {
-        // 별은 배경 아트의 하늘(상단 ~45%)에 모이게. 아래로 내려올수록 개수·밝기 감소.
-        var rng = new System.Random(5118);
-        _stars = new List<StarMark>(70);
-
-        const int count = 64;
-        for (int i = 0; i < count; i++)
-        {
-            float u = (float)rng.NextDouble();
-            float v = (float)rng.NextDouble();
-            // y 분포: 상단에 몰리게 제곱 바이어스
-            float ny = v * v;
-            float y = ny * (RefH * 0.52f);
-            float x = u * RefW;
-
-            // 크기: 대부분 작고 가끔 큰 별
-            float r = (float)rng.NextDouble();
-            float size = r < 0.82f ? 1.6f + r * 1.8f : 3.2f + (float)rng.NextDouble() * 2.4f;
-
-            // 색: 흰색 ↔ 살짝 따뜻한 크림 ↔ 아주 옅은 블루 — 차콜 하늘에 녹는 톤
-            float warm = (float)rng.NextDouble();
-            Color tint = warm < 0.55f
-                ? new Color(1f, 0.97f, 0.88f)
-                : warm < 0.85f
-                    ? new Color(1f, 1f, 1f)
-                    : new Color(0.82f, 0.88f, 1f);
-
-            // 상단은 진하게, 아래는 흐리게 — 지평선으로 자연스럽게 녹아듬
-            float heightFactor = 1f - ny;            // 1 at top, 0 at horizon
-            float baseAlpha = Mathf.Lerp(0.18f, 0.85f, heightFactor);
-
-            _stars.Add(new StarMark
-            {
-                x = x,
-                y = y,
-                size = size,
-                phase = (float)rng.NextDouble() * Mathf.PI * 2f,
-                freq = 1.2f + (float)rng.NextDouble() * 2.2f,
-                baseAlpha = baseAlpha,
-                tint = tint,
-            });
-        }
-    }
-
-    private void DrawSky()
-    {
-        if (_stars == null || _circleTexture == null) return;
-
-        var prev = GUI.color;
-        float t = Time.time;
-
-        foreach (var s in _stars)
-        {
-            // 숨쉬는 알파 (0.55..1.0) — 너무 깜빡이지 않게 저 진폭
-            float tw = 0.775f + 0.225f * Mathf.Sin(t * s.freq + s.phase);
-            float a = s.baseAlpha * tw;
-
-            // 본체
-            GUI.color = new Color(s.tint.r, s.tint.g, s.tint.b, a);
-            GUI.DrawTexture(
-                new Rect(s.x - s.size * 0.5f, s.y - s.size * 0.5f, s.size, s.size),
-                _circleTexture);
-
-            // 큰 별에만 은은한 glow
-            if (s.size > 3f)
-            {
-                float g = s.size * 2.6f;
-                GUI.color = new Color(s.tint.r, s.tint.g, s.tint.b, a * 0.28f);
-                GUI.DrawTexture(
-                    new Rect(s.x - g * 0.5f, s.y - g * 0.5f, g, g),
-                    _circleTexture);
-            }
-        }
-
-        GUI.color = prev;
-    }
-
-    private void DrawMapDecor()
-    {
-        if (_decorMarks == null) return;
-
-        var prev = GUI.color;
-
-        // 등고선(갈색 가로선)은 양피지 맵 시절 데코 — 현 하늘/폐허 배경과 안 어울려 제거.
-
-        // 화석/먼지 점
-        foreach (var m in _decorMarks)
-        {
-            float y = m.y + _scrollY;
-            if (y < -10f || y > MapAreaH + 10f) continue;
-            GUI.color = m.color;
-            GUI.DrawTexture(
-                new Rect(m.x - m.size * 0.5f, y - m.size * 0.5f, m.size, m.size),
-                _circleTexture);
-        }
-
-        GUI.color = prev;
     }
 
     private static Texture2D CreateCircleTexture(int size)
@@ -400,9 +259,6 @@ public class MapUI : MonoBehaviour
         float scale = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
         GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1));
 
-        // 2.5) 하늘의 별 — 스크롤과 무관. 맵 컨텐츠 뒤에 깔려서 노드/로프를 방해하지 않음.
-        DrawSky();
-
         // 3) 현재 층이 바뀌면 보이는 영역 안으로 자동 정렬
         HandleScrollAutoSnap(map);
 
@@ -415,7 +271,6 @@ public class MapUI : MonoBehaviour
         // 5) 맵 컨텐츠 — 클리핑 그룹 안에서 그리기 (헤더/푸터 영역 침범 방지)
         RecomputeReachableColumns(map);
         GUI.BeginGroup(new Rect(0f, MapAreaY, RefW, MapAreaH));
-        DrawMapDecor();
         DrawRopes(map);
         DrawStartDeco();
         DrawNodes(gsm);

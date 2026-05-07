@@ -250,7 +250,7 @@ public class CheatUI : MonoBehaviour
             gsm.Cheat_EnterVillage();
 
         // 미지 노드 — 진입 시 StS 방식으로 무작위 해석되는 ? 노드.
-        // 랜덤 / 강제 결과 4종 (Combat/Treasure/Shop/Rest)을 즉석에서 검증.
+        // 랜덤 / 강제 결과 4종 (Combat/Treasure/Shop/Event)을 즉석에서 검증.
         GUILayout.Label("미지 (Unknown)", _stateStyle);
         GUILayout.BeginHorizontal();
         if (GUILayout.Button("? 랜덤", _btnStyle))
@@ -263,8 +263,8 @@ public class CheatUI : MonoBehaviour
             gsm.Cheat_TriggerUnknown(GameStateManager.UnknownOutcome.Treasure);
         if (GUILayout.Button("→ 상점", _btnStyle))
             gsm.Cheat_TriggerUnknown(GameStateManager.UnknownOutcome.Shop);
-        if (GUILayout.Button("→ 휴식", _btnStyle))
-            gsm.Cheat_TriggerUnknown(GameStateManager.UnknownOutcome.Rest);
+        if (GUILayout.Button("→ 이벤트", _btnStyle))
+            gsm.Cheat_TriggerUnknown(GameStateManager.UnknownOutcome.Event);
         GUILayout.EndHorizontal();
 
         GUILayout.Space(8f);

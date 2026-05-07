@@ -1060,9 +1060,13 @@ public class ShopUI : MonoBehaviour
 
         if (sold)
         {
+            // 슬롯 rect(r)는 빈 우측 여백까지 포함해 폭이 넓다 — 실제 콘텐츠(아이콘 좌끝~plaque 우끝)에만 dim.
+            float dimLeft = r.x + itemIconLeftPad;
+            float dimRight = Mathf.Max(priceRect.xMax, nameRect.xMax);
+            var dimRect = new Rect(dimLeft, r.y, Mathf.Max(0f, dimRight - dimLeft), r.height);
             var prev = GUI.color;
             GUI.color = new Color(0f, 0f, 0f, 0.50f);
-            GUI.DrawTexture(r, Texture2D.whiteTexture);
+            GUI.DrawTexture(dimRect, Texture2D.whiteTexture);
             GUI.color = prev;
         }
     }
