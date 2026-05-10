@@ -4,7 +4,7 @@ TextureImporter:
   internalIDToNameTable:
   - first:
       213: 6665596236579789778
-    second: E017_StormEagle_0
+    second: E102_StormEagle_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,7 +126,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: E017_StormEagle_0
+      name: E102_StormEagle_0
       rect:
         serializedVersion: 2
         x: 0
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      E017_StormEagle_0: 6665596236579789778
+      E102_StormEagle_0: 6665596236579789778
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

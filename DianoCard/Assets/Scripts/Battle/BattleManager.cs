@@ -189,8 +189,9 @@ namespace DianoCard.Battle
         /// <param name="swapFieldIndex">SUMMON 카드를 필드 꽉 찬 상태로 플레이할 때 교체 대상 공룡 인덱스. 슬롯 여유 있으면 무시.</param>
         /// <param name="allyTargetIndex">ALLY 타겟 카드(수호 마법 등)의 대상 공룡 인덱스. ALL_ALLY는 무시.</param>
         /// <param name="fusion">융합 카드(UTILITY/FUSION) 플레이 시 재료 2개. 다른 카드는 null.</param>
+        /// <param name="reinforcementCardId">증원(UTILITY/REINFORCE) 카드 플레이 시 손에 추가할 보유 공룡 카드 id. 다른 카드는 null.</param>
         /// <returns>성공적으로 사용했으면 true</returns>
-        public bool PlayCard(int handIndex, int targetEnemyIndex = -1, int swapFieldIndex = -1, int allyTargetIndex = -1, FusionTargets? fusion = null)
+        public bool PlayCard(int handIndex, int targetEnemyIndex = -1, int swapFieldIndex = -1, int allyTargetIndex = -1, FusionTargets? fusion = null, string reinforcementCardId = null)
         {
             if (handIndex < 0 || handIndex >= state.hand.Count) return false;
 
@@ -206,6 +207,17 @@ namespace DianoCard.Battle
                     return false;
                 }
                 return TryPlayFusion(handIndex, inst, card, fusion.Value);
+            }
+
+            // 증원 카드도 별도 경로 — UI에서 보유 공룡 1장을 골라 id를 넘겨야 한다.
+            if (card.cardType == CardType.UTILITY && card.subType == CardSubType.REINFORCE)
+            {
+                if (string.IsNullOrEmpty(reinforcementCardId))
+                {
+                    Log($"  ! Cannot play {card.nameKr}: reinforcement target required");
+                    return false;
+                }
+                return TryPlayReinforce(handIndex, inst, card, reinforcementCardId);
             }
 
             // SUMMON 카드는 summonCostReduction 적용 (C132 동족 소환 등)
@@ -305,6 +317,7 @@ namespace DianoCard.Battle
             switch (c.cardType)
             {
                 case CardType.SUMMON:
+                    DianoCard.Audio.AudioManager.Instance?.PlaySFX("card_summon");
                     if (isOverwrite)
                     {
                         // 초식만 덮어쓰기 — 같은 공룡이 그대로 강해짐(카드 형태 불변, 스탯 영구 상승).
@@ -331,10 +344,13 @@ namespace DianoCard.Battle
                     break;
 
                 case CardType.MAGIC:
+                    // ATTACK / DEBUFF(value>0) 카드는 화염구 임팩트까지 PlayCard가 지연되므로
+                    // SFX는 BattleUI 카드 클릭 시점에서 즉시 재생됨 (이 위치는 너무 늦음).
                     ResolveMagic(c, explicitTarget, allyTargetIndex);
                     break;
 
                 case CardType.BUFF:
+                    DianoCard.Audio.AudioManager.Instance?.PlaySFX("card_buff");
                     ResolveBuff(c, allyTargetIndex);
                     break;
 
@@ -351,6 +367,63 @@ namespace DianoCard.Battle
                     Log($"    (RITUAL not yet implemented)");
                     break;
             }
+        }
+
+        // =========================================================
+        // 증원 (C156) — 보유 공룡 T0 1장을 손패에 임시 추가
+        // =========================================================
+
+        /// <summary>증원 시도 — 보유 덱(run.deck)의 T0 SUMMON 1장을 골라 손에 추가한다.
+        /// 추가된 카드 인스턴스는 이번 전투 한정 — state.hand에 들어간 뒤 전투 종료 시 자연 소멸.
+        /// 실패 시 어떤 상태도 변경하지 않는다.</summary>
+        private bool TryPlayReinforce(int handIndex, CardInstance reinforceInst, CardData reinforceCard, string pickedCardId)
+        {
+            // 1) 비용 체크
+            if (state.player.mana < reinforceCard.cost)
+            {
+                Log($"  ! {reinforceCard.nameKr}: 마나 부족 (need {reinforceCard.cost}, have {state.player.mana})");
+                return false;
+            }
+
+            // 2) 보유 덱(run.deck)에서 id 찾기 — run이 null이면 치트/테스트 환경: DataManager로 폴백.
+            CardData picked = null;
+            if (run != null && run.deck != null)
+            {
+                foreach (var c in run.deck)
+                {
+                    if (c != null && c.id == pickedCardId) { picked = c; break; }
+                }
+            }
+            if (picked == null)
+            {
+                picked = DianoCard.Data.DataManager.Instance.GetCard(pickedCardId);
+            }
+            if (picked == null)
+            {
+                Log($"  ! {reinforceCard.nameKr}: 카드 미발견 (id={pickedCardId})");
+                return false;
+            }
+
+            // 3) T0 SUMMON 가드 — T1/T2 결과체 자가복제 차단 (project_t1_t2_fusion_only 룰).
+            if (picked.cardType != CardType.SUMMON)
+            {
+                Log($"  ! {reinforceCard.nameKr}: SUMMON 카드만 증원 가능 ({picked.id})");
+                return false;
+            }
+            if (picked.id.EndsWith("_T1") || picked.id.EndsWith("_T2"))
+            {
+                Log($"  ! {reinforceCard.nameKr}: 진화체(T1/T2)는 증원 대상이 아님 ({picked.id})");
+                return false;
+            }
+
+            // 4) 비용 지불 + 증원 카드 손에서 제거 (버림더미로) + 선택된 공룡을 손에 추가
+            state.player.mana -= reinforceCard.cost;
+            state.hand.RemoveAt(handIndex);
+            state.discard.Add(reinforceInst);
+            state.hand.Add(new CardInstance(picked));
+
+            Log($"  [Play] {reinforceCard.nameKr} → 손패에 {picked.nameKr} 추가 (이번 전투 한정)");
+            return true;
         }
 
         // =========================================================
@@ -993,6 +1066,8 @@ namespace DianoCard.Battle
                 summon.passiveConsumed = true;
                 Log($"  [Passive] {summon.data.nameKr} 기습: 첫 공격 2배 ({dmg})");
             }
+            // TENDERIZE 등 ON_ATTACK 패시브를 먼저 적용해 자신의 공격도 디버프 효과를 받게 한다.
+            ApplyOnAttackPassive(summon, target);
             target.TakeDamage(dmg);
             summon.hasAttackedThisTurn = true;
             Log($"  {summon.data.nameKr} attacks {target.data.nameKr} for {dmg} (HP {target.hp})");
@@ -1002,7 +1077,6 @@ namespace DianoCard.Battle
                 Log($"  [Passive] {summon.data.nameKr} 처형: {target.data.nameKr} HP {target.hp} ≤ {summon.data.passiveValue}");
                 target.hp = 0;
             }
-            ApplyOnAttackPassive(summon, target);
             if (target.IsDead)
             {
                 Log($"    x {target.data.nameKr} defeated");
@@ -1064,6 +1138,8 @@ namespace DianoCard.Battle
                 summon.passiveConsumed = true;
                 Log($"  [Passive] {summon.data.nameKr} 기습: 첫 공격 2배 ({dmg})");
             }
+            // TENDERIZE 등 ON_ATTACK 패시브를 먼저 적용해 자신의 공격도 디버프 효과를 받게 한다.
+            ApplyOnAttackPassive(summon, target);
             target.TakeDamage(dmg);
             summon.hasAttackedThisTurn = true;
             Log($"  [Command] {summon.data.nameKr} attacks {target.data.nameKr} for {dmg} (HP {target.hp})");
@@ -1073,7 +1149,6 @@ namespace DianoCard.Battle
                 Log($"  [Passive] {summon.data.nameKr} 처형: {target.data.nameKr} HP {target.hp} ≤ {summon.data.passiveValue}");
                 target.hp = 0;
             }
-            ApplyOnAttackPassive(summon, target);
             if (target.IsDead)
             {
                 Log($"    x {target.data.nameKr} defeated");
@@ -1190,7 +1265,42 @@ namespace DianoCard.Battle
                         summon.block += summon.data.passiveValue;
                         Log($"  [Passive] {summon.data.nameKr} 쾌속: 자신 방어 +{summon.data.passiveValue} (총 {summon.block})");
                         break;
+                    case DinoPassiveType.BULWARK:
+                        int warded = 0;
+                        foreach (var ally in state.field)
+                        {
+                            if (ally.IsDead) continue;
+                            ally.block += summon.data.passiveValue;
+                            warded++;
+                        }
+                        if (warded > 0)
+                            Log($"  [Passive] {summon.data.nameKr} 방벽: 아군 {warded}체 방어 +{summon.data.passiveValue}");
+                        break;
                 }
+            }
+        }
+
+        /// <summary>피해가 공룡 HP/방어에 적용되기 직전, IRON_HIDE 같은 피해 감소 패시브를 거쳐 최종 데미지를 산출한다.</summary>
+        private int FilterIncomingDamageToSummon(SummonInstance target, int dmg)
+        {
+            if (target?.data?.passiveType == DinoPassiveType.IRON_HIDE)
+            {
+                int reduced = Math.Max(1, dmg - target.data.passiveValue);
+                if (reduced != dmg)
+                    Log($"  [Passive] {target.data.nameKr} 강철 가죽: 피해 {dmg} → {reduced} (-{dmg - reduced})");
+                return reduced;
+            }
+            return dmg;
+        }
+
+        /// <summary>공룡이 적 공격에 피격된 직후 호출되는 ON_HIT 패시브 (OSTEODERM 등). COUNTER/ENRAGE는 DealAttack에서 별도 처리.</summary>
+        private void ApplyOnHitPassive(SummonInstance target)
+        {
+            if (target == null || target.IsDead || target.data == null) return;
+            if (target.data.passiveType == DinoPassiveType.OSTEODERM)
+            {
+                target.block += target.data.passiveValue;
+                Log($"  [Passive] {target.data.nameKr} 등판 갑주: 피격 → 방어 +{target.data.passiveValue} (총 {target.block})");
             }
         }
 
@@ -1320,7 +1430,7 @@ namespace DianoCard.Battle
             if (eaterIndex == preyIndex) return false;
             if (preyIndex < 0 || preyIndex >= state.field.Count) return false;
             var prey = state.field[preyIndex];
-            return prey != null && !prey.IsDead;
+            return prey != null && !prey.IsDead && !prey.hasAttackedThisTurn;
         }
 
         /// <summary>
@@ -1762,7 +1872,13 @@ namespace DianoCard.Battle
                     int aoeDmg = Math.Max(1, (int)Math.Round(e.intentValue * e.damageScale));
                     Log($"  ⚡ {e.data.nameKr} 카운트다운 광역 발동! ({aoeDmg})");
                     state.player.TakeDamage(aoeDmg);
-                    foreach (var s in state.field) s.TakeDamage(aoeDmg);
+                    foreach (var s in state.field)
+                    {
+                        if (s.IsDead) continue;
+                        int sDmg = FilterIncomingDamageToSummon(s, aoeDmg);
+                        s.TakeDamage(sDmg);
+                        ApplyOnHitPassive(s);
+                    }
                     break;
                 }
 
@@ -1861,9 +1977,11 @@ namespace DianoCard.Battle
             }
             else
             {
-                target.TakeDamage(dmg);
+                int finalDmg = FilterIncomingDamageToSummon(target, dmg);
+                target.TakeDamage(finalDmg);
                 string flavor = target.IsTaunting ? "[도발] " : "";
-                Log($"  {attacker.data.nameKr} → {target.data.nameKr} {flavor}{dmg} (HP {target.hp})");
+                Log($"  {attacker.data.nameKr} → {target.data.nameKr} {flavor}{finalDmg} (HP {target.hp})");
+                ApplyOnHitPassive(target);
                 // COUNTER 패시브 — 살아있는 공룡이 공격받으면 공격자에게 반격 피해.
                 if (!target.IsDead && target.data?.passiveType == DinoPassiveType.COUNTER)
                 {
@@ -1905,6 +2023,7 @@ namespace DianoCard.Battle
                 defense = 0,
                 patternSetId = "PS_ADD",
                 phaseSetId = "",
+                image = "M001_VineSproutling.png",
             };
             var add = new EnemyInstance(addData);
             add.isMinion = true;

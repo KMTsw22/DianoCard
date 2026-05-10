@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 51607845e683b0048a03dc79ae7c24e8
+guid: db4dd70233167d64f9000e43805a07ad
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 7510497192285408470
-    second: SkipButton_0
+      213: 1375585217664436637
+    second: Extract_a_1 (1)-Photoroom_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,13 +126,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: SkipButton_0
+      name: Extract_a_1 (1)-Photoroom_0
       rect:
         serializedVersion: 2
-        x: 516
-        y: 158
-        width: 825
-        height: 257
+        x: 0
+        y: 0
+        width: 1952
+        height: 544
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 6dc8db07765aa3860800000000000000
-      internalID: 7510497192285408470
+      spriteID: d99ca21a77f071310800000000000000
+      internalID: 1375585217664436637
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      SkipButton_0: 7510497192285408470
+      Extract_a_1 (1)-Photoroom_0: 1375585217664436637
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 

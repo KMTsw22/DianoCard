@@ -1,12 +1,12 @@
 id,name_kr,name_en,card_type,sub_type,rarity,cost,attack,hp,value,target,description_kr,description_en,image,chapter,field_scale,passive_type,passive_value
-C001,트리케라톱스,Triceratops,SUMMON,HERBIVORE,COMMON,1,4,20,0,FIELD,초식. 탱커.,Herbivore. Tank.,Triceratops.png,1,1.0,NONE,0
-C002,스테고사우루스,Stegosaurus,SUMMON,HERBIVORE,COMMON,1,5,17,0,FIELD,초식. 밸런스형.,Herbivore. Balanced.,Stegosaurus.png,1,1.0,NONE,0
-C003,안킬로사우루스,Ankylosaurus,SUMMON,HERBIVORE,UNCOMMON,2,3,25,0,FIELD,초식. 중장 탱커.,Herbivore. Heavy tank.,Ankylosaurus.png,1,1.0,NONE,0
+C001,트리케라톱스,Triceratops,SUMMON,HERBIVORE,COMMON,1,4,20,0,FIELD,초식 탱커. 매 턴 시작 모든 아군 방어 +3.,Herbivore tank. All allies +3 block at turn start.,Triceratops.png,1,1.0,BULWARK,3
+C002,스테고사우루스,Stegosaurus,SUMMON,HERBIVORE,COMMON,1,5,17,0,FIELD,초식. 공격받을 때마다 자신 방어 +3.,Herbivore. +3 block when hit.,Stegosaurus.png,1,1.0,OSTEODERM,3
+C003,안킬로사우루스,Ankylosaurus,SUMMON,HERBIVORE,UNCOMMON,2,3,25,0,FIELD,초식 중장 탱커. 받는 모든 피해 -2.,Heavy herbivore tank. -2 to all incoming damage.,Ankylosaurus.png,1,1.0,IRON_HIDE,2
 C004,랩터,Raptor,SUMMON,CARNIVORE,COMMON,1,7,13,0,FIELD,육식. 속공. 공격마다 출혈 +1.,Carnivore. Fast. Bleeds on attack.,Raptor.png,1,0.85,LACERATE,1
 C005,카르노타우루스,Carno,SUMMON,CARNIVORE,COMMON,1,8,10,0,FIELD,육식. 강타. 공격마다 취약 +1턴.,Carnivore. Hard hitter. Vulnerable on attack.,Carnotaurus.png,1,1.05,TENDERIZE,1
 C008,티렉스,T-Rex,SUMMON,CARNIVORE,RARE,2,15,22,0,FIELD,아펙스. 전장에 있는 동안 적 전체 약화.,Apex. All enemies weakened while on field.,T-Rex.png,1,1.35,APEX_PRESENCE,1
 C010,콤프소그나투스,Compy,SUMMON,CARNIVORE,COMMON,0,2,5,0,FIELD,초소형. 0코. 매 턴 시작 카드 +1장.,Tiny. 0-cost. Draw +1 each turn.,Compsognathus.png,1,0.60,SCOUT,1
-C011,브라키오사우루스,Brachiosaurus,SUMMON,HERBIVORE,RARE,2,3,40,0,FIELD,초식 아펙스. 거대.,Apex herbivore. Massive.,Brachiosaurus.png,1,1.0,NONE,0
+C011,브라키오사우루스,Brachiosaurus,SUMMON,HERBIVORE,RARE,2,3,40,0,FIELD,초식 아펙스. 매 턴 시작 모든 아군 ATK +2 (1턴).,Apex herbivore. All allies +2 ATK each turn.,Brachiosaurus.png,1,1.0,HERD_RALLY,2
 C012,알로사우루스,Allosaurus,SUMMON,CARNIVORE,COMMON,1,11,22,0,FIELD,육식. HP 50%↓ 시 ATK +6.,Carnivore. ATK +6 when HP below 50%.,Allosaurus.png,1,1.1,BLOOD_FRENZY,6
 C014,마준가사우루스,Majungasaurus,SUMMON,CARNIVORE,COMMON,2,9,14,0,FIELD,육식. 무진화. 동족포식: 1턴 1회 다른 아군을 잡아먹어 그 공룡의 현재 ATK·HP의 30%를 영구 흡수.,Carnivore. No evolution. Cannibal: once per turn devour another ally to permanently absorb 30% of its current ATK and HP.,Majungasaurus.png,1,1.0,CANNIBAL,0
 C018,기가노토사우루스,Giganotosaurus,SUMMON,CARNIVORE,RARE,2,15,24,0,FIELD,육식. 공격받을 때마다 ATK +2 영구 증가.,Carnivore. Permanently gain +2 ATK when hit.,Giganotosaurus.png,1,1.3,ENRAGE,2
@@ -73,4 +73,5 @@ C152,융합의 각인,Fusion Sigil,UTILITY,FUSION,COMMON,1,0,0,0,ALLY,동티어 
 C153,생명의 각인,Vitality Sigil,UTILITY,FUSION,UNCOMMON,1,0,0,5,ALLY,융합. 결과체 HP +5 (2턴).,Fuse. Result +5 HP (2T).,VitalitySigil.png,1,1.0,NONE,0
 C154,격노의 각인,Fury Sigil,UTILITY,FUSION,UNCOMMON,1,0,0,3,ALLY,융합. 결과체 ATK +3 (2턴).,Fuse. Result +3 ATK (2T).,FurySigil.png,1,1.0,NONE,0
 C155,가호의 각인,Aegis Sigil,UTILITY,FUSION,UNCOMMON,1,0,0,8,ALLY,융합. 결과체 방어 +8 (2턴).,Fuse. Result +8 block (2T).,AegisSigil.png,1,1.0,NONE,0
+C156,증원 소집,Reinforcement,UTILITY,REINFORCE,COMMON,0,0,0,0,SELF,보유 공룡(T0) 1장을 손에 추가 (이번 전투 한정).,Add an owned T0 dino to hand for this battle.,Reinforcement.png,1,1.0,NONE,0
 C901,잡초,Weed,UTILITY,STATUS,COMMON,1,0,0,0,SELF,저주. 효과 없음. 소진.,Curse. No effect. Exhaust.,Weed.png,1,1.0,NONE,0

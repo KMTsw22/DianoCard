@@ -373,12 +373,15 @@ namespace DianoCard.Game
         {
             if (DataManager.Instance == null) return null;
             int chapterNum = ParseChapterNumber(run?.chapterId);
+            // T1/T2 진화 결과체는 융합 전용 — 일시 카드 풀에서도 제외(보상·상점과 동일 안전망).
+            var evoResults = DataManager.Instance.EvolutionResultIds;
             var pool = new List<CardData>();
             foreach (var kv in DataManager.Instance.Cards)
             {
                 var c = kv.Value;
                 if (c == null) continue;
                 if (c.cardType != CardType.SUMMON) continue;
+                if (evoResults != null && evoResults.Contains(c.id)) continue;
                 if (chapterNum > 0 && c.chapter != chapterNum) continue;
                 pool.Add(c);
             }

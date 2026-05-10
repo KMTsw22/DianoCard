@@ -17,6 +17,10 @@ namespace DianoCard.Game
         public List<RelicData> relics = new();
         public List<PotionData> potions = new();
 
+        // 신규 획득 알림 — 유물/포션 패널을 열면 꺼진다. (TechTreeState.hasNewPoints과 동일 패턴)
+        public bool hasNewRelic;
+        public bool hasNewPotion;
+
         // 베이스 포션 슬롯 — R004 약초꾼의 가방 같은 유물이 있으면 동적 증가.
         public const int BasePotionSlots = 3;
 

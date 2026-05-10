@@ -31,6 +31,11 @@ public class BattleUI : MonoBehaviour
     private bool _battleEndQueued;
     private float _battleEndDelay;
 
+    // 전투 진입 시 검은 페이드아웃 — Map→Battle 전환 동안 카메라 클리어 컬러(파란 빈 화면) 노출 차단.
+    // _battle 초기화 완료된 프레임부터 카운트 시작, BattleEnterFadeDuration 동안 1→0 알파.
+    private float _battleEnterFadeStart = -1f;
+    private const float BattleEnterFadeDuration = 0.35f;
+
     // 타겟팅 모드: 공격 카드 클릭 후 적 클릭 대기 중 (-1 = 비활성)
     private int _targetingCardIndex = -1;
     // 소환수 공격 타겟팅: 공룡 클릭 후 적 클릭 대기 중 (-1 = 비활성).
@@ -58,6 +63,13 @@ public class BattleUI : MonoBehaviour
     // _fusionMaterialA는 선택된 재료의 (필드/손, 인덱스) 기록.
     private bool _fusionMaterialAPicked;
     private DianoCard.Battle.FusionMaterial _fusionMaterialA;
+
+    // 증원(C156) 픽커 모드: REINFORCE 카드 클릭 시 활성. -1이면 비활성, 그 외엔 손패 카드 인덱스.
+    // 활성 동안 보유 덱(run.deck)의 T0 SUMMON 그리드 모달이 화면 중앙에 뜬다.
+    // 모달에서 카드 클릭 → BattleManager.PlayCard(idx, …, reinforcementCardId: id) 호출.
+    // 우클릭/모달 외부 클릭 → 취소.
+    private int _reinforcePickerCardIndex = -1;
+    private Vector2 _reinforcePickerScroll;
 
     // 동족포식 모드: CANNIBAL 패시브 보유자(마준가)의 송곳니 뱃지 클릭 시 활성.
     // -1이면 비활성, 그 외엔 eater의 필드 인덱스. 다른 아군 클릭 → BattleManager.FeedCannibal.
@@ -185,6 +197,80 @@ public class BattleUI : MonoBehaviour
     // 손패/마나 공용 텍스처.
     private Texture2D _cardCountBadgeTexture;
     private Texture2D _manaFrameTexture;
+
+    // ===== 덱 뷰어 스킨 (DeckUi 폴더) =====
+    [Header("Deck Viewer — Skin")]
+    [Tooltip("덱 모달 9-slice border (px). 코너 필리그리가 안 늘어나도록 조정. native 1200×864.")]
+    [SerializeField] private Vector2Int _deckPanelBorder = new Vector2Int(150, 150);
+
+    [Header("Deck Viewer — Layout / Panel")]
+    [Tooltip("덱 모달 폭 (RefW=1280 가상 픽셀).")]
+    [SerializeField, Range(400f, 1260f)] private float _deckPanelW = 1160f;
+    [Tooltip("덱 모달 높이 (RefH=720 가상 픽셀).")]
+    [SerializeField, Range(300f, 700f)] private float _deckPanelH = 660f;
+
+    [Header("Deck Viewer — Title")]
+    [Tooltip("제목 좌상단 offset (panel.x+x, panel.y+y).")]
+    [SerializeField] private Vector2 _deckTitleOffset = new Vector2(60f, 30f);
+    [SerializeField, Range(12, 40)] private int _deckTitleFontSize = 24;
+
+    [Header("Deck Viewer — Title Divider")]
+    [Tooltip("타이틀 아래 구분선 Y (panel.y+이값).")]
+    [SerializeField, Range(0f, 200f)] private float _deckDividerY = 72f;
+    [Tooltip("좌우 안쪽 padding (panel.x+이값 ~ panel.xMax-이값).")]
+    [SerializeField, Range(0f, 200f)] private float _deckDividerSidePadding = 30f;
+    [Tooltip("두께 (px). 0이면 안 그림.")]
+    [SerializeField, Range(0f, 6f)] private float _deckDividerThickness = 1.5f;
+    [Tooltip("구분선 색.")]
+    [SerializeField] private Color _deckDividerColor = new Color(0.72f, 0.58f, 0.32f, 0.65f);
+
+    [Header("Deck Viewer — Close (✕)")]
+    [Tooltip("우상단 offset (panel.xMax-x, panel.y+y).")]
+    [SerializeField] private Vector2 _deckCloseOffset = new Vector2(53f, 15f);
+    [SerializeField] private Vector2 _deckCloseSize = new Vector2(34f, 34f);
+    [SerializeField, Range(12, 48)] private int _deckCloseFontSize = 40;
+
+    [Header("Deck Viewer — Sort Tabs")]
+    [Tooltip("탭 시작 위치 (panel.x+x, panel.y+y).")]
+    [SerializeField] private Vector2 _deckTabStart = new Vector2(40f, 90f);
+    [SerializeField, Range(60f, 280f)] private float _deckTabW = 100f;
+    [SerializeField, Range(20f, 80f)] private float _deckTabH = 40f;
+    [SerializeField, Range(0f, 30f)] private float _deckTabGap = 10f;
+    [SerializeField, Range(8, 28)] private int _deckTabFontSize = 13;
+
+    [Header("Deck Viewer — Card Grid")]
+    [SerializeField, Range(2, 10)] private int _deckGridCols = 6;
+    [SerializeField, Range(0f, 80f)] private float _deckGridPadX = 49.6f;
+    [SerializeField, Range(0f, 30f)] private float _deckCellGap = 12f;
+    [Tooltip("탭 아래 그리드 시작까지의 여백 (gridTop = tabsY + tabH + this).")]
+    [SerializeField, Range(0f, 80f)] private float _deckGridTopGap = 14f;
+    [Tooltip("패널 하단까지의 여백 (gridBottom = panel.yMax - this).")]
+    [SerializeField, Range(0f, 60f)] private float _deckGridBottomPad = 18f;
+    [Tooltip("카드 height/width 비율.")]
+    [SerializeField, Range(1.0f, 2.0f)] private float _deckCardAspect = 1.35f;
+
+    [Header("Deck Viewer — ×2 Badge")]
+    [Tooltip("메달 폭 / 카드 폭.")]
+    [SerializeField, Range(0.15f, 0.5f)] private float _deckBadgeWidthRatio = 0.30f;
+    [Tooltip("메달 height/width 비율. 56×40 ≈ 0.71, 정사각=1.0.")]
+    [SerializeField, Range(0.4f, 1.2f)] private float _deckBadgeAspect = 0.78f;
+    [Tooltip("카드 우상단 기준 offset. X=오른쪽 안쪽으로 들여보내는 px (음수면 카드 밖으로), Y=아래로 내리는 px.")]
+    [SerializeField] private Vector2 _deckBadgeOffset = new Vector2(-4f, 4f);
+    [Tooltip("폰트 크기 (메달 height 대비 비율).")]
+    [SerializeField, Range(0.3f, 0.9f)] private float _deckBadgeFontRatio = 0.55f;
+    [Tooltip("×N 텍스트 색.")]
+    [SerializeField] private Color _deckBadgeTextColor = new Color(1f, 0.95f, 0.60f, 1f);
+    [Tooltip("×N 텍스트 외곽선 색.")]
+    [SerializeField] private Color _deckBadgeOutlineColor = new Color(0f, 0f, 0f, 0.85f);
+    [Tooltip("×N 텍스트 외곽선 두께 (px). 0이면 외곽선 없음.")]
+    [SerializeField, Range(0f, 4f)] private float _deckBadgeOutlinePx = 1f;
+    [Tooltip("×N 텍스트 위치 미세조정 (메달 중앙 기준 px).")]
+    [SerializeField] private Vector2 _deckBadgeTextOffset = new Vector2(0f, 0f);
+
+    private Texture2D _deckPanelFrameTex;
+    private Texture2D _deckTabSelectedTex;
+    private Texture2D _deckTabUnselectedTex;
+    private Texture2D _deckBadgeTex;
     private Texture2D _manaOrbTexture; // 좌하단 마나 오브 본체 — 다크판타지 톤 디테일 에셋. 없으면 _manaFrameTexture로 폴백.
     private Texture2D _manaOrbAkaneTexture; // CH002(아케네) 전용 빨강 오브 — InGame/Icon/Mana_Akane.png
     private Texture2D _manaOrbRinneTexture; // CH002B(린네) 전용 초록 오브 — InGame/Icon/Mana_Rinne.png
@@ -214,6 +300,8 @@ public class BattleUI : MonoBehaviour
     private Texture2D _iconFloor;
     private Texture2D _iconTechTree;
     private Texture2D _iconTurn;
+    // 신규 보상/포인트 획득 알림 — 유물/포션/테크트리 아이콘 우상단에 오버레이로 그려짐.
+    private Texture2D _iconAlertNew;
     // 인텐트/상태이상이 공유하는 머리 위·HP바 아래 아이콘 풀 (Resources/InGame/HeadIcon/<ID>.png)
     private Dictionary<string, Texture2D> _headIcons;
     private static readonly string[] HeadIconIds = {
@@ -239,6 +327,22 @@ public class BattleUI : MonoBehaviour
     // AnimateLunge가 진행되는 동안 _attackProgress 비율로 프레임 인덱스 계산해 텍스처 스왑.
     // 폴더가 없는 진화체(_T1/_T2 등)는 키가 없어 폴백으로 정적 idle만 표시됨.
     private readonly Dictionary<string, Texture2D[]> _fieldDinoAttackFrames = new();
+    // T1/T2 공룡 전용 attack scale boost — PhotoRoom 타이트크롭으로 attack 캔버스가 idle보다 큰 비율(wScale/hScale).
+    // _tools/measure_dino_t12_boost.py 결과: boost = idle_h / atk_h. attack 그릴 때 wScale, hScale 양쪽에 곱해 body 높이를 idle과 매칭.
+    // T0(베이스 공룡)는 attack 캔버스가 swing margin 포함하도록 author되어 있어 보정 불필요.
+    private static readonly Dictionary<string, float> _fieldDinoT12AttackScaleBoost = new Dictionary<string, float>()
+    {
+        { "C004_T1", 0.7929f }, { "C004_T2", 0.7824f },  // Raptor
+        { "C005_T1", 1.3029f }, { "C005_T2", 0.6940f },  // Carnotaurus
+        { "C008_T1", 0.6556f }, { "C008_T2", 0.6926f },  // T-Rex
+        { "C010_T1", 0.5867f }, { "C010_T2", 0.5850f },  // Compsognathus
+        { "C012_T1", 0.6981f }, { "C012_T2", 0.6962f },  // Allosaurus
+        { "C018_T1", 0.7300f }, { "C018_T2", 0.7300f },  // Giganotosaurus
+        { "C019_T1", 0.7025f }, { "C019_T2", 0.6992f },  // Troodon
+        { "C020_T1", 0.7082f }, { "C020_T2", 0.7072f },  // Baryonyx
+        { "C021_T1", 0.6613f }, { "C021_T2", 0.6398f },  // Acrocanthosaurus
+        { "C022_T1", 0.6146f }, { "C022_T2", 0.6169f },  // Carcharodontosaurus
+    };
     // 공룡 패시브 타입 아이콘. Dinos/passive/<lowercase_enum>.png
     private readonly Dictionary<DinoPassiveType, Texture2D> _passiveIcons = new();
 
@@ -447,11 +551,11 @@ public class BattleUI : MonoBehaviour
     // ── 페어 자동 패킹 (공룡별 크기는 card.csv field_scale에서 로드) ───
     [Tooltip("2마리 페어의 가로 겹침 비율. 0.55가 기존 dinoTwoSlot1X=500 셋팅과 동일한 느낌. 0=떨어져, 0.7=많이 겹침.")]
     [Range(0f, 0.7f)]
-    [SerializeField] private float pairOverlapPct = 0.55f;
+    [SerializeField] private float pairOverlapPct = 0.245f;
 
     [Tooltip("뒤 공룡의 발이 앞 공룡 발보다 위로 올라가는 비율 (앞 공룡 키 기준). 0.28이 기존 dinoTwoSlot1FootY=530과 동일.")]
     [Range(0f, 0.5f)]
-    [SerializeField] private float pairStaggerYPct = 0.28f;
+    [SerializeField] private float pairStaggerYPct = 0.32f;
 
     [Tooltip("뒤 공룡 중심이 앞 공룡 중심에서 떨어져야 하는 최소 거리 (앞 공룡 너비 비율). 0.4 = 뒤 공룡이 앞 공룡 어깨 바깥에 위치. 큰 앞 공룡 + 작은 뒤 공룡 페어에서 작은 공룡이 안 가려지게.")]
     [Range(0f, 0.6f)]
@@ -652,8 +756,9 @@ public class BattleUI : MonoBehaviour
 
     // HP 변화 감지용 (unit reference → 직전 프레임 hp)
     private readonly Dictionary<object, int> _lastKnownHp = new();
-    // HP 바 위치별 '표시 fraction' — 실제 hp가 내려가면 이 값이 천천히 따라내려가며 pale trail을 만든다
-    private readonly Dictionary<Vector2, float> _hpBarDisplayedFrac = new();
+    // HP 바 entity별 '표시 fraction' — 실제 hp가 내려가면 이 값이 천천히 따라내려가며 pale trail을 만든다
+    // Vector2 키 대신 entity reference를 써야 슬라이드 중에도 키가 안정됨
+    private readonly Dictionary<object, float> _hpBarDisplayedFrac = new();
     private readonly HashSet<object> _seenThisFrame = new();
 
     // 떠오르는 데미지 플로터
@@ -688,8 +793,12 @@ public class BattleUI : MonoBehaviour
     // 덱 뷰어 — 상단 바 계단(Floor) 아이콘 왼쪽 버튼 클릭 시 오픈.
     // run.deck 전체를 id로 그룹핑해 카드 그리드로 보여주며, 정렬 탭과 스크롤 지원.
     private bool _deckViewerOpen;
-    private int _deckViewerSortMode;  // 0=획득순, 1=유형, 2=비용, 3=이름순
+    private int _deckViewerSortMode;  // 0=획득순, 1=유형, 2=비용
     private Vector2 _deckViewerScroll;
+
+    // 덱 뷰어 source — StS 스타일. 0=전체 덱(run.deck), 1=뽑을 카드(state.deck), 2=버린 카드(state.discard).
+    // 좌하 더미 클릭 → 1, 우하 더미 클릭 → 2, HUD/맵 진입 → 0.
+    private int _deckViewerSource;
 
     // 유물 뷰어 — 상단 바 유물 슬롯 클릭 시 오픈.
     private bool _relicViewerOpen;
@@ -699,6 +808,10 @@ public class BattleUI : MonoBehaviour
     // 포션 뷰어 — 상단 바 포션 슬롯 클릭 시 오픈.
     private bool _potionViewerOpen;
     private Vector2 _potionViewerScroll;
+
+    /// <summary>덱/유물/포션/증원 뷰어 중 하나라도 열려 있는지. PauseMenuUI가 ESC 우선순위 판단에 사용.</summary>
+    public bool AnyOverlayOpen =>
+        _deckViewerOpen || _relicViewerOpen || _potionViewerOpen || _reinforcePickerCardIndex >= 0;
 
     // 드롭다운 앵커 — DrawTopBar에서 매 프레임 갱신.
     private float _potionDropdownAnchorX;
@@ -726,6 +839,16 @@ public class BattleUI : MonoBehaviour
         _cardCountBadgeTexture = Resources.Load<Texture2D>("CardSlot/CardCountBadge");
         if (_cardCountBadgeTexture == null)
             Debug.LogWarning("[BattleUI] CardCountBadge texture not found: Resources/CardSlot/CardCountBadge");
+
+        // 덱 뷰어 스킨 — 폴백: 기존 단색 패널 + DrawBorder.
+        _deckPanelFrameTex     = Resources.Load<Texture2D>("DeckUi/deck_panel_frame");
+        _deckTabSelectedTex    = Resources.Load<Texture2D>("DeckUi/sort_tab_selected");
+        _deckTabUnselectedTex  = Resources.Load<Texture2D>("DeckUi/sort_tab_unselected");
+        _deckBadgeTex          = Resources.Load<Texture2D>("DeckUi/duplicate_tag_blank");
+        if (_deckPanelFrameTex    == null) Debug.LogWarning("[BattleUI] DeckUi/deck_panel_frame not found");
+        if (_deckTabSelectedTex   == null) Debug.LogWarning("[BattleUI] DeckUi/sort_tab_selected not found");
+        if (_deckTabUnselectedTex == null) Debug.LogWarning("[BattleUI] DeckUi/sort_tab_unselected not found");
+        if (_deckBadgeTex         == null) Debug.LogWarning("[BattleUI] DeckUi/duplicate_tag_blank not found");
 
         _manaFrameTexture = Resources.Load<Texture2D>("CardSlot/ManaFrame");
         if (_manaFrameTexture == null)
@@ -768,6 +891,7 @@ public class BattleUI : MonoBehaviour
         _iconFloor    = Resources.Load<Texture2D>("InGame/Icon/Floor");
         _iconTechTree = Resources.Load<Texture2D>("InGame/Icon/TechTree");
         _iconTurn     = Resources.Load<Texture2D>("InGame/Icon/Turn");
+        _iconAlertNew = Resources.Load<Texture2D>("InGame/Icon/Alert_New");
         _iconDeckRinne     = Resources.Load<Texture2D>("InGame/Icon/Deck_Rinne");
         _iconDiscardRinne  = Resources.Load<Texture2D>("InGame/Icon/Discard_Rinne");
         _iconCardBackRinne = Resources.Load<Texture2D>("InGame/Icon/CardBack_Rinne");
@@ -1148,6 +1272,12 @@ public class BattleUI : MonoBehaviour
             _playerView.SetShadowSprite(shadowSprite, _entityShadowHeight, Vector2.zero, _entityShadowAlpha);
         }
         else Debug.LogWarning("[BattleUI] Player shadow not found: Resources/Character_infield/character_basic/shadow/character_shadow.png");
+
+        // PreparePlayerView가 발 위치/스케일을 잡기 전까지는 렌더 차단. 안 그러면 BattleUI.Start()의
+        // LoadCardSprites 단계에서 만들어진 PlayerView가 (0,0,0)에 native PPU 스케일(이미지 1134px → 11.34 world units)로
+        // 떠 있어 로비/맵→배틀 전환 로딩 중 카메라 클리어 컬러 위로 거대 캐릭터 다리만 노출된다.
+        // SetActive(false)는 Awake 누락으로 _sr=null 시리즈 NullRef를 일으키므로 SR.enabled 토글 사용.
+        _playerView.SetVisible(false);
     }
 
     /// <summary>Resources 경로 프리픽스 뒤에 01, 02… 를 붙여가며 연속적으로 로드한다 (끊기는 번호에서 중단, 최대 99).
@@ -1317,10 +1447,19 @@ public class BattleUI : MonoBehaviour
     {
         if (e == null || _enemyViews.ContainsKey(e)) return;
 
-        // 런타임 소환된 쫄(EnemyData가 DataManager에 없음) 등은 캐시에 없을 수 있음 — placeholder 생성
+        // 런타임 소환된 쫄(EnemyData가 DataManager에 없음) 등은 캐시에 없을 수 있음 —
+        // e.data.image가 지정돼 있으면 Resources/Monsters/<filename>에서 로드 시도, 실패 시에만 placeholder.
         if (!_enemyWorldSprites.TryGetValue(e.data.id, out var sprite))
         {
-            var tex = BuildEnemyPlaceholderTex(e.data);
+            Texture2D tex = null;
+            if (!string.IsNullOrEmpty(e.data.image))
+            {
+                string filename = Path.GetFileNameWithoutExtension(e.data.image);
+                tex = Resources.Load<Texture2D>("Monsters/" + filename);
+                if (tex == null)
+                    Debug.LogWarning($"[BattleUI] Dynamic enemy sprite not found: Monsters/{filename} ({e.data.id}) — placeholder 사용");
+            }
+            if (tex == null) tex = BuildEnemyPlaceholderTex(e.data);
             sprite = TexToSprite(tex);
             _enemySprites[e.data.id] = tex;
             _enemyWorldSprites[e.data.id] = sprite;
@@ -1544,6 +1683,7 @@ public class BattleUI : MonoBehaviour
             run.playerCurrentHp);
 
         PrepareEnemyViews();
+        PreparePlayerView();
         SpawnBackgroundFX();
         SpawnBackgroundVines();
 
@@ -1552,6 +1692,9 @@ public class BattleUI : MonoBehaviour
         {
             StartCoroutine(InitialDrawCoroutine());
         }
+
+        // 진입 페이드아웃 시작 — OnGUI 끝부분에서 검은 오버레이가 점차 투명해진다.
+        _battleEnterFadeStart = Time.unscaledTime;
     }
 
     /// <summary>전투 시작 직후 초기 손패를 덱에서 뽑혀나오는 것처럼 애니메이션.</summary>
@@ -1591,6 +1734,38 @@ public class BattleUI : MonoBehaviour
             view.SetBasePosition(feetWorld);
             view.SetWorldHeight(worldHeight);
         }
+    }
+
+    /// <summary>
+    /// PlayerView 도 적 뷰처럼 OnGUI 전에 world 위치/스케일을 미리 셋업.
+    /// 안 하면 EnsurePlayerView 직후 한 프레임 동안 (0,0,0)에 native PPU 스케일로
+    /// 거대하게 그려져서 다리만 보이는 버그가 발생한다 (DrawPlayerNPC와 동일 공식).
+    /// </summary>
+    private void PreparePlayerView()
+    {
+        if (_playerView == null || _battle?.state == null || Camera.main == null) return;
+        if (!_slotPositions.TryGetValue(_battle.state.player, out var center)) return;
+
+        const float h = 257f; // DrawPlayerNPC의 h와 일치
+        Vector2 feetGui = new Vector2(center.x, center.y + h / 2f);
+        Vector2 topGui  = new Vector2(center.x, center.y - h / 2f);
+        Vector3 feetWorld = GuiToWorld(feetGui);
+        Vector3 topWorld  = GuiToWorld(topGui);
+        float worldHeight = Mathf.Abs(feetWorld.y - topWorld.y);
+
+        Vector3 pivotOffset = Vector3.zero;
+        var psr = _playerView.GetComponent<SpriteRenderer>();
+        if (psr != null && psr.sprite != null && psr.sprite.bounds.size.y > 0.001f)
+        {
+            float s = worldHeight / psr.sprite.bounds.size.y;
+            pivotOffset = new Vector3(0f, -psr.sprite.bounds.min.y * s, 0f);
+        }
+        _playerView.SetBasePosition(feetWorld + pivotOffset);
+        _playerView.SetWorldHeight(worldHeight);
+        Vector2 shadowOffset = new Vector2(_entityShadowOffsetX, _entityShadowOffsetY) * worldHeight;
+        _playerView.UpdateShadowParams(_entityShadowHeight, _entityShadowWidthScale, shadowOffset, _entityShadowAlpha);
+        // 위치/스케일 셋업 끝났으니 이제 노출. EnsurePlayerView에서 SetVisible(false)로 렌더 차단해둔 상태.
+        _playerView.SetVisible(true);
     }
 
     private void SpawnBackgroundVines()
@@ -2243,7 +2418,13 @@ public class BattleUI : MonoBehaviour
         if (gsm == null) return;
         // Reward 상태에서도 배경/전장은 계속 그려서 보상 화면 뒤로 비춰야 함
         if (gsm.State != GameState.Battle && gsm.State != GameState.Reward) return;
-        if (_battle == null || _battle.state == null) return;
+        if (_battle == null || _battle.state == null)
+        {
+            // _battle 초기화 전 프레임 — 카메라 클리어 컬러(파란 빈 화면) 노출 차단을 위해 검은 화면으로 덮음.
+            // Update에서 InitBattleFromRunState가 끝나면 _battle != null이 되고 페이드아웃이 작동.
+            DrawFullscreenBlack(1f);
+            return;
+        }
 
         // GUI.depth: 낮을수록 앞. BattleUI는 뒤에 깔리고 RewardUI(=0)가 위로 올라오도록
         GUI.depth = 10;
@@ -2263,8 +2444,8 @@ public class BattleUI : MonoBehaviour
 
         if (active)
         {
-            // 우클릭으로 타겟팅 취소 (카드/공룡/공룡스킬/교체/융합/포션/동족포식 모두)
-            if ((_targetingCardIndex >= 0 || _targetingSummonIndex >= 0 || _targetingSummonSkillIndex >= 0 || _swapFromCardIndex >= 0 || _targetingPotionIndex >= 0 || _cannibalFeedFromIndex >= 0)
+            // 우클릭으로 타겟팅 취소 (카드/공룡/공룡스킬/교체/융합/포션/동족포식/증원 모두)
+            if ((_targetingCardIndex >= 0 || _targetingSummonIndex >= 0 || _targetingSummonSkillIndex >= 0 || _swapFromCardIndex >= 0 || _targetingPotionIndex >= 0 || _cannibalFeedFromIndex >= 0 || _reinforcePickerCardIndex >= 0)
                 && Event.current.type == EventType.MouseDown
                 && Event.current.button == 1)
             {
@@ -2272,6 +2453,7 @@ public class BattleUI : MonoBehaviour
                 else if (_targetingSummonSkillIndex >= 0) ShowToast("스킬을 취소합니다");
                 else if (_targetingPotionIndex >= 0) ShowToast("포션 사용을 취소합니다");
                 else if (_cannibalFeedFromIndex >= 0) ShowToast("동족포식을 취소합니다");
+                else if (_reinforcePickerCardIndex >= 0) ShowToast("증원을 취소합니다");
                 _targetingCardIndex = -1;
                 _targetingSummonIndex = -1;
                 _targetingSummonSkillIndex = -1;
@@ -2280,7 +2462,16 @@ public class BattleUI : MonoBehaviour
                 _selectedPotionIndex = -1;
                 _fusionMaterialAPicked = false;
                 _cannibalFeedFromIndex = -1;
+                _reinforcePickerCardIndex = -1;
                 Event.current.Use();
+            }
+
+            // 증원 픽커 활성 동안에도 손에서 카드 인덱스가 invalid 되면 리셋
+            if (_reinforcePickerCardIndex >= _battle.state.hand.Count
+                || (_reinforcePickerCardIndex >= 0 && _reinforcePickerCardIndex < _battle.state.hand.Count
+                    && _battle.state.hand[_reinforcePickerCardIndex].data.subType != CardSubType.REINFORCE))
+            {
+                _reinforcePickerCardIndex = -1;
             }
 
             // 손에 없는 인덱스를 가리키고 있으면 리셋
@@ -2407,6 +2598,9 @@ public class BattleUI : MonoBehaviour
         // 덱에서 뽑혀오는 카드 (뒷면 → 플립 → 앞면) — 최상단에 그려 손패/UI 위로 드러나게 함.
         DrawDrawFlyingCards();
 
+        // 증원 픽커 오버레이 — 보유 공룡 그리드. 덱 뷰어보다 먼저 그려도 (둘은 동시에 못 켜짐) 무관.
+        DrawReinforcePickerOverlay(gsm);
+
         // 덱 뷰어 오버레이 — 모든 UI 위에 그려짐.
         DrawDeckViewerOverlay(gsm);
 
@@ -2418,6 +2612,30 @@ public class BattleUI : MonoBehaviour
 
         // 패시브 호버 툴팁 — 최상단에 그려야 다른 UI 위로 나옴.
         DrawPassiveTooltip();
+
+        // 진입 페이드아웃 — InitBattleFromRunState 끝나면 시작. 검은 화면이 점차 투명해져 전투 화면이 드러남.
+        if (_battleEnterFadeStart >= 0f)
+        {
+            float t = (Time.unscaledTime - _battleEnterFadeStart) / BattleEnterFadeDuration;
+            if (t >= 1f) _battleEnterFadeStart = -1f;
+            else
+            {
+                float alpha = 1f - Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(t));
+                DrawFullscreenBlack(alpha);
+            }
+        }
+    }
+
+    /// <summary>전체 화면을 검정 단색으로 덮는 IMGUI 헬퍼. alpha 0~1.</summary>
+    private void DrawFullscreenBlack(float alpha)
+    {
+        var prevMatrix = GUI.matrix;
+        var prevColor = GUI.color;
+        GUI.matrix = Matrix4x4.identity;
+        GUI.color = new Color(0f, 0f, 0f, Mathf.Clamp01(alpha));
+        GUI.DrawTexture(new Rect(0, 0, Screen.width, Screen.height), Texture2D.whiteTexture);
+        GUI.matrix = prevMatrix;
+        GUI.color = prevColor;
     }
 
     // 일부 패시브는 단일 아이콘에 숫자 오버레이로 단계 표현.
@@ -2510,13 +2728,43 @@ public class BattleUI : MonoBehaviour
             }
         }
 
-        // 3) 취약 — 공룡 TENDERIZE 패시브나 스펠로 부여. 아이콘이 없으면 플레이어 취약과 동일하게 표시.
+        // 3) 취약 — 공룡 TENDERIZE 패시브나 스펠로 부여.
         if (e.vulnerableTurns > 0 && x + chipSize <= rowRect.xMax)
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("VULNERABLE"), e.vulnerableTurns,
                          "취약 (Vulnerable)",
                          $"받는 피해 50% 증가. {e.vulnerableTurns}턴 남음.");
+            x += chipSize + chipGap;
+        }
+
+        // 4) 독 스택 — TOXIC_SLASH 등 공룡 패시브가 부여.
+        if (e.poisonStacks > 0 && x + chipSize <= rowRect.xMax)
+        {
+            DrawIconChip(new Rect(x, y, chipSize, chipSize),
+                         HeadIcon("POISON"), e.poisonStacks,
+                         "독 (Poison)",
+                         $"턴 종료마다 {e.poisonStacks} 피해. 매 턴 1씩 감소.");
+            x += chipSize + chipGap;
+        }
+
+        // 5) 출혈 스택 — LACERATE / TOXIC_SLASH 패시브가 부여.
+        if (e.bleedStacks > 0 && x + chipSize <= rowRect.xMax)
+        {
+            DrawIconChip(new Rect(x, y, chipSize, chipSize),
+                         HeadIcon("FEAR"), e.bleedStacks,
+                         "출혈 (Bleed)",
+                         $"턴 종료마다 {e.bleedStacks} 피해. 매 턴 1씩 감소.");
+            x += chipSize + chipGap;
+        }
+
+        // 6) 약화 — INTIMIDATE 패시브나 스펠로 부여.
+        if (e.weakTurns > 0 && x + chipSize <= rowRect.xMax)
+        {
+            DrawIconChip(new Rect(x, y, chipSize, chipSize),
+                         HeadIcon("WEAK"), e.weakTurns,
+                         "약화 (Weak)",
+                         $"가하는 피해 25% 감소. {e.weakTurns}턴 남음.");
             x += chipSize + chipGap;
         }
     }
@@ -2572,7 +2820,7 @@ public class BattleUI : MonoBehaviour
         if (s == null) return;
         EnsurePassiveStyles();
 
-        const float chipSize = 22f;
+        const float chipSize = 24f;
         const float chipGap  = 3f;
 
         // 패시브는 소멸(passiveConsumed)하지 않은 경우에만 표시
@@ -2605,7 +2853,7 @@ public class BattleUI : MonoBehaviour
         if (s.tauntTurns > 0)
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
-                         HeadIcon("ROOTED"), s.tauntTurns,
+                         HeadIcon("TARGET_DINO"), s.tauntTurns,
                          "도발",
                          $"적 공격을 이 공룡이 받습니다. {s.tauntTurns}턴 남음.");
             x += chipSize + chipGap;
@@ -2715,6 +2963,14 @@ public class BattleUI : MonoBehaviour
                 $"공격마다 목표 적 ATK 영구 -{v}.\n적 ATK는 0 이하로 내려가지 않음."),
             DinoPassiveType.EXECUTE       => ("처형 (Execute)",
                 $"목표 적 HP가 {v} 이하이면 즉시 처치."),
+            DinoPassiveType.BULWARK       => ("방벽 (Bulwark)",
+                $"매 턴 시작, 모든 아군 공룡에게 방어 +{v}."),
+            DinoPassiveType.OSTEODERM     => ("등판 갑주 (Osteoderm)",
+                $"공격받을 때마다 자신 방어 +{v}."),
+            DinoPassiveType.IRON_HIDE     => ("강철 가죽 (Iron Hide)",
+                $"받는 모든 피해 -{v} (최소 1)."),
+            DinoPassiveType.HERD_RALLY    => ("무리 호령 (Herd Rally)",
+                $"매 턴 시작, 모든 아군 공룡 ATK +{v} (1턴)."),
             _                             => (d.nameKr, ""),
         };
     }
@@ -2821,7 +3077,8 @@ public class BattleUI : MonoBehaviour
         if (_targetingCardIndex < 0 || _targetingCardIndex >= state.hand.Count) return;
         var c = state.hand[_targetingCardIndex].data;
         string text;
-        if (CardNeedsFusionTargets(c))
+        bool isFusion = CardNeedsFusionTargets(c);
+        if (isFusion)
         {
             text = _fusionMaterialAPicked
                 ? $"▶ {c.name} — 두 번째 재료(같은 종·같은 티어)를 클릭  (우클릭: 취소)"
@@ -2841,7 +3098,15 @@ public class BattleUI : MonoBehaviour
         float alpha = Mathf.Lerp(0.35f, 0.95f, pulse);
 
         var prevColor = GUI.color;
-        GUI.color = new Color(1f, 1f, 1f, alpha);
+        // 융합 힌트는 글씨만 살짝 보라로 틴팅해 적/아군 타겟팅 힌트와 구분 — 패널/테두리 없이 글씨로만.
+        if (isFusion)
+        {
+            GUI.color = new Color(0.93f, 0.78f, 1f, alpha);
+        }
+        else
+        {
+            GUI.color = new Color(1f, 1f, 1f, alpha);
+        }
         GUI.Label(new Rect(0, 115, RefW, 30), text, _targetHintStyle);
         GUI.color = prevColor;
     }
@@ -3110,6 +3375,12 @@ public class BattleUI : MonoBehaviour
         return c.cardType == CardType.UTILITY && c.subType == CardSubType.FUSION;
     }
 
+    // 증원 카드 — 보유 덱(run.deck)의 T0 SUMMON 그리드 모달이 필요.
+    private static bool CardNeedsReinforcePicker(CardData c)
+    {
+        return c.cardType == CardType.UTILITY && c.subType == CardSubType.REINFORCE;
+    }
+
     /// <summary>주어진 후보(필드 SummonInstance 또는 손패 인덱스)가 현재 융합 흐름에서 재료로 선택 가능한지 판정.
     /// 첫 재료 단계면 "육식 SUMMON + 티어 &lt; 2"만 체크하고, 두 번째 단계면 A와 종/티어가 일치하는지까지 검증한다.</summary>
     private bool IsFusionMaterialEligible(DianoCard.Battle.SummonInstance s, int index, bool isHand)
@@ -3326,6 +3597,11 @@ public class BattleUI : MonoBehaviour
             float depth = _mossDepthScale.TryGetValue(e, out var d) ? d : 1f;
             return 95f * e.data.SafeFieldScale * depth;
         }
+        // SUMMON 쫄(ADD_*): 부모 몬스터보다 한 단계 작게 — NORMAL의 ~60% (108f).
+        if (e.isMinion)
+        {
+            return 108f * e.data.SafeFieldScale;
+        }
         float baseH = e.data.enemyType switch
         {
             EnemyType.BOSS  => 400f,
@@ -3478,7 +3754,7 @@ public class BattleUI : MonoBehaviour
             // HP 바 — 캐릭터 발 아래, 스프라이트 너비에 비례 (min/max 클램프)
             float playerBarW = ComputeHpBarWidth(w);
             var barRect = new Rect(center.x - playerBarW / 2, rect.yMax + 6, playerBarW, hpBarHeight);
-            DrawHpBar(barRect, p.hp, p.maxHp, new Color(0.65f, 0.16f, 0.18f), p.block > 0, _playerShieldFxStartTime);
+            DrawHpBar(barRect, p.hp, p.maxHp, new Color(0.65f, 0.16f, 0.18f), p.block > 0, _playerShieldFxStartTime, entity: p);
 
             if (p.block > 0)
             {
@@ -3501,7 +3777,7 @@ public class BattleUI : MonoBehaviour
 
             float fbBarW = ComputeHpBarWidth(rect.width);
             var fbHpRect = new Rect(rect.center.x - fbBarW / 2, rect.y + rect.height - 50, fbBarW, hpBarHeight);
-            DrawHpBar(fbHpRect, p.hp, p.maxHp, new Color(0.65f, 0.16f, 0.18f), p.block > 0, _playerShieldFxStartTime);
+            DrawHpBar(fbHpRect, p.hp, p.maxHp, new Color(0.65f, 0.16f, 0.18f), p.block > 0, _playerShieldFxStartTime, entity: p);
 
             if (p.block > 0)
             {
@@ -3826,12 +4102,24 @@ public class BattleUI : MonoBehaviour
     }
 
     // 공격 아이콘(검) + 데미지 숫자 뱃지. 적은 -45°, 아군은 +45°. boosted면 숫자를 강조 색으로.
-    private void DrawAttackIconBadge(Vector2 center, int value, float angleDeg, bool boosted)
+    // dimmed=true면 검 아이콘과 숫자가 살짝 어두워짐 (아군 공룡이 이번 턴 공격 완료한 상태).
+    private void DrawAttackIconBadge(Vector2 center, int value, float angleDeg, bool boosted, bool dimmed = false)
     {
         var tex = HeadIcon("ATTACK");
         if (tex == null) return;
-        Color textCol = boosted ? new Color(1f, 0.85f, 0.3f) : Color.white;
-        DrawSideBySideBadge(center, value, tex, angleDeg, textCol);
+        Color textCol = dimmed ? new Color(0.55f, 0.55f, 0.58f, 1f)
+                               : (boosted ? new Color(1f, 0.85f, 0.3f) : Color.white);
+        if (dimmed)
+        {
+            Color prev = GUI.color;
+            GUI.color = new Color(0.50f, 0.50f, 0.52f, 1f);
+            DrawSideBySideBadge(center, value, tex, angleDeg, textCol);
+            GUI.color = prev;
+        }
+        else
+        {
+            DrawSideBySideBadge(center, value, tex, angleDeg, textCol);
+        }
     }
 
     // 아이콘은 center에 정중앙으로 배치, 숫자는 아이콘 우하단 코너에 작은 뱃지로 살짝 겹쳐 표시.
@@ -3957,8 +4245,10 @@ public class BattleUI : MonoBehaviour
 
     private void DrawSummon(SummonInstance s, int summonIndex, Vector2 center)
     {
-        // Lunge 오프셋: 공격 중인 소환수는 오른쪽으로 sin 곡선 이동
-        if (ReferenceEquals(_attackingUnit, s))
+        // Lunge 오프셋: 공격 중이고 attack 시퀀스가 없는 소환수만 오른쪽으로 sin 곡선 전진.
+        // 시퀀스가 있는 공룡은 프레임 자체가 공격 모션을 표현하므로 좌표 이동은 이중 모션이 됨.
+        if (ReferenceEquals(_attackingUnit, s)
+            && !_fieldDinoAttackFrames.ContainsKey(s.data.id))
         {
             float lunge = Mathf.Sin(_attackProgress * Mathf.PI) * LungePixels;
             center.x += lunge;
@@ -3999,6 +4289,27 @@ public class BattleUI : MonoBehaviour
         bool fusionInactive = fusionModeField && _fusionMaterialAPicked
             && !isFusionMaterialAField && !fieldFusionEligible;
 
+        // 융합 후보(또는 이미 선택된 A) 위에 호버되면 발 고정한 채 1.08x 살짝 키움 — "버튼처럼 누르라" 시그널.
+        // hit rect는 18px 패딩이 있어 스케일 변화로 호버 토글이 진동하지 않음.
+        if (fieldFusionEligible || isFusionMaterialAField)
+        {
+            var evHov = Event.current;
+            if (evHov != null)
+            {
+                var hitPre = new Rect(rect.x - 18f, rect.y - 18f,
+                                      rect.width + 36f, rect.height + 36f);
+                if (hitPre.Contains(evHov.mousePosition))
+                {
+                    const float kFusionHoverBoost = 1.08f;
+                    float newW = rect.width * kFusionHoverBoost;
+                    float newH = rect.height * kFusionHoverBoost;
+                    rect = new Rect(rect.center.x - newW * 0.5f,
+                                    rect.yMax - newH,
+                                    newW, newH);
+                }
+            }
+        }
+
         // 이 공룡이 공격/스킬 타겟팅의 source면 화살표 출발 rect로 기록 (융합은 화살표 안 씀).
         if (summonIndex == _targetingSummonIndex
             || summonIndex == _targetingSummonSkillIndex)
@@ -4009,13 +4320,12 @@ public class BattleUI : MonoBehaviour
 
         // Reward 상태면 공룡도 world-space overlay와 같은 톤으로 어둡게 tint
         bool inReward = GameStateManager.Instance != null && GameStateManager.Instance.State == GameState.Reward;
-        // 공격 불가 상태(이미 공격 / 침묵)는 어둡게, 이번 턴 선택된 공룡은 살짝 밝게.
+        // 공격 불가 상태(이미 공격 / 침묵)는 머리 위 검 뱃지만 어둡게 — 공룡 본체는 평상 색 유지.
         bool selected = _targetingSummonIndex == summonIndex;
-        bool dimmed = !s.CanAttack && !inReward;
+        bool attackBadgeDim = !s.CanAttack && !inReward;
         Color prevGuiColor = GUI.color;
         if (inReward) GUI.color = new Color(0.6f, 0.6f, 0.6f, 1f);
-        else if (fusionInactive) GUI.color = new Color(0.32f, 0.32f, 0.32f, 0.85f);
-        else if (dimmed) GUI.color = new Color(0.55f, 0.55f, 0.55f, 1f);
+        else if (fusionInactive) GUI.color = new Color(0.20f, 0.20f, 0.22f, 0.78f);
         else if (selected) GUI.color = new Color(1.12f, 1.08f, 0.9f, 1f);
 
         if (_fieldDinoSprites.TryGetValue(s.data.id, out var tex) && tex.height > 0)
@@ -4039,6 +4349,14 @@ public class BattleUI : MonoBehaviour
                 {
                     float wScale = atkTex.width  / (float)tex.width;
                     float hScale = atkTex.height / (float)tex.height;
+                    // T1/T2 PhotoRoom-cropped: attack 캔버스에 swing margin 없이 body가 100% 차지 →
+                    // wScale/hScale 그대로 적용하면 body가 idle 대비 (wScale, hScale)배 커 보임.
+                    // 측정된 boost (= idle_h / atk_h)를 양 축에 곱해 body 높이를 idle과 매칭. T0은 dictionary 미등록 → 그대로.
+                    if (_fieldDinoT12AttackScaleBoost.TryGetValue(s.data.id, out var sboost))
+                    {
+                        wScale *= sboost;
+                        hScale *= sboost;
+                    }
                     float atkDrawW = drawRect.width  * wScale;
                     float atkDrawH = drawRect.height * hScale;
                     var atkDrawRect = new Rect(
@@ -4066,7 +4384,7 @@ public class BattleUI : MonoBehaviour
         // HP 바 — 적과 동일 규칙: 스프라이트 발(rect.yMax) 바로 아래 통일 오프셋.
         float summonBarW = ComputeHpBarWidth(rect.width);
         var summonHpRect = new Rect(rect.center.x - summonBarW / 2, rect.yMax + 4f, summonBarW, hpBarHeight);
-        DrawHpBar(summonHpRect, s.hp, s.maxHp, new Color(0.65f, 0.16f, 0.18f));
+        DrawHpBar(summonHpRect, s.hp, s.maxHp, new Color(0.65f, 0.16f, 0.18f), entity: s);
 
         // 방어도 뱃지 — HP 바 왼쪽에 겹치게 (플레이어와 동일 스타일)
         if (s.block > 0)
@@ -4075,12 +4393,11 @@ public class BattleUI : MonoBehaviour
         }
 
 
-        // 티어/스택 인디케이터 — T0는 숨기고 T1/T2 진화체만 표시. 초식: 누적 스택.
+        // 티어/스택 인디케이터 — T1은 숨기고 T2 MAX만 표시. 초식: 누적 스택.
         string stackText = null;
         if (s.data.subType == CardSubType.CARNIVORE)
         {
-            if (s.data.id.EndsWith("_T2"))      stackText = "T2 · MAX";
-            else if (s.data.id.EndsWith("_T1")) stackText = "T1";
+            if (s.data.id.EndsWith("_T2")) stackText = "T2 · MAX";
         }
         else if (s.stacks > 0)
         {
@@ -4117,7 +4434,7 @@ public class BattleUI : MonoBehaviour
         // ATK 뱃지 — 머리 위 (적 intent와 미러 대칭). 아군은 검을 +45°로 회전.
         // 이 뱃지를 클릭하면 공격 타겟팅 시작 (예전엔 공룡 전체 클릭). 클릭 영역은 시인성보다 살짝 크게.
         Vector2 badgeCenter = new Vector2(rect.center.x + pairOffset, rect.y - 12f);
-        DrawAttackIconBadge(badgeCenter, s.TotalAttack, 0f, s.tempAttackBonus > 0);
+        DrawAttackIconBadge(badgeCenter, s.TotalAttack, 0f, s.tempAttackBonus > 0, attackBadgeDim);
         var badgeHitRect = new Rect(badgeCenter.x - 36f, badgeCenter.y - 36f, 72f, 72f);
         bool badgeActive = !inReward && _battle?.state != null && !_battle.state.IsOver
             && _targetingCardIndex < 0 && _swapFromCardIndex < 0 && s.CanAttack;
@@ -4210,11 +4527,17 @@ public class BattleUI : MonoBehaviour
             }
             else if (fusionModeField)
             {
+                // 필드 공룡 클릭 영역 — 스프라이트 투명 영역도 잡히도록 외곽 18px 패딩.
+                // 히트 rect는 시각 rect 위에 깔리는 invisible padded box.
+                var fusionHitRect = new Rect(rect.x - 18f, rect.y - 18f,
+                                             rect.width + 36f, rect.height + 36f);
+                bool fusionHovered = ev != null && fusionHitRect.Contains(ev.mousePosition);
+
                 if (isFusionMaterialAField)
                 {
                     // 이미 선택된 재료 A — 시안 마커로 명확히 표시. 재클릭 시 선택 해제.
                     DrawFusionSelectedMarker(rect);
-                    if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && hovered)
+                    if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && fusionHovered)
                     {
                         ev.Use();
                         _fusionMaterialAPicked = false;
@@ -4222,8 +4545,8 @@ public class BattleUI : MonoBehaviour
                 }
                 else if (fieldFusionEligible)
                 {
-                    DrawTargetFootGlow(rect, hovered);
-                    if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && hovered)
+                    // 양성 마커 없음 — 비후보 dim + 호버 스케일업으로 신호 충분.
+                    if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && fusionHovered)
                     {
                         ev.Use();
                         HandleFusionMaterialClick(DianoCard.Battle.FusionMaterial.Field(summonIndex));
@@ -4299,20 +4622,10 @@ public class BattleUI : MonoBehaviour
         var icon = GetSkillIcon(skill);
         var prevColor = GUI.color;
 
-        // READY 펄스 글로우 — 아이콘 텍스처를 살짝 크게/투명하게 깔아 외곽광 흉내.
-        if (ready && icon != null)
-        {
-            float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 4f);
-            float glowSize = iconSize * 1.45f;
-            var glowRect = new Rect(iconCenter.x - glowSize / 2f, iconCenter.y - glowSize / 2f, glowSize, glowSize);
-            GUI.color = new Color(0.35f, 1f, 0.85f, 0.30f * pulse);
-            GUI.DrawTexture(glowRect, icon, ScaleMode.ScaleToFit, alphaBlend: true);
-            GUI.color = prevColor;
-        }
-
         if (icon != null)
         {
-            if (!ready) GUI.color = new Color(0.55f, 0.55f, 0.58f, 0.85f);
+            // not-ready(쿨다운/사용 완료)는 검 뱃지 dim과 동일하게 살짝 어둡게.
+            if (!ready) GUI.color = new Color(0.50f, 0.50f, 0.52f, 1f);
             GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit, alphaBlend: true);
             GUI.color = prevColor;
         }
@@ -4320,13 +4633,13 @@ public class BattleUI : MonoBehaviour
         {
             // 폴백 — Skill/{nameEn}.png 아직 미배치. 검은 사각 + ✦.
             FillRect(iconRect, ready ? new Color(0.10f, 0.40f, 0.40f, 0.85f)
-                                     : new Color(0.10f, 0.10f, 0.12f, 0.85f));
+                                     : new Color(0.05f, 0.05f, 0.07f, 0.95f));
             DrawBorder(iconRect, ready ? 2 : 1,
-                       ready ? new Color(0.35f, 0.95f, 0.85f, 0.9f) : new Color(0.35f, 0.35f, 0.40f, 0.85f));
+                       ready ? new Color(0.35f, 0.95f, 0.85f, 0.9f) : new Color(0.20f, 0.20f, 0.22f, 0.9f));
             var prevTextCol = _centerStyle.normal.textColor;
             int prevFontSize = _centerStyle.fontSize;
             _centerStyle.fontSize = 22;
-            _centerStyle.normal.textColor = ready ? new Color(0.85f, 1f, 0.95f) : new Color(0.62f, 0.62f, 0.66f);
+            _centerStyle.normal.textColor = ready ? new Color(0.85f, 1f, 0.95f) : new Color(0.30f, 0.30f, 0.34f);
             GUI.Label(iconRect, "✦", _centerStyle);
             _centerStyle.normal.textColor = prevTextCol;
             _centerStyle.fontSize = prevFontSize;
@@ -4545,15 +4858,6 @@ public class BattleUI : MonoBehaviour
                       e.data.nameKr, _centerStyle);
         }
 
-        // 디버프 스택 표시 (rough — 적 머리 위 우측)
-        if (e.poisonStacks > 0 || e.weakTurns > 0)
-        {
-            var sb = new System.Text.StringBuilder();
-            if (e.poisonStacks > 0) sb.Append($"☠{e.poisonStacks} ");
-            if (e.weakTurns > 0) sb.Append($"↓{e.weakTurns}T");
-            GUI.Label(new Rect(rect.xMax - 70, rect.y + 4, 70, 18), sb.ToString().Trim(), _centerStyle);
-        }
-
         // 이끼 잡몹은 본체 적보다 작으니 HP바도 비례 축소 — min clamp 우회 + 두께도 얇게.
         float enemyBarW = e.isMoss ? rect.width * 0.65f : ComputeHpBarWidth(rect.width);
         float enemyBarH = e.isMoss ? 8f : hpBarHeight;
@@ -4571,7 +4875,7 @@ public class BattleUI : MonoBehaviour
         Color hpFill = mossShielded
             ? new Color(0.45f, 0.45f, 0.50f)   // 차콜 그레이 — "지금은 데미지 안 들어감"
             : new Color(0.65f, 0.16f, 0.18f);
-        DrawHpBar(enemyHpRect, e.hp, e.maxHp, hpFill);
+        DrawHpBar(enemyHpRect, e.hp, e.maxHp, hpFill, entity: e);
 
         // 방패 아이콘 — moss 보호막은 MOSS_LEAF로 표시(생명선이 이끼라는 의미가 한눈에),
         // 일반 block은 DEFEND 방패로.
@@ -4606,6 +4910,9 @@ public class BattleUI : MonoBehaviour
                 int cardIdx = _targetingCardIndex;
                 int eIdx = enemyIndex;
                 _targetingCardIndex = -1;
+                // SFX는 카드 클릭 즉시 재생 — PlayCard가 화염구 임팩트 시점까지 지연되므로
+                // ResolveCard에서 트리거하면 사운드가 늦게 들림.
+                DianoCard.Audio.AudioManager.Instance?.PlaySFX("card_attack");
                 _pending.Add(() => {
                     // 모션과 화염구는 즉시 시작. PlayCard(데미지/마나/상태)는 화염구 임팩트 시점까지 지연.
                     _playerView?.PlayAttack(ComputeAttackDir(eIdx), distance: 0.08f, duration: PlayerAttackDuration);
@@ -4718,43 +5025,34 @@ public class BattleUI : MonoBehaviour
 
     // 타겟팅 모드에서 선택된 카드 외곽에 부드럽게 빛나는 글로우.
     // 단단한 노란 외곽선 대신 여러 겹의 옅은 보더가 바깥으로 퍼지며 펄스.
-    private void DrawSoftCardGlow(Rect cardRect)
-    {
-        float pulse = 0.6f + 0.4f * Mathf.Sin(Time.time * 3f); // 0.2~1.0
-        Color tint = new Color(1f, 0.92f, 0.65f); // 따뜻한 옅은 노랑
-
-        const int layers = 5;
-        for (int i = 0; i < layers; i++)
-        {
-            float t = i / (float)(layers - 1);
-            float expand = Mathf.Lerp(1f, 9f, t);
-            float thickness = Mathf.Lerp(2f, 1f, t);
-            float alpha = Mathf.Lerp(0.55f, 0.05f, t) * pulse;
-            var r = new Rect(cardRect.x - expand, cardRect.y - expand,
-                             cardRect.width + expand * 2f, cardRect.height + expand * 2f);
-            DrawBorder(r, thickness, new Color(tint.r, tint.g, tint.b, alpha));
-        }
-    }
-
-    // 융합 재료 A로 선택된 카드/공룡 마커 — 시안 두꺼운 펄스 링.
-    // 후보 글로우(노랑/주황)와 색을 분리해 "고른 것" vs "고를 수 있는 것"을 한눈에 구분.
-    // 라벨은 ATK 뱃지·코스트 원과 충돌해서 생략 — 색·두께 차이만으로 충분히 도드라짐.
+    // 융합 재료 A로 선택된 카드/공룡 마커 — 부드러운 시안 헤일로.
+    // 후보(보라)와 색을 분리해 "고른 것" vs "고를 수 있는 것"을 한눈에 구분.
+    // 라벨은 ATK 뱃지·코스트 원과 충돌해서 생략 — 색 차이만으로 충분히 도드라짐.
     private void DrawFusionSelectedMarker(Rect rect)
     {
+        EnsureArrowDotTexture();
+        if (_arrowDotTex == null) return;
+
         float pulse = 0.55f + 0.45f * Mathf.Sin(Time.time * 4f);
         Color tint = new Color(0.55f, 1f, 0.95f);
 
-        const int layers = 4;
-        for (int i = 0; i < layers; i++)
-        {
-            float t = i / (float)(layers - 1);
-            float expand = Mathf.Lerp(2f, 10f, t);
-            float thickness = Mathf.Lerp(3.5f, 1f, t);
-            float alpha = Mathf.Lerp(1f, 0.12f, t) * pulse;
-            var r = new Rect(rect.x - expand, rect.y - expand,
-                             rect.width + expand * 2f, rect.height + expand * 2f);
-            DrawBorder(r, thickness, new Color(tint.r, tint.g, tint.b, alpha));
-        }
+        var prev = GUI.color;
+        // 외곽 wide bloom
+        float padOuter = 32f;
+        float aOuter = 0.55f * pulse;
+        GUI.color = new Color(tint.r, tint.g, tint.b, aOuter);
+        var rOuter = new Rect(rect.x - padOuter, rect.y - padOuter,
+                              rect.width + padOuter * 2f, rect.height + padOuter * 2f);
+        GUI.DrawTexture(rOuter, _arrowDotTex, ScaleMode.StretchToFill, alphaBlend: true);
+
+        // 안쪽 tight halo — 더 진하게.
+        float padInner = 12f;
+        float aInner = 0.95f * pulse;
+        GUI.color = new Color(tint.r, tint.g, tint.b, aInner);
+        var rInner = new Rect(rect.x - padInner, rect.y - padInner,
+                              rect.width + padInner * 2f, rect.height + padInner * 2f);
+        GUI.DrawTexture(rInner, _arrowDotTex, ScaleMode.StretchToFill, alphaBlend: true);
+        GUI.color = prev;
     }
 
     // 타겟팅 가능한 적 발치에 떠 있는 납작한 타원형 글로우.
@@ -5011,7 +5309,7 @@ public class BattleUI : MonoBehaviour
         GUI.color = prevColor;
     }
 
-    private void DrawHpBar(Rect rect, int curr, int max, Color fill, bool blueTint = false, float blueTintStart = -1f)
+    private void DrawHpBar(Rect rect, int curr, int max, Color fill, bool blueTint = false, float blueTintStart = -1f, object entity = null)
     {
         // 블록이 살아있는 동안 fill 색을 파란 톤으로 유지. 시작 직후 짧게 더 강한 페이드 인.
         if (blueTint)
@@ -5030,9 +5328,10 @@ public class BattleUI : MonoBehaviour
 
         float realFrac = max > 0 ? Mathf.Clamp01((float)curr / max) : 0f;
 
-        // 위치 기반 키로 bar의 표시 fraction을 추적 — 데미지 받으면 pale trail이 따라 내려감
-        var key = new Vector2(rect.x, rect.y);
-        if (!_hpBarDisplayedFrac.TryGetValue(key, out float displayed))
+        // entity reference 기반 키 — 슬라이드/레이아웃 재계산으로 rect 위치가 바뀌어도 키가 흔들리지 않는다.
+        // entity가 null이면 Vector2 위치 폴백 (backwards-compat).
+        object trackerKey = entity ?? (object)new Vector2(rect.x, rect.y);
+        if (!_hpBarDisplayedFrac.TryGetValue(trackerKey, out float displayed))
             displayed = realFrac;
 
         if (Event.current.type == EventType.Repaint)
@@ -5041,7 +5340,7 @@ public class BattleUI : MonoBehaviour
                 displayed = Mathf.MoveTowards(displayed, realFrac, Time.unscaledDeltaTime * 0.85f);
             else
                 displayed = realFrac; // 힐은 즉시
-            _hpBarDisplayedFrac[key] = displayed;
+            _hpBarDisplayedFrac[trackerKey] = displayed;
         }
 
         // 1) 배경 인셋 — 잉크 차콜
@@ -5150,6 +5449,25 @@ public class BattleUI : MonoBehaviour
         GUI.color = prevColor;
     }
 
+    // 신규 보상/포인트 획득 알림 — 아이콘 우상단에 빨간 느낌표 뱃지.
+    // 유물 획득 / 포션 획득 / 테크 포인트 획득 시 점등, 해당 패널/화면을 열면 꺼짐.
+    private void DrawNewBadge(Rect iconRect)
+    {
+        if (_iconAlertNew == null) return;
+        float badgeSz = iconRect.width * 0.55f;
+        var badgeRect = new Rect(
+            iconRect.xMax - badgeSz * 0.70f,
+            iconRect.y    - badgeSz * 0.25f,
+            badgeSz, badgeSz);
+        float pulse = 0.85f + 0.15f * Mathf.Sin(Time.time * 5f);
+        // 살짝 빨갛게 뜨거운 글로우
+        DrawIconGlow(badgeRect, new Color(1f, 0.30f, 0.25f, pulse), 1.4f);
+        var prev = GUI.color;
+        GUI.color = new Color(1f, 1f, 1f, pulse);
+        GUI.DrawTexture(badgeRect, _iconAlertNew, ScaleMode.ScaleToFit);
+        GUI.color = prev;
+    }
+
     // Battle/Map/Village 공통 상단 HUD 스트립 + 구분선 — 호출자가 컨텍스트를 넘겨주면 그 색 사용.
     public void DrawHudStripAndDivider(HudContext ctx = HudContext.Battle)
     {
@@ -5223,16 +5541,21 @@ public class BattleUI : MonoBehaviour
         if (turnNumber >= 0)
         {
             right = DrawRightSlot(right, barY, barH, iconY, iconSize, iconLabelGap,
-                _iconTurn, turnNumber.ToString(), new Color(0.75f, 0.90f, 1f), wobblePhase: 1.8f);
+                _iconTurn, turnNumber.ToString(), new Color(0.75f, 0.90f, 1f), wobblePhase: 1.8f,
+                tipTitle: "턴 (Turn)",
+                tipBody: $"현재 {turnNumber}턴.\n매 턴 시작에 마나가 가득 차고, 카드를 새로 드로우한다.");
             anyDrawn = true;
         }
 
-        // Floor 슬롯 — 계단은 아주 미세하게 좌우로 기울음
-        if (floorLabel != null)
+        // Floor 슬롯 — 계단은 아주 미세하게 좌우로 기울음.
+        // 전투 중에는 진행도가 의미 없으므로 숨김 (맵/마을에서만 노출).
+        if (floorLabel != null && ctx != HudContext.Battle)
         {
             if (anyDrawn) right -= rightSlotGap;
             right = DrawRightSlot(right, barY, barH, iconY, iconSize, iconLabelGap,
-                _iconFloor, floorLabel, new Color(1f, 0.82f, 0.35f), wobblePhase: 2.4f);
+                _iconFloor, floorLabel, new Color(1f, 0.82f, 0.35f), wobblePhase: 2.4f,
+                tipTitle: "층 (Floor)",
+                tipBody: $"현재 진행도 {floorLabel}.\n맨 위층의 보스를 처치하면 챕터가 끝난다.");
             anyDrawn = true;
         }
 
@@ -5274,6 +5597,8 @@ public class BattleUI : MonoBehaviour
         {
             FillRect(hitRect, new Color(1f, 0.82f, 0.35f, 0.10f));
             DrawBorder(hitRect, 1f, new Color(1f, 0.82f, 0.35f, 0.35f));
+            _hoveredPassiveTitle = "덱 보기 (Deck)";
+            _hoveredPassiveBody  = $"전체 덱 카드 {deckCount}장.\n클릭하면 덱 전체를 펼쳐 본다 (전투/맵 어디서든).";
         }
 
         // HUD 우측 덱 카운트 슬롯 — Floor 바로 옆 — CardBack 텍스처 사용 (코너 더미는 _iconDeck 별도 사용).
@@ -5291,6 +5616,7 @@ public class BattleUI : MonoBehaviour
         if (hover && ev.type == EventType.MouseDown && ev.button == 0)
         {
             _deckViewerOpen = !_deckViewerOpen;
+            _deckViewerSource = 0;  // HUD에서 열면 항상 전체 덱 모드.
             _deckViewerScroll = Vector2.zero;
             ev.Use();
         }
@@ -5329,6 +5655,10 @@ public class BattleUI : MonoBehaviour
         {
             FillRect(hitRect, new Color(1f, 0.82f, 0.35f, 0.10f));
             DrawBorder(hitRect, 1f, new Color(1f, 0.82f, 0.35f, 0.35f));
+            _hoveredPassiveTitle = "테크트리 (Tech Tree)";
+            _hoveredPassiveBody  = totalPoints > 0
+                ? $"보유 포인트 {totalPoints}.\n클릭해 4방위 노드에서 영구 강화를 해금한다."
+                : "포인트가 없다.\n맵 진행 보상으로 모이며, 4방위 노드에서 영구 강화를 해금한다.";
         }
 
         DrawIconGlow(iconRect, glowTint, glowIntensity);
@@ -5349,15 +5679,11 @@ public class BattleUI : MonoBehaviour
             GUI.Label(labelRect, label, _labelStyle);
         }
 
-        // 새 포인트 획득 알림 레드닷
+        // 새 포인트 획득 알림 — 느낌표 뱃지 (유물/포션과 공통 룩)
         var gsmDot = GameStateManager.Instance;
         if (gsmDot?.TechTree != null && gsmDot.TechTree.hasNewPoints)
         {
-            float dotR = iconSize * 0.22f;
-            var dotRect = new Rect(iconRect.xMax - dotR * 1.1f, iconRect.y - dotR * 0.4f, dotR * 2f, dotR * 2f);
-            float pulse = 0.85f + 0.15f * Mathf.Sin(Time.time * 5f);
-            DrawIconGlow(dotRect, new Color(1f, 0.1f, 0.1f, pulse), 1.8f);
-            FillRect(dotRect, new Color(0.95f, 0.12f, 0.12f, pulse));
+            DrawNewBadge(iconRect);
         }
 
         if (hover && ev.type == EventType.MouseDown && ev.button == 0)
@@ -5467,8 +5793,10 @@ public class BattleUI : MonoBehaviour
         float iconY = barY + (barH - iconSize) * 0.5f;
         float cursorX = barX + padX;
 
-        void DrawSlot(Texture2D tex, string label, Color glowTint, float glowIntensity = 1f)
+        void DrawSlot(Texture2D tex, string label, Color glowTint, float glowIntensity = 1f,
+                      string tipTitle = null, string tipBody = null)
         {
+            float startX = cursorX;
             if (tex != null)
             {
                 var iconRect = new Rect(cursorX, iconY, iconSize, iconSize);
@@ -5480,12 +5808,27 @@ public class BattleUI : MonoBehaviour
             var labelRect = new Rect(cursorX, barY + (barH - size.y) * 0.5f, size.x + 2f, size.y);
             GUI.Label(labelRect, label, _labelStyle);
             cursorX += size.x + slotGap;
+
+            if (!string.IsNullOrEmpty(tipTitle))
+            {
+                float endX = cursorX - slotGap;
+                var hitRect = new Rect(startX - 4f, barY, (endX - startX) + 8f, barH);
+                if (hitRect.Contains(Event.current.mousePosition))
+                {
+                    _hoveredPassiveTitle = tipTitle;
+                    _hoveredPassiveBody = tipBody;
+                }
+            }
         }
 
         int hpNow = hpCurrent ?? run.playerCurrentHp;
         int hpCap = hpMax ?? run.playerMaxHp;
-        DrawSlot(_iconHP,     $"{hpNow}/{hpCap}",                          new Color(1f, 0.55f, 0.50f), 1.6f);
-        DrawSlot(_iconGold,   $"{run.gold}",                               new Color(1f, 0.82f, 0.35f));
+        DrawSlot(_iconHP,     $"{hpNow}/{hpCap}",                          new Color(1f, 0.55f, 0.50f), 1.6f,
+                 tipTitle: "체력 (HP)",
+                 tipBody: $"현재 체력 {hpNow} / 최대 {hpCap}.\n0이 되면 런이 종료된다. 휴식지·포션·유물로 회복할 수 있다.");
+        DrawSlot(_iconGold,   $"{run.gold}",                               new Color(1f, 0.82f, 0.35f),
+                 tipTitle: "골드 (Gold)",
+                 tipBody: $"보유 골드 {run.gold}. 상점에서 카드·유물·포션을 구매하거나 카드 제거에 사용한다.");
         // 포션 슬롯 — 호버 시 아이콘 확대 + 클릭 시 포션 row 패널 토글
         {
             var evP = Event.current;
@@ -5507,11 +5850,7 @@ public class BattleUI : MonoBehaviour
                                      : (potionHov ? new Color(0.45f, 0.95f, 0.55f) : new Color(0.35f, 0.85f, 0.45f));
                 DrawIconGlow(potionIconRect, potionGlowTint, _potionViewerOpen ? 1.7f : (potionHov ? 1.4f : 1f));
                 GUI.DrawTexture(potionIconRect, _iconPotion, ScaleMode.ScaleToFit);
-                if (_potionViewerOpen)
-                {
-                    var underlineRect = new Rect(cursorX + 2f, iconY + iconSize + 1f, iconSize - 4f, 1.6f);
-                    FillRect(underlineRect, new Color(0.82f, 0.68f, 0.38f, 0.85f));
-                }
+                if (run.hasNewPotion) DrawNewBadge(potionIconRect);
                 cursorX += iconSize + iconLabelGap;
             }
             var potionLabelRect = new Rect(cursorX, barY + (barH - potionLabelSz.y) * 0.5f,
@@ -5519,11 +5858,18 @@ public class BattleUI : MonoBehaviour
             GUI.Label(potionLabelRect, potionLabel, _labelStyle);
             cursorX += potionLabelSz.x + slotGap;
 
+            if (potionHov)
+            {
+                _hoveredPassiveTitle = "포션 (Potion)";
+                _hoveredPassiveBody  = $"보유 {run.potions.Count} / 슬롯 {run.MaxPotionSlots}.\n클릭하면 포션 목록이 펼쳐진다. 전투 중 마시거나 휴식지에서 보관한다.";
+            }
+
             if (potionHov && evP.type == EventType.MouseDown && evP.button == 0)
             {
                 _potionViewerOpen = !_potionViewerOpen;
                 _selectedPotionIndex = -1;
                 if (_potionViewerOpen) _relicViewerOpen = false;
+                run.hasNewPotion = false; // 클릭 = 인지, 토글 방향 무관하게 즉시 OFF
                 evP.Use();
             }
         }
@@ -5548,17 +5894,19 @@ public class BattleUI : MonoBehaviour
                                     : (relicHov ? new Color(0.90f, 0.55f, 1f) : new Color(0.85f, 0.55f, 1f));
                 DrawIconGlow(relicIconRect, relicGlowTint, _relicViewerOpen ? 1.7f : (relicHov ? 1.4f : 1f));
                 GUI.DrawTexture(relicIconRect, _iconRelic, ScaleMode.ScaleToFit);
-                if (_relicViewerOpen)
-                {
-                    var underlineRect = new Rect(cursorX + 2f, iconY + iconSize + 1f, iconSize - 4f, 1.6f);
-                    FillRect(underlineRect, new Color(0.82f, 0.68f, 0.38f, 0.85f));
-                }
+                if (run.hasNewRelic) DrawNewBadge(relicIconRect);
                 cursorX += iconSize + iconLabelGap;
             }
             var relicLabelRect = new Rect(cursorX, barY + (barH - relicLabelSz.y) * 0.5f,
                                           relicLabelSz.x + 2f, relicLabelSz.y);
             GUI.Label(relicLabelRect, relicLabel, _labelStyle);
             cursorX += relicLabelSz.x + slotGap;
+
+            if (relicHov)
+            {
+                _hoveredPassiveTitle = "유물 (Relic)";
+                _hoveredPassiveBody  = $"보유 유물 {run.relics.Count}개.\n클릭하면 유물 목록이 펼쳐진다. 전투/맵에서 자동 발동되는 영구 효과들.";
+            }
 
             if (relicHov && evR.type == EventType.MouseDown && evR.button == 0)
             {
@@ -5568,6 +5916,7 @@ public class BattleUI : MonoBehaviour
                     _potionViewerOpen = false;
                     _selectedPotionIndex = -1;
                 }
+                run.hasNewRelic = false; // 클릭 = 인지, 토글 방향 무관하게 즉시 OFF
                 evR.Use();
             }
         }
@@ -5595,7 +5944,8 @@ public class BattleUI : MonoBehaviour
     // wobblePhase가 >=0 이면 미세한 좌우 기울임 적용 (양옆으로 살짝 기우는 느낌)
     private float DrawRightSlot(float right, float barY, float barH,
         float iconY, float iconSize, float iconLabelGap,
-        Texture2D icon, string label, Color glowTint, float wobblePhase)
+        Texture2D icon, string label, Color glowTint, float wobblePhase,
+        string tipTitle = null, string tipBody = null)
     {
         var labelSize = _labelStyle.CalcSize(new GUIContent(label));
         float labelX = right - labelSize.x;
@@ -5609,6 +5959,16 @@ public class BattleUI : MonoBehaviour
             DrawIconGlow(iconRect, glowTint);
 
             GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
+        }
+
+        if (!string.IsNullOrEmpty(tipTitle))
+        {
+            var hitRect = new Rect(iconX - 4f, barY, (right - iconX) + 8f, barH);
+            if (hitRect.Contains(Event.current.mousePosition))
+            {
+                _hoveredPassiveTitle = tipTitle;
+                _hoveredPassiveBody = tipBody;
+            }
         }
         return iconX;
     }
@@ -5658,20 +6018,85 @@ public class BattleUI : MonoBehaviour
                             Color.white, new Color(0, 0, 0, 0.95f), 1.5f);
         _cardCostStyle.fontSize = prevFontSize;
 
-        // 좌하단 덱 더미 — 화면 좌측 최하단 모서리에 작게. 하늘색 카운트 뱃지.
+        // 마나 오브 호버 툴팁 — 오브 본체 영역 위에 마우스가 있을 때만.
+        if (orbRect.Contains(Event.current.mousePosition))
+        {
+            _hoveredPassiveTitle = "마나 (Mana)";
+            _hoveredPassiveBody  = $"현재 {p.mana} / 최대 {p.maxMana}.\n카드 사용 시 코스트만큼 소모되며, 매 턴 시작에 가득 채워진다.";
+        }
+
+        // 좌하단 덱 더미 / 우하단 버린 카드 더미 — 호버 시 살짝 커지는 버튼 느낌.
+        // 양쪽 모두 클릭하면 해당 더미를 펼쳐 본다.
         var skyBlue = new Color(0.30f, 0.65f, 1f, 1f);
+        Vector2 mousePos = Event.current.mousePosition;
+
+        // 좌하단 덱 더미
         int deckDisplay = GetDeckDisplayCount(state);
         float deckPulse = GetReshuffleDeckLandPulse();
-        DrawCardPile(new Rect(cornerPileLeftX, RefH - cornerPileTopFromBottom, cornerDeckPileSize, cornerDeckPileSize),
-                     GetCharacterDeckIcon() ?? _iconDeck, deckDisplay, skyBlue, deckPulse);
+        var deckPileBaseRect = new Rect(cornerPileLeftX, RefH - cornerPileTopFromBottom, cornerDeckPileSize, cornerDeckPileSize);
+        bool deckHover = deckPileBaseRect.Contains(mousePos);
+        Rect deckPileRect = ExpandRectFromCenter(deckPileBaseRect, deckHover ? 1.15f : 1f);
+        if (deckHover)
+        {
+            DrawIconGlow(deckPileRect, new Color(0.55f, 0.85f, 1f), 1.3f);
+        }
+        DrawCardPile(deckPileRect, GetCharacterDeckIcon() ?? _iconDeck, deckDisplay, skyBlue, deckPulse);
+        if (deckHover)
+        {
+            _hoveredPassiveTitle = "남은 덱 (Draw Pile)";
+            _hoveredPassiveBody  = $"앞으로 뽑을 카드 {deckDisplay}장.\n클릭하면 남은 카드를 펼쳐 본다.";
+        }
 
         // 우하단 버린 카드 더미 — 좌측 덱과 동일한 하늘색 뱃지.
         // 손패가 버려지는 애니메이션 중에는 착지한 카드 수만큼 카운트가 틱틱 올라가며,
         // 카드가 착지할 때마다 뱃지가 잠깐 커졌다 돌아오는 펄스가 들어간다.
         int discardDisplay = GetDiscardDisplayCount(state);
         float discardPulse = GetDiscardLandPulse();
-        DrawCardPile(new Rect(RefW - cornerPileRightInset, RefH - cornerPileTopFromBottom, cornerDiscardPileSize, cornerDiscardPileSize),
-                     GetCharacterDiscardIcon() ?? _iconDiscard, discardDisplay, skyBlue, discardPulse);
+        var discardPileBaseRect = new Rect(RefW - cornerPileRightInset, RefH - cornerPileTopFromBottom, cornerDiscardPileSize, cornerDiscardPileSize);
+        bool discardHover = discardPileBaseRect.Contains(mousePos);
+        Rect discardPileRect = ExpandRectFromCenter(discardPileBaseRect, discardHover ? 1.15f : 1f);
+        if (discardHover)
+        {
+            DrawIconGlow(discardPileRect, new Color(0.55f, 0.85f, 1f), 1.3f);
+        }
+        DrawCardPile(discardPileRect, GetCharacterDiscardIcon() ?? _iconDiscard, discardDisplay, skyBlue, discardPulse);
+        if (discardHover)
+        {
+            _hoveredPassiveTitle = "버린 덱 (Discard Pile)";
+            _hoveredPassiveBody  = $"이번 전투에서 버려진 카드 {discardDisplay}장.\n덱이 비면 섞여 다시 드로우 풀로 돌아간다. 클릭하면 펼쳐 본다.";
+        }
+
+        // StS 스타일 — 좌하 더미 클릭 → 뽑을 카드, 우하 더미 클릭 → 버린 카드 뷰어.
+        // 호버로 확장된 rect 기준으로 클릭 판정 — 커진 영역 어디를 눌러도 열림.
+        var ev = Event.current;
+        if (ev.type == EventType.MouseDown && ev.button == 0 && !_deckViewerOpen)
+        {
+            if (deckPileRect.Contains(ev.mousePosition))
+            {
+                _deckViewerOpen = true;
+                _deckViewerSource = 1;
+                _deckViewerSortMode = 0;
+                _deckViewerScroll = Vector2.zero;
+                ev.Use();
+            }
+            else if (discardPileRect.Contains(ev.mousePosition))
+            {
+                _deckViewerOpen = true;
+                _deckViewerSource = 2;
+                _deckViewerSortMode = 0;
+                _deckViewerScroll = Vector2.zero;
+                ev.Use();
+            }
+        }
+    }
+
+    // 중심 기준으로 사각형을 비례 확장. 호버 시 더미가 가운데에서 부풀어 오르는 효과.
+    private static Rect ExpandRectFromCenter(Rect r, float factor)
+    {
+        if (Mathf.Approximately(factor, 1f)) return r;
+        float w = r.width * factor;
+        float h = r.height * factor;
+        return new Rect(r.center.x - w * 0.5f, r.center.y - h * 0.5f, w, h);
     }
 
     // 덱 더미에 표시할 카운트 — reshuffle 중엔 착지한 카드 수(0에서 증가),
@@ -5840,6 +6265,64 @@ public class BattleUI : MonoBehaviour
             && _targetingCardIndex < state.hand.Count
             && CardNeedsFusionTargets(state.hand[_targetingCardIndex].data);
 
+        // 융합 모드 우선 클릭 핸들러 — 호버 카드 외 부채꼴 위치(회전된 fan rect)나 호버 raised rect 어디든 클릭 잡음.
+        // 기존 흐름: 호버 카드만 클릭 처리 → 마우스가 raised hoverRect 밖(부채꼴 원위치)에 있으면 클릭 누락.
+        // 여기서 모든 손패 카드의 회전 rect 위로 hit-test해 융합 후보(또는 촉매 자기자신)를 잡고 즉시 처리·소비.
+        if (fusionMode && inputActive
+            && Event.current.type == EventType.MouseDown && Event.current.button == 0
+            && !IsDrawFlyActive)
+        {
+            Vector2 mousePos = Event.current.mousePosition;
+            int clickedIdx = -1;
+
+            // 1순위: 호버된 카드의 raised hoverRect 위
+            if (hoverIdx >= 0)
+            {
+                var hr = ComputeHandHoverRect(hoverIdx, startAngle, anglePerCard,
+                    fanOriginX, fanOriginY, fanRadius, cardW, cardH, hideOffset);
+                if (hr.Contains(mousePos)) clickedIdx = hoverIdx;
+            }
+
+            // 2순위: 부채꼴 위치(회전 rect) — 위에서부터(drawOrder 마지막) 검사
+            if (clickedIdx < 0)
+            {
+                for (int k = n - 1; k >= 0; k--)
+                {
+                    int i = drawOrder[k];
+                    if (IsBeingDrawnInto(state.hand[i])) continue;
+                    float angle = startAngle + i * anglePerCard;
+                    Vector2 c2 = FanCardCenter(fanOriginX, fanOriginY, fanRadius, angle);
+                    c2.y += CardIdleBob(i);
+                    if (PointInRotatedRect(mousePos, c2, cardW, cardH, angle))
+                    {
+                        clickedIdx = i;
+                        break;
+                    }
+                }
+            }
+
+            if (clickedIdx >= 0)
+            {
+                if (clickedIdx == _targetingCardIndex)
+                {
+                    // 촉매 카드 재클릭 → 융합 모드 취소
+                    Event.current.Use();
+                    _targetingCardIndex = -1;
+                    _fusionMaterialAPicked = false;
+                }
+                else if (IsFusionMaterialEligible(null, clickedIdx, isHand: true))
+                {
+                    Event.current.Use();
+                    HandleFusionMaterialClick(DianoCard.Battle.FusionMaterial.Hand(clickedIdx));
+                }
+                // 비후보(dim) 카드 클릭: 의도적으로 무시 — 일반 카드 플레이로 떨어지지 않게 소비.
+                else
+                {
+                    Event.current.Use();
+                }
+            }
+        }
+
         // 2) 비호버 카드 — drawOrder 순서대로(바깥 → 안쪽) 회전시켜 드로우
         // 주의: GUIUtility.RotateAroundPivot은 pivot을 스크린 픽셀 좌표로 다루므로
         //       (newMat * baseMatrix 순서로 합성), 가상 1280×720 좌표인 center를 그대로
@@ -5857,6 +6340,10 @@ public class BattleUI : MonoBehaviour
             float angle = startAngle + i * anglePerCard;
             Vector2 center = FanCardCenter(fanOriginX, fanOriginY, fanRadius, angle);
             center.y += CardIdleBob(i);
+            // 활성 카드(타겟팅 / 스왑 출발)는 hand fan에서 위로 살짝 들어올림 — "뽑혀 있다" 시그널.
+            // 글로우 대신 위치 변화로 표현. ▼ 마커와 결합되면 글자/광원 노이즈 없이 명확.
+            bool isActiveCard = (i == _targetingCardIndex || i == _swapFromCardIndex);
+            if (isActiveCard) center.y -= 28f;
             var rect = new Rect(center.x - cardW * 0.5f, center.y - cardH * 0.5f, cardW, cardH);
 
             GUI.matrix = baseMatrix * RotateAroundPivotMatrix(angle, center);
@@ -5872,10 +6359,6 @@ public class BattleUI : MonoBehaviour
             // 스테이지 2: 촉매도 A도 후보도 아닌 손 카드는 융합과 무관 — 어둡게.
             bool fusionInactiveCard = fusionMode && _fusionMaterialAPicked
                 && i != _targetingCardIndex && !isFusionFanA && !isFusionEligibleHand;
-            if (i == _targetingCardIndex || i == _swapFromCardIndex || isFusionEligibleHand)
-            {
-                DrawSoftCardGlow(rect);
-            }
             // 화살표 source — 일반 타겟팅 카드 / 스왑 출발 카드 (융합은 화살표 안 씀).
             if ((i == _targetingCardIndex && !CardNeedsFusionTargets(c))
                 || i == _swapFromCardIndex)
@@ -5884,7 +6367,7 @@ public class BattleUI : MonoBehaviour
                 _arrowSourceValid = true;
             }
             Color prevFanCol = GUI.color;
-            if (fusionInactiveCard) GUI.color = new Color(0.35f, 0.35f, 0.35f, 0.85f);
+            if (fusionInactiveCard) GUI.color = new Color(0.22f, 0.22f, 0.24f, 0.78f);
             DrawCardFrame(rect, c, canPlay, drawCost: false);
             GUI.color = prevFanCol;
             // 재료 A 마커 — 글로우 위에 시안 테두리로 덮어 명확히 "선택됨" 표시.
@@ -5892,6 +6375,7 @@ public class BattleUI : MonoBehaviour
             {
                 DrawFusionSelectedMarker(rect);
             }
+            // 융합 후보는 비후보 dim으로만 구분 — 양성 마커 제거.
         }
         GUI.matrix = baseMatrix;
 
@@ -5939,10 +6423,7 @@ public class BattleUI : MonoBehaviour
             // 스테이지 2 inactive — 호버 카드도 동일하게 dim.
             bool fusionInactiveHover = fusionMode && _fusionMaterialAPicked
                 && i != _targetingCardIndex && !isFusionHoverA && !isFusionEligibleHover;
-            if (i == _targetingCardIndex || i == _swapFromCardIndex || isFusionEligibleHover)
-            {
-                DrawSoftCardGlow(hoverRect);
-            }
+            // 호버 자체가 카드 lift 효과를 주므로 활성 카드 별도 글로우 불필요.
             // 호버 중인 카드가 화살표 source면 들어올린 hoverRect에서 시작 (융합은 화살표 안 씀).
             if ((i == _targetingCardIndex && !CardNeedsFusionTargets(c))
                 || i == _swapFromCardIndex)
@@ -5951,34 +6432,17 @@ public class BattleUI : MonoBehaviour
                 _arrowSourceValid = true;
             }
             Color prevHoverCol = GUI.color;
-            if (fusionInactiveHover) GUI.color = new Color(0.35f, 0.35f, 0.35f, 0.85f);
+            if (fusionInactiveHover) GUI.color = new Color(0.22f, 0.22f, 0.24f, 0.78f);
             DrawCardFrame(hoverRect, c, canPlay, drawCost: true);
             GUI.color = prevHoverCol;
             if (isFusionHoverA)
             {
                 DrawFusionSelectedMarker(hoverRect);
             }
+            // 융합 후보 호버는 hand fan의 기본 hover 처리(카드 들어올림)로 충분 — 양성 마커 제거.
 
-            // 융합 모드에서 손 카드 클릭 — 재료 선택으로 가로챔 (canPlay 무관). fusionMode는 DrawHand 상단에서 미리 계산.
-            if (fusionMode)
-            {
-                var ev2 = Event.current;
-                if (ev2.type == EventType.MouseDown && ev2.button == 0 && hoverRect.Contains(ev2.mousePosition))
-                {
-                    ev2.Use();
-                    if (i == _targetingCardIndex)
-                    {
-                        // 촉매 카드 재클릭 → 융합 모드 취소
-                        _targetingCardIndex = -1;
-                        _fusionMaterialAPicked = false;
-                    }
-                    else if (IsFusionMaterialEligible(null, i, isHand: true))
-                    {
-                        HandleFusionMaterialClick(DianoCard.Battle.FusionMaterial.Hand(i));
-                    }
-                    return; // 융합 모드에서는 일반 클릭 처리로 내려가지 않음
-                }
-            }
+            // 융합 모드 클릭은 DrawHand 상단의 우선 핸들러에서 모두 처리됨 (Event.current.Use()로 소비).
+            // 여기 도달했다는 건 융합 모드가 아니거나 클릭이 이미 소비된 상태.
 
             // 클릭 처리: 호버된 카드에서만
             if (canPlay)
@@ -5991,7 +6455,16 @@ public class BattleUI : MonoBehaviour
                     bool isSummon = c.cardType == CardType.SUMMON;
                     bool fieldFull = _battle.state.field.Count >= _battle.state.maxFieldSize;
 
-                    if (CardNeedsTarget(c))
+                    if (CardNeedsReinforcePicker(c))
+                    {
+                        // 증원 카드 — 보유 공룡 그리드 모달을 띄우고 선택 대기.
+                        _reinforcePickerCardIndex = captured;
+                        _reinforcePickerScroll = Vector2.zero;
+                        _targetingCardIndex = -1;
+                        _swapFromCardIndex = -1;
+                        _fusionMaterialAPicked = false;
+                    }
+                    else if (CardNeedsTarget(c))
                     {
                         _targetingCardIndex = captured;
                         _swapFromCardIndex = -1;
@@ -6008,6 +6481,12 @@ public class BattleUI : MonoBehaviour
                         _targetingCardIndex = -1;
                         _swapFromCardIndex = -1;
                         bool isAttack = IsAttackSpell(c);
+                        if (isAttack)
+                        {
+                            // SFX는 클릭 즉시 — PlayCard가 화염구 임팩트까지 지연되므로 ResolveCard에서 재생하면 늦음.
+                            string sfxKey = (c.subType == CardSubType.DEBUFF) ? "card_debuff" : "card_attack";
+                            DianoCard.Audio.AudioManager.Instance?.PlaySFX(sfxKey);
+                        }
                         _pending.Add(() => {
                             if (isAttack)
                             {
@@ -7440,15 +7919,19 @@ public class BattleUI : MonoBehaviour
         bool hasDesc = !string.IsNullOrEmpty(descText);
         float tipH = hasDesc ? 70f : 36f;
         float clampedX = Mathf.Clamp(x, 10f, RefW - TipW - 10f);
-        var tipRect = new Rect(clampedX, y, TipW, tipH);
+        // 정수 픽셀 스냅 — 1px 트림이 4면 모두 동일한 두께로 래스터되도록 함.
+        float rx = Mathf.Round(clampedX);
+        float ry = Mathf.Round(y);
+        var tipRect = new Rect(rx, ry, TipW, tipH);
 
         // 상단 네비 톤 — 다크 바이올렛 불투명 + 사방 브론즈 트림 (4면 동일)
         FillRect(tipRect, new Color(0.059f, 0.043f, 0.137f, 1f));
-        var trimCol = new Color(0.82f, 0.68f, 0.38f, 0.55f);
-        FillRect(new Rect(tipRect.x, tipRect.y, tipRect.width, 1.2f), trimCol);
-        FillRect(new Rect(tipRect.x, tipRect.yMax - 1.2f, tipRect.width, 1.2f), trimCol);
-        FillRect(new Rect(tipRect.x, tipRect.y, 1.2f, tipRect.height), trimCol);
-        FillRect(new Rect(tipRect.xMax - 1.2f, tipRect.y, 1.2f, tipRect.height), trimCol);
+        // 트림은 1px 정수 두께 + 코너 중복 방지(좌/우는 위/아래 사이 영역만 채움) → 4면 시각적으로 동일.
+        var trimCol = new Color(0.82f, 0.68f, 0.38f, 0.7f);
+        FillRect(new Rect(tipRect.x, tipRect.y, tipRect.width, 1f), trimCol);
+        FillRect(new Rect(tipRect.x, tipRect.yMax - 1f, tipRect.width, 1f), trimCol);
+        FillRect(new Rect(tipRect.x, tipRect.y + 1f, 1f, tipRect.height - 2f), trimCol);
+        FillRect(new Rect(tipRect.xMax - 1f, tipRect.y + 1f, 1f, tipRect.height - 2f), trimCol);
         _ = rarityCol;
 
         int prevFS = _labelStyle.fontSize;
@@ -7531,7 +8014,6 @@ public class BattleUI : MonoBehaviour
         float startY = _navBarBottomY + 4f; // 네비 바 바로 아래
 
         int hovered = -1;
-        var rowRect = new Rect(StartX, startY, IconSz, IconSz);
         if (run.relics.Count > 0)
         {
             float ix = StartX;
@@ -7557,9 +8039,6 @@ public class BattleUI : MonoBehaviour
 
                 ix += IconSz + IconGap;
             }
-            rowRect = new Rect(StartX, startY,
-                               run.relics.Count * IconSz + (run.relics.Count - 1) * IconGap,
-                               IconSz);
         }
 
         // 호버 툴팁 — 해당 아이콘 아래
@@ -7570,17 +8049,7 @@ public class BattleUI : MonoBehaviour
             DrawRelicTooltip(run.relics[hovered], tipX, tipY);
         }
 
-        // 아이콘 row 밖 클릭 → 닫기 / ESC → 닫기
-        if (ev.type == EventType.MouseDown && ev.button == 0
-            && !rowRect.Contains(ev.mousePosition))
-        {
-            _relicViewerOpen = false;
-        }
-        else if (ev.type == EventType.KeyDown && ev.keyCode == KeyCode.Escape)
-        {
-            _relicViewerOpen = false;
-            ev.Use();
-        }
+        // 닫기는 상단 바 유물 슬롯 재클릭 토글로만. 다른 곳 클릭/ESC로 닫지 않음.
     }
 
     // =========================================================
@@ -7604,7 +8073,6 @@ public class BattleUI : MonoBehaviour
         float startY = _navBarBottomY + 4f;
 
         int hovered = -1;
-        var rowRect = new Rect(StartX, startY, IconSz, IconSz);
         if (run.potions.Count > 0)
         {
             float ix = StartX;
@@ -7639,9 +8107,6 @@ public class BattleUI : MonoBehaviour
 
                 ix += IconSz + IconGap;
             }
-            rowRect = new Rect(StartX, startY,
-                               run.potions.Count * IconSz + (run.potions.Count - 1) * IconGap,
-                               IconSz);
         }
 
         // 호버 툴팁 — 선택 팝업이 떠 있는 슬롯에는 띄우지 않음
@@ -7653,7 +8118,6 @@ public class BattleUI : MonoBehaviour
         }
 
         // 선택된 포션 "마시기" 팝업 — 이건 패널 유지 (액션 입력이 필요한 컨테이너)
-        var popRectForClose = new Rect(0f, 0f, 0f, 0f);
         if (_selectedPotionIndex >= 0 && _selectedPotionIndex < run.potions.Count)
         {
             var selP = run.potions[_selectedPotionIndex];
@@ -7665,7 +8129,6 @@ public class BattleUI : MonoBehaviour
                 float clampedPopX = Mathf.Clamp(popX, 10f, RefW - PopW - 10f);
                 float popY = startY + IconSz + 6f;
                 var popRect = new Rect(clampedPopX, popY, PopW, PopH);
-                popRectForClose = popRect;
 
                 // 상단 네비 톤 — 다크 바이올렛 불투명 + 사방 브론즈 트림
                 FillRect(popRect, new Color(0.059f, 0.043f, 0.137f, 1f));
@@ -7730,20 +8193,7 @@ public class BattleUI : MonoBehaviour
             }
         }
 
-        // 아이콘 row + 마시기 팝업 밖 클릭 → 닫기 / ESC → 닫기
-        if (ev.type == EventType.MouseDown && ev.button == 0
-            && !rowRect.Contains(ev.mousePosition)
-            && !popRectForClose.Contains(ev.mousePosition))
-        {
-            _selectedPotionIndex = -1;
-            _potionViewerOpen = false;
-        }
-        else if (ev.type == EventType.KeyDown && ev.keyCode == KeyCode.Escape)
-        {
-            _selectedPotionIndex = -1;
-            _potionViewerOpen = false;
-            ev.Use();
-        }
+        // 닫기는 상단 바 포션 슬롯 재클릭 토글로만. 다른 곳 클릭/ESC로 닫지 않음.
     }
 
     private void DrawPotionTooltip(PotionData p, float x, float y)
@@ -7810,6 +8260,17 @@ public class BattleUI : MonoBehaviour
     // =========================================================
 
     // Map/Village 화면에서도 덱 뷰어를 띄울 수 있도록 public. 내부적으로 _deckViewerOpen 체크.
+    // 9-slice용 GUIStyle을 매 OnGUI마다 빌드 — Inspector에서 border/aspect 변경이 즉시 반영되도록.
+    // 매 프레임 4개 GUIStyle alloc은 OnGUI 비용 대비 무시 가능.
+    private static GUIStyle BuildSlicedStyle(Texture2D tex, RectOffset border)
+    {
+        if (tex == null) return null;
+        var s = new GUIStyle();
+        s.normal.background = tex;
+        s.border = border;
+        return s;
+    }
+
     public void DrawDeckViewerOverlay(GameStateManager gsm)
     {
         if (!_deckViewerOpen) return;
@@ -7822,33 +8283,72 @@ public class BattleUI : MonoBehaviour
 
         var ev = Event.current;
 
+        // Source 결정 — 1=뽑을 카드(state.deck), 2=버린 카드(state.discard), 0/기본=전체 덱(run.deck).
+        // BattleState.deck/discard는 List<CardInstance>이므로 .data만 뽑아 List<CardData>로 투영.
+        // 전투 외(state==null)에서 1/2를 누른 적 없겠지만 안전망으로 0으로 폴백.
+        var battleState = _battle?.state;
+        List<CardData> sourceCards = run.deck;
+        string sourceLabel = "덱";
+        if (_deckViewerSource == 1 && battleState != null)
+        {
+            sourceCards = new List<CardData>(battleState.deck.Count);
+            for (int i = 0; i < battleState.deck.Count; i++) sourceCards.Add(battleState.deck[i].data);
+            sourceLabel = "뽑을 카드";
+        }
+        else if (_deckViewerSource == 2 && battleState != null)
+        {
+            sourceCards = new List<CardData>(battleState.discard.Count);
+            for (int i = 0; i < battleState.discard.Count; i++) sourceCards.Add(battleState.discard[i].data);
+            sourceLabel = "버린 카드";
+        }
+
+        // 패널은 9-slice (코너 필리그리 보존). 탭은 DrawTexture로 단순 stretch — 9-slice 캡이
+        // 작은 탭 안에서 글로우 헤일로 아티팩트를 만들기 때문.
+        // border가 rect 절반을 넘으면 9-slice 코너가 충돌하므로 clamp.
+        int pBorderX = Mathf.Min(_deckPanelBorder.x, Mathf.FloorToInt(_deckPanelW * 0.45f));
+        int pBorderY = Mathf.Min(_deckPanelBorder.y, Mathf.FloorToInt(_deckPanelH * 0.45f));
+        var panelStyle = BuildSlicedStyle(_deckPanelFrameTex,
+            new RectOffset(pBorderX, pBorderX, pBorderY, pBorderY));
+
         // 1) 화면 전체 어둡게 — 뒤 UI를 가리고 클릭 이벤트도 흡수
         FillRect(new Rect(0f, 0f, RefW, RefH), new Color(0f, 0f, 0f, 0.72f));
 
-        // 2) 패널 — 가운데 배치
-        const float panelW = 1060f;
-        const float panelH = 600f;
-        var panelRect = new Rect((RefW - panelW) * 0.5f, (RefH - panelH) * 0.5f, panelW, panelH);
-        FillRect(panelRect, new Color(0.08f, 0.05f, 0.05f, 0.97f));
-        DrawBorder(panelRect, 2f, new Color(0.70f, 0.55f, 0.28f, 1f));
+        // 2) 패널 — 가운데 배치. 스프라이트 없으면 그냥 안 그림.
+        var panelRect = new Rect((RefW - _deckPanelW) * 0.5f, (RefH - _deckPanelH) * 0.5f, _deckPanelW, _deckPanelH);
+        if (panelStyle != null)
+            GUI.Box(panelRect, GUIContent.none, panelStyle);
 
         // 3) 제목
         int prevLabelFS = _labelStyle.fontSize;
-        _labelStyle.fontSize = 24;
-        var titleRect = new Rect(panelRect.x + 28f, panelRect.y + 12f, panelRect.width - 120f, 34f);
-        GUI.Label(titleRect, $"덱 · {run.deck.Count}장", _labelStyle);
+        _labelStyle.fontSize = _deckTitleFontSize;
+        var titleRect = new Rect(
+            panelRect.x + _deckTitleOffset.x,
+            panelRect.y + _deckTitleOffset.y,
+            panelRect.width - _deckTitleOffset.x - (_deckCloseOffset.x + _deckCloseSize.x + 8f),
+            _deckTitleFontSize + 10f);
+        GUI.Label(titleRect, $"{sourceLabel} · {sourceCards.Count}장", _labelStyle);
         _labelStyle.fontSize = prevLabelFS;
 
-        // 4) Close 버튼 (우상단)
-        var closeRect = new Rect(panelRect.xMax - 44f, panelRect.y + 10f, 34f, 34f);
+        // 3.5) 타이틀 아래 구분선 — 두께 0이면 안 그림.
+        if (_deckDividerThickness > 0.01f)
+        {
+            var divRect = new Rect(
+                panelRect.x + _deckDividerSidePadding,
+                panelRect.y + _deckDividerY,
+                Mathf.Max(0f, panelRect.width - _deckDividerSidePadding * 2f),
+                _deckDividerThickness);
+            FillRect(divRect, _deckDividerColor);
+        }
+
+        // 4) Close 버튼 (우상단) — 박스/보더 없이 ✕ 글리프만. 호버 시 색상 변화로만 피드백.
+        var closeRect = new Rect(
+            panelRect.xMax - _deckCloseOffset.x,
+            panelRect.y + _deckCloseOffset.y,
+            _deckCloseSize.x, _deckCloseSize.y);
         bool closeHover = closeRect.Contains(ev.mousePosition);
-        FillRect(closeRect, closeHover
-            ? new Color(0.55f, 0.18f, 0.18f, 1f)
-            : new Color(0.18f, 0.12f, 0.10f, 0.90f));
-        DrawBorder(closeRect, 1f, new Color(0.70f, 0.55f, 0.28f, 0.9f));
         int prevCenterFS = _centerStyle.fontSize;
         var prevCenterC = _centerStyle.normal.textColor;
-        _centerStyle.fontSize = 20;
+        _centerStyle.fontSize = _deckCloseFontSize;
         _centerStyle.normal.textColor = closeHover ? Color.white : new Color(0.92f, 0.85f, 0.70f);
         GUI.Label(closeRect, "×", _centerStyle);
         _centerStyle.fontSize = prevCenterFS;
@@ -7861,31 +8361,34 @@ public class BattleUI : MonoBehaviour
             return;
         }
 
-        // 5) 정렬 탭 — 획득순 / 유형 / 비용 / 이름순
-        string[] tabs = { "획득순", "유형", "비용", "이름순" };
-        const float tabW = 104f;
-        const float tabH = 32f;
-        const float tabGap = 6f;
-        float tabsY = panelRect.y + 54f;
-        float tabsStartX = panelRect.x + 28f;
+        // 5) 정렬 탭 — 획득순 / 유형 / 비용. 9-slice 안 쓰고 그냥 stretch.
+        string[] tabs = { "획득순", "유형", "비용" };
+        float tabsY = panelRect.y + _deckTabStart.y;
+        float tabsStartX = panelRect.x + _deckTabStart.x;
 
         for (int i = 0; i < tabs.Length; i++)
         {
-            var tabRect = new Rect(tabsStartX + i * (tabW + tabGap), tabsY, tabW, tabH);
+            var tabRect = new Rect(tabsStartX + i * (_deckTabW + _deckTabGap), tabsY, _deckTabW, _deckTabH);
             bool active = _deckViewerSortMode == i;
             bool tabHover = tabRect.Contains(ev.mousePosition);
 
-            Color bg = active
-                ? new Color(0.55f, 0.40f, 0.20f, 1f)
-                : (tabHover ? new Color(0.26f, 0.20f, 0.14f, 1f) : new Color(0.15f, 0.12f, 0.09f, 0.9f));
-            FillRect(tabRect, bg);
-            DrawBorder(tabRect, 1f, active
-                ? new Color(1f, 0.82f, 0.35f, 1f)
-                : new Color(0.55f, 0.42f, 0.22f, 0.7f));
+            var tabTex = active ? _deckTabSelectedTex : _deckTabUnselectedTex;
+            if (tabTex != null)
+            {
+                GUI.DrawTexture(tabRect, tabTex, ScaleMode.StretchToFill, alphaBlend: true);
+                // 비선택 탭 hover 시 selected 텍스처를 30% 알파로 합성.
+                if (!active && tabHover && _deckTabSelectedTex != null)
+                {
+                    var prev = GUI.color;
+                    GUI.color = new Color(1f, 1f, 1f, 0.3f);
+                    GUI.DrawTexture(tabRect, _deckTabSelectedTex, ScaleMode.StretchToFill, alphaBlend: true);
+                    GUI.color = prev;
+                }
+            }
 
             int prevTabFS = _centerStyle.fontSize;
             var prevTabC = _centerStyle.normal.textColor;
-            _centerStyle.fontSize = 14;
+            _centerStyle.fontSize = _deckTabFontSize;
             _centerStyle.normal.textColor = active
                 ? new Color(1f, 0.95f, 0.70f)
                 : new Color(0.85f, 0.80f, 0.70f);
@@ -7901,12 +8404,12 @@ public class BattleUI : MonoBehaviour
             }
         }
 
-        // 6) 카드 그룹핑 — id 기준 중복 묶음 + 정렬
+        // 6) 카드 그룹핑 — id 기준 중복 묶음 + 정렬. source에 따라 run.deck / state.deck / state.discard.
         var grouped = new List<(CardData data, int count, int firstIndex)>();
         var indexMap = new Dictionary<string, int>();
-        for (int i = 0; i < run.deck.Count; i++)
+        for (int i = 0; i < sourceCards.Count; i++)
         {
-            var c = run.deck[i];
+            var c = sourceCards[i];
             if (indexMap.TryGetValue(c.id, out int gi))
             {
                 var g = grouped[gi];
@@ -7939,41 +8442,36 @@ public class BattleUI : MonoBehaviour
                     return string.Compare(a.data.nameKr, b.data.nameKr, StringComparison.CurrentCulture);
                 });
                 break;
-            case 3:  // 이름순
-                grouped.Sort((a, b) =>
-                    string.Compare(a.data.nameKr, b.data.nameKr, StringComparison.CurrentCulture));
-                break;
             default:  // 획득순 — run.deck 등장 순서 유지
                 grouped.Sort((a, b) => a.firstIndex.CompareTo(b.firstIndex));
                 break;
         }
 
         // 7) 카드 그리드 (스크롤)
-        const int cols = 6;
-        const float gridPadX = 28f;
-        const float cellGap = 12f;
-        float gridTop = tabsY + tabH + 14f;
-        float gridBottom = panelRect.yMax - 18f;
-        float viewH = gridBottom - gridTop;
+        int cols = Mathf.Max(1, _deckGridCols);
+        float gridPadX = _deckGridPadX;
+        float cellGap = _deckCellGap;
+        float gridTop = tabsY + _deckTabH + _deckGridTopGap;
+        float gridBottom = panelRect.yMax - _deckGridBottomPad;
+        float viewH = Mathf.Max(0f, gridBottom - gridTop);
         float gridW = panelRect.width - gridPadX * 2f;
         float cardW = (gridW - cellGap * (cols - 1)) / cols;
-        float cardH = cardW * 1.45f;
+        float cardH = cardW * _deckCardAspect;
 
         int rows = (grouped.Count + cols - 1) / cols;
         float contentH = Mathf.Max(viewH, rows * (cardH + cellGap) - cellGap + 4f);
 
         var viewportRect = new Rect(panelRect.x + gridPadX, gridTop, gridW, viewH);
-        var contentRect = new Rect(0f, 0f,
-            gridW - (contentH > viewH ? 16f : 0f),
-            contentH);
+        // 스크롤바 숨기므로 16px 게터 빼지 않음 — content는 viewport 폭과 동일하게.
+        var contentRect = new Rect(0f, 0f, gridW, contentH);
 
-        // 스크롤 영역 밖 라이트 박스
-        FillRect(viewportRect, new Color(0.04f, 0.03f, 0.03f, 0.55f));
-
-        _deckViewerScroll = GUI.BeginScrollView(viewportRect, _deckViewerScroll, contentRect);
+        // 이전 버전의 inner FillRect (이중 패널처럼 보이던 거) 제거. 패널 프레임 안쪽이 그대로 보이도록.
+        // 스크롤바 비표시 — GUIStyle.none 두 개로 양 축 모두 제거. 휠 스크롤은 정상 동작.
+        _deckViewerScroll = GUI.BeginScrollView(viewportRect, _deckViewerScroll, contentRect,
+            GUIStyle.none, GUIStyle.none);
         float innerW = contentRect.width;
         float innerCardW = (innerW - cellGap * (cols - 1)) / cols;
-        float innerCardH = innerCardW * 1.45f;
+        float innerCardH = innerCardW * _deckCardAspect;
         for (int i = 0; i < grouped.Count; i++)
         {
             int row = i / cols;
@@ -7986,37 +8484,28 @@ public class BattleUI : MonoBehaviour
 
             DrawCardFrame(cardRect, grouped[i].data, canPlay: true, drawCost: true);
 
-            // 중복 카운트 뱃지 — 우상단. CardCountBadge 텍스처 (왼쪽 V-notch) 위에 숫자 얹음.
+            // 중복 카운트 뱃지 — 우상단. DeckUi/duplicate_tag_blank 메달 위에 숫자 정중앙.
             if (grouped[i].count > 1)
             {
-                float badgeW = innerCardW * 0.34f;
-                float badgeH = badgeW * 0.42f;  // 2.4:1 비율에 맞춤
+                float badgeW = innerCardW * _deckBadgeWidthRatio;
+                float badgeH = badgeW * _deckBadgeAspect;
                 var badgeRect = new Rect(
-                    cardRect.xMax - badgeW - 2f,
-                    cardRect.y + 4f,
+                    cardRect.xMax - badgeW - _deckBadgeOffset.x,
+                    cardRect.y + _deckBadgeOffset.y,
                     badgeW, badgeH);
 
-                if (_cardCountBadgeTexture != null)
-                {
-                    GUI.DrawTexture(badgeRect, _cardCountBadgeTexture, ScaleMode.StretchToFill, alphaBlend: true);
-                }
-                else
-                {
-                    FillRect(badgeRect, new Color(0.10f, 0.07f, 0.05f, 0.92f));
-                    DrawBorder(badgeRect, 1f, new Color(1f, 0.82f, 0.35f, 1f));
-                }
+                if (_deckBadgeTex != null)
+                    GUI.DrawTexture(badgeRect, _deckBadgeTex, ScaleMode.StretchToFill, alphaBlend: true);
 
-                // 텍스트는 V-notch를 피해 오른쪽으로 살짝 밀어 채워진 영역 중앙에 위치.
-                var textRect = new Rect(
-                    badgeRect.x + badgeRect.width * 0.12f,
-                    badgeRect.y,
-                    badgeRect.width * 0.88f,
-                    badgeRect.height);
+                // 새 메달은 V-notch 없이 대칭 — 텍스트 정중앙. text offset은 메달 중앙에서 미세조정.
                 int prevBadgeFS = _cardCostStyle.fontSize;
-                _cardCostStyle.fontSize = Mathf.RoundToInt(badgeRect.height * 0.68f);
+                _cardCostStyle.fontSize = Mathf.RoundToInt(badgeRect.height * _deckBadgeFontRatio);
+                var textRect = new Rect(
+                    badgeRect.x + _deckBadgeTextOffset.x,
+                    badgeRect.y + _deckBadgeTextOffset.y,
+                    badgeRect.width, badgeRect.height);
                 DrawTextWithOutline(textRect, $"×{grouped[i].count}", _cardCostStyle,
-                    new Color(1f, 0.95f, 0.60f),
-                    new Color(0f, 0f, 0f, 0.85f), 1f);
+                    _deckBadgeTextColor, _deckBadgeOutlineColor, _deckBadgeOutlinePx);
                 _cardCostStyle.fontSize = prevBadgeFS;
             }
         }
@@ -8032,6 +8521,190 @@ public class BattleUI : MonoBehaviour
         else if (ev.type == EventType.KeyDown && ev.keyCode == KeyCode.Escape)
         {
             _deckViewerOpen = false;
+            ev.Use();
+        }
+    }
+
+    // =========================================================
+    // 증원(C156) 픽커 오버레이 — 보유 공룡(run.deck) T0 SUMMON 그리드 모달
+    // =========================================================
+
+    /// <summary>증원 카드 클릭 시 활성. run.deck의 T0 SUMMON을 id별로 묶어 그리드로 보여주고,
+    /// 카드 클릭 → BattleManager.PlayCard에 reinforcementCardId 전달. 외부 클릭/ESC/우클릭으로 취소.
+    /// 덱 뷰어와 동일한 9-slice 패널/탭 자리/그리드/×N 메달 스킨을 재사용.</summary>
+    private void DrawReinforcePickerOverlay(GameStateManager gsm)
+    {
+        if (_reinforcePickerCardIndex < 0) return;
+        var run = gsm?.CurrentRun;
+        var state = _battle?.state;
+        if (run == null || state == null)
+        {
+            _reinforcePickerCardIndex = -1;
+            return;
+        }
+
+        var ev = Event.current;
+
+        // 9-slice 패널 — 덱 뷰어와 동일 border / 동일 frame 텍스처.
+        int pBorderX = Mathf.Min(_deckPanelBorder.x, Mathf.FloorToInt(_deckPanelW * 0.45f));
+        int pBorderY = Mathf.Min(_deckPanelBorder.y, Mathf.FloorToInt(_deckPanelH * 0.45f));
+        var panelStyle = BuildSlicedStyle(_deckPanelFrameTex,
+            new RectOffset(pBorderX, pBorderX, pBorderY, pBorderY));
+
+        // 1) 화면 전체 어둡게
+        FillRect(new Rect(0f, 0f, RefW, RefH), new Color(0f, 0f, 0f, 0.72f));
+
+        // 2) 패널 — 가운데 배치 (덱 뷰어와 동일 사이즈)
+        var panelRect = new Rect((RefW - _deckPanelW) * 0.5f, (RefH - _deckPanelH) * 0.5f, _deckPanelW, _deckPanelH);
+        if (panelStyle != null)
+            GUI.Box(panelRect, GUIContent.none, panelStyle);
+
+        // 3) 제목 — 덱 뷰어와 동일 오프셋/폰트
+        int prevLabelFS = _labelStyle.fontSize;
+        _labelStyle.fontSize = _deckTitleFontSize;
+        var titleRect = new Rect(
+            panelRect.x + _deckTitleOffset.x,
+            panelRect.y + _deckTitleOffset.y,
+            panelRect.width - _deckTitleOffset.x - (_deckCloseOffset.x + _deckCloseSize.x + 8f),
+            _deckTitleFontSize + 10f);
+        GUI.Label(titleRect, "증원 소집 — 보유 공룡 1마리 호출", _labelStyle);
+        _labelStyle.fontSize = prevLabelFS;
+
+        // 3.5) 타이틀 아래 구분선
+        if (_deckDividerThickness > 0.01f)
+        {
+            var divRect = new Rect(
+                panelRect.x + _deckDividerSidePadding,
+                panelRect.y + _deckDividerY,
+                Mathf.Max(0f, panelRect.width - _deckDividerSidePadding * 2f),
+                _deckDividerThickness);
+            FillRect(divRect, _deckDividerColor);
+        }
+
+        // 4) Close 버튼 (우상단) — 덱 뷰어와 동일
+        var closeRect = new Rect(
+            panelRect.xMax - _deckCloseOffset.x,
+            panelRect.y + _deckCloseOffset.y,
+            _deckCloseSize.x, _deckCloseSize.y);
+        bool closeHover = closeRect.Contains(ev.mousePosition);
+        int prevCenterFS = _centerStyle.fontSize;
+        var prevCenterC = _centerStyle.normal.textColor;
+        _centerStyle.fontSize = _deckCloseFontSize;
+        _centerStyle.normal.textColor = closeHover ? Color.white : new Color(0.92f, 0.85f, 0.70f);
+        GUI.Label(closeRect, "×", _centerStyle);
+        _centerStyle.fontSize = prevCenterFS;
+        _centerStyle.normal.textColor = prevCenterC;
+
+        if (closeHover && ev.type == EventType.MouseDown && ev.button == 0)
+        {
+            _reinforcePickerCardIndex = -1;
+            ev.Use();
+            return;
+        }
+
+        // 5) 부제 — 덱 뷰어 탭 자리에 안내 문구 (정렬 탭 없음)
+        var hintRect = new Rect(
+            panelRect.x + _deckTabStart.x,
+            panelRect.y + _deckTabStart.y,
+            panelRect.width - _deckTabStart.x * 2f,
+            _deckTabH);
+        int prevHintFS = _labelStyle.fontSize;
+        var prevHintC = _labelStyle.normal.textColor;
+        _labelStyle.fontSize = 14;
+        _labelStyle.normal.textColor = new Color(0.85f, 0.78f, 0.62f, 1f);
+        GUI.Label(hintRect, "보유 공룡 1마리를 손패에 추가합니다. (덱·버린 더미·손패 어디든 보유 중이면 가능 · 이번 전투 한정)", _labelStyle);
+        _labelStyle.fontSize = prevHintFS;
+        _labelStyle.normal.textColor = prevHintC;
+
+        // 6) 후보 풀 — run.deck(보유 전체) T0 SUMMON, id 중복 제거 1장씩
+        var seen = new HashSet<string>();
+        var candidates = new List<CardData>();
+        foreach (var c in run.deck)
+        {
+            if (c == null) continue;
+            if (c.cardType != CardType.SUMMON) continue;
+            if (c.id.EndsWith("_T1") || c.id.EndsWith("_T2")) continue;
+            if (!seen.Add(c.id)) continue;
+            candidates.Add(c);
+        }
+
+        // 7) 카드 그리드 (스크롤) — 덱 뷰어와 동일 cols/padding/aspect
+        int cols = Mathf.Max(1, _deckGridCols);
+        float gridPadX = _deckGridPadX;
+        float cellGap = _deckCellGap;
+        float gridTop = panelRect.y + _deckTabStart.y + _deckTabH + _deckGridTopGap;
+        float gridBottom = panelRect.yMax - _deckGridBottomPad;
+        float viewH = Mathf.Max(0f, gridBottom - gridTop);
+        float gridW = panelRect.width - gridPadX * 2f;
+        float cardW = (gridW - cellGap * (cols - 1)) / cols;
+        float cardH = cardW * _deckCardAspect;
+
+        int rows = Mathf.Max(1, (candidates.Count + cols - 1) / cols);
+        float contentH = Mathf.Max(viewH, rows * (cardH + cellGap) - cellGap + 4f);
+
+        var viewportRect = new Rect(panelRect.x + gridPadX, gridTop, gridW, viewH);
+        var contentRect = new Rect(0f, 0f, gridW, contentH);
+
+        if (candidates.Count == 0)
+        {
+            int prevFS = _centerStyle.fontSize;
+            _centerStyle.fontSize = 16;
+            GUI.Label(viewportRect, "보유한 T0 공룡 카드가 없습니다.", _centerStyle);
+            _centerStyle.fontSize = prevFS;
+        }
+        else
+        {
+            _reinforcePickerScroll = GUI.BeginScrollView(viewportRect, _reinforcePickerScroll, contentRect,
+                GUIStyle.none, GUIStyle.none);
+            float innerW = contentRect.width;
+            float innerCardW = (innerW - cellGap * (cols - 1)) / cols;
+            float innerCardH = innerCardW * _deckCardAspect;
+            int? clickedIndex = null;
+            for (int i = 0; i < candidates.Count; i++)
+            {
+                int row = i / cols;
+                int col = i % cols;
+                var cardRect = new Rect(
+                    col * (innerCardW + cellGap),
+                    row * (innerCardH + cellGap),
+                    innerCardW,
+                    innerCardH);
+
+                bool hover = cardRect.Contains(ev.mousePosition);
+                DrawCardFrame(cardRect, candidates[i], canPlay: true, drawCost: true);
+
+                if (hover)
+                {
+                    DrawBorder(cardRect, 2f, new Color(1f, 0.85f, 0.40f, 1f));
+                    if (ev.type == EventType.MouseDown && ev.button == 0)
+                    {
+                        clickedIndex = i;
+                        ev.Use();
+                    }
+                }
+            }
+            GUI.EndScrollView();
+
+            if (clickedIndex.HasValue)
+            {
+                int catalystIdx = _reinforcePickerCardIndex;
+                string pickedId = candidates[clickedIndex.Value].id;
+                _reinforcePickerCardIndex = -1;
+                _pending.Add(() => { _battle.PlayCard(catalystIdx, -1, -1, -1, null, pickedId); });
+                return;
+            }
+        }
+
+        // 8) 패널 밖 클릭 → 취소 / ESC → 취소
+        if (ev.type == EventType.MouseDown && ev.button == 0
+            && !panelRect.Contains(ev.mousePosition))
+        {
+            _reinforcePickerCardIndex = -1;
+            ev.Use();
+        }
+        else if (ev.type == EventType.KeyDown && ev.keyCode == KeyCode.Escape)
+        {
+            _reinforcePickerCardIndex = -1;
             ev.Use();
         }
     }

@@ -19,6 +19,7 @@ namespace DianoCard.Game
         Training,        // 훈련장 — 임의 적을 골라 자유롭게 전투 (승패 무관, 맵/보상 없음)
         AnimationTest,   // 애니메이션 테스트 — Resources/AnimationTest 폴더의 프레임 시퀀스 프리뷰 (에디터 전용 개발 툴)
         TechTree,        // 메타 진행 — 영구 해금 트리. 로비에서만 진입 가능, 임시 UI(MVP 3브랜치 9노드).
+        Event,           // 미지(Unknown) 노드 → 이벤트 분기 화면. 선택지에 따라 HP/유물 변동.
     }
 
     /// <summary>
@@ -96,6 +97,8 @@ namespace DianoCard.Game
             if (GetComponent<TrainingUI>() == null) gameObject.AddComponent<TrainingUI>();
             if (GetComponent<AnimationTestUI>() == null) gameObject.AddComponent<AnimationTestUI>();
             if (GetComponent<TechTreeUI>() == null) gameObject.AddComponent<TechTreeUI>();
+            if (GetComponent<PauseMenuUI>() == null) gameObject.AddComponent<PauseMenuUI>();
+            if (GetComponent<EventUI>() == null) gameObject.AddComponent<EventUI>();
         }
 
         /// <summary>Lobby에서 애니메이션 테스트 화면 진입. Run 상태는 건드리지 않음.</summary>
@@ -186,6 +189,7 @@ namespace DianoCard.Game
                 if (!CurrentRun.relics.Contains(chosen))
                 {
                     CurrentRun.relics.Add(chosen);
+                    CurrentRun.hasNewRelic = true;
                     RelicEffects.OnAcquired(CurrentRun, chosen);
                 }
             }
@@ -221,6 +225,56 @@ namespace DianoCard.Game
             _relicPickReturnState = returnState;
             _relicPickAdvancesMap = false;
             State = GameState.RelicPick;
+        }
+
+        // ─── 이벤트 노드 ────────────────────────────────────────────
+        // MVP: 단일 하드코딩 이벤트 "부서진 룬 제단".
+        //   choice 0 = 룬을 만진다 → HP -3, 유물 1개 획득(3택 픽커)
+        //   choice 1 = 그냥 지나간다 → 무효과
+        // 어느 쪽이든 노드 클리어 + 다음 층 진행. HP 0 시 Defeat.
+
+        private MapNode _pendingEventNode;
+        public MapNode PendingEventNode => _pendingEventNode;
+
+        public void ResolveEventChoice(int choiceIdx)
+        {
+            if (_pendingEventNode == null || State != GameState.Event)
+            {
+                Debug.LogWarning($"[GSM] ResolveEventChoice({choiceIdx}) ignored — no pending event / wrong state ({State})");
+                return;
+            }
+
+            var node = _pendingEventNode;
+
+            if (choiceIdx == 0)
+            {
+                int prevHp = CurrentRun.playerCurrentHp;
+                CurrentRun.playerCurrentHp = Mathf.Max(0, prevHp - 3);
+                Debug.Log($"[GSM] Event '부서진 룬 제단' → 룬을 만진다: HP {prevHp} → {CurrentRun.playerCurrentHp}");
+
+                if (CurrentRun.playerCurrentHp <= 0)
+                {
+                    node.cleared = true;
+                    _pendingEventNode = null;
+                    State = GameState.Defeat;
+                    return;
+                }
+
+                // 유물 1개 획득 — Treasure 노드와 동일한 3택 픽커 사용. 픽 완료 시 노드 클리어 + 자동 진행.
+                node.cleared = false; // RelicPick 완료 시 picker가 cleared 처리
+                _pendingEventNode = null;
+                RelicPickChoices = BuildRelicPickChoices(CurrentRun, 3);
+                _relicPickReturnState = GameState.Map;
+                _relicPickAdvancesMap = true;
+                State = GameState.RelicPick;
+                return;
+            }
+
+            // choice 1 = 그냥 지나간다
+            Debug.Log("[GSM] Event '부서진 룬 제단' → 그냥 지나간다");
+            node.cleared = true;
+            _pendingEventNode = null;
+            AdvanceToNextFloorOrVictory();
         }
 
         private static List<RelicData> BuildRelicPickChoices(RunState run, int count)
@@ -266,19 +320,21 @@ namespace DianoCard.Game
             {
                 { "C001", 2 }, // 트리케라톱스 x2 (덮어쓰기 재료)
                 { "C002", 2 }, // 스테고사우루스 x2 (덮어쓰기 재료)
-                { "C101", 2 }, // 공격 마법
+                { "C101", 1 }, // 공격 마법
                 { "C102", 2 }, // 방어 마법
                 { "C201", 1 }, // 공격 강화
                 { "C202", 1 }, // 전체 힐
+                { "C156", 1 }, // 증원 소집 — 보유 공룡 T0 1장 손패 소환 (이번 전투 한정)
             },
             ["CARN"] = new()
             {
                 { "C004", 2 }, // 랩터 x2 (융합 재료)
                 { "C005", 2 }, // 카르노타우루스 x2 (융합 재료)
-                { "C101", 2 }, // 공격 마법
+                { "C101", 1 }, // 공격 마법
                 { "C102", 2 }, // 방어 마법
                 { "C201", 1 }, // 공격 강화
                 { "C152", 1 }, // 융합의 각인 — 첫 런에서 T0+T0→T1 경험 보장
+                { "C156", 1 }, // 증원 소집 — 보유 공룡 T0 1장 손패 소환 (이번 전투 한정)
             },
         };
 
@@ -338,20 +394,153 @@ namespace DianoCard.Game
 
             var paths = GeneratePaths();
             BuildNodesFromPaths(map, paths);
+            FixTopCampfireRow(map);
             AddBossNode(map, chapter);
             AssignRoomTypes(map);
             FillEnemyIds(map, chapter);
             return map;
         }
 
+        // 보스 직전 휴식 행(floor 15)을 col {1, 3, 5}로 고정. 시각 보정용.
+        // 경로가 어느 컬럼으로 수렴했든 상관없이 항상 좌/중/우 3개 캠프가 균일하게 배치되어
+        // "안 이뻐" 케이스(한쪽으로 몰리거나 1개만 남는 등)를 방지한다.
+        // floor 14 노드들은 거리 ≤ 2 인 모든 캠프로 fan-out (없으면 가장 가까운 1개로 fallback).
+        private static readonly int[] TopCampfireCols = { 1, 3, 5 };
+
+        private static void FixTopCampfireRow(MapState map)
+        {
+            // 1) Floor 15 기존 노드 제거하고 고정 컬럼에 새로 추가
+            map.nodes.RemoveAll(n => n.floor == TotalFloors);
+            foreach (var col in TopCampfireCols)
+            {
+                map.nodes.Add(new MapNode { floor = TotalFloors, column = col });
+            }
+
+            // 2) Floor 14 노드들의 out-edge를 새 캠프 컬럼들로 다시 연결
+            foreach (var n in map.NodesOnFloor(TotalFloors - 1))
+            {
+                n.nextColumns.Clear();
+                foreach (var c in TopCampfireCols)
+                {
+                    if (Mathf.Abs(c - n.column) <= 2) n.nextColumns.Add(c);
+                }
+                if (n.nextColumns.Count == 0)
+                {
+                    // 거리 ≤ 2 캠프가 없으면 가장 가까운 1개라도 (col 0/6 처럼 끝쪽일 때).
+                    int nearest = TopCampfireCols[0];
+                    int bestDist = Mathf.Abs(TopCampfireCols[0] - n.column);
+                    for (int i = 1; i < TopCampfireCols.Length; i++)
+                    {
+                        int d = Mathf.Abs(TopCampfireCols[i] - n.column);
+                        if (d < bestDist) { bestDist = d; nearest = TopCampfireCols[i]; }
+                    }
+                    n.nextColumns.Add(nearest);
+                }
+            }
+        }
+
         // 6개 경로의 column 시퀀스(길이 TotalFloors). path[y]는 floor=y+1에서의 column.
-        // 첫 두 경로는 1층 시작 column이 서로 달라야 한다(StS 규칙: 시작 선택지 ≥ 2).
+        // StS-style 시작 컬럼 보정:
+        //   (1) Path 0 → col 0, Path 1 → col 6 무조건 시작 → 1층 양 끝단 노드 항상 보장
+        //   (2) Path 2,3은 추가로 unique 시작 → 1층 unique 컬럼 4개 보장
+        //   (3) Path 4,5는 위 4개 컬럼 중 하나를 재사용 → 1층 unique 컬럼 수 정확히 4개로 캡 (시각 정돈)
+        //   (4) 좌측 절반(col 0~2)와 우측 절반(col 4~6) 양쪽 분포 검증 — 1,2에 의해 자동 충족이지만 안전장치.
         // 같은 (y → y+1) 구간에서 두 경로가 서로 자리를 바꾸는 식의 교차는 금지.
+        private const int StartingUniqueRequired = 4;  // 1층 unique 시작 컬럼 정확히 4개로 캡
+        private const int MaxPathRegen = 20;
+
         private static List<int[]> GeneratePaths()
+        {
+            for (int regen = 0; regen < MaxPathRegen; regen++)
+            {
+                var paths = new List<int[]>(PathCount);
+                var startingXs = new HashSet<int>();
+                // 같은 fromFloor의 기존 엣지들을 모아두고, 새 후보가 어떤 기존 엣지와도 교차하지 않는지 검사.
+                var edgesByFloor = new Dictionary<int, List<(int fromX, int toX)>>();
+
+                for (int p = 0; p < PathCount; p++)
+                {
+                    var path = new int[TotalFloors];
+
+                    int startX;
+                    if (p == 0)
+                    {
+                        startX = 0;                  // 양 끝 좌측 강제
+                    }
+                    else if (p == 1)
+                    {
+                        startX = MapWidth - 1;       // 양 끝 우측 강제 (7컬럼이면 col 6)
+                    }
+                    else if (p < StartingUniqueRequired)
+                    {
+                        // path 2,3은 0/끝 외 unique 시작 (총 4개 unique 보장).
+                        int guard = 0;
+                        do { startX = Random.Range(0, MapWidth); }
+                        while (startingXs.Contains(startX) && ++guard < 64);
+                    }
+                    else
+                    {
+                        // path 4,5는 기존 4개 시작 컬럼 중 하나를 재사용 → 1층 unique 컬럼 수를 4로 캡.
+                        var existing = new List<int>(startingXs);
+                        startX = existing[Random.Range(0, existing.Count)];
+                    }
+                    startingXs.Add(startX);
+                    path[0] = startX;
+
+                    int x = startX;
+                    for (int y = 0; y < TotalFloors - 1; y++)
+                    {
+                        var candidates = new List<int>(3);
+                        int cm = Mathf.Clamp(x - 1, 0, MapWidth - 1);
+                        int cz = x;
+                        int cp = Mathf.Clamp(x + 1, 0, MapWidth - 1);
+                        candidates.Add(cm);
+                        if (cz != cm) candidates.Add(cz);
+                        if (cp != cz && cp != cm) candidates.Add(cp);
+                        ShuffleInPlace(candidates);
+
+                        int chosen = -1;
+                        foreach (var nx in candidates)
+                        {
+                            if (WouldCross(edgesByFloor, y, x, nx)) continue;
+                            chosen = nx;
+                            break;
+                        }
+                        if (chosen < 0) chosen = x; // 모두 교차 시 수직 fallback — (x,x)는 어떤 valid 엣지와도 교차하지 않음
+
+                        if (!edgesByFloor.TryGetValue(y, out var list))
+                        {
+                            list = new List<(int, int)>();
+                            edgesByFloor[y] = list;
+                        }
+                        list.Add((x, chosen));
+
+                        path[y + 1] = chosen;
+                        x = chosen;
+                    }
+
+                    paths.Add(path);
+                }
+
+                // 시작 컬럼이 좌(0~2)/우(4~6) 양쪽에 최소 1개씩 분포하는지 확인. 미달이면 재생성.
+                bool hasLeft = false, hasRight = false;
+                foreach (var sx in startingXs)
+                {
+                    if (sx <= 2) hasLeft = true;
+                    else if (sx >= 4) hasRight = true;
+                }
+                if (hasLeft && hasRight) return paths;
+            }
+
+            // fallback: 재생성 한도 초과 — 마지막 시도 결과라도 반환되도록 한 번 더 그냥 생성
+            return GeneratePathsFallback();
+        }
+
+        // MaxPathRegen 한도 초과 시(확률적으로 거의 발생 안 함) 무조건 한 번 돌려서 반환.
+        private static List<int[]> GeneratePathsFallback()
         {
             var paths = new List<int[]>(PathCount);
             var startingXs = new HashSet<int>();
-            // 같은 fromFloor의 기존 엣지들을 모아두고, 새 후보가 어떤 기존 엣지와도 교차하지 않는지 검사.
             var edgesByFloor = new Dictionary<int, List<(int fromX, int toX)>>();
 
             for (int p = 0; p < PathCount; p++)
@@ -359,7 +548,9 @@ namespace DianoCard.Game
                 var path = new int[TotalFloors];
 
                 int startX;
-                if (p < 2)
+                if (p == 0) startX = 0;
+                else if (p == 1) startX = MapWidth - 1;
+                else if (p < StartingUniqueRequired)
                 {
                     int guard = 0;
                     do { startX = Random.Range(0, MapWidth); }
@@ -367,7 +558,8 @@ namespace DianoCard.Game
                 }
                 else
                 {
-                    startX = Random.Range(0, MapWidth);
+                    var existing = new List<int>(startingXs);
+                    startX = existing[Random.Range(0, existing.Count)];
                 }
                 startingXs.Add(startX);
                 path[0] = startX;
@@ -391,7 +583,7 @@ namespace DianoCard.Game
                         chosen = nx;
                         break;
                     }
-                    if (chosen < 0) chosen = x; // 모두 교차 시 수직 fallback — (x,x)는 어떤 valid 엣지와도 교차하지 않음
+                    if (chosen < 0) chosen = x;
 
                     if (!edgesByFloor.TryGetValue(y, out var list))
                     {
@@ -480,22 +672,28 @@ namespace DianoCard.Game
             }
         }
 
-        // 노드 종류 결정. 고정층(1/9/15)은 먼저 박고, 나머지는 위에서 아래로 굴리며 인접 제약 통과까지 reroll.
+        // 챕터당 노드 쿼터(고정층 1/9/15/16 제외 슬롯에 배분).
+        // 6 paths × ~12 random floors = 약 50~60 슬롯. 나머지는 모두 Combat.
+        private const int EliteQuota   = 4;
+        private const int UnknownQuota = 10;
+        private const int CampQuota    = 4;
+        private const int ShopQuota    = 3;
+
+        // 노드 종류 결정. 고정층(1/9/15/16)은 먼저 박고, 나머지는 쿼터만큼 셔플 배치 → 남은 슬롯은 Combat.
         private static void AssignRoomTypes(MapState map)
         {
-            var assigned = new HashSet<MapNode>();
             var unassigned = new List<MapNode>();
 
             foreach (var n in map.nodes)
             {
-                if (n.kind == NodeKind.Boss) { assigned.Add(n); continue; }
-                if (n.floor == 1)             { n.kind = NodeKind.Combat;   assigned.Add(n); }
-                else if (n.floor == TreasureFloor) { n.kind = NodeKind.Treasure; assigned.Add(n); }
-                else if (n.floor == RestFloor)     { n.kind = NodeKind.Camp;     assigned.Add(n); }
-                else unassigned.Add(n);
+                if (n.kind == NodeKind.Boss) continue;
+                if (n.floor == 1)                  { n.kind = NodeKind.Combat;   }
+                else if (n.floor == TreasureFloor) { n.kind = NodeKind.Treasure; }
+                else if (n.floor == RestFloor)     { n.kind = NodeKind.Camp;     }
+                else { n.kind = NodeKind.Combat; unassigned.Add(n); } // 일단 Combat으로 초기화 (남으면 그대로)
             }
 
-            // 부모(in-edge) 룩업 — 같은 부모의 형제 검사를 위해서도 사용.
+            // 부모(in-edge) 룩업 — 인접 제약 검사용.
             var parentsOf = new Dictionary<MapNode, List<MapNode>>();
             foreach (var n in map.nodes)
             {
@@ -512,72 +710,75 @@ namespace DianoCard.Game
                 }
             }
 
-            // 위→아래로 처리해야 부모는 항상 먼저 배정되어 인접 제약 검사가 의미를 갖는다.
-            unassigned.Sort((a, b) => a.floor.CompareTo(b.floor));
-
-            const int MaxAttempts = 32;
-            foreach (var n in unassigned)
-            {
-                NodeKind picked = NodeKind.Combat;
-                bool ok = false;
-                for (int i = 0; i < MaxAttempts; i++)
-                {
-                    picked = RollRoomType();
-                    if (IsValidRoomType(map, n, picked, parentsOf, assigned)) { ok = true; break; }
-                }
-                n.kind = ok ? picked : NodeKind.Combat; // 다 실패하면 안전하게 일반 전투
-                assigned.Add(n);
-            }
+            // 제약이 빡빡한 순서대로 배정: Elite → Camp → Shop → Unknown.
+            // (Unknown은 floor/인접 제약이 없어 마지막에 남은 자리에 박는다.)
+            AssignQuota(map, unassigned, NodeKind.Elite,    EliteQuota,   parentsOf);
+            AssignQuota(map, unassigned, NodeKind.Camp,     CampQuota,    parentsOf);
+            AssignQuota(map, unassigned, NodeKind.Merchant, ShopQuota,    parentsOf);
+            AssignQuota(map, unassigned, NodeKind.Unknown,  UnknownQuota, parentsOf);
         }
 
-        // 저승천 분포: Combat 53 / Elite 8 / Event(=Unknown) 22 / Rest 12 / Shop 5.
-        // (StS Steam 가이드 기준. 고승천에서는 Elite 16 / Combat 45로 조정.)
-        private static NodeKind RollRoomType()
+        private static void AssignQuota(MapState map, List<MapNode> pool, NodeKind kind,
+            int targetCount, Dictionary<MapNode, List<MapNode>> parentsOf)
         {
-            int r = Random.Range(0, 100);
-            if (r < 53) return NodeKind.Combat;
-            if (r < 61) return NodeKind.Elite;
-            if (r < 83) return NodeKind.Unknown; // EVENT 슬롯 — UI 추가 전까진 Unknown으로 표기
-            if (r < 95) return NodeKind.Camp;    // REST
-            return NodeKind.Merchant;             // SHOP
+            if (targetCount <= 0) return;
+
+            var candidates = new List<MapNode>();
+            foreach (var n in pool)
+            {
+                if (n.kind != NodeKind.Combat) continue;       // 이미 다른 타입 박힌 슬롯 제외
+                if (!FloorAllowsKind(kind, n.floor)) continue; // 층 제약
+                candidates.Add(n);
+            }
+
+            // Fisher-Yates shuffle
+            for (int i = candidates.Count - 1; i > 0; i--)
+            {
+                int j = Random.Range(0, i + 1);
+                (candidates[i], candidates[j]) = (candidates[j], candidates[i]);
+            }
+
+            int placed = 0;
+            foreach (var n in candidates)
+            {
+                if (placed >= targetCount) break;
+                if (!AdjacencyAllowsKind(map, n, kind, parentsOf)) continue;
+                n.kind = kind;
+                placed++;
+            }
+
+            if (placed < targetCount)
+                Debug.LogWarning($"[GSM] Quota {kind}: wanted {targetCount}, placed {placed} (slot/제약 부족)");
         }
 
-        private static bool IsValidRoomType(MapState map, MapNode node, NodeKind kind,
-            Dictionary<MapNode, List<MapNode>> parentsOf, HashSet<MapNode> assigned)
+        // 층 제약: Elite/Camp는 1~5층 금지, Camp는 14층 추가 금지(15층이 고정 Camp).
+        private static bool FloorAllowsKind(NodeKind kind, int floor)
         {
-            // Elite/Rest는 6층 미만(1~5층)에 배치 불가.
-            if ((kind == NodeKind.Elite || kind == NodeKind.Camp) && node.floor < 6) return false;
-            // Rest는 14층 금지(15층이 어차피 Rest 고정 → 연속 Rest 방지).
-            if (kind == NodeKind.Camp && node.floor == 14) return false;
+            if ((kind == NodeKind.Elite || kind == NodeKind.Camp) && floor < 6) return false;
+            if (kind == NodeKind.Camp && floor == 14) return false;
+            return true;
+        }
 
-            // 같은 특수 타입(Elite/Merchant/Camp) 직접 연결 금지 — 부모 중 동일 타입이 있으면 reject.
-            if (kind == NodeKind.Elite || kind == NodeKind.Merchant || kind == NodeKind.Camp)
+        // 인접 제약: Elite/Merchant/Camp만 부모/형제에 동일 타입 금지(직접 연결 회피).
+        private static bool AdjacencyAllowsKind(MapState map, MapNode node, NodeKind kind,
+            Dictionary<MapNode, List<MapNode>> parentsOf)
+        {
+            if (kind != NodeKind.Elite && kind != NodeKind.Merchant && kind != NodeKind.Camp)
+                return true;
+
+            if (!parentsOf.TryGetValue(node, out var parents)) return true;
+
+            foreach (var p in parents)
             {
-                if (parentsOf.TryGetValue(node, out var parents))
+                if (p.kind == kind) return false;
+                foreach (var siblingCol in p.nextColumns)
                 {
-                    foreach (var p in parents)
-                    {
-                        if (p.kind == kind) return false;
-                    }
+                    if (siblingCol == node.column) continue;
+                    var sibling = map.GetNode(node.floor, siblingCol);
+                    if (sibling == null) continue;
+                    if (sibling.kind == kind) return false;
                 }
             }
-
-            // 한 부모의 자식들은 서로 다른 타입이어야 함(이미 배정된 형제만 검사 — 미배정 형제는 나중에 이 노드를 보게 됨).
-            if (parentsOf.TryGetValue(node, out var parents2))
-            {
-                foreach (var p in parents2)
-                {
-                    foreach (var siblingCol in p.nextColumns)
-                    {
-                        if (siblingCol == node.column) continue;
-                        var sibling = map.GetNode(node.floor, siblingCol);
-                        if (sibling == null) continue;
-                        if (!assigned.Contains(sibling)) continue;
-                        if (sibling.kind == kind) return false;
-                    }
-                }
-            }
-
             return true;
         }
 
@@ -894,13 +1095,11 @@ namespace DianoCard.Game
                 }
                 case UnknownOutcome.Event:
                 {
-                    // Event UI 미구현 — 임시로 Rest 효과(HP 25% 회복 + 자동 진행). 추후 UI 붙으면 이 분기 교체.
-                    int healAmount = Mathf.Max(1, Mathf.RoundToInt(CurrentRun.playerMaxHp * 0.25f));
-                    CurrentRun.playerCurrentHp = Mathf.Min(CurrentRun.playerCurrentHp + healAmount, CurrentRun.playerMaxHp);
+                    // 이벤트 노드 — EventUI에서 선택지를 보여주고 ResolveEventChoice로 결과 처리.
                     node.kind = NodeKind.Event;
-                    node.cleared = true;
-                    Debug.Log($"[GSM] Unknown→Event(stub:Rest) F{node.floor} C{node.column} +{healAmount}HP → {CurrentRun.playerCurrentHp}/{CurrentRun.playerMaxHp}");
-                    AdvanceToNextFloorOrVictory();
+                    _pendingEventNode = node;
+                    State = GameState.Event;
+                    Debug.Log($"[GSM] Unknown→Event F{node.floor} C{node.column}");
                     break;
                 }
             }
@@ -1061,6 +1260,7 @@ namespace DianoCard.Game
             var data = DataManager.Instance.GetRelic(relicId);
             if (data == null) { Debug.LogWarning($"[GSM] Cheat_AcquireRelic: '{relicId}' 미발견"); return; }
             CurrentRun.relics.Add(data);
+            CurrentRun.hasNewRelic = true;
             RelicEffects.OnAcquired(CurrentRun, data);
             Debug.Log($"[GSM] Cheat_AcquireRelic: {data.nameKr}");
         }
@@ -1073,6 +1273,7 @@ namespace DianoCard.Game
             var data = DataManager.Instance.GetPotion(potionId);
             if (data == null) { Debug.LogWarning($"[GSM] Cheat_AcquirePotion: '{potionId}' 미발견"); return; }
             CurrentRun.potions.Add(data);
+            CurrentRun.hasNewPotion = true;
             Debug.Log($"[GSM] Cheat_AcquirePotion: {data.nameKr}");
         }
 
@@ -1096,6 +1297,7 @@ namespace DianoCard.Game
             if (potion != null && CurrentRun != null && !CurrentRun.PotionSlotFull)
             {
                 CurrentRun.potions.Add(potion);
+                CurrentRun.hasNewPotion = true;
             }
         }
 
@@ -1104,6 +1306,7 @@ namespace DianoCard.Game
             if (relic != null && CurrentRun != null && !CurrentRun.relics.Contains(relic))
             {
                 CurrentRun.relics.Add(relic);
+                CurrentRun.hasNewRelic = true;
                 RelicEffects.OnAcquired(CurrentRun, relic);
             }
         }
@@ -1160,6 +1363,7 @@ namespace DianoCard.Game
             if (CurrentRun.PotionSlotFull) return false;
             CurrentRun.gold -= entry.price;
             CurrentRun.potions.Add(entry.potion);
+            CurrentRun.hasNewPotion = true;
             entry.sold = true;
             return true;
         }
@@ -1171,6 +1375,7 @@ namespace DianoCard.Game
             if (CurrentRun.relics.Contains(entry.relic)) return false;
             CurrentRun.gold -= entry.price;
             CurrentRun.relics.Add(entry.relic);
+            CurrentRun.hasNewRelic = true;
             RelicEffects.OnAcquired(CurrentRun, entry.relic);
             entry.sold = true;
             return true;
@@ -1279,11 +1484,14 @@ namespace DianoCard.Game
             var reward = new BattleReward { gold = Random.Range(15, 40) };
 
             // 카드 3장 — 챕터 제한 + RITUAL/STATUS 제외 (STATUS는 적 강제 추가 전용 저주 카드)
+            // T1/T2 진화 결과체는 융합 전용 — 보상에 절대 노출 금지(RewardGenerator·ShopGenerator와 동일 안전망).
+            var evoResults = DataManager.Instance.EvolutionResultIds;
             var eligibleCards = new List<CardData>();
             foreach (var c in DataManager.Instance.Cards.Values)
             {
                 if (c.cardType == CardType.RITUAL) continue;
                 if (c.subType == CardSubType.STATUS) continue;
+                if (evoResults != null && evoResults.Contains(c.id)) continue;
                 eligibleCards.Add(c);
             }
             for (int i = 0; i < 3 && eligibleCards.Count > 0; i++)

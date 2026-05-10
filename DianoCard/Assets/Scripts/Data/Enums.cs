@@ -29,6 +29,7 @@ namespace DianoCard.Data
         FEED,     // 먹이 — 대상(또는 전체) 공룡 EXP 증가. 진화 조건 충족 시 진화 가능.
         FUSION,   // 융합 촉매 — 같은 종·같은 티어 육식공룡 2마리(필드/손 조합)를 합성해 한 단계 위 티어로 업그레이드.
         DEBUFF,   // 디버프 마법 — 적에게 독/약화/취약/속박 등 상태 부여 (단일/광역).
+        REINFORCE,// 증원 — 보유 공룡(run.deck) 중 T0 SUMMON 1장을 골라 현재 손패에 임시 추가 (이번 전투 한정).
     }
 
     public enum Rarity
@@ -147,7 +148,7 @@ namespace DianoCard.Data
         CANNIBAL,       // 1턴 1회 다른 아군 공룡을 잡아먹어 그 공룡의 현재 ATK/HP를 영구 흡수 (마준가). passiveValue 미사용.
         REAPER,         // 공격 시 자신 방어도 +value (테리지노사우루스)
         COUNTER,        // 공격받을 때 공격자에게 반격 피해 +value (이구아노돈)
-        HERD_RALLY,     // (미사용 예약)
+        HERD_RALLY,     // 턴 시작 시 모든 아군 ATK +value (1턴) (브라키오사우루스)
         TOXIC_SLASH,    // 공격 시 출혈 +value AND 독 +value (케라토사우루스)
         SWIFT_DODGE,    // 턴 시작 시 자신 방어도 +value (갈리미무스)
         ENRAGE,         // 공격받을 때마다 자신 ATK +value 영구 증가 (기가노토사우루스)
@@ -155,6 +156,9 @@ namespace DianoCard.Data
         RAMPAGE,        // 적 처치 시 즉시 추가 공격 1회 (바리오닉스)
         INTIMIDATE,     // 공격 시 적 ATK -value 영구 감소 (아크로칸토사우루스)
         EXECUTE,        // 공격 시 적 HP ≤ value이면 즉시 처치 (카르카로돈토사우루스)
+        BULWARK,        // 턴 시작 시 모든 아군 방어도 +value (트리케라톱스)
+        OSTEODERM,      // 공격받을 때마다 자신 방어도 +value (스테고사우루스)
+        IRON_HIDE,      // 받는 모든 피해 -value (최소 1) (안킬로사우루스)
     }
 
     public enum NodeType

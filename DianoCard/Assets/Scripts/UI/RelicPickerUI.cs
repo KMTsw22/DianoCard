@@ -105,10 +105,10 @@ public class RelicPickerUI : MonoBehaviour
 
     // ─── Medallion & Icon ────────────────────────────────────────
     [Header("Medallion & Icon")]
-    [SerializeField, Range(0.5f, 2.0f)] private float medallionSizeFactor = 0.9f;
-    [SerializeField, Range(0f, 1.5f)] private float medallionCenterXFactor = 0.675f;
+    [SerializeField, Range(0.5f, 2.0f)] private float medallionSizeFactor = 0.82f;
+    [SerializeField, Range(0f, 1.5f)] private float medallionCenterXFactor = 0.71f;
     [Tooltip("아이콘 Y 오프셋 (px). 양수 = 아래로, 음수 = 위로.")]
-    [SerializeField, Range(-40f, 40f)] private float iconYOffset = 0f;
+    [SerializeField, Range(-40f, 40f)] private float iconYOffset = 1f;
     [SerializeField, Range(0.3f, 0.95f)] private float iconSizeFactor = 0.72f;
     [SerializeField, Range(0.5f, 2.5f)] private float labelStartXFactor = 1.2f;
 
@@ -169,7 +169,6 @@ public class RelicPickerUI : MonoBehaviour
 
     void Start()
     {
-        _rowBgTex = Resources.Load<Texture2D>("UI/RelicPicker_1/RelicPickerRowBg");
         _defaultRelicIcon = Resources.Load<Texture2D>("InGame/Icon/relic_default");
         PickVariantAndLoad();
     }
@@ -222,9 +221,18 @@ public class RelicPickerUI : MonoBehaviour
 
         LoadBgFrames(root);
         _bgFallback = LoadFallback(root);
+        _rowBgTex = LoadRowBg(root);
         _currentFrame = 0;
         _frameTimer = 0f;
         _pauseTimer = 0f;
+    }
+
+    private Texture2D LoadRowBg(string root)
+    {
+        var tex = Resources.Load<Texture2D>($"{root}/RelicPickerRowBg");
+        if (tex == null)
+            tex = Resources.Load<Texture2D>("UI/RelicPicker_1/RelicPickerRowBg");
+        return tex;
     }
 
     private void LoadBgFrames(string root)

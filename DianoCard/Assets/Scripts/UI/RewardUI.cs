@@ -28,10 +28,26 @@ public class RewardUI : MonoBehaviour
     // =========================================================
 
     [Header("Panel")]
-    [SerializeField] private Vector2 panelSize = new(440, 580);
-    [SerializeField] private float panelYOffset = -10f;
-    [SerializeField] private float titleYOffset = 22f;
-    [SerializeField] private Vector2 titleImageSize = new(140, 42);
+    [Tooltip("패널 크기 (정적 고정 — 보상 개수와 무관하게 항상 동일).")]
+    [SerializeField] private Vector2 panelSize = new(440, 530);
+    [Tooltip("패널 Y 오프셋 (양수 = 아래, 음수 = 위로)")]
+    [SerializeField] private float panelYOffset = 0f;
+    [Tooltip("패널 전체(타이틀/행/컨티뉴 영역)를 클릭해도 보상 진행")]
+    [SerializeField] private bool clickAnywhereToAdvance = true;
+
+    [Header("Title (전리품)")]
+    [Tooltip("타이틀 텍스트 (보통 '전리품')")]
+    [SerializeField] private string titleText = "전리품";
+    [Tooltip("타이틀 Y 오프셋 (패널 상단 기준)")]
+    [SerializeField] private float titleYOffset = 12f;
+    [Tooltip("타이틀 X 오프셋 (양수 = 오른쪽, 음수 = 왼쪽)")]
+    [SerializeField] private float titleXOffset = 0f;
+    [Tooltip("타이틀 영역 높이 (텍스트 세로 가운데 정렬용)")]
+    [SerializeField] private float titleAreaHeight = 52f;
+    [SerializeField, Range(12, 64)] private int titleFontSize = 30;
+    [SerializeField] private Color titleColor = new(0.788f, 0.659f, 0.412f); // #c9a86a aged-brass
+    [Tooltip("폰트 변경 (None = NotoSansKR)")]
+    [SerializeField] private Font titleFontOverride;
 
     [Header("Panel Backdrop")]
     [Tooltip("전체 화면 어둡게 덮는 오버레이 알파")]
@@ -39,16 +55,19 @@ public class RewardUI : MonoBehaviour
     [Tooltip("패널 뒤쪽 radial glow 색상")]
     [SerializeField] private Color panelGlowColor = new(1f, 0.78f, 0.35f);
     [Tooltip("패널 뒤쪽 glow 알파")]
-    [SerializeField, Range(0f, 1f)] private float panelGlowAlpha = 0.75f;
+    [SerializeField, Range(0f, 1f)] private float panelGlowAlpha = 0.32f;
     [Tooltip("패널 뒤쪽 glow 크기 = 패널 크기 × 이 값 (크게 잡아야 패널 바깥으로 퍼져 보임)")]
     [SerializeField, Range(1.0f, 3.5f)] private float panelGlowSizeFactor = 2.2f;
 
     [Header("Rows")]
-    [SerializeField] private Vector2 rowSize = new(320, 60);
-    [SerializeField] private float rowsStartYOffset = 145f;
-    [SerializeField] private float rowGap = 25f;
-    [SerializeField] private int rowLabelFontSize = 15;
+    [SerializeField] private Vector2 rowSize = new(360, 55);
+    [Tooltip("패널 상단에서 첫 행까지의 간격 — 헤더(타이틀+디바이더 라인)가 끝나는 지점에 맞추면 됨")]
+    [SerializeField] private float rowsStartYOffset = 95f;
+    [SerializeField] private float rowGap = 26f;
+    [SerializeField] private int rowLabelFontSize = 18;
     [SerializeField] private Color rowLabelColor = new(0.99f, 0.95f, 0.78f);
+    [Tooltip("각 행에 마우스 올렸을 때 행 단위로 부풀어 오르는 배율 (행 안의 모든 요소가 함께 스케일)")]
+    [SerializeField, Range(1f, 1.15f)] private float rowHoverScale = 1.05f;
 
     [Header("Row Medallion (원형 프레임)")]
     [Tooltip("메달리온 프레임 크기 = 행 높이 × 이 값 (행보다 조금 크게 튀어나오도록)")]
@@ -73,10 +92,19 @@ public class RewardUI : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float glowAlpha = 0.55f;
 
     [Header("Continue Button")]
-    [SerializeField] private Vector2 continueButtonSize = new(400, 84);
-    [SerializeField] private float continueButtonBottomMargin = 30f;
-    [Tooltip("Continue 버튼 위에 마우스 올렸을 때 확대 배율")]
-    [SerializeField, Range(1f, 1.3f)] private float continueHoverScale = 1.08f;
+    [Tooltip("계속하기/Skip 버튼 hover 시 확대 배율")]
+    [SerializeField, Range(1f, 1.3f)] private float continueHoverScale = 1.06f;
+    [SerializeField] private Vector2 continueButtonSize = new(160, 58);
+    [Tooltip("계속하기 버튼 하단 ~ 패널 바닥 사이 간격 (패널 바닥에 고정)")]
+    [SerializeField] private float continueButtonBottomMargin = 36f;
+    [Tooltip("버튼 위에 그리는 텍스트 (빈 문자열이면 안 그림)")]
+    [SerializeField] private string continueButtonText = "";
+    [SerializeField, Range(12, 48)] private int continueButtonFontSize = 24;
+    [SerializeField] private Color continueButtonTextColor = new(0.788f, 0.659f, 0.412f); // #c9a86a
+    [Tooltip("폰트 변경 (None = NotoSansKR)")]
+    [SerializeField] private Font continueButtonFontOverride;
+    [Tooltip("버튼 텍스트 Y 미세 조정 (양수 = 아래)")]
+    [SerializeField] private float continueButtonTextYOffset = 0f;
 
     [Header("Card Picker")]
     [SerializeField] private Vector2 cardPickerCardSize = new(230, 320);
@@ -88,20 +116,28 @@ public class RewardUI : MonoBehaviour
     [Tooltip("카드 피커 전체 Y 오프셋 (양수 = 아래로)")]
     [SerializeField] private float cardPickerYOffset = 0f;
 
-    [Header("Card Picker — Title Area")]
-    [Tooltip("타이틀/부제 전체에 더해지는 베이스 y 오프셋")]
+    [Header("Card Picker — Title Block")]
+    [Tooltip("타이틀 전체에 더해지는 베이스 y 오프셋")]
     [SerializeField] private float cardPickerBaseYOffset = 20f;
-    [SerializeField] private Vector2 cpTitleImageSize = new(380f, 70f);
-    [SerializeField] private float cpTitleImageY = 28f;
-    [SerializeField] private Vector2 cpTitleGlowSize = new(720f, 220f);
-    [SerializeField] private Vector2 cpTitleDividerSize = new(280f, 24f);
-    [SerializeField] private float cpTitleDividerY = 98f;
-    [SerializeField] private float cpSubtitleY = 128f;
+    [Tooltip("한글 메인 타이틀 Y (예: '카드를 선택하세요')")]
+    [SerializeField] private float cpTitleY = 100f;
+    [SerializeField] private float cpTitleHeight = 70f;
+    [SerializeField, Range(20, 80)] private int cpTitleFontSize = 30;
+    [Tooltip("한글 타이틀 색상 — 아이보리/크림 톤")]
+    [SerializeField] private Color cpTitleColor = new(0.925f, 0.894f, 0.816f); // #ECE4D0
+    [Tooltip("타이틀 페이드 인/아웃 1주기 길이(초). 클수록 더 천천히 호흡.")]
+    [SerializeField, Range(1f, 12f)] private float titlePulsePeriod = 5f;
+    [Tooltip("타이틀 페이드 시 가장 흐려졌을 때 알파 (0=완전히 사라짐)")]
+    [SerializeField, Range(0f, 1f)] private float titlePulseMinAlpha = 0.15f;
+    [Tooltip("카드 제거 화면(부제)용 — 폰트 사이즈만 공유. 본 카드 보상에는 미사용.")]
+    [SerializeField, Range(10, 24)] private int cpDescFontSize = 14;
     [Tooltip("카드 하단 ~ Skip 버튼 간격")]
     [SerializeField] private float skipButtonTopMargin = 36f;
 
     [Header("Card Picker — Font Sizes")]
-    [SerializeField, Range(12, 36)] private int skipButtonFontSize = 24;
+    [SerializeField, Range(12, 36)] private int skipButtonFontSize = 20;
+    [Tooltip("Skip 버튼 텍스트 색상 — 다크 패널 위 아이보리")]
+    [SerializeField] private Color skipButtonTextColor = new(0.925f, 0.894f, 0.816f); // #ECE4D0
 
     [Header("Card Picker — Card Glow")]
     [SerializeField] private float cardGlowPadNormal = 42f;
@@ -143,27 +179,27 @@ public class RewardUI : MonoBehaviour
     private Texture2D _rowTex;
     private Texture2D _medallionTex;
     private Texture2D _continueTex;
-    private Texture2D _textSpoilsTex;
     private Texture2D _glowTex;
+    // 행 아이콘 — HUD에서 쓰는 InGame/Icon/* 재사용
     private Texture2D _iconGold;
     private Texture2D _iconCard;
     private Texture2D _iconPotion;
     private Texture2D _iconRelic;
-    private Texture2D _iconCardRemove;
     private readonly Dictionary<string, Texture2D> _itemIconCache = new();
 
-    // Sprites (Card picker view) — 카드 본체는 BattleUI에 위임하므로 타이틀/스킵 자산만 보유
+    // Sprites (Card picker view) — 타이틀/디바이더는 텍스트+프로시저럴, 스킵 패널만 스프라이트
     private Texture2D _skipButtonTex;
-    private Texture2D _textChooseCardTex;
-    private Texture2D _titleDividerTex;
 
     // Fonts
     private Font _displayFont;
+    private Font _displayFontKR;
 
     // Styles
+    private GUIStyle _titleStyle;        // "전리품" — 한글 세리프, aged-brass
+    private GUIStyle _continueTextStyle; // "계속하기 →" — 컨티뉴 버튼 텍스트
     private GUIStyle _rowLabelStyle;
-    private GUIStyle _pickerTitleStyle;
-    private GUIStyle _pickerSubStyle;
+    private GUIStyle _pickerTitleStyle;     // "카드를 선택하세요" — 한글 메인 타이틀
+    private GUIStyle _pickerSubStyle;       // 카드 제거 화면 부제 등 — 한글 작은 라인
     private GUIStyle _skipButtonStyle;
     private bool _stylesReady;
 
@@ -280,14 +316,15 @@ public class RewardUI : MonoBehaviour
         // 인스펙터 값이 런타임에 바뀔 수 있으므로 매번 스타일 폰트 크기 동기화
         SyncStyleFontSizes();
 
-        // 패널 스프라이트 (상단 리본 배너 포함)
+        // ─── 1. 패널 사각형 (정적 크기 — 보상 개수와 무관) ───
+        float rowH = rowSize.y;
         var panelRect = new Rect(
             (RefW - panelSize.x) / 2f,
             (RefH - panelSize.y) / 2f + panelYOffset,
             panelSize.x,
             panelSize.y);
 
-        // 패널 뒤쪽 warm glow
+        // ─── 2. 뒷쪽 warm glow ───
         if (_glowTex != null && panelGlowAlpha > 0f)
         {
             float gw = panelRect.width * panelGlowSizeFactor;
@@ -305,37 +342,38 @@ public class RewardUI : MonoBehaviour
             GUI.color = prevGuiColor;
         }
 
+        // ─── 3. 패널 본체 ───
         if (_panelTex != null)
             GUI.DrawTexture(panelRect, _panelTex, ScaleMode.StretchToFill);
         else
             DrawFilledRect(panelRect, new Color(0.10f, 0.14f, 0.20f, 0.96f));
 
-        // 타이틀 "SPOILS!" — 리본 배너 내부 (텍스처 이미지)
-        if (_textSpoilsTex != null)
+        // ─── 4. 타이틀 ───
+        if (!string.IsNullOrEmpty(titleText))
         {
             var titleRect = new Rect(
-                panelRect.x + (panelRect.width - titleImageSize.x) / 2f,
+                panelRect.x + titleXOffset,
                 panelRect.y + titleYOffset,
-                titleImageSize.x,
-                titleImageSize.y);
-            GUI.DrawTexture(titleRect, _textSpoilsTex, ScaleMode.ScaleToFit);
+                panelRect.width,
+                titleAreaHeight);
+            GUI.Label(titleRect, titleText, _titleStyle);
         }
 
-        // 보상 행
+        // ─── 5. 보상 행 (각 행이 자기 영역 hover 시 통째로 부풀어 오름 + 클릭 가능) ───
         float rowW = rowSize.x;
-        float rowH = rowSize.y;
         float rowX = panelRect.x + (panelRect.width - rowW) / 2f;
         float y = panelRect.y + rowsStartYOffset;
+        bool rowClicked = false;
 
         var dm = DataManager.Instance;
         if (!_goldDone && reward.gold > 0)
         {
-            DrawRewardRow(new Rect(rowX, y, rowW, rowH), _iconGold, dm.GetUIString("reward.row.gold", reward.gold), RowKind.Gold);
+            rowClicked |= DrawRewardRow(new Rect(rowX, y, rowW, rowH), _iconGold, dm.GetUIString("reward.row.gold", reward.gold), RowKind.Gold);
             y += rowH + rowGap;
         }
         if (!_cardDone && reward.cardChoices != null && reward.cardChoices.Count > 0)
         {
-            DrawRewardRow(new Rect(rowX, y, rowW, rowH), _iconCard, dm.GetUIString("reward.row.card"), RowKind.Card);
+            rowClicked |= DrawRewardRow(new Rect(rowX, y, rowW, rowH), _iconCard, dm.GetUIString("reward.row.card"), RowKind.Card);
             y += rowH + rowGap;
         }
         if (!_potionDone && reward.potion != null)
@@ -343,40 +381,52 @@ public class RewardUI : MonoBehaviour
             string pLabel = run.PotionSlotFull
                 ? dm.GetUIString("reward.row.potion_full")
                 : dm.GetUIString("reward.row.potion", reward.potion.name);
-            DrawRewardRow(new Rect(rowX, y, rowW, rowH), GetItemIcon(reward.potion.id, true), pLabel, RowKind.Potion);
+            rowClicked |= DrawRewardRow(new Rect(rowX, y, rowW, rowH), GetItemIcon(reward.potion.id, true) ?? _iconPotion, pLabel, RowKind.Potion);
             y += rowH + rowGap;
         }
         if (!_relicDone && reward.relic != null)
         {
-            DrawRewardRow(new Rect(rowX, y, rowW, rowH), GetItemIcon(reward.relic.id, false), dm.GetUIString("reward.row.relic", reward.relic.name), RowKind.Relic);
+            rowClicked |= DrawRewardRow(new Rect(rowX, y, rowW, rowH), GetItemIcon(reward.relic.id, false) ?? _iconRelic, dm.GetUIString("reward.row.relic", reward.relic.name), RowKind.Relic);
             y += rowH + rowGap;
         }
         if (!_cardRemoveDone && reward.cardRemoveOffer)
         {
-            DrawRewardRow(new Rect(rowX, y, rowW, rowH), _iconCardRemove ?? _iconCard, dm.GetUIString("reward.row.card_remove"), RowKind.CardRemove);
+            rowClicked |= DrawRewardRow(new Rect(rowX, y, rowW, rowH), _iconCard, dm.GetUIString("reward.row.card_remove"), RowKind.CardRemove);
             y += rowH + rowGap;
         }
 
-        // 계속하기 버튼 — hover 시 살짝 확대
+        // ─── 6. 계속하기 버튼 — 패널 바닥에 고정 (정적 위치) + 자체 hover 스케일 ───
         float btnW = continueButtonSize.x;
         float btnH = continueButtonSize.y;
-        var btnRect = new Rect((RefW - btnW) / 2f, panelRect.yMax - btnH - continueButtonBottomMargin, btnW, btnH);
+        float btnY = panelRect.yMax - continueButtonBottomMargin - btnH;
+        var btnRect = new Rect((RefW - btnW) / 2f, btnY, btnW, btnH);
 
-        bool hovered = btnRect.Contains(Event.current.mousePosition);
-        Rect drawRect = btnRect;
-        if (hovered)
+        bool btnHovered = btnRect.Contains(Event.current.mousePosition);
+        var prevMatrix = GUI.matrix;
+        if (btnHovered && continueHoverScale > 1f)
         {
-            float s = continueHoverScale;
-            drawRect = new Rect(
-                btnRect.center.x - btnRect.width * s * 0.5f,
-                btnRect.center.y - btnRect.height * s * 0.5f,
-                btnRect.width * s,
-                btnRect.height * s);
+            GUIUtility.ScaleAroundPivot(new Vector2(continueHoverScale, continueHoverScale), btnRect.center);
         }
 
         if (_continueTex != null)
-            GUI.DrawTexture(drawRect, _continueTex, ScaleMode.ScaleToFit);
-        if (GUI.Button(btnRect, GUIContent.none, GUIStyle.none))
+            GUI.DrawTexture(btnRect, _continueTex, ScaleMode.ScaleToFit);
+
+        if (!string.IsNullOrEmpty(continueButtonText) && _continueTextStyle != null)
+        {
+            var textRect = btnRect;
+            textRect.y += continueButtonTextYOffset;
+            GUI.Label(textRect, continueButtonText, _continueTextStyle);
+        }
+
+        bool continueClicked = GUI.Button(btnRect, GUIContent.none, GUIStyle.none);
+        GUI.matrix = prevMatrix;
+
+        // ─── 7. 패널 빈 영역 클릭 (타이틀 영역, 행 사이 공백 등) — 가장 마지막에 폴백 ───
+        bool panelEmptyClicked = false;
+        if (clickAnywhereToAdvance)
+            panelEmptyClicked = GUI.Button(panelRect, GUIContent.none, GUIStyle.none);
+
+        if (rowClicked || continueClicked || panelEmptyClicked)
         {
             _pending.Add(() => OnContinuePressed(gsm, run, reward));
         }
@@ -384,17 +434,35 @@ public class RewardUI : MonoBehaviour
 
     private Texture2D GetItemIcon(string id, bool isPotion)
     {
-        if (string.IsNullOrEmpty(id)) return isPotion ? _iconPotion : _iconRelic;
+        if (string.IsNullOrEmpty(id)) return null; // 절차적 폴백 (DrawRewardRow에서 RowKind 기반으로 그림)
         if (_itemIconCache.TryGetValue(id, out var cached)) return cached;
         var folder = isPotion ? "PotionArt" : "RelicArt";
         var tex = Resources.Load<Texture2D>($"InGame/{folder}/{id}");
-        if (tex == null) tex = isPotion ? _iconPotion : _iconRelic;
-        _itemIconCache[id] = tex;
+        _itemIconCache[id] = tex; // null도 캐시 (재로드 방지)
         return tex;
     }
 
-    private void DrawRewardRow(Rect rect, Texture2D icon, string label, RowKind kind)
+    /// <summary>
+    /// 보상 행 하나를 그림. 행 영역에 마우스가 있으면 행 전체(배경+메달리온+아이콘+라벨)가 통째로 부풀어 오름.
+    /// 클릭되면 true 반환.
+    /// </summary>
+    private bool DrawRewardRow(Rect rect, Texture2D icon, string label, RowKind kind)
     {
+        // 행 hover 판정 — 약간 확장된 영역으로 엣지 플리커 방지
+        const float hoverPad = 6f;
+        var hoverRect = new Rect(rect.x - hoverPad, rect.y - hoverPad,
+                                  rect.width + hoverPad * 2, rect.height + hoverPad * 2);
+        bool rowHovered = hoverRect.Contains(Event.current.mousePosition);
+
+        // hover 시 행 전체를 한 덩어리로 스케일 (배경/메달리온/아이콘/글로우/라벨 동시 확대)
+        // GUIUtility.ScaleAroundPivot는 기존 GUI.matrix(화면 fit 스케일 포함)에 추가로 곱하므로
+        // 직접 GUI.matrix를 덮어쓰면 안 됨 — 그러면 화면 fit이 깨져 좌상단으로 밀림.
+        var prevMatrix = GUI.matrix;
+        if (rowHovered && rowHoverScale > 1f)
+        {
+            GUIUtility.ScaleAroundPivot(new Vector2(rowHoverScale, rowHoverScale), rect.center);
+        }
+
         // 1. 행 박스 배경
         if (_rowTex != null)
             GUI.DrawTexture(rect, _rowTex, ScaleMode.StretchToFill);
@@ -445,6 +513,10 @@ public class RewardUI : MonoBehaviour
         if (icon != null)
             GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit);
 
+        // 카드 제거 행은 CardBack 위에 빨강 가로 바를 얹어서 "제거" 의미 시각화
+        if (kind == RowKind.CardRemove)
+            DrawCardRemoveOverlay(iconRect);
+
         // 6. 라벨
         var labelRect = new Rect(
             rect.x + rect.height * labelStartXFactor,
@@ -452,6 +524,12 @@ public class RewardUI : MonoBehaviour
             rect.width - rect.height * labelStartXFactor - 12,
             rect.height);
         GUI.Label(labelRect, label, _rowLabelStyle);
+
+        // 7. 클릭 가능한 영역 (스케일된 행 위에 그대로 얹힘 — 마우스 좌표는 inverse matrix로 자동 변환)
+        bool clicked = GUI.Button(rect, GUIContent.none, GUIStyle.none);
+
+        GUI.matrix = prevMatrix;
+        return clicked;
     }
 
     private void OnContinuePressed(GameStateManager gsm, RunState run, BattleReward reward)
@@ -513,38 +591,15 @@ public class RewardUI : MonoBehaviour
 
         float yOff = cardPickerYOffset + cardPickerBaseYOffset;
 
-        // 타이틀 뒤쪽 warm glow
-        if (_glowTex != null)
-        {
-            float gw = cpTitleGlowSize.x, gh = cpTitleGlowSize.y;
-            var glowRect = new Rect((RefW - gw) / 2f, cpTitleImageY + cpTitleImageSize.y * 0.5f - gh * 0.5f + yOff, gw, gh);
-            var prevGuiColor = GUI.color;
-            var gc = panelGlowColor;
-            gc.a = panelGlowAlpha * 0.85f;
-            GUI.color = gc;
-            GUI.DrawTexture(glowRect, _glowTex, ScaleMode.StretchToFill);
-            GUI.color = prevGuiColor;
-        }
+        // ─── 타이틀: "카드를 선택하세요" — 천천히 페이드 인/아웃 (호흡 효과) ───
+        // 사인파 1주기 = titlePulsePeriod 초. 알파는 [titlePulseMinAlpha .. 1.0] 범위.
+        float pulse = (Mathf.Sin(Time.time * 2f * Mathf.PI / Mathf.Max(0.5f, titlePulsePeriod)) + 1f) * 0.5f;
+        float titleAlpha = Mathf.Lerp(titlePulseMinAlpha, 1f, pulse);
 
-        // 타이틀 이미지 (CHOOSE A CARD) — 텍스처 없으면 폰트 폴백
-        if (_textChooseCardTex != null)
-        {
-            var titleRect = new Rect((RefW - cpTitleImageSize.x) / 2f, cpTitleImageY + yOff, cpTitleImageSize.x, cpTitleImageSize.y);
-            GUI.DrawTexture(titleRect, _textChooseCardTex, ScaleMode.ScaleToFit);
-        }
-        else
-        {
-            GUI.Label(new Rect(0, cpTitleImageY + yOff, RefW, cpTitleImageSize.y), DataManager.Instance.GetUIString("reward.title"), _pickerTitleStyle);
-        }
-
-        // 장식 구분선
-        if (_titleDividerTex != null)
-        {
-            var dividerRect = new Rect((RefW - cpTitleDividerSize.x) / 2f, cpTitleDividerY + yOff, cpTitleDividerSize.x, cpTitleDividerSize.y);
-            GUI.DrawTexture(dividerRect, _titleDividerTex, ScaleMode.ScaleToFit);
-        }
-
-        GUI.Label(new Rect(0, cpSubtitleY + yOff, RefW, 24f), DataManager.Instance.GetUIString("reward.subtitle"), _pickerSubStyle);
+        var prevTitleColor = GUI.color;
+        GUI.color = new Color(prevTitleColor.r, prevTitleColor.g, prevTitleColor.b, prevTitleColor.a * titleAlpha);
+        GUI.Label(new Rect(0, cpTitleY + yOff, RefW, cpTitleHeight), DataManager.Instance.GetUIString("reward.title"), _pickerTitleStyle);
+        GUI.color = prevTitleColor;
 
         int n = reward.cardChoices.Count;
         if (n == 0)
@@ -598,7 +653,7 @@ public class RewardUI : MonoBehaviour
             }
         }
 
-        // 스킵 버튼 — 크림 파치먼트 스크롤 스프라이트 위에 다크 브라운 라벨 얹기
+        // 스킵 버튼 — 다크 브라스 패널(다이아 양쪽 ◇ 포함) 위에 아이보리 라벨 얹기
         float skipW = cardPickerSkipSize.x;
         float skipH = cardPickerSkipSize.y;
         var skipRect = new Rect((RefW - skipW) / 2f, startY + cardH + skipButtonTopMargin, skipW, skipH);
@@ -781,6 +836,16 @@ public class RewardUI : MonoBehaviour
         return tex;
     }
 
+    // 카드 제거 행에 표시할 작은 빨강 가로 바 (X 흉내) — CardBack 위에 오버레이
+    private void DrawCardRemoveOverlay(Rect r)
+    {
+        var ember = new Color(0.541f, 0.227f, 0.227f, 0.95f); // #8a3a3a
+        float w = r.width * 0.50f;
+        float h = Mathf.Max(2f, r.height * 0.07f);
+        var bar = new Rect(r.center.x - w * 0.5f, r.center.y - h * 0.5f, w, h);
+        DrawFilledRect(bar, ember);
+    }
+
     private static Color GlowColorFor(RowKind kind)
     {
         switch (kind)
@@ -814,11 +879,37 @@ public class RewardUI : MonoBehaviour
     {
         if (!_stylesReady) return;
         _rowLabelStyle.fontSize = rowLabelFontSize;
-
         _rowLabelStyle.normal.textColor = rowLabelColor;
-        _pickerSubStyle.normal.textColor = rowLabelColor;
+
+        // 카드 피커 타이틀 — 인스펙터에서 실시간 조정 가능하게 매 프레임 동기화
+        _pickerTitleStyle.fontSize = cpTitleFontSize;
+        _pickerTitleStyle.normal.textColor = cpTitleColor;
+
+        _pickerSubStyle.fontSize = cpDescFontSize;
+        _pickerSubStyle.normal.textColor = new Color(rowLabelColor.r, rowLabelColor.g, rowLabelColor.b, 0.85f);
 
         _skipButtonStyle.fontSize = skipButtonFontSize;
+        _skipButtonStyle.normal.textColor = skipButtonTextColor;
+
+        // 모든 상태(hover/active/...) 색도 normal과 동기화
+        LockStateColors(_pickerTitleStyle);
+        LockStateColors(_pickerSubStyle);
+        LockStateColors(_skipButtonStyle);
+
+        // 타이틀 — 인스펙터에서 실시간 조정 가능하도록 매 프레임 동기화
+        if (_titleStyle != null)
+        {
+            _titleStyle.fontSize = titleFontSize;
+            _titleStyle.normal.textColor = titleColor;
+            _titleStyle.font = titleFontOverride != null ? titleFontOverride : _displayFontKR;
+        }
+        // Continue 버튼 텍스트
+        if (_continueTextStyle != null)
+        {
+            _continueTextStyle.fontSize = continueButtonFontSize;
+            _continueTextStyle.normal.textColor = continueButtonTextColor;
+            _continueTextStyle.font = continueButtonFontOverride != null ? continueButtonFontOverride : _displayFontKR;
+        }
     }
 
     private void EnsureStyles()
@@ -829,71 +920,73 @@ public class RewardUI : MonoBehaviour
         _rowTex = Resources.Load<Texture2D>("Reward/RowButton");
         _medallionTex = Resources.Load<Texture2D>("Reward/MedallionRing");
         _continueTex = Resources.Load<Texture2D>("Reward/ContinueButton");
-        _textSpoilsTex = Resources.Load<Texture2D>("Reward/TextSpoils");
-        _iconGold = Resources.Load<Texture2D>("Reward/Gold");
-        _iconCard = Resources.Load<Texture2D>("Reward/Deck");
-        _iconPotion = Resources.Load<Texture2D>("Reward/Potion_Bottle");
-        _iconRelic = Resources.Load<Texture2D>("Reward/RelicIcon");
-        _iconCardRemove = Resources.Load<Texture2D>("Reward/Purge"); // 없으면 _iconCard fallback
+        // 행 아이콘 — HUD에서 쓰이는 동일 아이콘 재사용 (톤 일관성)
+        _iconGold   = Resources.Load<Texture2D>("InGame/Icon/Gold");
+        _iconCard   = Resources.Load<Texture2D>("InGame/Icon/CardBack");
+        _iconPotion = Resources.Load<Texture2D>("InGame/Icon/Potion_Bottle");
+        _iconRelic  = Resources.Load<Texture2D>("InGame/Icon/Relic");
 
         _skipButtonTex = Resources.Load<Texture2D>("Reward/CardPicker/SkipButton");
-        _textChooseCardTex = Resources.Load<Texture2D>("Reward/CardPicker/TextChooseCard");
-        _titleDividerTex = Resources.Load<Texture2D>("Reward/CardPicker/TitleDivider");
 
         _displayFont = Resources.Load<Font>("Fonts/Cinzel-VariableFont_wght");
+        _displayFontKR = Resources.Load<Font>("Fonts/NotoSansKR-VariableFont_wght");
 
         _glowTex = CreateRadialGlowTexture(64);
 
         // 영어 전용 — Cinzel(디스플레이) 사용. 색은 인스펙터에서 동기화됨
+        _titleStyle = new GUIStyle(GUI.skin.label)
+        {
+            font = titleFontOverride != null ? titleFontOverride : _displayFontKR,
+            fontSize = titleFontSize,
+            alignment = TextAnchor.MiddleCenter,
+            fontStyle = FontStyle.Bold,
+            normal = { textColor = titleColor },
+        };
+        _continueTextStyle = new GUIStyle(GUI.skin.label)
+        {
+            font = continueButtonFontOverride != null ? continueButtonFontOverride : _displayFontKR,
+            fontSize = continueButtonFontSize,
+            alignment = TextAnchor.MiddleCenter,
+            fontStyle = FontStyle.Bold,
+            normal = { textColor = continueButtonTextColor },
+        };
+        // 행 라벨은 한글이 섞이므로 KR 로케일에서 Cinzel(라틴 전용)을 쓰면 시스템 폰트로 폴백돼 깨짐.
+        bool isKR = DianoCard.Data.LocaleSettings.Current == DianoCard.Data.Language.KR;
         _rowLabelStyle = new GUIStyle(GUI.skin.label)
         {
-            font = _displayFont,
+            font = isKR ? _displayFontKR : _displayFont,
             fontSize = rowLabelFontSize,
             alignment = TextAnchor.MiddleLeft,
             fontStyle = FontStyle.Bold,
             wordWrap = true,
             normal = { textColor = rowLabelColor },
         };
+        // 한글 메인 타이틀 — "카드를 선택하세요". NotoSansKR + 큰 사이즈 + 아이보리/크림.
         _pickerTitleStyle = new GUIStyle(GUI.skin.label)
         {
-            font = _displayFont,
-            fontSize = 36,
+            font = _displayFontKR,
+            fontSize = cpTitleFontSize,
             alignment = TextAnchor.MiddleCenter,
             fontStyle = FontStyle.Bold,
-            // hover 시 색 바뀌지 않게 모든 상태 동일
-            normal   = { textColor = new Color(0.98f, 0.88f, 0.52f) },
-            hover    = { textColor = new Color(0.98f, 0.88f, 0.52f) },
-            active   = { textColor = new Color(0.98f, 0.88f, 0.52f) },
-            focused  = { textColor = new Color(0.98f, 0.88f, 0.52f) },
-            onNormal = { textColor = new Color(0.98f, 0.88f, 0.52f) },
-            onHover  = { textColor = new Color(0.98f, 0.88f, 0.52f) },
-            onActive = { textColor = new Color(0.98f, 0.88f, 0.52f) },
-            onFocused= { textColor = new Color(0.98f, 0.88f, 0.52f) },
+            normal = { textColor = cpTitleColor },
         };
+        // 한글 설명 (카드 제거 화면 부제 등) — NotoSansKR + 작게 + 머티드 아이보리.
         _pickerSubStyle = new GUIStyle(GUI.skin.label)
         {
-            font = _displayFont,
-            fontSize = 15,
+            font = _displayFontKR,
+            fontSize = cpDescFontSize,
             alignment = TextAnchor.MiddleCenter,
-            fontStyle = FontStyle.Bold,
-            // 라벨 hover/active 시 기본 GUISkin이 텍스트를 흰색으로 바꿔서 그걸 모든 상태 동일색으로 고정.
-            normal   = { textColor = rowLabelColor },
-            hover    = { textColor = rowLabelColor },
-            active   = { textColor = rowLabelColor },
-            focused  = { textColor = rowLabelColor },
-            onNormal = { textColor = rowLabelColor },
-            onHover  = { textColor = rowLabelColor },
-            onActive = { textColor = rowLabelColor },
-            onFocused= { textColor = rowLabelColor },
+            fontStyle = FontStyle.Normal,
+            normal = { textColor = new Color(rowLabelColor.r, rowLabelColor.g, rowLabelColor.b, 0.85f) },
         };
-        // SKIP 라벨 — 크림 파치먼트 스크롤 위에 얹히므로 다크 브라운
+        // SKIP 라벨 — 다크 패널 위 아이보리.
         _skipButtonStyle = new GUIStyle(GUI.skin.label)
         {
-            font = _displayFont,
-            fontSize = 24,
+            font = _displayFontKR,
+            fontSize = skipButtonFontSize,
             alignment = TextAnchor.MiddleCenter,
             fontStyle = FontStyle.Bold,
-            normal = { textColor = new Color(0.22f, 0.13f, 0.05f) },
+            normal = { textColor = skipButtonTextColor },
         };
         // 모든 라벨 스타일의 hover/active 등 state 색을 normal과 동일하게 고정 (호버 색 변화 방지)
         LockStateColors(_rowLabelStyle);

@@ -75,6 +75,8 @@ namespace DianoCard.Battle
             block -= absorbed;
             int remaining = adjusted - absorbed;
             hp = Math.Max(0, hp - remaining);
+            if (absorbed > 0)
+                DianoCard.Audio.AudioManager.Instance?.PlaySFX("hit_block");
         }
 
         public void Heal(int amount)
@@ -318,6 +320,8 @@ namespace DianoCard.Battle
             int remaining = adjusted - absorbed;
             // 더미는 HP가 1 아래로 내려가지 않아 전투 종료 조건이 발생하지 않음.
             hp = isDummy ? Math.Max(1, hp - remaining) : Math.Max(0, hp - remaining);
+            if (absorbed > 0)
+                DianoCard.Audio.AudioManager.Instance?.PlaySFX("hit_block");
         }
 
         public void TickStatuses()

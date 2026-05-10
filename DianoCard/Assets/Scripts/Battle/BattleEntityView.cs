@@ -299,6 +299,19 @@ namespace DianoCard.Battle
             if (_shadowSr != null) _shadowSr.sortingOrder = order - 1;
         }
 
+        /// <summary>
+        /// 본체/그림자/팬텀 글로우 렌더러를 한번에 켜고 끔.
+        /// 위치·스케일이 잡히기 전 단계에서 GameObject를 active로 두되 시각적으로만 숨길 때 사용.
+        /// SetActive(false)로 GameObject 자체를 비활성하면 Awake가 미실행이라 _sr null인 상태로
+        /// 다른 Set 호출이 NullRef를 던진다 — 그래서 SR.enabled 토글로 처리.
+        /// </summary>
+        public void SetVisible(bool visible)
+        {
+            if (_sr != null) _sr.enabled = visible;
+            if (_shadowSr != null) _shadowSr.enabled = visible;
+            if (_glowSr != null) _glowSr.enabled = visible;
+        }
+
         private void OnDestroy()
         {
             if (_shadowGO != null) Destroy(_shadowGO);

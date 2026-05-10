@@ -386,14 +386,7 @@ public class TechTreeUI : MonoBehaviour
         GUI.color = prevColor;
 
         // 투명 버튼으로 클릭 감지
-        var transparentStyle = new GUIStyle(GUI.skin.button)
-        {
-            normal  = { background = null },
-            hover   = { background = null },
-            active  = { background = null },
-            focused = { background = null },
-        };
-        if (GUI.Button(backRect, "", transparentStyle))
+        if (GUI.Button(backRect, GUIContent.none, GUIStyle.none))
             gsm.ExitTechTree();
 
     }

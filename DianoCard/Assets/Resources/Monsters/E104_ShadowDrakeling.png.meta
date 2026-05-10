@@ -4,7 +4,7 @@ TextureImporter:
   internalIDToNameTable:
   - first:
       213: 4558838083836309433
-    second: E015_ShadowDrakeling_0
+    second: E104_ShadowDrakeling_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,7 +126,7 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: E015_ShadowDrakeling_0
+      name: E104_ShadowDrakeling_0
       rect:
         serializedVersion: 2
         x: 0
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      E015_ShadowDrakeling_0: 4558838083836309433
+      E104_ShadowDrakeling_0: 4558838083836309433
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
