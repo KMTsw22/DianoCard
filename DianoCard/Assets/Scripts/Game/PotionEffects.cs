@@ -147,16 +147,14 @@ namespace DianoCard.Game
                     return true;
                 }
 
-                case "P011": // 소환 물약 — 손패에 랜덤 공룡 카드 1장 추가
+                case "P011": // 소환 물약 — 손패의 랜덤 공룡 1장을 필드로 즉시 소환 (마나/타겟 무시)
                 {
-                    var card = PickRandomDinoCardForRun(run);
-                    if (card == null)
+                    if (!mgr.TryPotionSummonRandomFromHand())
                     {
-                        Debug.LogWarning($"[Potion] {potion.id} {potion.nameKr}: 랜덤 공룡 카드 풀 비어있음");
+                        Debug.LogWarning($"[Potion] {potion.id} {potion.nameKr}: 손패에 공룡 없음 또는 필드 만석 — 포션 보존");
                         return false;
                     }
-                    state.hand.Add(new CardInstance(card));
-                    Debug.Log($"[Potion] {potion.id} {potion.nameKr}: 손패에 {card.nameKr} 추가");
+                    Debug.Log($"[Potion] {potion.id} {potion.nameKr}: 손패의 무작위 공룡 소환 완료");
                     return true;
                 }
 
@@ -224,37 +222,6 @@ namespace DianoCard.Game
             if (targetIndex < 0 || targetIndex >= state.field.Count) return null;
             var t = state.field[targetIndex];
             return (t == null || t.IsDead) ? null : t;
-        }
-
-        private static CardData PickRandomDinoCardForRun(RunState run)
-        {
-            if (DataManager.Instance == null) return null;
-            int chapterNum = ParseChapterNumber(run?.chapterId);
-            // T1/T2 진화 결과체는 융합 전용 — 보상/풀에서 무조건 제외 (보상·상점과 동일 안전망).
-            var evoResults = DataManager.Instance.EvolutionResultIds;
-            var pool = new System.Collections.Generic.List<CardData>();
-            foreach (var kv in DataManager.Instance.Cards)
-            {
-                var c = kv.Value;
-                if (c == null) continue;
-                if (c.cardType != CardType.SUMMON) continue;
-                if (evoResults != null && evoResults.Contains(c.id)) continue;
-                if (chapterNum > 0 && c.chapter != chapterNum) continue;
-                pool.Add(c);
-            }
-            if (pool.Count == 0) return null;
-            return pool[Random.Range(0, pool.Count)];
-        }
-
-        private static int ParseChapterNumber(string chapterId)
-        {
-            if (string.IsNullOrEmpty(chapterId)) return 0;
-            int n = 0;
-            foreach (char ch in chapterId)
-            {
-                if (ch >= '0' && ch <= '9') n = n * 10 + (ch - '0');
-            }
-            return n;
         }
     }
 }

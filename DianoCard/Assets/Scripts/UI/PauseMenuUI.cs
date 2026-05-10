@@ -95,24 +95,24 @@ public class PauseMenuUI : MonoBehaviour
     private float _backdropAlpha = 0.35f;
 
     [Header("Font Sizes")]
-    [SerializeField, Range(10, 60)] private int _titleFontSize = 30;
-    [SerializeField, Range(10, 40)] private int _buttonFontSize = 18;
+    [SerializeField, Range(10, 60)] private int _titleFontSize = 26;
+    [SerializeField, Range(10, 40)] private int _buttonFontSize = 14;
 
     [Header("Main Panel Layout (1280x720 가상좌표)")]
     [SerializeField, Range(200f, 800f), Tooltip("메인 패널 폭.")]
-    private float _mainPanelWidth = 440f;
+    private float _mainPanelWidth = 280f;
     [SerializeField, Range(200f, 700f), Tooltip("메인 패널 높이. BG 텍스처가 정사각형이라 폭과 비슷하게 두면 자연스러움.")]
-    private float _mainPanelHeight = 500f;
+    private float _mainPanelHeight = 340f;
     [SerializeField, Tooltip("화면 중앙 기준 패널 오프셋. (0,0)=정중앙. X+ 오른쪽, Y+ 아래.")]
     private Vector2 _mainPanelOffset = Vector2.zero;
     [SerializeField, Range(0f, 200f), Tooltip("패널 상단에서 'PAUSED' 타이틀까지 Y 패딩.")]
     private float _titleTopPadding = 28f;
     [SerializeField, Range(60f, 280f), Tooltip("패널 상단에서 첫 번째 버튼까지 Y 위치.")]
-    private float _firstButtonY = 130f;
+    private float _firstButtonY = 108f;
     [SerializeField, Range(120f, 500f), Tooltip("버튼 폭.")]
-    private float _buttonWidth = 320f;
+    private float _buttonWidth = 220f;
     [SerializeField, Range(30f, 120f), Tooltip("버튼 높이. 텍스처 비율이 1.79:1 이라 폭의 ~1/2 정도가 자연스러움.")]
-    private float _buttonHeight = 70f;
+    private float _buttonHeight = 40f;
     [SerializeField, Range(0f, 40f), Tooltip("버튼 사이 세로 간격.")]
     private float _buttonGap = 12f;
 
@@ -122,7 +122,7 @@ public class PauseMenuUI : MonoBehaviour
     [SerializeField, Tooltip("디바이더 색.")]
     private Color _dividerColor = new(0.78f, 0.62f, 0.32f, 0.85f);
     [SerializeField, Range(0.3f, 0.95f), Tooltip("디바이더 폭 = 패널 폭 × 이 비율.")]
-    private float _dividerWidthRatio = 0.7f;
+    private float _dividerWidthRatio = 0.85f;
     [SerializeField, Range(0.5f, 4f), Tooltip("디바이더 두께 (px).")]
     private float _dividerThickness = 1.5f;
     [SerializeField, Range(-20f, 60f), Tooltip("타이틀 baseline 기준 디바이더 Y 오프셋 (px).")]
@@ -152,7 +152,7 @@ public class PauseMenuUI : MonoBehaviour
 
     private bool _assetsReady;
 
-    // 폰트 — 한글 메뉴는 NotoSansKR(아니면 시스템 Arial로 떨어져 글리프 깨짐), 영문은 Cinzel.
+    // 폰트 — 한글 메뉴는 Hahmlet 명조(아니면 시스템 Arial로 떨어져 글리프 깨짐), 영문은 Cinzel.
     private Font _displayFont;
     private Font _displayFontKR;
 
@@ -597,9 +597,9 @@ public class PauseMenuUI : MonoBehaviour
         if (_stylesReady) return;
         EnsureAssets();
 
-        // 폰트 로드 — KR 로케일이면 NotoSansKR, EN이면 Cinzel. 미적재 시 GUI 기본(Arial)로 폴백.
+        // 폰트 로드 — KR 로케일이면 Hahmlet(다크판타지 명조), EN이면 Cinzel. 미적재 시 GUI 기본(Arial)로 폴백.
         if (_displayFont == null)    _displayFont    = Resources.Load<Font>("Fonts/Cinzel-VariableFont_wght");
-        if (_displayFontKR == null)  _displayFontKR  = Resources.Load<Font>("Fonts/NotoSansKR-VariableFont_wght");
+        if (_displayFontKR == null)  _displayFontKR  = Resources.Load<Font>("Fonts/Hahmlet-VariableFont_wght");
         bool isKR = DianoCard.Data.LocaleSettings.Current == DianoCard.Data.Language.KR;
         Font menuFont = isKR ? _displayFontKR : _displayFont;
 
@@ -688,7 +688,8 @@ public class PauseMenuUI : MonoBehaviour
         _btnTextOnlyHoverStyle.hover.textColor = _btnTextHover;
         _btnTextOnlyHoverStyle.active.textColor = _btnTextHover;
 
-        // Settings 화면 좌우 화살표는 좁고 작은 버튼 — 일반 GUI.skin.button 유지
+        // Settings 화면 좌우 화살표는 좁고 작은 버튼 — GUI.skin.button 베이스지만
+        // 호버 시 배경/텍스트 색이 swap되며 글자가 시프트되는 느낌이 나서 모든 state를 normal로 고정.
         _smallBtnStyle = new GUIStyle(GUI.skin.button)
         {
             font = menuFont,
@@ -696,7 +697,33 @@ public class PauseMenuUI : MonoBehaviour
             fontStyle = FontStyle.Bold,
             alignment = TextAnchor.MiddleCenter,
         };
+
+        // GUI.skin.label/button 기본 hover/active state의 색·배경 변화를 차단해
+        // 호버 시 텍스트가 미세하게 흔들리거나 색이 깜빡이는 느낌을 없앤다.
+        LockHoverState(_titleStyle);
+        LockHoverState(_hintStyle);
+        LockHoverState(_labelStyle);
+        LockHoverState(_btnStyle);
+        LockHoverState(_btnHoverStyleCache);
+        LockHoverState(_btnTextOnlyStyle);
+        LockHoverState(_btnTextOnlyHoverStyle);
+        LockHoverState(_smallBtnStyle);
+
         _stylesReady = true;
+    }
+
+    private static void LockHoverState(GUIStyle s)
+    {
+        if (s == null) return;
+        var c = s.normal.textColor;
+        var bg = s.normal.background;
+        s.hover.textColor = c;     s.hover.background = bg;
+        s.active.textColor = c;    s.active.background = bg;
+        s.focused.textColor = c;   s.focused.background = bg;
+        s.onNormal.textColor = c;  s.onNormal.background = bg;
+        s.onHover.textColor = c;   s.onHover.background = bg;
+        s.onActive.textColor = c;  s.onActive.background = bg;
+        s.onFocused.textColor = c; s.onFocused.background = bg;
     }
 
     /// <summary>Inspector에서 값 변경 시 다음 OnGUI에서 GUIStyle 재빌드.</summary>

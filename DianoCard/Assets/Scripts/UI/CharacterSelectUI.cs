@@ -621,7 +621,7 @@ public class CharacterSelectUI : MonoBehaviour
 
         // 폰트 — Fonts/
         _displayFont = Resources.Load<Font>("Fonts/Cinzel-VariableFont_wght");
-        _bodyFont    = Resources.Load<Font>("Fonts/NotoSansKR-VariableFont_wght");
+        _bodyFont    = Resources.Load<Font>("Fonts/Hahmlet-VariableFont_wght");
 
         // 배경 — CharSelect/Background/akane_select_bg.png (캐릭터 빠진 빈 배경).
         _backgroundTexture = Resources.Load<Texture2D>("CharSelect/Background/akane_select_bg")
@@ -653,7 +653,7 @@ public class CharacterSelectUI : MonoBehaviour
         if (_characterTexture == null) Debug.LogWarning("[CharacterSelectUI] Missing CharSelect/Background/akane_select_char");
         if (_cloudsTexture == null) Debug.LogWarning("[CharacterSelectUI] Missing CharSelect/Background/akane_select_clouds");
         if (_displayFont == null) Debug.LogWarning("[CharacterSelectUI] Missing Fonts/Cinzel-VariableFont_wght");
-        if (_bodyFont == null) Debug.LogWarning("[CharacterSelectUI] Missing Fonts/NotoSansKR-VariableFont_wght");
+        if (_bodyFont == null) Debug.LogWarning("[CharacterSelectUI] Missing Fonts/Hahmlet-VariableFont_wght");
 
         _assetsLoaded = true;
     }
@@ -672,6 +672,7 @@ public class CharacterSelectUI : MonoBehaviour
 
     void OnGUI()
     {
+        if (PauseMenuUI.IsOpen) return;
         var gsm = GameStateManager.Instance;
         if (gsm == null || gsm.State != GameState.CharacterSelect) return;
 
@@ -1843,6 +1844,34 @@ public class CharacterSelectUI : MonoBehaviour
             normal = { textColor = new Color(1f, 0.96f, 0.88f) },
         };
 
+        // GUI.skin.label 기본 hover state의 색 swap을 차단해 호버 시 텍스트가 깜빡이는 느낌을 없앤다.
+        LockHoverState(_titleStyle);
+        LockHoverState(_statStyle);
+        LockHoverState(_hpStyleMid);
+        LockHoverState(_goldStyleMid);
+        LockHoverState(_descStyle);
+        LockHoverState(_abilityNameStyle);
+        LockHoverState(_abilityDescStyle);
+        LockHoverState(_cardNameStyle);
+        LockHoverState(_slotLabelStyle);
+        LockHoverState(_comingSoonStyle);
+        LockHoverState(_questionStyle);
+        LockHoverState(_modeToggleStyle);
+
         _stylesReady = true;
+    }
+
+    private static void LockHoverState(GUIStyle s)
+    {
+        if (s == null) return;
+        var c = s.normal.textColor;
+        var bg = s.normal.background;
+        s.hover.textColor = c;     s.hover.background = bg;
+        s.active.textColor = c;    s.active.background = bg;
+        s.focused.textColor = c;   s.focused.background = bg;
+        s.onNormal.textColor = c;  s.onNormal.background = bg;
+        s.onHover.textColor = c;   s.onHover.background = bg;
+        s.onActive.textColor = c;  s.onActive.background = bg;
+        s.onFocused.textColor = c; s.onFocused.background = bg;
     }
 }

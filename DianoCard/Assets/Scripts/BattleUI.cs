@@ -824,6 +824,9 @@ public class BattleUI : MonoBehaviour
         public int amount;
         public float delay;
         public float age;
+        // 앵커가 죽어 _slotPositions에서 사라진 뒤에도 마지막 위치에서 그릴 수 있게 캐시.
+        public Vector2 lastPos;
+        public bool hasPos;
         public const float LifeTime = 1.2f;
     }
 
@@ -2345,14 +2348,17 @@ public class BattleUI : MonoBehaviour
             if (delta > 0)
             {
                 float delay = newFloatersThisFrame * 0.30f;
+                bool hasGuiPos = _slotPositions.TryGetValue(unit, out var guiPos);
                 _floaters.Add(new DamageFloater
                 {
                     anchor = unit,
                     amount = delta,
                     delay = delay,
                     age = 0,
+                    lastPos = hasGuiPos ? guiPos : default,
+                    hasPos = hasGuiPos,
                 });
-                if (_slotPositions.TryGetValue(unit, out var guiPos))
+                if (hasGuiPos)
                 {
                     StartCoroutine(SpawnDamageVFXDelayed(guiPos, delay));
                 }
@@ -2414,6 +2420,7 @@ public class BattleUI : MonoBehaviour
 
     void OnGUI()
     {
+        if (PauseMenuUI.IsOpen) return;
         var gsm = GameStateManager.Instance;
         if (gsm == null) return;
         // Reward 상태에서도 배경/전장은 계속 그려서 보상 화면 뒤로 비춰야 함
@@ -2692,7 +2699,7 @@ public class BattleUI : MonoBehaviour
 
         EnsurePassiveStyles();
 
-        const float chipSize = 24f;
+        const float chipSize = 26.4f;
         const float chipGap  = 4f;
 
         float x = rowRect.x;
@@ -2767,6 +2774,16 @@ public class BattleUI : MonoBehaviour
                          $"가하는 피해 25% 감소. {e.weakTurns}턴 남음.");
             x += chipSize + chipGap;
         }
+
+        // 7) 속박 — C133 속박의 덩굴 등으로 부여. 행동/공격 모두 봉인 (ExecuteIntent에서 스킵).
+        if (e.stunTurns > 0 && x + chipSize <= rowRect.xMax)
+        {
+            DrawIconChip(new Rect(x, y, chipSize, chipSize),
+                         HeadIcon("BIND"), e.stunTurns,
+                         "속박 (Bind)",
+                         $"행동 불가. {e.stunTurns}턴 남음.");
+            x += chipSize + chipGap;
+        }
     }
 
     /// <summary>플레이어의 디버프/버프를 HP 바 아래 아이콘 칩으로 그림.</summary>
@@ -2775,7 +2792,7 @@ public class BattleUI : MonoBehaviour
         if (p == null) return;
         EnsurePassiveStyles();
 
-        const float chipSize = 24f;
+        const float chipSize = 26.4f;
         const float chipGap  = 4f;
         float x = rowRect.x;
         float y = rowRect.y + (rowRect.height - chipSize) * 0.5f;
@@ -2808,8 +2825,8 @@ public class BattleUI : MonoBehaviour
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("BUFF"), p.summonCostReduction,
-                         "동족 소환",
-                         $"이번 턴 SUMMON 카드 코스트 -{p.summonCostReduction}.");
+                         "총출동",
+                         $"이번 턴 소환 카드 코스트 -{p.summonCostReduction}.");
             x += chipSize + chipGap;
         }
     }
@@ -2820,7 +2837,7 @@ public class BattleUI : MonoBehaviour
         if (s == null) return;
         EnsurePassiveStyles();
 
-        const float chipSize = 24f;
+        const float chipSize = 26.4f;
         const float chipGap  = 3f;
 
         // 패시브는 소멸(passiveConsumed)하지 않은 경우에만 표시
@@ -3284,10 +3301,10 @@ public class BattleUI : MonoBehaviour
             normal = { textColor = new Color(1f, 0.96f, 0.85f) },
         };
         // 카드 텍스트용 폰트 — 다크판타지 톤. 제목은 Cinzel(영문 세리프).
-        // 본문은 NotoSansKR — IMFellEnglish는 한글 글리프가 없어 OS 폴백이 일어나고
+        // 본문은 Hahmlet 명조 — IMFellEnglish는 한글 글리프가 없어 OS 폴백이 일어나고
         // 숫자만 옛날체로 남아 한글과 톤이 어긋났다. 한글/숫자 폰트를 한 벌로 통일.
         var fontTitle = Resources.Load<Font>("Fonts/Cinzel-VariableFont_wght");
-        var fontBody  = Resources.Load<Font>("Fonts/NotoSansKR-VariableFont_wght");
+        var fontBody  = Resources.Load<Font>("Fonts/Hahmlet-VariableFont_wght");
         _cardCostStyle = new GUIStyle(GUI.skin.label)
         {
             font = fontTitle,
@@ -3333,18 +3350,21 @@ public class BattleUI : MonoBehaviour
         _stylesReady = true;
     }
 
-    // GUIStyle의 모든 인터랙션 state의 텍스트 색을 normal과 동일하게 고정.
+    // GUIStyle의 모든 인터랙션 state의 텍스트 색·배경을 normal과 동일하게 고정.
+    // GUI.skin.button 베이스 스타일은 hover/active에서 다른 background로 swap되며
+    // 텍스트가 미세하게 시프트되는 느낌을 주므로 background도 함께 락한다.
     private static void LockStateColors(GUIStyle s)
     {
         if (s == null) return;
         var c = s.normal.textColor;
-        s.hover.textColor    = c;
-        s.active.textColor   = c;
-        s.focused.textColor  = c;
-        s.onNormal.textColor = c;
-        s.onHover.textColor  = c;
-        s.onActive.textColor = c;
-        s.onFocused.textColor= c;
+        var bg = s.normal.background;
+        s.hover.textColor    = c; s.hover.background    = bg;
+        s.active.textColor   = c; s.active.background   = bg;
+        s.focused.textColor  = c; s.focused.background  = bg;
+        s.onNormal.textColor = c; s.onNormal.background = bg;
+        s.onHover.textColor  = c; s.onHover.background  = bg;
+        s.onActive.textColor = c; s.onActive.background = bg;
+        s.onFocused.textColor= c; s.onFocused.background= bg;
     }
 
     private static bool CardNeedsTarget(CardData c)
@@ -4166,18 +4186,19 @@ public class BattleUI : MonoBehaviour
         int prevFontSize = _centerStyle.fontSize;
         Color prevColor = _centerStyle.normal.textColor;
         _centerStyle.fontSize = Mathf.RoundToInt(size * 0.3f);
-        _centerStyle.normal.textColor = Color.white;
 
+        // GUIStyle은 마우스가 라벨 위에 있을 때 hover.textColor로 폴백한다. normal만 갱신하면
+        // 호버 시 그림자(검정) 자리에도 본문 색(흰색)이 찍혀 "8"이 +1,+2 오프셋으로 두 번 보이는 버그가 난다.
+        // 모든 state를 같이 갱신해서 hover/normal 모두 동일하게 만든다.
         var shadowRect = new Rect(iconRect.x + 1, iconRect.y + 2, iconRect.width, iconRect.height);
-        var prevShadow = _centerStyle.normal.textColor;
-        _centerStyle.normal.textColor = new Color(0f, 0f, 0f, 0.75f);
+        SetAllStateColors(_centerStyle, new Color(0f, 0f, 0f, 0.75f));
         GUI.Label(shadowRect, block.ToString(), _centerStyle);
-        _centerStyle.normal.textColor = prevShadow;
 
+        SetAllStateColors(_centerStyle, Color.white);
         GUI.Label(iconRect, block.ToString(), _centerStyle);
 
         _centerStyle.fontSize = prevFontSize;
-        _centerStyle.normal.textColor = prevColor;
+        SetAllStateColors(_centerStyle, prevColor);
     }
 
     // 플레이어 주위에 떠오르는 반투명 방패 버블. block이 증가한 프레임에 트리거되어
@@ -4310,9 +4331,11 @@ public class BattleUI : MonoBehaviour
             }
         }
 
-        // 이 공룡이 공격/스킬 타겟팅의 source면 화살표 출발 rect로 기록 (융합은 화살표 안 씀).
+        // 이 공룡이 공격/스킬 타겟팅의 source면 화살표 출발 rect로 기록.
+        // 융합은 A로 선택된 필드 공룡이 source — A에서 두 번째 재료 후보로 화살표가 뻗어나간다.
         if (summonIndex == _targetingSummonIndex
-            || summonIndex == _targetingSummonSkillIndex)
+            || summonIndex == _targetingSummonSkillIndex
+            || isFusionMaterialAField)
         {
             _arrowSourceRect = rect;
             _arrowSourceValid = true;
@@ -4437,7 +4460,8 @@ public class BattleUI : MonoBehaviour
         DrawAttackIconBadge(badgeCenter, s.TotalAttack, 0f, s.tempAttackBonus > 0, attackBadgeDim);
         var badgeHitRect = new Rect(badgeCenter.x - 36f, badgeCenter.y - 36f, 72f, 72f);
         bool badgeActive = !inReward && _battle?.state != null && !_battle.state.IsOver
-            && _targetingCardIndex < 0 && _swapFromCardIndex < 0 && s.CanAttack;
+            && _targetingCardIndex < 0 && _swapFromCardIndex < 0
+            && _reinforcePickerCardIndex < 0 && s.CanAttack;
         if (badgeActive)
         {
             var ev2 = Event.current;
@@ -4546,6 +4570,8 @@ public class BattleUI : MonoBehaviour
                 else if (fieldFusionEligible)
                 {
                     // 양성 마커 없음 — 비후보 dim + 호버 스케일업으로 신호 충분.
+                    // 화살표 끝점 스냅 대상으로 등록 — 호버 시 화살표가 이 공룡 중심으로 빨려간다.
+                    _arrowTargetRects.Add(rect);
                     if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && fusionHovered)
                     {
                         ev.Use();
@@ -4677,7 +4703,7 @@ public class BattleUI : MonoBehaviour
         if (inReward) return;
         if (_battle.state.IsOver) return;
         if (!ready) return;
-        if (_targetingCardIndex >= 0 || _swapFromCardIndex >= 0) return;
+        if (_targetingCardIndex >= 0 || _swapFromCardIndex >= 0 || _reinforcePickerCardIndex >= 0) return;
 
         var ev = Event.current;
         if (ev == null) return;
@@ -4770,7 +4796,8 @@ public class BattleUI : MonoBehaviour
         if (_battle.state.IsOver) return;
         if (!ready) return;
         if (_targetingCardIndex >= 0 || _swapFromCardIndex >= 0
-            || _targetingSummonSkillIndex >= 0 || _targetingPotionIndex >= 0) return;
+            || _targetingSummonSkillIndex >= 0 || _targetingPotionIndex >= 0
+            || _reinforcePickerCardIndex >= 0) return;
 
         var ev = Event.current;
         if (ev == null) return;
@@ -4861,7 +4888,10 @@ public class BattleUI : MonoBehaviour
         // 이끼 잡몹은 본체 적보다 작으니 HP바도 비례 축소 — min clamp 우회 + 두께도 얇게.
         float enemyBarW = e.isMoss ? rect.width * 0.65f : ComputeHpBarWidth(rect.width);
         float enemyBarH = e.isMoss ? 8f : hpBarHeight;
-        var enemyHpRect = new Rect(rect.center.x - enemyBarW / 2, rect.yMax + 4f, enemyBarW, enemyBarH);
+        // 스프라이트별 시각 무게중심이 캔버스 중앙과 다를 때 hp_bar_anchor_x로 보정 (default 0.5).
+        float anchorX = e.data.hpBarAnchorX > 0.001f ? Mathf.Clamp01(e.data.hpBarAnchorX) : 0.5f;
+        float enemyBarCenterX = rect.x + rect.width * anchorX;
+        var enemyHpRect = new Rect(enemyBarCenterX - enemyBarW / 2, rect.yMax + 4f, enemyBarW, enemyBarH);
 
         // 이끼 보호막 활성 여부 — isBossProtected + 이끼 1체 이상 생존. true면 HP바 회색 + 살아있는 이끼 수가 적힌 방패 아이콘 표시.
         int mossAliveCount = 0;
@@ -4892,7 +4922,8 @@ public class BattleUI : MonoBehaviour
         }
 
         // 패시브 + 누적 STRENGTH — HP 바 바로 아래 한 줄. 이끼 카운트는 HP 바 옆 MOSS_LEAF 인라인 뱃지로.
-        DrawEnemyPassives(new Rect(rect.x, enemyHpRect.yMax + 4f, rect.width, 26f), e);
+        // X/width를 HP 바에 맞춰 정렬 — 플레이어/소환수와 동일하게 칩이 HP 바 좌측 끝에서 시작.
+        DrawEnemyPassives(new Rect(enemyHpRect.x, enemyHpRect.yMax + 4f, enemyHpRect.width, 26f), e);
 
         // 타겟팅 모드: 발치 둥근 글로우 + 클릭 처리 — 적을 대상으로 하는 카드일 때만
         if (_targetingCardIndex >= 0
@@ -4958,11 +4989,12 @@ public class BattleUI : MonoBehaviour
             }
         }
         // 포션 타겟팅 모드 (target=ENEMY 포션): 선택된 포션이 이 적에게 적용
+        // 공격 카드와 동일한 톤 — 박스 링 대신 발치 글로우 + 상단 바 포션 아이콘에서 뻗는 화살표.
         else if (_targetingPotionIndex >= 0 && CurrentPotionTargetsEnemy())
         {
             var ev = Event.current;
             bool hovered = rect.Contains(ev.mousePosition);
-            DrawTargetEnemyRing(rect, hovered);
+            DrawTargetFootGlow(rect, hovered);
             _arrowTargetRects.Add(rect);
 
             if (ev.type == EventType.MouseDown && ev.button == 0 && hovered)
@@ -5102,19 +5134,10 @@ public class BattleUI : MonoBehaviour
 
     // StS 스타일 타겟팅 화살표 — 카드/공룡(source) → 마우스(또는 스냅된 타겟) 사이를 cubic 베지어로 잇는다.
     // 곡선 위에 점점 커지는 부드러운 동그라미를 찍고 끝에 V자 화살촉을 그림.
-    // 융합은 시각 부담 줄이려고 화살표 생략 — 후보 글로우만으로 안내 (아래 early-return).
+    // 융합도 같은 화살표를 사용 — A 미선택이면 촉매 카드, A 선택 후엔 A에서 출발.
     private void DrawTargetingArrow(BattleState state)
     {
         if (!_arrowSourceValid || state == null) return;
-
-        // 융합은 화살표 없이 후보 글로우만으로 안내한다 (3 클릭 흐름의 시각 부담을 줄임).
-        // 적/아군/스왑 타겟팅은 그대로 화살표 유지.
-        if (_targetingCardIndex >= 0
-            && _targetingCardIndex < state.hand.Count
-            && CardNeedsFusionTargets(state.hand[_targetingCardIndex].data))
-        {
-            return;
-        }
 
         // 출발 — 카드/공룡 rect의 상단보다 약간 안쪽. 회전된 카드라도 center.x는 회전 피벗이라 안정적.
         Vector2 from = new Vector2(_arrowSourceRect.center.x, _arrowSourceRect.y + 12f);
@@ -5398,13 +5421,20 @@ public class BattleUI : MonoBehaviour
         foreach (var f in _floaters)
         {
             if (f.delay > 0) continue;
-            if (!_slotPositions.TryGetValue(f.anchor, out var basePos)) continue;
+
+            // 앵커가 살아있으면 위치 갱신, 죽었으면 마지막으로 알려진 위치에서 계속 떠오름.
+            if (_slotPositions.TryGetValue(f.anchor, out var basePos))
+            {
+                f.lastPos = basePos;
+                f.hasPos = true;
+            }
+            else if (!f.hasPos) continue;
 
             float progress = Mathf.Clamp01(f.age / DamageFloater.LifeTime);
             float alpha = 1f - progress;
             float yOffset = -70f * progress;
 
-            var rect = new Rect(basePos.x - 60, basePos.y - 110 + yOffset, 120, 46);
+            var rect = new Rect(f.lastPos.x - 60, f.lastPos.y - 110 + yOffset, 120, 46);
             GUI.color = new Color(1f, 0.25f, 0.25f, alpha);
             GUI.Label(rect, $"-{f.amount}", _damageStyle);
             GUI.color = Color.white;
@@ -5851,6 +5881,12 @@ public class BattleUI : MonoBehaviour
                 DrawIconGlow(potionIconRect, potionGlowTint, _potionViewerOpen ? 1.7f : (potionHov ? 1.4f : 1f));
                 GUI.DrawTexture(potionIconRect, _iconPotion, ScaleMode.ScaleToFit);
                 if (run.hasNewPotion) DrawNewBadge(potionIconRect);
+                // 포션 타겟팅 중이면 상단 바 포션 아이콘이 화살표 출발점 — 공격 카드처럼 source→대상 아크가 그려진다.
+                if (_targetingPotionIndex >= 0)
+                {
+                    _arrowSourceRect = potionIconRect;
+                    _arrowSourceValid = true;
+                }
                 cursorX += iconSize + iconLabelGap;
             }
             var potionLabelRect = new Rect(cursorX, barY + (barH - potionLabelSz.y) * 0.5f,
@@ -6069,7 +6105,8 @@ public class BattleUI : MonoBehaviour
         // StS 스타일 — 좌하 더미 클릭 → 뽑을 카드, 우하 더미 클릭 → 버린 카드 뷰어.
         // 호버로 확장된 rect 기준으로 클릭 판정 — 커진 영역 어디를 눌러도 열림.
         var ev = Event.current;
-        if (ev.type == EventType.MouseDown && ev.button == 0 && !_deckViewerOpen)
+        if (ev.type == EventType.MouseDown && ev.button == 0 && !_deckViewerOpen
+            && _reinforcePickerCardIndex < 0)
         {
             if (deckPileRect.Contains(ev.mousePosition))
             {
@@ -6359,16 +6396,30 @@ public class BattleUI : MonoBehaviour
             // 스테이지 2: 촉매도 A도 후보도 아닌 손 카드는 융합과 무관 — 어둡게.
             bool fusionInactiveCard = fusionMode && _fusionMaterialAPicked
                 && i != _targetingCardIndex && !isFusionFanA && !isFusionEligibleHand;
-            // 화살표 source — 일반 타겟팅 카드 / 스왑 출발 카드 (융합은 화살표 안 씀).
-            if ((i == _targetingCardIndex && !CardNeedsFusionTargets(c))
-                || i == _swapFromCardIndex)
+            // 화살표 source — 일반 타겟팅 카드 / 스왑 출발 카드 / 융합(A 미선택이면 촉매, A 선택 후 손이면 A 카드).
+            if (i == _swapFromCardIndex)
+            {
+                _arrowSourceRect = rect;
+                _arrowSourceValid = true;
+            }
+            else if (i == _targetingCardIndex)
+            {
+                if (!fusionMode || !_fusionMaterialAPicked)
+                {
+                    _arrowSourceRect = rect;
+                    _arrowSourceValid = true;
+                }
+            }
+            else if (isFusionFanA)
             {
                 _arrowSourceRect = rect;
                 _arrowSourceValid = true;
             }
             Color prevFanCol = GUI.color;
             if (fusionInactiveCard) GUI.color = new Color(0.22f, 0.22f, 0.24f, 0.78f);
-            DrawCardFrame(rect, c, canPlay, drawCost: false);
+            // 코스트도 카드 본체 layer에서 함께 그린다 — 손패가 겹치면 옆 카드의 본체가
+            // 이 카드의 보석/숫자를 자연스럽게 가려, 코스트만 떠 보이는 현상이 사라진다.
+            DrawCardFrame(rect, c, canPlay, drawCost: true, displayCost: EffectiveCost(state, c));
             GUI.color = prevFanCol;
             // 재료 A 마커 — 글로우 위에 시안 테두리로 덮어 명확히 "선택됨" 표시.
             if (isFusionFanA)
@@ -6376,26 +6427,6 @@ public class BattleUI : MonoBehaviour
                 DrawFusionSelectedMarker(rect);
             }
             // 융합 후보는 비후보 dim으로만 구분 — 양성 마커 제거.
-        }
-        GUI.matrix = baseMatrix;
-
-        // 2-b) Cost 패스 — 카드 본체가 모두 그려진 뒤 cost 원만 위에 다시 그린다.
-        // 이렇게 해야 좌→우 겹침 순서에 상관없이 cost가 항상 보임.
-        foreach (int i in drawOrder)
-        {
-            if (i == hoverIdx) continue;
-            if (IsBeingDrawnInto(state.hand[i])) continue;
-
-            var c = state.hand[i].data;
-            bool canPlay = IsCardPlayable(state, c);
-
-            float angle = startAngle + i * anglePerCard;
-            Vector2 center = FanCardCenter(fanOriginX, fanOriginY, fanRadius, angle);
-            center.y += CardIdleBob(i);
-            var rect = new Rect(center.x - cardW * 0.5f, center.y - cardH * 0.5f, cardW, cardH);
-
-            GUI.matrix = baseMatrix * RotateAroundPivotMatrix(angle, center);
-            DrawCardCost(rect, c, canPlay);
         }
         GUI.matrix = baseMatrix;
 
@@ -6423,17 +6454,35 @@ public class BattleUI : MonoBehaviour
             // 스테이지 2 inactive — 호버 카드도 동일하게 dim.
             bool fusionInactiveHover = fusionMode && _fusionMaterialAPicked
                 && i != _targetingCardIndex && !isFusionHoverA && !isFusionEligibleHover;
+            // 호버된 융합 후보 손 카드는 화살표 끝점 스냅 대상 — 들어올린 hoverRect 중심으로 빨려간다.
+            if (isFusionEligibleHover)
+            {
+                _arrowTargetRects.Add(hoverRect);
+            }
             // 호버 자체가 카드 lift 효과를 주므로 활성 카드 별도 글로우 불필요.
-            // 호버 중인 카드가 화살표 source면 들어올린 hoverRect에서 시작 (융합은 화살표 안 씀).
-            if ((i == _targetingCardIndex && !CardNeedsFusionTargets(c))
-                || i == _swapFromCardIndex)
+            // 호버 중인 카드가 화살표 source면 들어올린 hoverRect에서 시작.
+            // 융합은 A 미선택이면 촉매 카드, A 선택 후 손이면 A 카드가 source.
+            if (i == _swapFromCardIndex)
+            {
+                _arrowSourceRect = hoverRect;
+                _arrowSourceValid = true;
+            }
+            else if (i == _targetingCardIndex)
+            {
+                if (!fusionMode || !_fusionMaterialAPicked)
+                {
+                    _arrowSourceRect = hoverRect;
+                    _arrowSourceValid = true;
+                }
+            }
+            else if (isFusionHoverA)
             {
                 _arrowSourceRect = hoverRect;
                 _arrowSourceValid = true;
             }
             Color prevHoverCol = GUI.color;
             if (fusionInactiveHover) GUI.color = new Color(0.22f, 0.22f, 0.24f, 0.78f);
-            DrawCardFrame(hoverRect, c, canPlay, drawCost: true);
+            DrawCardFrame(hoverRect, c, canPlay, drawCost: true, displayCost: EffectiveCost(state, c));
             GUI.color = prevHoverCol;
             if (isFusionHoverA)
             {
@@ -6444,8 +6493,9 @@ public class BattleUI : MonoBehaviour
             // 융합 모드 클릭은 DrawHand 상단의 우선 핸들러에서 모두 처리됨 (Event.current.Use()로 소비).
             // 여기 도달했다는 건 융합 모드가 아니거나 클릭이 이미 소비된 상태.
 
-            // 클릭 처리: 호버된 카드에서만
-            if (canPlay)
+            // 클릭 처리: 호버된 카드에서만. 증원 픽커 모달이 떠 있으면 손패 클릭은 픽커가 사이드 카드 클릭을
+            // 가로채지 못하도록 막는다 — 픽커 패널 중앙은 들어올린 hoverRect와 위치가 겹칠 수 있다.
+            if (canPlay && _reinforcePickerCardIndex < 0)
             {
                 var ev = Event.current;
                 if (ev.type == EventType.MouseDown && ev.button == 0 && hoverRect.Contains(ev.mousePosition))
@@ -6594,10 +6644,19 @@ public class BattleUI : MonoBehaviour
         }
     }
 
+    // SUMMON 카드는 state.player.summonCostReduction(C132 등) 만큼 비용이 깎인다 — 최소 0.
+    // 다른 카드 타입은 베이스 비용 그대로.
+    private static int EffectiveCost(BattleState state, CardData c)
+    {
+        if (c == null) return 0;
+        if (c.cardType != CardType.SUMMON) return c.cost;
+        return System.Math.Max(0, c.cost - state.player.summonCostReduction);
+    }
+
     private bool IsCardPlayable(BattleState state, CardData c)
     {
         if (state.IsOver || _endTurnAnimating || IsDrawFlyActive) return false;
-        if (state.player.mana < c.cost) return false;
+        if (state.player.mana < EffectiveCost(state, c)) return false;
         // SUMMON은 슬롯 꽉 차도 교체 모드로 플레이 가능하므로 별도 필드 체크 없음.
         // ALLY 타겟 카드(수호 마법) / ALL_ALLY 방어는 필드에 공룡 없으면 플레이 불가.
         if (CardNeedsAllyTarget(c) && state.field.Count == 0) return false;
@@ -6699,7 +6758,7 @@ public class BattleUI : MonoBehaviour
     ///             3) CostGem 디스크/링 (선택) → 4) 코스트 숫자 → 5) 카드명/카테고리/본문.
     /// 희귀도는 더 이상 시각적으로 구분되지 않는다.
     /// </summary>
-    private void DrawCardFrame(Rect rect, CardData c, bool canPlay, bool drawCost, bool slotOnly = false)
+    private void DrawCardFrame(Rect rect, CardData c, bool canPlay, bool drawCost, bool slotOnly = false, int displayCost = -1)
     {
         var prevColor = GUI.color;
         Color dim = canPlay ? Color.white : cardDisabledDim;
@@ -6742,7 +6801,7 @@ public class BattleUI : MonoBehaviour
         // 3) 코스트 — 프레임의 보석 위에 숫자(필요 시 디스크/링) 오버레이.
         if (drawCost && c != null)
         {
-            DrawCardCost(rect, c, canPlay);
+            DrawCardCost(rect, c, canPlay, displayCost);
         }
 
         if (c == null) return;
@@ -6837,7 +6896,7 @@ public class BattleUI : MonoBehaviour
         DrawCardFrame(rect, c, canPlay: true, drawCost: true);
     }
 
-    private void DrawCardCost(Rect rect, CardData c, bool canPlay)
+    private void DrawCardCost(Rect rect, CardData c, bool canPlay, int displayCost = -1)
     {
         // 코스트 위치 — 프레임의 좌상단 보석 위. Inspector cardCostOrbPct (centerX, centerY, sizeFrac).
         float orbSize = rect.width * cardCostOrbPct.z;
@@ -6845,8 +6904,15 @@ public class BattleUI : MonoBehaviour
         float orbCy = rect.y + rect.height * cardCostOrbPct.y;
         var orbRect = new Rect(orbCx - orbSize * 0.5f, orbCy - orbSize * 0.5f, orbSize, orbSize);
 
+        // displayCost < 0 → 기본 c.cost. 손에서는 C132 등으로 감면된 effectiveCost를 전달한다.
+        int shownCost = displayCost >= 0 ? displayCost : c.cost;
+        bool reduced = displayCost >= 0 && displayCost < c.cost;
+
         // 숫자만 그리기 — 프레임 PNG에 보석이 이미 그려져 있으므로 디스크/링/마나오브는 생략.
-        Color textCol = canPlay ? cardCostTextColor : cardCostDisabledColor;
+        // 감면 적용 시 텍스트를 그린 톤으로 강조 (자체 비활성 회색이 우선).
+        Color textCol = canPlay
+            ? (reduced ? new Color(0.55f, 0.95f, 0.55f, 1f) : cardCostTextColor)
+            : cardCostDisabledColor;
         int prevFontSize = _cardCostStyle.fontSize;
         _cardCostStyle.fontSize = Mathf.RoundToInt(orbSize * cardCostFontSizeRatio);
         float costTextOffX = rect.width * cardCostTextOffsetPct.x;
@@ -6857,7 +6923,7 @@ public class BattleUI : MonoBehaviour
             orbRect.y + costTextOffY + costShrink * 0.5f,
             orbRect.width - costShrink,
             orbRect.height - costShrink);
-        DrawTextWithOutline(costTextRect, c.cost.ToString(), _cardCostStyle, textCol, cardCostOutline, cardCostOutlineThickness);
+        DrawTextWithOutline(costTextRect, shownCost.ToString(), _cardCostStyle, textCol, cardCostOutline, cardCostOutlineThickness);
         _cardCostStyle.fontSize = prevFontSize;
     }
 

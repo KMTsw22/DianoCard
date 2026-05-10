@@ -20,6 +20,7 @@ namespace DianoCard.Game
         AnimationTest,   // 애니메이션 테스트 — Resources/AnimationTest 폴더의 프레임 시퀀스 프리뷰 (에디터 전용 개발 툴)
         TechTree,        // 메타 진행 — 영구 해금 트리. 로비에서만 진입 가능, 임시 UI(MVP 3브랜치 9노드).
         Event,           // 미지(Unknown) 노드 → 이벤트 분기 화면. 선택지에 따라 HP/유물 변동.
+        EventRelicOffer, // '룬을 만진다' 후 단일 유물 제안 + HP 더 지불해 리롤 화면.
     }
 
     /// <summary>
@@ -94,11 +95,11 @@ namespace DianoCard.Game
             if (GetComponent<ShopUI>() == null) gameObject.AddComponent<ShopUI>();
             if (GetComponent<VillageUI>() == null) gameObject.AddComponent<VillageUI>();
             if (GetComponent<GameOverUI>() == null) gameObject.AddComponent<GameOverUI>();
-            if (GetComponent<TrainingUI>() == null) gameObject.AddComponent<TrainingUI>();
             if (GetComponent<AnimationTestUI>() == null) gameObject.AddComponent<AnimationTestUI>();
             if (GetComponent<TechTreeUI>() == null) gameObject.AddComponent<TechTreeUI>();
             if (GetComponent<PauseMenuUI>() == null) gameObject.AddComponent<PauseMenuUI>();
             if (GetComponent<EventUI>() == null) gameObject.AddComponent<EventUI>();
+            if (GetComponent<EventRelicOfferUI>() == null) gameObject.AddComponent<EventRelicOfferUI>();
         }
 
         /// <summary>Lobby에서 애니메이션 테스트 화면 진입. Run 상태는 건드리지 않음.</summary>
@@ -229,12 +230,22 @@ namespace DianoCard.Game
 
         // ─── 이벤트 노드 ────────────────────────────────────────────
         // MVP: 단일 하드코딩 이벤트 "부서진 룬 제단".
-        //   choice 0 = 룬을 만진다 → HP -3, 유물 1개 획득(3택 픽커)
-        //   choice 1 = 그냥 지나간다 → 무효과
-        // 어느 쪽이든 노드 클리어 + 다음 층 진행. HP 0 시 Defeat.
+        //   choice 0 = 룬을 만진다 → HP -3, 단일 유물 제안 화면(EventRelicOffer)
+        //                            → 받기 / HP 더 내고 리롤 (에스컬레이팅 -5/-7/-9 …)
+        //   choice 1 = 그냥 지나간다 → 무효과 + 다음 층
+        // HP 0 시 Defeat. 리롤은 다음 비용(EventRerollCost)을 못 내면 UI에서 비활성.
 
         private MapNode _pendingEventNode;
         public MapNode PendingEventNode => _pendingEventNode;
+
+        // 단일 유물 제안 상태.
+        public RelicData EventOfferedRelic { get; private set; }
+        // 다음 리롤에 들 HP 비용. 진입 시 5, 리롤할 때마다 +2.
+        public int EventRerollCost { get; private set; }
+        // 한 이벤트 동안 이미 보여줬던 유물(리롤 시 같은 것 안 나오게).
+        private readonly HashSet<string> _eventShownRelicIds = new();
+        private const int EventInitialRerollCost = 5;
+        private const int EventRerollCostStep = 2;
 
         public void ResolveEventChoice(int choiceIdx)
         {
@@ -260,13 +271,31 @@ namespace DianoCard.Game
                     return;
                 }
 
-                // 유물 1개 획득 — Treasure 노드와 동일한 3택 픽커 사용. 픽 완료 시 노드 클리어 + 자동 진행.
-                node.cleared = false; // RelicPick 완료 시 picker가 cleared 처리
-                _pendingEventNode = null;
-                RelicPickChoices = BuildRelicPickChoices(CurrentRun, 3);
-                _relicPickReturnState = GameState.Map;
-                _relicPickAdvancesMap = true;
-                State = GameState.RelicPick;
+                // 단일 유물 제안 화면으로 진입. 노드/이벤트 컨텍스트는 Accept/Reroll 까지 유지.
+                _eventShownRelicIds.Clear();
+                var first = RollSingleEventRelic();
+                if (first == null)
+                {
+                    // 풀이 비면(이미 모든 풀 유물 보유) 디폴트 폴백 유물 — 안 비도록 보장.
+                    Debug.LogWarning("[GSM] EventRelicOffer: ALL pools exhausted — using default relic as fallback.");
+                    first = FindAnyUnownedRelic();
+                    if (first == null)
+                    {
+                        Debug.LogWarning("[GSM] EventRelicOffer: even fallback pool empty — advancing without reward.");
+                        node.cleared = true;
+                        _pendingEventNode = null;
+                        AdvanceToNextFloorOrVictory();
+                        return;
+                    }
+                }
+
+                EnsureEventRelicOfferUIAttached();
+
+                EventOfferedRelic = first;
+                _eventShownRelicIds.Add(first.id);
+                EventRerollCost = EventInitialRerollCost;
+                State = GameState.EventRelicOffer;
+                Debug.Log($"[GSM] EventRelicOffer entered → offered={first.id} ({first.name}), nextRerollCost={EventRerollCost}");
                 return;
             }
 
@@ -275,6 +304,154 @@ namespace DianoCard.Game
             node.cleared = true;
             _pendingEventNode = null;
             AdvanceToNextFloorOrVictory();
+        }
+
+        /// <summary>제안된 유물을 받고 노드 클리어 + 다음 층.</summary>
+        public void AcceptEventRelic()
+        {
+            if (State != GameState.EventRelicOffer || _pendingEventNode == null)
+            {
+                Debug.LogWarning($"[GSM] AcceptEventRelic ignored — wrong state {State}");
+                return;
+            }
+
+            var relic = EventOfferedRelic;
+            if (relic != null && CurrentRun != null && !CurrentRun.relics.Contains(relic))
+            {
+                CurrentRun.relics.Add(relic);
+                CurrentRun.hasNewRelic = true;
+                RelicEffects.OnAcquired(CurrentRun, relic);
+                Debug.Log($"[GSM] EventRelicOffer accepted: {relic.id} ({relic.name})");
+            }
+
+            var node = _pendingEventNode;
+            node.cleared = true;
+            ClearEventRelicOfferState();
+            AdvanceToNextFloorOrVictory();
+        }
+
+        /// <summary>리롤 — 현재 EventRerollCost 만큼 HP 지불 후 새 후보 노출. 비용 부족 시 호출 무시.</summary>
+        public void RerollEventRelic()
+        {
+            if (State != GameState.EventRelicOffer)
+            {
+                Debug.LogWarning($"[GSM] RerollEventRelic ignored — wrong state {State}");
+                return;
+            }
+            if (CurrentRun == null) return;
+            int cost = EventRerollCost;
+            if (CurrentRun.playerCurrentHp < cost)
+            {
+                Debug.Log($"[GSM] RerollEventRelic blocked — HP {CurrentRun.playerCurrentHp} < cost {cost}");
+                return;
+            }
+
+            int prevHp = CurrentRun.playerCurrentHp;
+            CurrentRun.playerCurrentHp = Mathf.Max(0, prevHp - cost);
+
+            // 리롤 비용으로 HP 0이 되면 받기 강제 — 패배 처리 없이 현재 후보 그대로 자동 수락.
+            if (CurrentRun.playerCurrentHp <= 0)
+            {
+                Debug.Log($"[GSM] RerollEventRelic: HP {prevHp} → 0, auto-accepting current offer ({EventOfferedRelic?.id})");
+                AcceptEventRelic();
+                return;
+            }
+
+            var next = RollSingleEventRelic();
+            if (next == null)
+            {
+                // 풀 고갈 — 현재 후보 유지하고 비용만 부담 (UI에서 안내 가능). 비용은 한 단계 올리지 않음.
+                Debug.Log($"[GSM] RerollEventRelic: pool exhausted, keeping current offer ({EventOfferedRelic?.id})");
+                return;
+            }
+
+            EventOfferedRelic = next;
+            _eventShownRelicIds.Add(next.id);
+            EventRerollCost = cost + EventRerollCostStep;
+            Debug.Log($"[GSM] RerollEventRelic: HP {prevHp}→{CurrentRun.playerCurrentHp}, new offer={next.id}, next cost={EventRerollCost}");
+        }
+
+        private void ClearEventRelicOfferState()
+        {
+            EventOfferedRelic = null;
+            EventRerollCost = 0;
+            _eventShownRelicIds.Clear();
+            _pendingEventNode = null;
+        }
+
+        // 이미 보여준 id를 제외하고, 보유하지 않은 START 풀에서 1개 균등 랜덤.
+        private RelicData RollSingleEventRelic()
+        {
+            var dm = DianoCard.Data.DataManager.Instance;
+            if (dm == null || CurrentRun == null) return null;
+
+            string archetype = null;
+            if (!string.IsNullOrEmpty(CurrentRun.characterId))
+            {
+                var ch = dm.GetCharacter(CurrentRun.characterId);
+                if (ch != null) archetype = ch.archetype;
+            }
+
+            // 우선 EVENT 풀에서 뽑되, 비면 START → SHOP 순으로 폴백.
+            // (CH01 EVENT 풀이 3개라 보유분이 차면 폴백 없으면 무음 advance가 발생할 수 있음.)
+            var first = TryRollByPool(DianoCard.Data.RelicSource.EVENT, archetype);
+            Debug.Log($"[GSM] RollSingleEventRelic: EVENT pool → {first?.id ?? "<empty>"} (archetype={archetype ?? "<null>"}, owned={CurrentRun.relics.Count}, shown={_eventShownRelicIds.Count})");
+            if (first != null) return first;
+            var second = TryRollByPool(DianoCard.Data.RelicSource.START, archetype);
+            Debug.Log($"[GSM] RollSingleEventRelic: START fallback → {second?.id ?? "<empty>"}");
+            if (second != null) return second;
+            var third = TryRollByPool(DianoCard.Data.RelicSource.SHOP, archetype);
+            Debug.Log($"[GSM] RollSingleEventRelic: SHOP fallback → {third?.id ?? "<empty>"}");
+            return third;
+        }
+
+        // 모든 source 풀에서 보유하지 않은 첫 유물 — 정말 모든 1차 풀이 비었을 때 마지막 보루.
+        private RelicData FindAnyUnownedRelic()
+        {
+            var dm = DianoCard.Data.DataManager.Instance;
+            if (dm == null || CurrentRun == null) return null;
+            foreach (var kv in dm.Relics)
+            {
+                var r = kv.Value;
+                if (r == null) continue;
+                if (CurrentRun.relics.Contains(r)) continue;
+                if (_eventShownRelicIds.Contains(r.id)) continue;
+                return r;
+            }
+            return null;
+        }
+
+        // EventRelicOfferUI 안전망 — Awake에서 못 붙은 경우(코드 hot-reload 등) 진입 직전에 강제 attach.
+        private void EnsureEventRelicOfferUIAttached()
+        {
+            if (GetComponent<EventRelicOfferUI>() == null)
+            {
+                Debug.LogWarning("[GSM] EventRelicOfferUI not attached — adding now (was missed by AutoAttachUI).");
+                gameObject.AddComponent<EventRelicOfferUI>();
+            }
+        }
+
+        private RelicData TryRollByPool(DianoCard.Data.RelicSource source, string archetype)
+        {
+            var dm = DianoCard.Data.DataManager.Instance;
+            if (dm == null) return null;
+
+            var pool = new List<RelicData>();
+            foreach (var kv in dm.Relics)
+            {
+                var r = kv.Value;
+                if (r == null || r.source != source) continue;
+                if (!string.IsNullOrEmpty(r.archetypeLock)
+                    && !string.IsNullOrEmpty(archetype)
+                    && !r.archetypeLock.Equals(archetype, System.StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (CurrentRun.relics.Contains(r)) continue;
+                if (_eventShownRelicIds.Contains(r.id)) continue;
+                pool.Add(r);
+            }
+
+            if (pool.Count == 0) return null;
+            return pool[UnityEngine.Random.Range(0, pool.Count)];
         }
 
         private static List<RelicData> BuildRelicPickChoices(RunState run, int count)
@@ -309,6 +486,90 @@ namespace DianoCard.Game
                 (pool[i], pool[j]) = (pool[j], pool[i]);
             }
             return pool.Count <= count ? pool : pool.GetRange(0, count);
+        }
+
+        // 보물 노드용 — 시작 유물 풀(START, 전부 COMMON)을 쓰면 후반엔 풀이 마르고
+        // 마르면 RelicPickerUI가 즉시 null 확정 → 노드가 그냥 스킵되는 버그가 됨.
+        // 그래서 START를 제외한 비-START 풀에서 RARE 50% / UNCOMMON 35% / COMMON 15% 가중으로 뽑는다.
+        private static List<RelicData> BuildTreasureRelicChoices(RunState run, int count)
+        {
+            var dm = DianoCard.Data.DataManager.Instance;
+            if (dm == null) return new List<RelicData>();
+
+            string archetype = null;
+            if (!string.IsNullOrEmpty(run.characterId))
+            {
+                var character = dm.GetCharacter(run.characterId);
+                if (character != null) archetype = character.archetype;
+            }
+
+            var common   = new List<RelicData>();
+            var uncommon = new List<RelicData>();
+            var rare     = new List<RelicData>();
+
+            foreach (var kv in dm.Relics)
+            {
+                var r = kv.Value;
+                if (r == null) continue;
+                if (r.source == RelicSource.START) continue;
+                if (!string.IsNullOrEmpty(r.archetypeLock)
+                    && !string.IsNullOrEmpty(archetype)
+                    && !r.archetypeLock.Equals(archetype, System.StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (run.relics.Contains(r)) continue;
+                switch (r.rarity)
+                {
+                    case Rarity.RARE:     rare.Add(r); break;
+                    case Rarity.UNCOMMON: uncommon.Add(r); break;
+                    default:              common.Add(r); break;
+                }
+            }
+
+            const int wCommon = 15, wUncommon = 35, wRare = 50;
+            int total = wCommon + wUncommon + wRare;
+
+            var picked = new List<RelicData>();
+            for (int i = 0; i < count; i++)
+            {
+                int roll = UnityEngine.Random.Range(0, total);
+                List<RelicData> bucket =
+                    roll < wCommon ? common
+                  : roll < wCommon + wUncommon ? uncommon
+                  : rare;
+
+                // 굴린 등급이 비면 RARE → UNCOMMON → COMMON 순으로 다운그레이드.
+                if (bucket.Count == 0)
+                {
+                    if (rare.Count > 0) bucket = rare;
+                    else if (uncommon.Count > 0) bucket = uncommon;
+                    else if (common.Count > 0) bucket = common;
+                    else break;
+                }
+
+                int idx = UnityEngine.Random.Range(0, bucket.Count);
+                picked.Add(bucket[idx]);
+                bucket.RemoveAt(idx);
+            }
+
+            // 마지막 안전망: 비-START 풀이 완전히 마른 극단적인 경우엔 START 잔여로 보충해서
+            // 최소 1장은 보장 → UI auto-skip 버그 재발 차단.
+            if (picked.Count == 0)
+            {
+                foreach (var kv in dm.Relics)
+                {
+                    var r = kv.Value;
+                    if (r == null || r.source != RelicSource.START) continue;
+                    if (!string.IsNullOrEmpty(r.archetypeLock)
+                        && !string.IsNullOrEmpty(archetype)
+                        && !r.archetypeLock.Equals(archetype, System.StringComparison.OrdinalIgnoreCase))
+                        continue;
+                    if (run.relics.Contains(r)) continue;
+                    picked.Add(r);
+                    if (picked.Count >= count) break;
+                }
+            }
+
+            return picked;
         }
 
         // 캐릭터 archetype별 시작 덱 구성.
@@ -784,6 +1045,10 @@ namespace DianoCard.Game
 
         private void FillEnemyIds(MapState map, ChapterData chapter)
         {
+            // 엘리트는 풀이 작아서(2~3종) 단순 랜덤이면 같은 적이 연달아 뽑힐 수 있음.
+            // 셔플 덱(deck) 방식 — 풀을 한 바퀴 다 돌기 전엔 중복 금지, 덱 재충전 시에도 직전 엘리트와 연속 등장 회피.
+            // 엘리트 노드를 (floor, column) 순으로 처리해야 진행 방향대로 번갈아 나옴.
+            var eliteNodes = new List<MapNode>();
             foreach (var n in map.nodes)
             {
                 if (n.kind == NodeKind.Combat)
@@ -793,10 +1058,49 @@ namespace DianoCard.Game
                 }
                 else if (n.kind == NodeKind.Elite)
                 {
-                    n.enemyIds = ExpandTwinElites(PickN(chapter.eliteEnemyPool, 1));
+                    eliteNodes.Add(n);
                 }
                 // Boss는 AddBossNode에서 설정. 그 외 비전투(Camp/Treasure/Merchant/Unknown)는 enemyIds 비움.
             }
+
+            eliteNodes.Sort((a, b) =>
+            {
+                int c = a.floor.CompareTo(b.floor);
+                return c != 0 ? c : a.column.CompareTo(b.column);
+            });
+
+            var eliteDeck = new Queue<string>();
+            string lastElite = null;
+            foreach (var n in eliteNodes)
+            {
+                string pick = DrawElite(chapter.eliteEnemyPool, eliteDeck, ref lastElite);
+                if (pick == null) { n.enemyIds = new List<string>(); continue; }
+                n.enemyIds = ExpandTwinElites(new List<string> { pick });
+            }
+        }
+
+        // 셔플 덱에서 다음 엘리트 id를 꺼낸다. 덱이 비면 풀을 다시 셔플해 충전하고,
+        // 충전 직후 첫 항목이 직전 엘리트와 같으면 두 번째 항목과 자리를 바꿔 연속 등장을 막는다.
+        private static string DrawElite(List<string> pool, Queue<string> deck, ref string lastElite)
+        {
+            if (pool == null || pool.Count == 0) return null;
+            if (deck.Count == 0)
+            {
+                var shuffled = new List<string>(pool);
+                for (int i = shuffled.Count - 1; i > 0; i--)
+                {
+                    int j = Random.Range(0, i + 1);
+                    (shuffled[i], shuffled[j]) = (shuffled[j], shuffled[i]);
+                }
+                if (lastElite != null && shuffled.Count > 1 && shuffled[0] == lastElite)
+                {
+                    (shuffled[0], shuffled[1]) = (shuffled[1], shuffled[0]);
+                }
+                foreach (var id in shuffled) deck.Enqueue(id);
+            }
+            var pick = deck.Dequeue();
+            lastElite = pick;
+            return pick;
         }
 
         // 쌍둥이류 엘리트 — 한 ID로 2체가 동시 등장해야 하는 적.
@@ -925,11 +1229,12 @@ namespace DianoCard.Game
             }
 
             // 보물 노드(9층 고정) — 시작 유물과 동일한 3택 픽커. 선택 후 ConfirmRelicPick에서 cleared/Advance 처리.
+            // 보물용 풀은 비-START + RARE 가중(50/35/15). START 풀 고갈로 노드가 스킵되던 버그 차단.
             if (node.kind == NodeKind.Treasure)
             {
                 CurrentMap.currentColumn = node.column;
                 CurrentRun.currentFloor = node.floor;
-                RelicPickChoices = BuildRelicPickChoices(CurrentRun, 3);
+                RelicPickChoices = BuildTreasureRelicChoices(CurrentRun, 3);
                 _relicPickReturnState = GameState.Map;
                 _relicPickAdvancesMap = true;
                 State = GameState.RelicPick;
@@ -1076,9 +1381,9 @@ namespace DianoCard.Game
                 }
                 case UnknownOutcome.Treasure:
                 {
-                    // 고정 보물 노드와 동일하게 시작 유물 3택 픽커로 진행. ConfirmRelicPick에서 cleared/Advance 처리.
+                    // 고정 보물 노드와 동일하게 비-START + RARE 가중 풀로 3택 픽커. ConfirmRelicPick에서 cleared/Advance 처리.
                     node.kind = NodeKind.Treasure;
-                    RelicPickChoices = BuildRelicPickChoices(CurrentRun, 3);
+                    RelicPickChoices = BuildTreasureRelicChoices(CurrentRun, 3);
                     _relicPickReturnState = GameState.Map;
                     _relicPickAdvancesMap = true;
                     State = GameState.RelicPick;
@@ -1129,13 +1434,13 @@ namespace DianoCard.Game
 
             CurrentRun.playerCurrentHp = Mathf.Max(0, remainingPlayerHp);
 
-            // 훈련장 모드: 보상/패배 없이 훈련장 메뉴로 복귀. HP/덱 리셋으로 자유롭게 재시도.
+            // 훈련장 모드: 보상/패배 없이 맵으로 복귀. HP/덱 리셋 + 노드 미클리어 처리(같은 노드 재진입 가능).
             if (IsTrainingMode)
             {
                 CurrentRun.playerCurrentHp = CurrentRun.playerMaxHp;
                 CurrentEnemies.Clear();
-                State = GameState.Training;
-                Debug.Log($"[GSM] Training: battle ended (won={won}) → back to Training menu");
+                State = GameState.Map;
+                Debug.Log($"[GSM] Training: battle ended (won={won}) → back to Map");
                 return;
             }
 
@@ -1185,29 +1490,35 @@ namespace DianoCard.Game
         // 훈련장
         // =========================================================
 
-        /// <summary>Lobby에서 훈련장 진입. 임시 Run(70HP, 스타터덱)을 만들고 Training 상태로 전환.</summary>
+        /// <summary>Lobby에서 훈련장 진입. 임시 Run + 챕터1 맵을 만들고 Map 상태로 전환.
+        /// 일반 맵 흐름과 동일한 화면이 뜨고, 모든 치트는 에디터의 Cheat Panel(Tools/Cheat Panel) 탭에서 조작.
+        /// 노드를 클릭하면 정상 전투, Cheat Panel의 적 탭에서 클릭하면 강제로 그 적과 전투(TrainingStartBattle).</summary>
         public void EnterTraining()
         {
+            // 훈련장은 아케네(CH002, 육식 조련사)로 고정. character_id 미지정 시 BuildStarterDeck이
+            // CH001(린네 계열 초식)로 폴백되므로 명시.
+            const string trainingCharId = "CH002";
             CurrentRun = new RunState
             {
                 playerMaxHp = 70,
                 playerCurrentHp = 70,
                 gold = 0,
-                deck = BuildStarterDeck(),
+                deck = BuildStarterDeck(trainingCharId),
                 relics = new List<RelicData>(),
                 potions = new List<PotionData>(),
-                currentFloor = 0,
+                currentFloor = 1,
                 chapterId = "CH01",
+                characterId = trainingCharId,
             };
-            CurrentMap = null;
+            CurrentMap = GenerateMap(CurrentRun.chapterId);
             CurrentShop = null;
             CurrentEnemies.Clear();
             IsTrainingMode = true;
-            State = GameState.Training;
-            Debug.Log("[GSM] EnterTraining — 훈련장 입장");
+            State = GameState.Map;
+            Debug.Log("[GSM] EnterTraining — 훈련장 입장 (Map 상태)");
         }
 
-        /// <summary>훈련장에서 특정 적(또는 여러 적)과의 전투 시작. EndBattle이 Training으로 복귀시킴.</summary>
+        /// <summary>훈련장에서 특정 적(또는 여러 적)과의 강제 전투. EndBattle이 Map으로 복귀시킴.</summary>
         public void TrainingStartBattle(params string[] enemyIds)
         {
             if (!IsTrainingMode)
@@ -1231,8 +1542,12 @@ namespace DianoCard.Game
             }
 
             CurrentRun.playerCurrentHp = CurrentRun.playerMaxHp; // 매 전투마다 풀 HP로 시작
+
+            // 이미 Battle 상태일 때(예: 보스 전투 중 패널에서 다른 적 선택)에도 BattleUI가 재초기화하도록 플래그 ON.
+            bool wasBattle = State == GameState.Battle;
             State = GameState.Battle;
-            Debug.Log($"[GSM] Training battle: [{string.Join(",", enemyIds)}] → Battle");
+            if (wasBattle) CheatBattleReinitRequested = true;
+            Debug.Log($"[GSM] Training battle: [{string.Join(",", enemyIds)}] → Battle (reinit={wasBattle})");
         }
 
         /// <summary>훈련장 종료 — Lobby로 복귀, Run 정리.</summary>
@@ -1243,14 +1558,6 @@ namespace DianoCard.Game
             CurrentEnemies.Clear();
             State = GameState.Lobby;
             Debug.Log("[GSM] ExitTraining — 로비로 복귀");
-        }
-
-        /// <summary>치트: 허수아비(E999)와 QA 전투 시작. 훈련 모드로 진입해 RunState를 유지한 채 재사용.</summary>
-        public void Cheat_StartQABattle()
-        {
-            if (!IsTrainingMode || CurrentRun == null) EnterTraining();
-            TrainingStartBattle("E999");
-            Debug.Log("[GSM] Cheat_StartQABattle");
         }
 
         /// <summary>치트: 유물을 현재 RunState에 추가하고 OnAcquired 효과 즉시 적용.</summary>

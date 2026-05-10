@@ -101,7 +101,7 @@ public class MapUI : MonoBehaviour
 
     [Tooltip("영문 제목용 디스플레이 폰트 경로 (Resources/Fonts/...). 비우면 기본 Cinzel.\n추천: Fonts/Metamorphous-Regular (다크판타지), Fonts/MedievalSharp-Regular (고딕), Fonts/IMFellEnglish-Regular (고서).")]
     [SerializeField] private string chapterIntroDisplayFontPath = "Fonts/Metamorphous-Regular";
-    [Tooltip("한글 제목용 폰트 경로. 비우면 기본 NotoSansKR.")]
+    [Tooltip("한글 제목용 폰트 경로. 비우면 기본 Hahmlet.")]
     [SerializeField] private string chapterIntroBodyFontPath = "";
 
     [Header("Node Layout — StS-style 7컬럼 격자 (양피지 영역에 맞춰 조정)")]
@@ -210,7 +210,7 @@ public class MapUI : MonoBehaviour
     private Texture2D _legendPanelTex;
     private Texture2D _backIconTex;
 
-    // 챕터 인트로 — Cinzel(영문 디스플레이) + NotoSansKR(한글 본문). 다른 UI와 동일 페어.
+    // 챕터 인트로 — Cinzel(영문 디스플레이) + Hahmlet(한글 본문 명조). 다른 UI와 동일 페어.
     private Font _displayFont;
     private Font _bodyFont;
 
@@ -262,9 +262,9 @@ public class MapUI : MonoBehaviour
         if (_backIconTex == null) Debug.LogWarning("[MapUI] Missing: Resources/Map/MapBackbutton");
 
         _displayFont = Resources.Load<Font>("Fonts/Cinzel-VariableFont_wght");
-        _bodyFont    = Resources.Load<Font>("Fonts/NotoSansKR-VariableFont_wght");
+        _bodyFont    = Resources.Load<Font>("Fonts/Hahmlet-VariableFont_wght");
         if (_displayFont == null) Debug.LogWarning("[MapUI] Missing Fonts/Cinzel-VariableFont_wght");
-        if (_bodyFont == null)    Debug.LogWarning("[MapUI] Missing Fonts/NotoSansKR-VariableFont_wght");
+        if (_bodyFont == null)    Debug.LogWarning("[MapUI] Missing Fonts/Hahmlet-VariableFont_wght");
 
         if (_circleTexture == null) _circleTexture = CreateCircleTexture(128);
         EnsureVignetteTex();
@@ -352,6 +352,7 @@ public class MapUI : MonoBehaviour
 
     void OnGUI()
     {
+        if (PauseMenuUI.IsOpen) return;
         var gsm = GameStateManager.Instance;
 
         // 상태를 매 프레임 추적 — Map 바깥에서도 갱신해야 재진입 시 인트로가 올바르게 트리거됨
@@ -559,6 +560,7 @@ public class MapUI : MonoBehaviour
                 fontStyle = FontStyle.Bold,
             };
             style.normal.textColor = scrollbarFloorLabelColor;
+            LockHoverState(style);
             int floor = Mathf.Max(1, map.currentFloor);
             string label = $"{floor}/{map.totalFloors}";
             float labelW = 100f;
@@ -712,7 +714,7 @@ public class MapUI : MonoBehaviour
         string actLabel = "ACT" + new string(' ', chapterIntroActSpacing) + ChapterRoman(gsm.CurrentRun.chapterId);
         string title = chapter.name ?? "";
 
-        // 한글이면 body 폰트(NotoSansKR), 영문이면 display 폰트. 오버라이드 우선.
+        // 한글이면 body 폰트(Hahmlet), 영문이면 display 폰트. 오버라이드 우선.
         bool titleIsKorean = ContainsHangul(title);
         Font actFont   = GetChapterIntroDisplayFont();
         Font titleFont = titleIsKorean ? GetChapterIntroBodyFont() : GetChapterIntroDisplayFont();
@@ -763,11 +765,12 @@ public class MapUI : MonoBehaviour
         };
         if (actFont != null) actStyle.font = actFont;
         actStyle.normal.textColor = actColor;
+        LockHoverState(actStyle);
         float actContainerH = Mathf.Max(32f, chapterIntroActFontSize * 1.6f);
         GUI.Label(new Rect(0f, RefH * chapterIntroActYRatio, RefW, actContainerH), actLabel, actStyle);
 
         // 4) 챕터 제목 — 그림자(있으면) → 본체 순서로 그려 본체가 위에 오게
-        // 한글은 NotoSansKR Regular가 84pt에서 너무 얇아 다크판타지 톤과 안 맞음 → Bold 강제
+        // 한글은 Hahmlet 명조의 Regular weight가 큰 사이즈에서 톤 부족 → Bold 강제
         var titleStyle = new GUIStyle(GUI.skin.label)
         {
             fontSize = chapterIntroTitleFontSize,
@@ -780,6 +783,7 @@ public class MapUI : MonoBehaviour
         if (chapterIntroTitleShadow > 0.01f)
         {
             titleStyle.normal.textColor = shadowCol;
+            LockHoverState(titleStyle);
             var shadowRect = new Rect(
                 titleRect.x + chapterIntroTitleShadow,
                 titleRect.y + chapterIntroTitleShadow,
@@ -788,6 +792,7 @@ public class MapUI : MonoBehaviour
         }
 
         titleStyle.normal.textColor = titleCol;
+        LockHoverState(titleStyle);
         GUI.Label(titleRect, title, titleStyle);
 
         GUI.color = prevColor;
@@ -1361,7 +1366,23 @@ public class MapUI : MonoBehaviour
             fontStyle = FontStyle.Bold,
             normal = { textColor = new Color(0.2f, 0.12f, 0.05f) },
         };
+        // GUI.skin.label 기본 hover state의 색 swap을 차단해 호버 시 텍스트가 깜빡이는 느낌을 없앤다.
+        LockHoverState(_smallStyle);
 
         _stylesReady = true;
+    }
+
+    private static void LockHoverState(GUIStyle s)
+    {
+        if (s == null) return;
+        var c = s.normal.textColor;
+        var bg = s.normal.background;
+        s.hover.textColor = c;     s.hover.background = bg;
+        s.active.textColor = c;    s.active.background = bg;
+        s.focused.textColor = c;   s.focused.background = bg;
+        s.onNormal.textColor = c;  s.onNormal.background = bg;
+        s.onHover.textColor = c;   s.onHover.background = bg;
+        s.onActive.textColor = c;  s.onActive.background = bg;
+        s.onFocused.textColor = c; s.onFocused.background = bg;
     }
 }

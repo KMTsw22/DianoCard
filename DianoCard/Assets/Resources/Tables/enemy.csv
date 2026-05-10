@@ -1,11 +1,11 @@
-id,name_kr,name_en,enemy_type,chapter,hp,attack,defense,pattern_set_id,phase_set_id,gold_min,gold_max,description_kr,description_en,image,passive_ids,field_scale,is_dummy
+id,name_kr,name_en,enemy_type,chapter,hp,attack,defense,pattern_set_id,phase_set_id,gold_min,gold_max,description_kr,description_en,image,passive_ids,field_scale,is_dummy,hp_bar_anchor_x
 E001,이끼 슬라임,Moss Slime,NORMAL,1,52,13,0,PS_E001,,18,26,유적의 습기에서 태어난 이끼 덮인 청록 슬라임.,A moss-covered teal slime born from the damp ruins.,E001_MossSlime.png,,0.7
 E002,바위 슬라임,Rock Slime,NORMAL,1,82,13,8,PS_E002,,28,38,몸에 박힌 바위 조각이 등껍질처럼 단단하다.,Rock shards embedded in its body form a tough shell.,E002_RockSlime.png,,0.7
 E003,독 슬라임,Toxic Slime,NORMAL,1,46,8,0,PS_E003,,20,28,부식성 독을 흘리는 보라빛 산성 슬라임.,A purple acidic slime dripping corrosive poison.,E003_ToxicSlime.png,,0.7
 E004,가시 덩굴,Spike Vine,NORMAL,1,50,5,0,PS_E004,,20,28,사방으로 뻗어 분할 타격하는 덩굴.,A vine that extends in all directions and strikes multiple times.,E004_SpikeVine.png,P_MULTI_HIT|P_DUAL_ACTION,
 E005,발광 버섯,Glow Mushroom,NORMAL,1,34,7,0,PS_E005,,18,26,턴마다 포자를 뿜어 자가 강화한다.,Releases spores each turn to buff itself.,E005_GlowMushroom.png,P_GROW_ATK,
 E007,파편 가고일,Shard Gargoyle,NORMAL,1,48,8,3,PS_E007,,20,28,부서진 석상에서 떨어진 잔해. 두 발톱이 좌우로 분할 타격한다.,Debris from a shattered statue. Twin claws strike in split hits.,E007_ShardGargoyle.png,P_DUAL_ACTION,
-E008,뿌리 정령,Root Sprite,NORMAL,1,38,6,0,PS_E008,,20,28,사망한 뿌리를 즉시 다시 소환한다.,Instantly re-summons its fallen root companions.,E008_RootSprite.png,P_ROOT_REBIRTH|P_ARMOR_REGEN,
+E008,뿌리 정령,Root Sprite,NORMAL,1,38,6,0,PS_E008,,20,28,사망한 뿌리를 즉시 다시 소환한다.,Instantly re-summons its fallen root companions.,E008_RootSprite.png,P_ROOT_REBIRTH|P_ARMOR_REGEN,,,0.55
 E009,유적 망령,Ruin Wraith,NORMAL,1,45,8,0,PS_E009,,20,28,보랏빛 안개를 두른 유적 망령. 울부짖음으로 약화·침묵시킨다.,A ruin wraith cloaked in violet mist. Its howl weakens and silences.,E009_RuinWraith.png,P_SILENCE_HOWL,
 E010,어둠 박쥐,Shade Bat,NORMAL,1,32,4,0,PS_E010,,18,26,작은 타격을 빠르게 반복한다.,Delivers rapid small strikes repeatedly.,E010_ShadeBat.png,P_MULTI_HIT,
 E012,어둠 페어리,Shadow Fairy,NORMAL,1,36,11,0,PS_E012,,20,28,보라 마력을 두른 타락한 페어리. 마력 화살로 약화시킨다.,A corrupted fairy cloaked in violet magic. Hex bolts weaken its prey.,E012_ShadowFairy.png,,1.25
@@ -26,4 +26,3 @@ E903,화산의 군주,Volcano Lord,BOSS,3,300,19,10,PS_E903_TBD,PH_E903_TBD,260,
 E401,심연의 사도,Abyss Cultist,NORMAL,4,70,18,5,PS_E401_TBD,,42,56,수하를 소환.,Summons minions.,crow.png,,
 E402,그림자 용,Shadow Drake,NORMAL,4,80,19,8,PS_E402_TBD,,45,60,비행형.,Airborne type.,crow.png,,
 E904,태초의 공룡왕,Primal Dino King,BOSS,4,500,24,15,PS_E904_TBD,PH_E904_TBD,390,390,최종 보스.,Final Boss.,crow.png,P_QUAD_ACTION,
-E999,허수아비,Training Dummy,NORMAL,0,99999,0,0,PS_DUMMY,,0,0,QA용 훈련 더미. 아무것도 하지 않는다.,QA training dummy. Does nothing.,,1,1.0,1

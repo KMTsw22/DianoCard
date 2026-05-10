@@ -916,6 +916,14 @@ namespace DianoCard.Battle
                         s.tempAttackBonus += c.value;
                     }
                     Log($"    -> All summons +{c.value} ATK (this turn)");
+                    if (c.id == "C203")
+                    {
+                        // 광폭화: 자해 비용. block 무시, 1 HP 미만으로는 떨어지지 않음(자살 방지).
+                        const int selfCost = 3;
+                        int before = state.player.hp;
+                        state.player.hp = Math.Max(1, state.player.hp - selfCost);
+                        Log($"    -> 광폭화 자해: PLAYER -{before - state.player.hp} HP (HP {state.player.hp})");
+                    }
                     break;
 
                 case CardSubType.HEAL:
@@ -986,6 +994,46 @@ namespace DianoCard.Battle
                 Log($"  [Potion] {potion.nameKr} 사용 → 슬롯 {slotIndex} 비움 (남은 {run.potions.Count}/{run.MaxPotionSlots})");
             }
             return ok;
+        }
+
+        /// <summary>P011 소환 물약 — 손패의 SUMMON 카드 중 1장을 무작위로 골라 마나 0 / 타겟 없이 즉시 소환.
+        /// 정상 PlayCard와 동일하게 덮어쓰기 스택, 유물 OnSummon 트리거를 적용한다.
+        /// 손패에 SUMMON이 없거나(덮어쓰기 아닌데) 필드 슬롯이 꽉 차서 소환 불가하면 false → 포션 보존.</summary>
+        public bool TryPotionSummonRandomFromHand()
+        {
+            if (state == null) return false;
+
+            var summonIndices = new List<int>();
+            for (int i = 0; i < state.hand.Count; i++)
+            {
+                var c = state.hand[i]?.data;
+                if (c != null && c.cardType == CardType.SUMMON) summonIndices.Add(i);
+            }
+            if (summonIndices.Count == 0)
+            {
+                Log("  ! [Potion] 소환 물약: 손패에 공룡 카드 없음 — 포션 보존");
+                return false;
+            }
+
+            int handIndex = summonIndices[_rng.Next(summonIndices.Count)];
+            var inst = state.hand[handIndex];
+            var card = inst.data;
+
+            bool isOverwrite = (card.subType == CardSubType.HERBIVORE || card.subType == CardSubType.OMNIVORE)
+                               && FindOverwriteTarget(card.id) != null;
+            if (!isOverwrite && state.field.Count >= state.maxFieldSize)
+            {
+                Log($"  ! [Potion] 소환 물약: 필드 꽉 참 ({state.field.Count}/{state.maxFieldSize}) — {card.nameKr} 소환 불가, 포션 보존");
+                return false;
+            }
+
+            state.hand.RemoveAt(handIndex);
+            if (isOverwrite) state.discard.Add(inst);
+            else             state.bound.Add(inst);
+
+            Log($"  [Potion] 소환 물약 → 손패 무작위 {card.nameKr} 소환");
+            ResolveCard(inst, null, -1, isOverwrite);
+            return true;
         }
 
         // =========================================================
@@ -2383,14 +2431,17 @@ namespace DianoCard.Battle
             switch (condition)
             {
                 case "ADD_DEAD":
-                    // 자기 외에 살아있는 쫄이 없을 때
+                    // 자기 외에 살아있는 쫄이 없을 때 — isMinion 플래그 + ID 프리픽스 둘 다 체크
                     foreach (var other in state.enemies)
-                        if (other != e && !other.IsDead && other.data.id.StartsWith("ADD_")) return false;
+                        if (other != e && !other.IsDead && (other.isMinion || other.data.id.StartsWith("ADD_"))) return false;
                     return true;
                 case "ADD_ALIVE":
                     foreach (var other in state.enemies)
-                        if (other != e && !other.IsDead && other.data.id.StartsWith("ADD_")) return true;
+                        if (other != e && !other.IsDead && (other.isMinion || other.data.id.StartsWith("ADD_"))) return true;
                     return false;
+                case "ARMOR_NOT_SET":
+                    // ARMOR_UP "첫 발동만" — 영구 갑옷이 이미 박혔으면 스킵
+                    return e.extraBlockPerTurn == 0;
                 case "MOSS_FULL":
                 {
                     int alive = 0;

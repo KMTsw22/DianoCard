@@ -23,6 +23,9 @@ namespace DianoCard.Data
         public List<string> passiveIds = new();
         public float fieldScale;
         public bool isDummy;
+        // HP 바 X 앵커 (0~1, default 0.5). 스프라이트 캔버스는 중앙이지만 시각 무게중심이 좌/우로 쏠린 몬스터용.
+        // 예: 0.55 → 슬롯 너비의 55% 지점에 HP 바 중심 배치.
+        public float hpBarAnchorX;
 
         public string name => LocaleSettings.Pick(nameKr, nameEn);
         public string description => LocaleSettings.Pick(descriptionKr, descriptionEn);
@@ -49,6 +52,7 @@ namespace DianoCard.Data
                 image = CSVUtil.GetString(row, "image"),
                 fieldScale = CSVUtil.GetFloat(row, "field_scale", 1f),
                 isDummy = CSVUtil.GetInt(row, "is_dummy") != 0,
+                hpBarAnchorX = CSVUtil.GetFloat(row, "hp_bar_anchor_x", 0.5f),
             };
 
             var raw = CSVUtil.GetString(row, "passive_ids");

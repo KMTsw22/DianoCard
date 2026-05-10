@@ -202,8 +202,8 @@ public class VillageUI : MonoBehaviour
     [SerializeField] private Color optionDescColor = new(0.96f, 0.91f, 0.78f);
 
     [Header("Font (Resources/Fonts/* — 확장자 제외)")]
-    [Tooltip("폰트 경로. 추천 경로:\n• Fonts/NotoSansKR-VariableFont_wght — 모던 산세리프, 아크나이츠/그랑블루 톤 (UI 추천)\n• Fonts/IMFellEnglish-Regular — 빈티지 책체, 작은 본문 가독성↑\n• Fonts/Metamorphous-Regular — 고딕 캐피털 (장식적)\n• Fonts/MedievalSharp-Regular — 중세 LARP\n• Fonts/Cinzel-VariableFont_wght — 클래식 로마 세리프")]
-    [SerializeField] private string fontResourcePath = "Fonts/NotoSansKR-VariableFont_wght";
+    [Tooltip("폰트 경로. 추천 경로:\n• Fonts/Hahmlet-VariableFont_wght — 다크판타지 명조 (KR 기본)\n• Fonts/NotoSansKR-VariableFont_wght — 모던 산세리프, 아크나이츠/그랑블루 톤\n• Fonts/IMFellEnglish-Regular — 빈티지 책체, 작은 본문 가독성↑\n• Fonts/Metamorphous-Regular — 고딕 캐피털 (장식적)\n• Fonts/MedievalSharp-Regular — 중세 LARP\n• Fonts/Cinzel-VariableFont_wght — 클래식 로마 세리프")]
+    [SerializeField] private string fontResourcePath = "Fonts/Hahmlet-VariableFont_wght";
 
     private readonly List<Action> _pending = new();
 
@@ -253,6 +253,7 @@ public class VillageUI : MonoBehaviour
 
     void OnGUI()
     {
+        if (PauseMenuUI.IsOpen) return;
         var gsm = GameStateManager.Instance;
         if (gsm == null || gsm.State != GameState.Village) return;
         var run = gsm.CurrentRun;
@@ -701,17 +702,21 @@ public class VillageUI : MonoBehaviour
         LockStateColors(_optionDescStyle);
     }
 
+    // GUIStyle의 모든 인터랙션 state의 텍스트 색·배경을 normal과 동일하게 고정.
+    // GUI.skin.button 베이스 스타일은 hover/active에서 다른 background로 swap되며
+    // 텍스트가 미세하게 시프트되는 느낌을 주므로 background도 함께 락한다.
     private static void LockStateColors(GUIStyle s)
     {
         if (s == null) return;
         var c = s.normal.textColor;
-        s.hover.textColor    = c;
-        s.active.textColor   = c;
-        s.focused.textColor  = c;
-        s.onNormal.textColor = c;
-        s.onHover.textColor  = c;
-        s.onActive.textColor = c;
-        s.onFocused.textColor= c;
+        var bg = s.normal.background;
+        s.hover.textColor    = c; s.hover.background    = bg;
+        s.active.textColor   = c; s.active.background   = bg;
+        s.focused.textColor  = c; s.focused.background  = bg;
+        s.onNormal.textColor = c; s.onNormal.background = bg;
+        s.onHover.textColor  = c; s.onHover.background  = bg;
+        s.onActive.textColor = c; s.onActive.background = bg;
+        s.onFocused.textColor= c; s.onFocused.background= bg;
     }
 
     // =========================================================

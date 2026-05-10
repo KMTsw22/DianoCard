@@ -345,8 +345,28 @@ namespace DianoCard.Battle
 
         private void StartAnim(IEnumerator routine)
         {
-            if (_currentAnim != null) StopCoroutine(_currentAnim);
+            if (_currentAnim != null)
+            {
+                StopCoroutine(_currentAnim);
+                // 인터럽트된 루틴은 자기 끝부분의 cleanup을 못 돌리므로 여기서 한 번 리셋.
+                // 안 그러면 strike 프레임/플래시 색/lunge offset/scale boost가 그대로 박제됨
+                // (예: 공격 모션 중 리플렉트로 PlayHit 끼어들면 "불 뿜는 포즈" 잔류).
+                ResetVisualState();
+            }
             _currentAnim = StartCoroutine(routine);
+        }
+
+        /// <summary>현재 진행 중인 애니메이션을 끊고 idle 상태로 복귀. 인터럽트 시 잔여 프레임/색/offset 정리용.</summary>
+        private void ResetVisualState()
+        {
+            transform.position = _basePosition;
+            if (_sr != null)
+            {
+                _sr.color = _baseColor;
+                if (_idleSprite != null) _sr.sprite = _idleSprite;
+            }
+            _activeScaleMultiplier = 1f;
+            ApplyWorldHeight();
         }
 
         private void LateUpdate()
@@ -650,7 +670,8 @@ namespace DianoCard.Battle
             }
             transform.position = _basePosition;
             _sr.color = _baseColor;
-            if (useSeq && _idleSprite != null) { _sr.sprite = _idleSprite; ApplyWorldHeight(); }
+            // useSeq 여부와 무관하게 idle 복귀 — 직전에 공격이 인터럽트돼서 strike 프레임으로 와 있을 수 있음.
+            if (_idleSprite != null) { _sr.sprite = _idleSprite; ApplyWorldHeight(); }
             _currentAnim = null;
         }
     }

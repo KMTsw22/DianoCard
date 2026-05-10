@@ -423,6 +423,7 @@ public class AnimationTestUI : MonoBehaviour
 
     void OnGUI()
     {
+        if (PauseMenuUI.IsOpen) return;
         var gsm = GameStateManager.Instance;
         if (gsm == null || gsm.State != GameState.AnimationTest) return;
 
@@ -1167,6 +1168,28 @@ public class AnimationTestUI : MonoBehaviour
             alignment = TextAnchor.MiddleCenter,
             normal = { textColor = new Color(1f, 0.92f, 0.4f), background = GUI.skin.button.active.background },
         };
+        // GUI.skin 기본 hover/active state의 색·배경 swap을 차단해
+        // 호버 시 텍스트가 미세하게 흔들리는 느낌을 없앤다.
+        LockHoverState(_titleStyle);
+        LockHoverState(_smallStyle);
+        LockHoverState(_statusStyle);
+        LockHoverState(_btnStyle);
+        LockHoverState(_modeBtnStyle);
+        LockHoverState(_selBtnStyle);
         _stylesReady = true;
+    }
+
+    private static void LockHoverState(GUIStyle s)
+    {
+        if (s == null) return;
+        var c = s.normal.textColor;
+        var bg = s.normal.background;
+        s.hover.textColor = c;     s.hover.background = bg;
+        s.active.textColor = c;    s.active.background = bg;
+        s.focused.textColor = c;   s.focused.background = bg;
+        s.onNormal.textColor = c;  s.onNormal.background = bg;
+        s.onHover.textColor = c;   s.onHover.background = bg;
+        s.onActive.textColor = c;  s.onActive.background = bg;
+        s.onFocused.textColor = c; s.onFocused.background = bg;
     }
 }

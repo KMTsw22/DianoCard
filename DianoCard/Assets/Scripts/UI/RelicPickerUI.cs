@@ -302,8 +302,12 @@ public class RelicPickerUI : MonoBehaviour
         if (_stylesBuilt) return;
         _stylesBuilt = true;
 
+        // 유물 이름/설명/프롬프트 모두 한글이라 Hahmlet(다크판타지 명조) 명시 — 미할당 시 Arial 폴백으로 깨짐.
+        var krFont = Resources.Load<Font>("Fonts/Hahmlet-VariableFont_wght");
+
         _nameStyle = new GUIStyle(GUI.skin.label)
         {
+            font = krFont,
             fontSize = nameFontSize,
             fontStyle = FontStyle.Bold,
             alignment = TextAnchor.MiddleLeft,
@@ -313,6 +317,7 @@ public class RelicPickerUI : MonoBehaviour
 
         _descStyle = new GUIStyle(GUI.skin.label)
         {
+            font = krFont,
             fontSize = descFontSize,
             fontStyle = FontStyle.Normal,
             alignment = TextAnchor.MiddleLeft,
@@ -322,20 +327,46 @@ public class RelicPickerUI : MonoBehaviour
 
         _promptStyle = new GUIStyle(GUI.skin.label)
         {
+            font = krFont,
             fontSize = promptFontSize,
             fontStyle = FontStyle.Italic,
             alignment = TextAnchor.MiddleCenter,
         };
         _promptStyle.normal.textColor = promptColor;
+
+        // GUI.skin.label 기본 hover state의 색 swap을 차단해 호버 시 텍스트가 깜빡이는 느낌을 없앤다.
+        LockHoverState(_nameStyle);
+        LockHoverState(_descStyle);
+        LockHoverState(_promptStyle);
+    }
+
+    private static void LockHoverState(GUIStyle s)
+    {
+        if (s == null) return;
+        var c = s.normal.textColor;
+        var bg = s.normal.background;
+        s.hover.textColor = c;     s.hover.background = bg;
+        s.active.textColor = c;    s.active.background = bg;
+        s.focused.textColor = c;   s.focused.background = bg;
+        s.onNormal.textColor = c;  s.onNormal.background = bg;
+        s.onHover.textColor = c;   s.onHover.background = bg;
+        s.onActive.textColor = c;  s.onActive.background = bg;
+        s.onFocused.textColor = c; s.onFocused.background = bg;
     }
 
     void OnGUI()
     {
+        if (PauseMenuUI.IsOpen) return;
         var gsm = GameStateManager.Instance;
         if (gsm == null || gsm.State != GameState.RelicPick) return;
 
         foreach (var a in _pending) a();
         _pending.Clear();
+
+        // _pending에 있던 ConfirmRelicPick이 상태를 Map으로 바꿨을 수 있다.
+        // 다시 체크 안 하면 DrawRows가 null choices로 또 ConfirmRelicPick(null)을 queue해서
+        // 다음 런 진입 시 그 stale 액션이 발사돼 유물 선택 UI를 즉시 스킵해버린다.
+        if (gsm.State != GameState.RelicPick) return;
 
         BuildStyles();
         _nameStyle.fontSize = nameFontSize;
@@ -344,6 +375,10 @@ public class RelicPickerUI : MonoBehaviour
         _nameStyle.normal.textColor = nameColor;
         _descStyle.normal.textColor = descColor;
         _promptStyle.normal.textColor = promptColor;
+        // 매 프레임 색 동기화 후 hover state도 즉시 동기화 — 마우스 hover 시 색이 튀는 현상 방지
+        LockHoverState(_nameStyle);
+        LockHoverState(_descStyle);
+        LockHoverState(_promptStyle);
 
         float scaleX = Screen.width / RefW;
         float scaleY = Screen.height / RefH;
@@ -461,9 +496,11 @@ public class RelicPickerUI : MonoBehaviour
             var fadeColor = promptColor;
             fadeColor.a = promptColor.a * t;
             _promptStyle.normal.textColor = fadeColor;
+            LockHoverState(_promptStyle);
             GUI.Label(new Rect(rowX, startY - promptYAboveRows, rowWidth, 34f),
                 "...시작 유물을 선택하세요...", _promptStyle);
             _promptStyle.normal.textColor = promptColor; // 복원
+            LockHoverState(_promptStyle);
         }
 
         for (int i = 0; i < n; i++)

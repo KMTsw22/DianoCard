@@ -67,16 +67,17 @@ public class EventUI : MonoBehaviour
     [Header("Buttons")]
     [SerializeField] private string[] buttonLabels = new[]
     {
-        "[ 룬을 만진다  ·  HP -3, 유물 1개 획득 ]",
-        "[ 그냥 지나간다 ]",
+        "룬을 만진다  ·  HP -3, 유물 1개 획득",
+        "그냥 지나간다",
     };
     [SerializeField, Range(0.2f, 0.95f)] private float buttonWidthRatio = 0.50f;
     [SerializeField] private float buttonHeight = 56f;
     [SerializeField] private float buttonGap = 18f;
     [Tooltip("두 번째(마지막) 버튼의 바닥에서부터의 여백.")]
     [SerializeField] private float buttonBottomMargin = 64f;
-    [SerializeField] private int buttonFontSize = 20;
-    [SerializeField] private Color buttonLabelColor = new Color(0.97f, 0.94f, 0.87f, 1f);
+    [SerializeField] private int buttonFontSize = 17;
+    // 위 타이틀/본문은 크림 톤(0.97/0.84) → 버튼 라벨은 aged-brass(#c9a86a)로 위계 차이.
+    [SerializeField] private Color buttonLabelColor = new Color(0.788f, 0.659f, 0.412f, 1f);
     [SerializeField] private Color buttonBorderColor = new Color(0.92f, 0.89f, 0.83f, 0.85f);
     [SerializeField] private Color buttonFillColor = new Color(0.04f, 0.03f, 0.06f, 0.55f);
     [SerializeField] private Color buttonHoverFillColor = new Color(0.04f, 0.03f, 0.06f, 0.75f);
@@ -104,11 +105,12 @@ public class EventUI : MonoBehaviour
     private GUIStyle _buttonLabelStyle;
     private bool _stylesBuilt;
 
-    // 폰트 — 한글은 NotoSansKR(없으면 시스템 Arial로 떨어져 글리프 깨짐), 영문은 Cinzel.
+    // 폰트 — 한글은 Hahmlet 명조(없으면 시스템 Arial로 떨어져 글리프 깨짐), 영문은 Cinzel.
     private Font _displayFont;
     private Font _displayFontKR;
 
     private readonly List<System.Action> _pending = new();
+    private bool _warnedNoTopBar;
 
     void Start()
     {
@@ -136,7 +138,7 @@ public class EventUI : MonoBehaviour
         _stylesBuilt = true;
 
         if (_displayFont == null)   _displayFont   = Resources.Load<Font>("Fonts/Cinzel-VariableFont_wght");
-        if (_displayFontKR == null) _displayFontKR = Resources.Load<Font>("Fonts/NotoSansKR-VariableFont_wght");
+        if (_displayFontKR == null) _displayFontKR = Resources.Load<Font>("Fonts/Hahmlet-VariableFont_wght");
         bool isKR = DianoCard.Data.LocaleSettings.Current == DianoCard.Data.Language.KR;
         Font textFont = isKR ? _displayFontKR : _displayFont;
 
@@ -159,32 +161,64 @@ public class EventUI : MonoBehaviour
         };
         _bodyStyle.normal.textColor = bodyColor;
 
+        // 버튼 라벨 — 위 타이틀/본문(Bold/Normal 크림)과 분리해 italic + 가벼운 weight로 "선택지" 톤.
         _buttonLabelStyle = new GUIStyle(GUI.skin.label)
         {
             font = textFont,
             fontSize = buttonFontSize,
             alignment = TextAnchor.MiddleCenter,
+            fontStyle = FontStyle.Italic,
             wordWrap = false,
         };
         _buttonLabelStyle.normal.textColor = buttonLabelColor;
+
+        // GUI.skin.label 기본 hover state의 색 swap을 차단해 호버 시 텍스트가 깜빡이는 느낌을 없앤다.
+        LockHoverState(_titleStyle);
+        LockHoverState(_bodyStyle);
+        LockHoverState(_buttonLabelStyle);
+    }
+
+    private static void LockHoverState(GUIStyle s)
+    {
+        if (s == null) return;
+        var c = s.normal.textColor;
+        var bg = s.normal.background;
+        s.hover.textColor = c;     s.hover.background = bg;
+        s.active.textColor = c;    s.active.background = bg;
+        s.focused.textColor = c;   s.focused.background = bg;
+        s.onNormal.textColor = c;  s.onNormal.background = bg;
+        s.onHover.textColor = c;   s.onHover.background = bg;
+        s.onActive.textColor = c;  s.onActive.background = bg;
+        s.onFocused.textColor = c; s.onFocused.background = bg;
     }
 
     void OnGUI()
     {
+        if (PauseMenuUI.IsOpen) return;
         var gsm = GameStateManager.Instance;
-        if (gsm == null || gsm.State != GameState.Event) return;
+        if (gsm == null) return;
+        // EventRelicOffer 상태에서도 배경/타이틀/본문은 계속 깔아둔다 — 모달이 그 위에 뜸.
+        bool inEvent = gsm.State == GameState.Event;
+        bool inOffer = gsm.State == GameState.EventRelicOffer;
+        if (!inEvent && !inOffer) return;
 
-        foreach (var a in _pending) a();
-        _pending.Clear();
+        if (inEvent)
+        {
+            foreach (var a in _pending) a();
+            _pending.Clear();
+        }
 
         BuildStyles();
-        // 인스펙터 변경 즉시 반영
+        // 인스펙터 변경 즉시 반영 — color 바꾼 직후 LockHoverState로 hover state 동기화
         _titleStyle.fontSize = titleFontSize;
         _titleStyle.normal.textColor = titleColor;
+        LockHoverState(_titleStyle);
         _bodyStyle.fontSize = bodyFontSize;
         _bodyStyle.normal.textColor = bodyColor;
+        LockHoverState(_bodyStyle);
         _buttonLabelStyle.fontSize = buttonFontSize;
         _buttonLabelStyle.normal.textColor = buttonLabelColor;
+        LockHoverState(_buttonLabelStyle);
 
         float scaleX = Screen.width / RefW;
         float scaleY = Screen.height / RefH;
@@ -195,7 +229,25 @@ public class EventUI : MonoBehaviour
         DrawColorWash();
         if (vignetteEnabled) DrawVignette();
         DrawTitleAndBody();
-        DrawButtons(gsm);
+        if (inEvent) DrawButtons(gsm);
+
+        // 배틀/맵/마을 공용 상단 HUD — 미지 노드도 동일 스트립 유지.
+        var battleUI = gsm.GetComponent<BattleUI>();
+        if (battleUI != null && gsm.CurrentRun != null)
+        {
+            var map = gsm.CurrentMap;
+            int floor = map != null ? map.currentFloor : gsm.CurrentRun.currentFloor;
+            int total = map != null ? map.totalFloors : 15;
+            battleUI.DrawTopBar(BattleUI.HudContext.Map, gsm.CurrentRun, floor, total);
+            battleUI.DrawDeckViewerOverlay(gsm);
+            battleUI.DrawRelicViewerOverlay(gsm);
+            battleUI.DrawPotionViewerOverlay(gsm);
+        }
+        else if (!_warnedNoTopBar)
+        {
+            _warnedNoTopBar = true;
+            Debug.LogWarning($"[EventUI] Top HUD not drawn — battleUI={(battleUI == null ? "null" : "ok")}, run={(gsm.CurrentRun == null ? "null" : "ok")}");
+        }
 
         GUI.matrix = matrix;
     }
@@ -263,6 +315,8 @@ public class EventUI : MonoBehaviour
     {
         // ─── Title ─────────────────────────────────────────────
         // 4방향 헤일로 섀도우 → 진한 드롭 섀도우 → 본문 순으로 쌓아 가독성 확보.
+        // 색 변경 후 즉시 LockHoverState 재호출 — IMGUI가 hover state로 렌더링해
+        // 헤일로/섀도우 색이 본문 색으로 보이는 깜빡임을 차단.
         var titleRect = new Rect(0, titleY, RefW, titleFontSize + 16f);
         var prev = _titleStyle.normal.textColor;
 
@@ -271,6 +325,7 @@ public class EventUI : MonoBehaviour
             var halo = new Color(titleShadowColor.r, titleShadowColor.g, titleShadowColor.b,
                                  titleShadowColor.a * titleHaloAlpha);
             _titleStyle.normal.textColor = halo;
+            LockHoverState(_titleStyle);
             float d = 2f;
             GUI.Label(new Rect(titleRect.x - d, titleRect.y,     titleRect.width, titleRect.height), titleText, _titleStyle);
             GUI.Label(new Rect(titleRect.x + d, titleRect.y,     titleRect.width, titleRect.height), titleText, _titleStyle);
@@ -279,10 +334,12 @@ public class EventUI : MonoBehaviour
         }
 
         _titleStyle.normal.textColor = titleShadowColor;
+        LockHoverState(_titleStyle);
         GUI.Label(new Rect(titleRect.x + titleShadowOffset.x, titleRect.y + titleShadowOffset.y, titleRect.width, titleRect.height),
                   titleText, _titleStyle);
 
         _titleStyle.normal.textColor = prev;
+        LockHoverState(_titleStyle);
         GUI.Label(titleRect, titleText, _titleStyle);
 
         // ─── Body ──────────────────────────────────────────────
@@ -293,8 +350,10 @@ public class EventUI : MonoBehaviour
             float y = bodyStartY + i * bodyLineHeight;
             // 옅은 그림자
             _bodyStyle.normal.textColor = bodyShadowColor;
+            LockHoverState(_bodyStyle);
             GUI.Label(new Rect(bodyShadowOffset.x, y + bodyShadowOffset.y, RefW, bodyLineHeight + 4f), bodyLines[i], _bodyStyle);
             _bodyStyle.normal.textColor = bodyPrev;
+            LockHoverState(_bodyStyle);
             GUI.Label(new Rect(0, y, RefW, bodyLineHeight + 4f), bodyLines[i], _bodyStyle);
         }
     }

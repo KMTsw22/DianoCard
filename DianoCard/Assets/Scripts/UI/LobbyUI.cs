@@ -219,9 +219,6 @@ public class LobbyUI : MonoBehaviour
     private bool _stylesReady;
     private bool _assetsLoaded;
 
-    private readonly Dictionary<string, float> _btnScales = new();
-    private const float ScaleLerpSpeed = 14f;
-
     void Start()
     {
         LoadAssets();
@@ -270,6 +267,7 @@ public class LobbyUI : MonoBehaviour
 
     void OnGUI()
     {
+        if (PauseMenuUI.IsOpen) return;
         var gsm = GameStateManager.Instance;
         if (gsm == null || gsm.State != GameState.Lobby) return;
 
@@ -595,20 +593,11 @@ public class LobbyUI : MonoBehaviour
 
     private bool DrawTextMenuItem(Rect rect, string label, string key, bool enabled)
     {
-        if (!_btnScales.TryGetValue(key, out float curScale)) curScale = 1f;
-        Rect drawRect = ScaleRectAroundCenter(rect, curScale);
-
-        bool hovered = false;
-        if (enabled && Event.current != null && Event.current.type == EventType.Repaint)
-        {
-            hovered = drawRect.Contains(Event.current.mousePosition);
-            float targetScale = hovered ? 1.06f : 1f;
-            float t = 1f - Mathf.Exp(-ScaleLerpSpeed * Time.unscaledDeltaTime);
-            curScale = Mathf.Lerp(curScale, targetScale, t);
-            if (Mathf.Abs(curScale - targetScale) < 0.001f) curScale = targetScale;
-            _btnScales[key] = curScale;
-            drawRect = ScaleRectAroundCenter(rect, curScale);
-        }
+        // 메뉴 텍스트는 호버 시 색만 바뀌고 크기는 고정 — 버튼이 아닌 텍스트 톤 유지.
+        Rect drawRect = rect;
+        bool hovered = enabled
+            && Event.current != null
+            && drawRect.Contains(Event.current.mousePosition);
 
         var prev = GUI.color;
 
@@ -636,14 +625,6 @@ public class LobbyUI : MonoBehaviour
         }
         GUI.Button(drawRect, GUIContent.none, _invisibleStyle);
         return false;
-    }
-
-    private static Rect ScaleRectAroundCenter(Rect r, float s)
-    {
-        if (Mathf.Approximately(s, 1f)) return r;
-        float w = r.width * s;
-        float h = r.height * s;
-        return new Rect(r.x - (w - r.width) * 0.5f, r.y - (h - r.height) * 0.5f, w, h);
     }
 
     private void DrawSettingsPanel()
@@ -674,23 +655,27 @@ public class LobbyUI : MonoBehaviour
             alignment = TextAnchor.MiddleCenter,
             normal = { textColor = new Color(0.93f, 0.86f, 0.66f, 1f) },
         };
+        LockHoverState(titleStyle);
         var labelStyle = new GUIStyle(GUI.skin.label)
         {
             fontSize = 16,
             alignment = TextAnchor.MiddleCenter,
             normal = { textColor = new Color(0.8f, 0.78f, 0.7f, 1f) },
         };
+        LockHoverState(labelStyle);
         var activeBtnStyle = new GUIStyle(GUI.skin.button)
         {
             fontSize = 18,
             fontStyle = FontStyle.Bold,
             normal = { textColor = new Color(0.1f, 0.06f, 0.18f), background = Texture2D.whiteTexture },
         };
+        LockHoverState(activeBtnStyle);
         var inactiveBtnStyle = new GUIStyle(GUI.skin.button)
         {
             fontSize = 18,
             normal = { textColor = new Color(0.65f, 0.60f, 0.45f) },
         };
+        LockHoverState(inactiveBtnStyle);
 
         GUI.Label(new Rect(px, py + 18f, pw, 30f), "SETTINGS / 설정", titleStyle);
         GUI.Label(new Rect(px, py + 64f, pw, 24f), "Language / 언어", labelStyle);
@@ -732,6 +717,7 @@ public class LobbyUI : MonoBehaviour
             fontSize = 14,
             normal = { textColor = new Color(0.7f, 0.60f, 0.45f) },
         };
+        LockHoverState(closeStyle);
         if (GUI.Button(new Rect(px + (pw - 100f) * 0.5f, py + ph - 50f, 100f, 32f), "CLOSE / 닫기", closeStyle))
             _settingsOpen = false;
     }
@@ -756,11 +742,10 @@ public class LobbyUI : MonoBehaviour
                 alignment = TextAnchor.MiddleCenter,
                 fontStyle = FontStyle.Bold,
                 normal = { textColor = new Color(1f, 0.88f, 0.55f), background = null },
-                hover = { textColor = Color.white, background = null },
-                active = { textColor = new Color(1f, 0.95f, 0.7f), background = null },
             };
             _devBtnStyle.border = new RectOffset(0, 0, 0, 0);
             _devBtnStyle.padding = new RectOffset(8, 8, 4, 4);
+            LockHoverState(_devBtnStyle);
         }
 
         const float w = 130f, h = 26f;
@@ -792,10 +777,28 @@ public class LobbyUI : MonoBehaviour
             // 파치먼트 노란회색 — 배경이 밝아도 눈에 띄는 따뜻한 오프화이트
             normal = { textColor = new Color(0.93f, 0.86f, 0.66f, 1f) },
         };
+        LockHoverState(_menuTextStyle);
         _menuTextShadowStyle = new GUIStyle(_menuTextStyle)
         {
             normal = { textColor = Color.black },
         };
+        LockHoverState(_menuTextShadowStyle);
         _stylesReady = true;
+    }
+
+    // 호버/액티브/포커스 시 GUI.skin 의 기본 텍스트 색·배경 swap을 차단해
+    // 텍스트가 호버에 깜빡이거나 미세하게 시프트되는 느낌을 막는다.
+    private static void LockHoverState(GUIStyle s)
+    {
+        if (s == null) return;
+        var c = s.normal.textColor;
+        var bg = s.normal.background;
+        s.hover.textColor = c;     s.hover.background = bg;
+        s.active.textColor = c;    s.active.background = bg;
+        s.focused.textColor = c;   s.focused.background = bg;
+        s.onNormal.textColor = c;  s.onNormal.background = bg;
+        s.onHover.textColor = c;   s.onHover.background = bg;
+        s.onActive.textColor = c;  s.onActive.background = bg;
+        s.onFocused.textColor = c; s.onFocused.background = bg;
     }
 }

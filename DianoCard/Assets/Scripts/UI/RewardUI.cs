@@ -46,7 +46,7 @@ public class RewardUI : MonoBehaviour
     [SerializeField] private float titleAreaHeight = 52f;
     [SerializeField, Range(12, 64)] private int titleFontSize = 30;
     [SerializeField] private Color titleColor = new(0.788f, 0.659f, 0.412f); // #c9a86a aged-brass
-    [Tooltip("폰트 변경 (None = NotoSansKR)")]
+    [Tooltip("폰트 변경 (None = Hahmlet)")]
     [SerializeField] private Font titleFontOverride;
 
     [Header("Panel Backdrop")]
@@ -101,7 +101,7 @@ public class RewardUI : MonoBehaviour
     [SerializeField] private string continueButtonText = "";
     [SerializeField, Range(12, 48)] private int continueButtonFontSize = 24;
     [SerializeField] private Color continueButtonTextColor = new(0.788f, 0.659f, 0.412f); // #c9a86a
-    [Tooltip("폰트 변경 (None = NotoSansKR)")]
+    [Tooltip("폰트 변경 (None = Hahmlet)")]
     [SerializeField] private Font continueButtonFontOverride;
     [Tooltip("버튼 텍스트 Y 미세 조정 (양수 = 아래)")]
     [SerializeField] private float continueButtonTextYOffset = 0f;
@@ -278,6 +278,7 @@ public class RewardUI : MonoBehaviour
 
     void OnGUI()
     {
+        if (PauseMenuUI.IsOpen) return;
         var gsm = GameStateManager.Instance;
         if (gsm == null || gsm.State != GameState.Reward) return;
 
@@ -891,7 +892,8 @@ public class RewardUI : MonoBehaviour
         _skipButtonStyle.fontSize = skipButtonFontSize;
         _skipButtonStyle.normal.textColor = skipButtonTextColor;
 
-        // 모든 상태(hover/active/...) 색도 normal과 동기화
+        // 모든 상태(hover/active/...) 색도 normal과 동기화 — 마우스 hover 시 색이 튀는 현상 방지
+        LockStateColors(_rowLabelStyle);
         LockStateColors(_pickerTitleStyle);
         LockStateColors(_pickerSubStyle);
         LockStateColors(_skipButtonStyle);
@@ -902,6 +904,7 @@ public class RewardUI : MonoBehaviour
             _titleStyle.fontSize = titleFontSize;
             _titleStyle.normal.textColor = titleColor;
             _titleStyle.font = titleFontOverride != null ? titleFontOverride : _displayFontKR;
+            LockStateColors(_titleStyle);
         }
         // Continue 버튼 텍스트
         if (_continueTextStyle != null)
@@ -909,6 +912,7 @@ public class RewardUI : MonoBehaviour
             _continueTextStyle.fontSize = continueButtonFontSize;
             _continueTextStyle.normal.textColor = continueButtonTextColor;
             _continueTextStyle.font = continueButtonFontOverride != null ? continueButtonFontOverride : _displayFontKR;
+            LockStateColors(_continueTextStyle);
         }
     }
 
@@ -929,7 +933,7 @@ public class RewardUI : MonoBehaviour
         _skipButtonTex = Resources.Load<Texture2D>("Reward/CardPicker/SkipButton");
 
         _displayFont = Resources.Load<Font>("Fonts/Cinzel-VariableFont_wght");
-        _displayFontKR = Resources.Load<Font>("Fonts/NotoSansKR-VariableFont_wght");
+        _displayFontKR = Resources.Load<Font>("Fonts/Hahmlet-VariableFont_wght");
 
         _glowTex = CreateRadialGlowTexture(64);
 
@@ -961,7 +965,7 @@ public class RewardUI : MonoBehaviour
             wordWrap = true,
             normal = { textColor = rowLabelColor },
         };
-        // 한글 메인 타이틀 — "카드를 선택하세요". NotoSansKR + 큰 사이즈 + 아이보리/크림.
+        // 한글 메인 타이틀 — "카드를 선택하세요". Hahmlet + 큰 사이즈 + 아이보리/크림.
         _pickerTitleStyle = new GUIStyle(GUI.skin.label)
         {
             font = _displayFontKR,
@@ -970,7 +974,7 @@ public class RewardUI : MonoBehaviour
             fontStyle = FontStyle.Bold,
             normal = { textColor = cpTitleColor },
         };
-        // 한글 설명 (카드 제거 화면 부제 등) — NotoSansKR + 작게 + 머티드 아이보리.
+        // 한글 설명 (카드 제거 화면 부제 등) — Hahmlet + 작게 + 머티드 아이보리.
         _pickerSubStyle = new GUIStyle(GUI.skin.label)
         {
             font = _displayFontKR,
@@ -997,16 +1001,20 @@ public class RewardUI : MonoBehaviour
         _stylesReady = true;
     }
 
+    // GUIStyle의 모든 인터랙션 state의 텍스트 색·배경을 normal과 동일하게 고정.
+    // GUI.skin.button 베이스 스타일은 hover/active에서 다른 background로 swap되며
+    // 텍스트가 미세하게 시프트되는 느낌을 주므로 background도 함께 락한다.
     private static void LockStateColors(GUIStyle s)
     {
         if (s == null) return;
         var c = s.normal.textColor;
-        s.hover.textColor    = c;
-        s.active.textColor   = c;
-        s.focused.textColor  = c;
-        s.onNormal.textColor = c;
-        s.onHover.textColor  = c;
-        s.onActive.textColor = c;
-        s.onFocused.textColor= c;
+        var bg = s.normal.background;
+        s.hover.textColor    = c; s.hover.background    = bg;
+        s.active.textColor   = c; s.active.background   = bg;
+        s.focused.textColor  = c; s.focused.background  = bg;
+        s.onNormal.textColor = c; s.onNormal.background = bg;
+        s.onHover.textColor  = c; s.onHover.background  = bg;
+        s.onActive.textColor = c; s.onActive.background = bg;
+        s.onFocused.textColor= c; s.onFocused.background= bg;
     }
 }

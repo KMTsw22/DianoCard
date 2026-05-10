@@ -32,7 +32,7 @@ C107,신성의 광구,Sacred Orb,MAGIC,PURIFY,UNCOMMON,1,0,0,0,SELF,공룡 해�
 C108,도발,Taunt,BUFF,TAUNT,COMMON,1,0,0,1,ALLY,선택 공룡 도발 (1턴).,Taunt (1T).,Taunt.png,1,1.0,NONE,0
 C201,공격 강화,Power Up,BUFF,ATTACK_BUFF,COMMON,1,0,0,3,ALLY,필드 공룡 ATK +3 (1턴).,All dinos +3 ATK (1T).,PowerUp.png,1,1.0,NONE,0
 C202,공룡 치유,Heal,BUFF,HEAL,COMMON,1,0,0,2,ALL_ALLY,전체 +2 HP.,+2 HP to all.,HealAll.png,1,1.0,NONE,0
-C203,광폭화,Berserk,BUFF,ATTACK_BUFF,UNCOMMON,1,0,0,5,ALLY,ATK +5 (1턴). HP -1.,+5 ATK (1T). -1 HP.,Berserk.png,1,1.0,NONE,0
+C203,광폭화,Berserk,BUFF,ATTACK_BUFF,UNCOMMON,1,0,0,5,ALLY,공룡 ATK +5 (1턴). 소환사 HP -3.,Dinosaurs +5 ATK (1T). Summoner -3 HP.,Berserk.png,1,1.0,NONE,0
 C204,광역 공격,Cleave,BUFF,SPECIAL,UNCOMMON,2,0,0,0,ALLY,공격이 광역화.,Attacks become AoE.,Cleave.png,2,1.0,NONE,0
 C205,재생,Regenerate,BUFF,HEAL,UNCOMMON,1,0,0,3,ALLY,HP +3. +1/턴 (3턴).,+3 HP. +1/T (3T).,Regenerate.png,2,1.0,NONE,0
 C206,분노의 함성,Roar,BUFF,SPECIAL,RARE,2,0,0,0,ALL_ALLY,전체 ATK +2 (영구).,All +2 ATK (forever).,Roar.png,3,1.0,NONE,0
@@ -59,7 +59,7 @@ C121,방패 격돌,Shield Slam,MAGIC,ATTACK,UNCOMMON,2,0,0,7,ENEMY,7 피해. 자
 C124,광기의 검광,Frenzy Slash,MAGIC,ATTACK,UNCOMMON,1,0,0,5,ENEMY,5 피해. 적 HP ≤ 절반이면 10 피해.,Deal 5. If target HP ≤ 50%: deal 10.,FrenzySlash.png,1,1.0,NONE,0
 C129,천둥 포효,Thunder Roar,MAGIC,ATTACK,UNCOMMON,2,0,0,4,ALL_ENEMY,전체 4 피해. 약화 (1턴).,Deal 4 all. Weak (1T).,ThunderRoar.png,1,1.0,NONE,0
 C131,발톱 폭우,Claw Storm,MAGIC,ATTACK,UNCOMMON,1,0,0,0,ENEMY,필드 ATK 합산 피해.,Deal field total ATK.,ClawStorm.png,1,1.0,NONE,0
-C132,총출동,Full Charge,BUFF,SPECIAL,UNCOMMON,1,0,0,1,SELF,이번 턴 SUMMON 카드 비용 -1.,SUMMON cards cost -1 this turn.,PackCall.png,1,1.0,NONE,0
+C132,총출동,Full Charge,BUFF,SPECIAL,UNCOMMON,1,0,0,1,SELF,이번 턴 소환 카드 비용 -1.,Summon cards cost -1 this turn.,PackCall.png,1,1.0,NONE,0
 C133,속박의 덩굴,Binding Vine,MAGIC,DEBUFF,UNCOMMON,1,0,0,1,ENEMY,속박 (1턴).,Bind (1T).,BindingVine.png,1,1.0,NONE,0
 C135,부식의 선풍,Corrosive Cyclone,MAGIC,DEBUFF,COMMON,1,0,0,3,ENEMY,3 피해. 취약 (1턴).,Deal 3. Vulnerable (1T).,CorrosiveCyclone.png,1,1.0,NONE,0
 C136,맹독 가시,Venom Thorn,MAGIC,DEBUFF,UNCOMMON,1,0,0,3,ENEMY,독 +3.,+3 Poison.,VenomThorn.png,1,1.0,NONE,0

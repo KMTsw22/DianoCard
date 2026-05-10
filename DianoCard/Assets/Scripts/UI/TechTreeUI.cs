@@ -104,6 +104,7 @@ public class TechTreeUI : MonoBehaviour
     private Texture2D _backIconTex;
 
     private Font _displayFont;
+    private Font _displayFontKR;
 
     private GUIStyle _titleStyle;
     private GUIStyle _pointsStyle;
@@ -130,6 +131,7 @@ public class TechTreeUI : MonoBehaviour
         _whiteTex      = Texture2D.whiteTexture;
         _radialGlowTex = MakeRadialGlow(96);
         _displayFont   = Resources.Load<Font>("Fonts/IMFellEnglish-Regular");
+        _displayFontKR = Resources.Load<Font>("Fonts/Hahmlet-VariableFont_wght");
 
         _bgTex        = Resources.Load<Texture2D>("TechTreeUI/TechTree_BG");
         _hexRootTex   = Resources.Load<Texture2D>("TechTreeUI/TechTree_Hex_Center");
@@ -158,6 +160,7 @@ public class TechTreeUI : MonoBehaviour
 
     void OnGUI()
     {
+        if (PauseMenuUI.IsOpen) return;
         var gsm = GameStateManager.Instance;
         bool inTechTree = gsm != null && gsm.State == GameState.TechTree && gsm.TechTree != null;
 
@@ -323,6 +326,7 @@ public class TechTreeUI : MonoBehaviour
             const string hint = "노드를 클릭해 랭크업 — 같은 노드를 여러 번 찍을 수 있음";
             var tipStyle = new GUIStyle(GUI.skin.label)
             {
+                font = _displayFontKR,
                 fontSize = 12, wordWrap = false,
                 normal = { textColor = TextMuted },
             };
@@ -358,7 +362,7 @@ public class TechTreeUI : MonoBehaviour
         {
             var numStyle = new GUIStyle(GUI.skin.label)
             {
-                font = _displayFont, fontSize = (int)pointsFontSize,
+                font = _displayFontKR, fontSize = (int)pointsFontSize,
                 alignment = TextAnchor.MiddleRight, fontStyle = FontStyle.Bold,
                 normal = { textColor = new Color(1f, 0.92f, 0.60f, 1f) },
             };
@@ -684,37 +688,57 @@ public class TechTreeUI : MonoBehaviour
         var node = TechTreeCatalog.GetNode(_hoverNodeId);
         if (node == null) return;
 
+        // BattleUI 유물/포션 툴팁과 동일 톤: 다크 바이올렛 배경 + 브론즈 1px 트림.
+        const float TipW = 210f;
+        bool hasDesc = !string.IsNullOrEmpty(node.description);
+        float descH  = hasDesc ? 32f : 0f;
+        float tipH   = 6f + 20f + (hasDesc ? 6f + descH : 0f) + 4f + 16f + 6f;
+
         Vector2 mp = Event.current.mousePosition;
-        var tipRect = new Rect(mp.x + 18f, mp.y + 18f, 280f, 86f);
-        if (tipRect.xMax > RefW - 8f) tipRect.x = mp.x - tipRect.width - 18f;
-        if (tipRect.yMax > RefH - 8f) tipRect.y = RefH - tipRect.height - 8f;
+        float tx = Mathf.Round(Mathf.Clamp(mp.x + 18f, 10f, RefW - TipW - 10f));
+        float ty = Mathf.Round(mp.y + 18f);
+        if (ty + tipH > RefH - 8f) ty = RefH - tipH - 8f;
+        var tipRect = new Rect(tx, ty, TipW, tipH);
 
-        DrawRect(tipRect, new Color(0.05f, 0.04f, 0.07f, 0.96f));
-        DrawHollowRect(tipRect, AccentOf(node.direction), 1.5f);
+        DrawRect(tipRect, new Color(0.059f, 0.043f, 0.137f, 1f));
+        var trimCol = new Color(0.82f, 0.68f, 0.38f, 0.7f);
+        DrawRect(new Rect(tipRect.x, tipRect.y, tipRect.width, 1f), trimCol);
+        DrawRect(new Rect(tipRect.x, tipRect.yMax - 1f, tipRect.width, 1f), trimCol);
+        DrawRect(new Rect(tipRect.x, tipRect.y + 1f, 1f, tipRect.height - 2f), trimCol);
+        DrawRect(new Rect(tipRect.xMax - 1f, tipRect.y + 1f, 1f, tipRect.height - 2f), trimCol);
 
-        GUI.Label(new Rect(tipRect.x + 8f, tipRect.y + 4f, tipRect.width - 16f, 20f),
+        GUI.Label(new Rect(tipRect.x + 8f, tipRect.y + 6f, TipW - 16f, 20f),
             $"{node.name}{(node.isCapstone ? "  ★" : "")}",
             new GUIStyle(GUI.skin.label)
             {
-                fontSize = 14, fontStyle = FontStyle.Bold,
-                normal = { textColor = TextWarm },
+                font = _displayFontKR,
+                fontSize = 13, fontStyle = FontStyle.Bold,
+                normal = { textColor = Color.white },
             });
-        GUI.Label(new Rect(tipRect.x + 8f, tipRect.y + 26f, tipRect.width - 16f, 32f),
-            node.description,
-            new GUIStyle(GUI.skin.label)
-            {
-                fontSize = 12, wordWrap = true,
-                normal = { textColor = TextMuted },
-            });
+
+        float cursorY = tipRect.y + 26f;
+        if (hasDesc)
+        {
+            GUI.Label(new Rect(tipRect.x + 8f, cursorY, TipW - 16f, descH),
+                node.description,
+                new GUIStyle(GUI.skin.label)
+                {
+                    font = _displayFontKR,
+                    fontSize = 11, wordWrap = true,
+                    normal = { textColor = new Color(0.80f, 0.76f, 0.88f) },
+                });
+            cursorY += descH + 4f;
+        }
 
         int curRank = gsm.TechTree.GetRank(node.id);
         string costLine = curRank >= node.maxRank
             ? $"최대 랭크 ({curRank}/{node.maxRank})"
             : $"랭크 {curRank}/{node.maxRank}  ·  다음: {node.perRankCost} pt";
-        GUI.Label(new Rect(tipRect.x + 8f, tipRect.yMax - 22f, tipRect.width - 16f, 16f),
+        GUI.Label(new Rect(tipRect.x + 8f, cursorY, TipW - 16f, 16f),
             costLine,
             new GUIStyle(GUI.skin.label)
             {
+                font = _displayFontKR,
                 fontSize = 11,
                 normal = { textColor = curRank >= node.maxRank ? new Color(1f, 0.78f, 0.30f) : new Color(1f, 0.88f, 0.45f) },
             });
@@ -735,6 +759,7 @@ public class TechTreeUI : MonoBehaviour
         GUI.color = Color.white;
         GUI.Label(rect, _flashMessage, new GUIStyle(GUI.skin.label)
         {
+            font = _displayFontKR,
             fontSize = 14, alignment = TextAnchor.MiddleCenter,
             fontStyle = FontStyle.Bold,
             normal = { textColor = new Color(TextWarm.r, TextWarm.g, TextWarm.b, alpha) },
@@ -890,14 +915,35 @@ public class TechTreeUI : MonoBehaviour
         _smallBtnStyle = new GUIStyle(GUI.skin.button)
         {
             fontSize = 13, alignment = TextAnchor.MiddleCenter, fontStyle = FontStyle.Bold,
-            normal  = { textColor = TextWarm,                background = null },
-            hover   = { textColor = Color.white,             background = null },
-            active  = { textColor = new Color(1f, 0.95f, 0.7f), background = null },
+            normal  = { textColor = TextWarm, background = null },
             border  = new RectOffset(0, 0, 0, 0),
             padding = new RectOffset(4, 4, 2, 2),
         };
         _backBtnStyle = new GUIStyle(_smallBtnStyle) { fontSize = 16 };
 
+        // GUI.skin 기본 hover/active state의 색·배경 swap을 차단해
+        // 호버 시 텍스트가 미세하게 흔들리는 느낌을 없앤다.
+        LockHoverState(_titleStyle);
+        LockHoverState(_pointsStyle);
+        LockHoverState(_branchLabelStyle);
+        LockHoverState(_rankCounterStyle);
+        LockHoverState(_smallBtnStyle);
+        LockHoverState(_backBtnStyle);
+
         _stylesReady = true;
+    }
+
+    private static void LockHoverState(GUIStyle s)
+    {
+        if (s == null) return;
+        var c = s.normal.textColor;
+        var bg = s.normal.background;
+        s.hover.textColor = c;     s.hover.background = bg;
+        s.active.textColor = c;    s.active.background = bg;
+        s.focused.textColor = c;   s.focused.background = bg;
+        s.onNormal.textColor = c;  s.onNormal.background = bg;
+        s.onHover.textColor = c;   s.onHover.background = bg;
+        s.onActive.textColor = c;  s.onActive.background = bg;
+        s.onFocused.textColor = c; s.onFocused.background = bg;
     }
 }

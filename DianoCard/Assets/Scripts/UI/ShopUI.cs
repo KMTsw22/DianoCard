@@ -380,6 +380,7 @@ public class ShopUI : MonoBehaviour
 
     void OnGUI()
     {
+        if (PauseMenuUI.IsOpen) return;
         var gsm = GameStateManager.Instance;
         if (gsm == null || gsm.State != GameState.Shop) return;
         var run = gsm.CurrentRun;
@@ -1340,17 +1341,21 @@ public class ShopUI : MonoBehaviour
         if (_slimCostStyle != null) _slimCostStyle.fontSize = slimCostFontSize;
     }
 
+    // GUIStyle의 모든 인터랙션 state의 텍스트 색·배경을 normal과 동일하게 고정.
+    // GUI.skin.button 베이스 스타일은 hover/active에서 다른 background로 swap되며
+    // 텍스트가 미세하게 시프트되는 느낌을 주므로 background도 함께 락한다.
     private static void LockStateColors(GUIStyle s)
     {
         if (s == null) return;
         var c = s.normal.textColor;
-        s.hover.textColor    = c;
-        s.active.textColor   = c;
-        s.focused.textColor  = c;
-        s.onNormal.textColor = c;
-        s.onHover.textColor  = c;
-        s.onActive.textColor = c;
-        s.onFocused.textColor= c;
+        var bg = s.normal.background;
+        s.hover.textColor    = c; s.hover.background    = bg;
+        s.active.textColor   = c; s.active.background   = bg;
+        s.focused.textColor  = c; s.focused.background  = bg;
+        s.onNormal.textColor = c; s.onNormal.background = bg;
+        s.onHover.textColor  = c; s.onHover.background  = bg;
+        s.onActive.textColor = c; s.onActive.background = bg;
+        s.onFocused.textColor= c; s.onFocused.background= bg;
     }
 
     // =========================================================
