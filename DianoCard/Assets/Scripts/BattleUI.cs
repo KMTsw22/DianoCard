@@ -818,6 +818,8 @@ public class BattleUI : MonoBehaviour
     private float _relicDropdownAnchorX;
     private float _navBarBottomY = 70f;
 
+    private enum DamageFloaterKind { Damage, Heal, BlockAbsorbed }
+
     private class DamageFloater
     {
         public object anchor;
@@ -827,7 +829,154 @@ public class BattleUI : MonoBehaviour
         // 앵커가 죽어 _slotPositions에서 사라진 뒤에도 마지막 위치에서 그릴 수 있게 캐시.
         public Vector2 lastPos;
         public bool hasPos;
-        public const float LifeTime = 1.2f;
+        public DamageFloaterKind kind;
+        // 같은 프레임 동시 spawn 시 좌우로 분리해 겹침 방지. (예: 블록 흡수 -55, 데미지 0)
+        public float xOffset;
+
+        // 스폰 시 결정되는 무작위 변동값 — 같은 데미지여도 매번 다르게 보이도록 무게감 부여.
+        // 매 프레임 새로 뽑으면 떨림이 너무 강해지므로 spawn 시 한 번 결정해 유지.
+        public float spawnRotation;   // -8 ~ +8도. 큰 데미지일수록 진폭 큼.
+        public float xJitter;         // 시작 위치 좌우 변동, ±12px 내외.
+        public float swayPhase;       // 부유 흔들림용 0~2π 랜덤 위상.
+        public float swayAmp;         // 부유 진폭(px). 큰 데미지일수록 큼.
+
+        public const float LifeTime = 1.05f; // 1.2 → 살짝 짧게 — 다음 데미지와 겹쳐 보이는 시간 단축.
+        // 펀치 인 = 더 짧고 강렬하게. 시작 1.75배 → 0.92 살짝 작아짐 → 1.0 정착 (overshoot).
+        public const float PunchDuration = 0.10f;
+        public const float PunchStartScale = 1.75f;
+    }
+
+    // ============================================================================
+    // 공룡(SummonInstance) 사망 모션 — IMGUI라 별도 페이드 그리기 시스템.
+    // BattleEntityView의 잉크 잔향 모션과 동일한 디자인 룰(흰 플래시 → 잉크 차콜 → 알파+Y 페이드).
+    // ============================================================================
+
+    private class DyingSummonView
+    {
+        public SummonInstance source;     // 참조용 (중복 등록 방지). 그리기 시점엔 캐싱된 sprite/size 사용.
+        public Texture2D sprite;
+        public Vector2 pos;               // 발(rect.yMax 부근) 기준 마지막 위치.
+        public float w;
+        public float h;
+        public float age;
+        public float deathRotation;       // 사망 회전 ±7도. spawn 시 한 번 결정.
+        public const float LifeTime = 0.66f; // BattleEntityView.DeathRoutine 총 길이와 동일 (0.06+0.20+0.40).
+    }
+
+    private readonly List<DyingSummonView> _dyingSummons = new();
+
+    private void RegisterDyingSummon(SummonInstance s)
+    {
+        if (s == null) return;
+        // 중복 등록 방지 — IsDead 공룡이 EndTurnCleanup까지 남아 매 OnGUI마다 이벤트 재발사될 일은 없지만 안전망.
+        foreach (var d in _dyingSummons)
+            if (ReferenceEquals(d.source, s)) return;
+
+        // sprite/사이즈 캡처. _cardSprites는 카드 이미지, _summonDisplayPositions는 애니된 위치.
+        Texture2D tex = null;
+        if (s.data != null) _cardSprites.TryGetValue(s.data.id, out tex);
+
+        float scale = s.data != null ? s.data.SafeFieldScale : 1f;
+        float w = dinoSize * scale;
+        float h = dinoSize * scale;
+
+        Vector2 pos;
+        if (!_summonDisplayPositions.TryGetValue(s, out pos))
+            _slotPositions.TryGetValue(s, out pos);
+
+        _dyingSummons.Add(new DyingSummonView
+        {
+            source = s,
+            sprite = tex,
+            pos = pos,
+            w = w,
+            h = h,
+            age = 0f,
+            deathRotation = UnityEngine.Random.Range(-7f, 7f),
+        });
+    }
+
+    private void AdvanceDyingSummons()
+    {
+        if (_dyingSummons.Count == 0) return;
+        float dt = Time.deltaTime;
+        for (int i = 0; i < _dyingSummons.Count; i++) _dyingSummons[i].age += dt;
+        _dyingSummons.RemoveAll(d => d.age >= DyingSummonView.LifeTime);
+    }
+
+    private void DrawDyingSummons()
+    {
+        if (_dyingSummons.Count == 0) return;
+        Color inkCharcoal = new Color(0.102f, 0.078f, 0.063f, 1f);
+        var prevColor = GUI.color;
+        var prevMatrix = GUI.matrix;
+
+        // BattleEntityView.DeathRoutine과 동일 페이즈 길이.
+        // Phase 1 (0.06s): 짓눌림 + 흰 플래시
+        // Phase 2 (0.20s): 잉크 톤다운 + 위로 솟구침 도입 + Y stretch
+        // Phase 3 (0.40s): 알파 페이드 + 더 떠오름 + 추가 stretch + 회전 정착
+        const float p1 = 0.06f / DyingSummonView.LifeTime;
+        const float p2 = (0.06f + 0.20f) / DyingSummonView.LifeTime;
+
+        foreach (var d in _dyingSummons)
+        {
+            if (d.sprite == null) continue;
+            float p = Mathf.Clamp01(d.age / DyingSummonView.LifeTime);
+
+            Color tint;
+            float yRiseRatio; // 캐릭터 높이 비율
+            float xScale;
+            float yScale;
+            float rotation;
+            float alpha;
+
+            if (p < p1)
+            {
+                float k = p / p1;
+                tint = Color.Lerp(new Color(1.4f, 1.2f, 1.1f, 1f), Color.white, k);
+                yRiseRatio = 0f;
+                xScale = Mathf.Lerp(1.05f, 1f, k);    // X 살짝 퍼졌다 정상
+                yScale = Mathf.Lerp(0.92f, 1f, k);    // Y 짓눌림 → 정상
+                rotation = 0f;
+                alpha = 1f;
+            }
+            else if (p < p2)
+            {
+                float k = (p - p1) / (p2 - p1);
+                float eased = 1f - (1f - k) * (1f - k);
+                tint = Color.Lerp(Color.white, inkCharcoal, eased);
+                yRiseRatio = 0.08f * eased;
+                xScale = Mathf.Lerp(1f, 0.96f, eased); // X 좁아짐
+                yScale = Mathf.Lerp(1f, 1.08f, eased); // Y 늘어남 — 영혼 빠지는 도입
+                rotation = d.deathRotation * 0.3f * eased;
+                alpha = 1f;
+            }
+            else
+            {
+                float k = (p - p2) / (1f - p2);
+                float eased = 1f - Mathf.Pow(1f - k, 3f);
+                tint = inkCharcoal;
+                yRiseRatio = Mathf.Lerp(0.08f, 0.32f, eased);
+                xScale = Mathf.Lerp(0.96f, 0.88f, eased);
+                yScale = Mathf.Lerp(1.08f, 1.18f, eased);
+                rotation = Mathf.Lerp(d.deathRotation * 0.3f, d.deathRotation, eased);
+                alpha = 1f - eased;
+            }
+
+            float drawW = d.w * xScale;
+            float drawH = d.h * yScale;
+            float yRise = d.h * yRiseRatio;
+            float footY = d.pos.y + d.h * 0.5f - yRise;
+            var rect = new Rect(d.pos.x - drawW * 0.5f, footY - drawH, drawW, drawH);
+
+            // 회전 — 발 위치(footY) 기준으로 회전해야 자연스러움(머리가 흔들리는 느낌).
+            GUI.matrix = prevMatrix * RotateAroundPivotMatrix(rotation, new Vector2(d.pos.x, footY));
+            GUI.color = new Color(tint.r, tint.g, tint.b, alpha);
+            GUI.DrawTexture(rect, d.sprite, ScaleMode.StretchToFill, alphaBlend: true);
+        }
+
+        GUI.matrix = prevMatrix;
+        GUI.color = prevColor;
     }
 
     // =========================================================
@@ -837,6 +986,12 @@ public class BattleUI : MonoBehaviour
     void Start()
     {
         if (!DataManager.Instance.IsLoaded) DataManager.Instance.Load();
+
+        // 카메라 셰이크 컴포넌트가 메인 카메라에 없으면 부착. 데미지 시점에 Shake() 호출 가능.
+        var mainCam = Camera.main;
+        if (mainCam != null && mainCam.GetComponent<DianoCard.FX.CameraShaker>() == null)
+            mainCam.gameObject.AddComponent<DianoCard.FX.CameraShaker>();
+
         LoadCardSprites();
         LoadEnemySprites();
         _cardCountBadgeTexture = Resources.Load<Texture2D>("CardSlot/CardCountBadge");
@@ -999,6 +1154,7 @@ public class BattleUI : MonoBehaviour
                 _lastKnownHp.Clear();
                 _hpBarDisplayedFrac.Clear();
                 _floaters.Clear();
+        _dyingSummons.Clear();
                 _targetingCardIndex = -1;
                 _targetingSummonIndex = -1;
                 _targetingSummonSkillIndex = -1;
@@ -1041,6 +1197,7 @@ public class BattleUI : MonoBehaviour
             _lastKnownHp.Clear();
             _hpBarDisplayedFrac.Clear();
             _floaters.Clear();
+        _dyingSummons.Clear();
             _targetingCardIndex = -1;
             _targetingSummonIndex = -1;
             _targetingSummonSkillIndex = -1;
@@ -1078,6 +1235,7 @@ public class BattleUI : MonoBehaviour
         {
             DetectDamage();
             AdvanceFloaters();
+            AdvanceDyingSummons();
             CleanupDeadEnemyViews();
 
             // 플레이어 block 증가 감지 → 방패 이펙트 트리거
@@ -1348,6 +1506,62 @@ public class BattleUI : MonoBehaviour
         if (_normal1FogTex != null) Destroy(_normal1FogTex);
     }
 
+    private void OnEnable()
+    {
+        DianoCard.Battle.BattleEvents.OnBlockAbsorbed += HandleBlockAbsorbed;
+        DianoCard.Battle.BattleEvents.OnEntityKilled  += HandleEntityKilled;
+    }
+
+    private void OnDisable()
+    {
+        DianoCard.Battle.BattleEvents.OnBlockAbsorbed -= HandleBlockAbsorbed;
+        DianoCard.Battle.BattleEvents.OnEntityKilled  -= HandleEntityKilled;
+    }
+
+    // OnEntityKilled — entity HP가 0이 된 그 순간 한 번만 호출.
+    // 적: 월드 BattleEntityView가 있으면 PlayDeath 코루틴 시작. 보스/엘리트면 가벼운 카메라 셰이크.
+    // 공룡: IMGUI 그리기라 별도 dying 리스트(_dyingSummons)에 등록 — 페이드 모션 처리는 DrawDyingSummons.
+    // 플레이어: 일단 무시 (GameOver UI가 별도로 진입 처리).
+    private void HandleEntityKilled(object entity)
+    {
+        if (entity is EnemyInstance ei)
+        {
+            if (_enemyViews.TryGetValue(ei, out var view) && view != null && !view.IsDying)
+                view.PlayDeath();
+            // 보스/엘리트만 가벼운 카메라 셰이크 — 잡몹 죽음에 셰이크 박으면 어지러움.
+            var et = ei.data?.enemyType ?? DianoCard.Data.EnemyType.NORMAL;
+            if (et == DianoCard.Data.EnemyType.BOSS || et == DianoCard.Data.EnemyType.ELITE)
+                DianoCard.FX.CameraShaker.Instance?.Shake(0.015f, 0.20f);
+        }
+        else if (entity is SummonInstance s)
+        {
+            RegisterDyingSummon(s);
+        }
+        // PlayerState 사망은 GameOverUI 진입 흐름이 따로 있어 추가 후크 안 함.
+    }
+
+    // BattleEvents.OnBlockAbsorbed 콜백 — 방어막이 데미지를 흡수한 순간 페일 블루 floater 스폰.
+    // 같은 TakeDamage에서 HP도 깎였다면 폴링 기반 데미지 floater가 곧이어 별도로 스폰됨(중앙).
+    // BlockAbsorbed는 xOffset=-55로 왼쪽으로 살짝 비껴서 데미지 숫자와 시각적으로 분리된다.
+    private void HandleBlockAbsorbed(object entity, int amount)
+    {
+        if (amount <= 0) return;
+        bool hasGuiPos = _slotPositions.TryGetValue(entity, out var guiPos);
+        var f = new DamageFloater
+        {
+            anchor = entity,
+            amount = amount,
+            delay = 0f,
+            age = 0f,
+            lastPos = hasGuiPos ? guiPos : default,
+            hasPos = hasGuiPos,
+            kind = DamageFloaterKind.BlockAbsorbed,
+            xOffset = -55f,
+        };
+        SeedFloaterRandomness(f);
+        _floaters.Add(f);
+    }
+
     private void LoadEnemySprites()
     {
         foreach (var enemy in DataManager.Instance.Enemies.Values)
@@ -1607,12 +1821,18 @@ public class BattleUI : MonoBehaviour
         List<EnemyInstance> toRemove = null;
         foreach (var kv in _enemyViews)
         {
-            if (kv.Key.IsDead)
+            if (!kv.Key.IsDead) continue;
+
+            // view가 이미 destroy됐다면(DeathRoutine self-destroy 완료) dict에서만 cleanup.
+            if (kv.Value == null || kv.Value.gameObject == null)
             {
-                if (kv.Value != null && kv.Value.gameObject != null)
-                    Destroy(kv.Value.gameObject);
                 (toRemove ??= new List<EnemyInstance>()).Add(kv.Key);
+                continue;
             }
+
+            // 사망 모션이 아직 시작 안 됐다면 시작. OnEntityKilled 구독이 먼저 잡았다면 이미 IsDying.
+            if (!kv.Value.IsDying)
+                kv.Value.PlayDeath();
         }
         if (toRemove != null)
             foreach (var k in toRemove) _enemyViews.Remove(k);
@@ -1649,6 +1869,7 @@ public class BattleUI : MonoBehaviour
         _lastKnownHp.Clear();
         _hpBarDisplayedFrac.Clear();
         _floaters.Clear();
+        _dyingSummons.Clear();
         _pending.Clear();
         _battleEndQueued = false;
         _targetingCardIndex = -1;
@@ -2349,7 +2570,11 @@ public class BattleUI : MonoBehaviour
             {
                 float delay = newFloatersThisFrame * 0.30f;
                 bool hasGuiPos = _slotPositions.TryGetValue(unit, out var guiPos);
-                _floaters.Add(new DamageFloater
+                // 이 데미지로 entity가 사망했는지 — 사망이면 hit VFX/PlayHit를 스킵해
+                // 죽음 모션(DeathRoutine 잉크 잔향)만 단독으로 보이도록 통일.
+                bool fatal = IsEntityDead(unit);
+
+                var f = new DamageFloater
                 {
                     anchor = unit,
                     amount = delta,
@@ -2357,25 +2582,82 @@ public class BattleUI : MonoBehaviour
                     age = 0,
                     lastPos = hasGuiPos ? guiPos : default,
                     hasPos = hasGuiPos,
-                });
-                if (hasGuiPos)
+                    kind = DamageFloaterKind.Damage,
+                };
+                SeedFloaterRandomness(f);
+                _floaters.Add(f);
+                if (!fatal && hasGuiPos)
                 {
                     StartCoroutine(SpawnDamageVFXDelayed(guiPos, delay));
                 }
-                if (unit is EnemyInstance ei
-                    && _enemyViews.TryGetValue(ei, out var eView)
-                    && eView != null)
+                if (!fatal)
                 {
-                    StartCoroutine(PlayHitDelayed(eView, delay));
+                    if (unit is EnemyInstance ei
+                        && _enemyViews.TryGetValue(ei, out var eView)
+                        && eView != null)
+                    {
+                        StartCoroutine(PlayHitDelayed(eView, delay));
+                    }
+                    else if (unit is Player && _playerView != null)
+                    {
+                        StartCoroutine(PlayHitDelayed(_playerView, delay));
+                    }
                 }
-                else if (unit is Player && _playerView != null)
+                // 카메라 셰이크와 데미지 숫자는 사망 데미지에도 그대로 발동 — 마지막 한 방의 임팩트 유지.
+                TriggerDamageShake(delta, delay);
+                newFloatersThisFrame++;
+            }
+            else if (delta < 0)
+            {
+                // HP 증가 = 회복. 모스 그린 + '+값' 표기. VFX/Hit 모션은 생략(피격이 아니므로).
+                float delay = newFloatersThisFrame * 0.30f;
+                bool hasGuiPos = _slotPositions.TryGetValue(unit, out var guiPos);
+                var f = new DamageFloater
                 {
-                    StartCoroutine(PlayHitDelayed(_playerView, delay));
-                }
+                    anchor = unit,
+                    amount = -delta,
+                    delay = delay,
+                    age = 0,
+                    lastPos = hasGuiPos ? guiPos : default,
+                    hasPos = hasGuiPos,
+                    kind = DamageFloaterKind.Heal,
+                };
+                SeedFloaterRandomness(f);
+                _floaters.Add(f);
                 newFloatersThisFrame++;
             }
         }
         _lastKnownHp[unit] = currentHp;
+    }
+
+    // 같은 데미지값이어도 spawn마다 다른 모션이 되도록 무작위값 한 번에 결정.
+    // 큰 데미지(>=10)는 회전/sway 진폭이 더 큼 → 무게감 차등.
+    // 흡수/회복은 모션 변동을 약하게 → 위계상 일반 데미지보다 잔잔하게.
+    private void SeedFloaterRandomness(DamageFloater f)
+    {
+        bool isHeavy = f.kind == DamageFloaterKind.Damage && f.amount >= 10;
+        bool isLight = f.kind != DamageFloaterKind.Damage;
+
+        float rotMax = isHeavy ? 10f : (isLight ? 4f : 7f);
+        float jitMax = isHeavy ? 14f : (isLight ? 6f : 10f);
+        float swayMax = isHeavy ? 6f : (isLight ? 2.5f : 4f);
+
+        f.spawnRotation = UnityEngine.Random.Range(-rotMax, rotMax);
+        f.xJitter       = UnityEngine.Random.Range(-jitMax, jitMax);
+        f.swayPhase     = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
+        f.swayAmp       = swayMax;
+    }
+
+    // 객체 타입에 따라 IsDead 판정 — TryCheckHp가 hit VFX 스킵 여부 결정에 사용.
+    private static bool IsEntityDead(object unit)
+    {
+        return unit switch
+        {
+            Player p => p.IsDead,
+            SummonInstance s => s.IsDead,
+            EnemyInstance e => e.IsDead,
+            _ => false,
+        };
     }
 
     private IEnumerator SpawnDamageVFXDelayed(Vector2 guiPos, float delay)
@@ -2388,6 +2670,27 @@ public class BattleUI : MonoBehaviour
     {
         if (delay > 0f) yield return new WaitForSeconds(delay);
         if (view != null) view.PlayHit();
+    }
+
+    // 데미지 양에 따라 카메라 셰이크 트리거. 작은 데미지(<10)는 셰이크 없음 — 잡몹 단타에 어지러워지지 않도록.
+    // CameraShaker가 자체적으로 "더 약한 요청은 무시" 스택 가드를 갖고 있어 연타 누적 없음.
+    private void TriggerDamageShake(int dmg, float delay)
+    {
+        // 진폭은 화면 높이의 % (0.020 = 2%). 최대 3%로 제한.
+        float amp, dur;
+        if (dmg >= 30)      { amp = 0.030f; dur = 0.28f; }
+        else if (dmg >= 20) { amp = 0.020f; dur = 0.22f; }
+        else if (dmg >= 10) { amp = 0.012f; dur = 0.16f; }
+        else                return;
+
+        if (delay > 0f) StartCoroutine(ShakeAfterDelay(amp, dur, delay));
+        else            DianoCard.FX.CameraShaker.Instance?.Shake(amp, dur);
+    }
+
+    private IEnumerator ShakeAfterDelay(float amp, float dur, float delay)
+    {
+        yield return new WaitForSeconds(delay);
+        DianoCard.FX.CameraShaker.Instance?.Shake(amp, dur);
     }
 
     private void SpawnDamageVFX(Vector2 guiPos)
@@ -2567,6 +2870,7 @@ public class BattleUI : MonoBehaviour
         ComputeSlotPositions(state);
 
         DrawBattleField(state);
+        DrawDyingSummons();
         DrawFloaters();
         var run = gsm.CurrentRun;
         if (run != null)
@@ -2953,7 +3257,7 @@ public class BattleUI : MonoBehaviour
             DinoPassiveType.LACERATE      => ("열상 (Lacerate)",
                 $"공격마다 적에게 출혈 +{v} 스택.\n출혈은 매 턴 종료 시 스택만큼 피해 후 1 감소."),
             DinoPassiveType.TENDERIZE     => ("연육 (Tenderize)",
-                $"공격 전 적에게 취약 +{v}턴 부여 후 타격.\n취약 상태의 적은 받는 피해 +50%."),
+                $"공격 명중 후 적에게 취약 +{v}턴 부여.\n취약 상태의 적은 받는 피해 +50% (이번 공격에는 적용되지 않음)."),
             DinoPassiveType.APEX_PRESENCE => ("정점의 위압 (Apex Presence)",
                 $"매 턴 시작, 모든 적에게 약화 {v}턴 부여.\n약화 상태의 적은 가하는 피해 -25%."),
             DinoPassiveType.SCOUT         => ("정찰 (Scout)",
@@ -3286,12 +3590,21 @@ public class BattleUI : MonoBehaviour
             clipping = TextClipping.Overflow,
             normal = { textColor = Color.white },
         };
+        // 카드 텍스트용 폰트 — 다크판타지 톤. 제목은 Cinzel(영문 세리프).
+        // 본문은 Hahmlet 명조 — IMFellEnglish는 한글 글리프가 없어 OS 폴백이 일어나고
+        // 숫자만 옛날체로 남아 한글과 톤이 어긋났다. 한글/숫자 폰트를 한 벌로 통일.
+        var fontTitle = Resources.Load<Font>("Fonts/Cinzel-VariableFont_wght");
+        var fontBody  = Resources.Load<Font>("Fonts/Hahmlet-VariableFont_wght");
+        // 데미지/회복 부동 라벨 — Cinzel(라피더리 세리프)로 무게감 강조. fontSize는 매 프레임 동적으로 덮어쓴다.
         _damageStyle = new GUIStyle(GUI.skin.label)
         {
-            fontSize = 32,
+            font = fontTitle,
+            fontSize = 36,
             alignment = TextAnchor.MiddleCenter,
             fontStyle = FontStyle.Bold,
             normal = { textColor = Color.white },
+            wordWrap = false,
+            clipping = TextClipping.Overflow,
         };
         _targetHintStyle = new GUIStyle(GUI.skin.label)
         {
@@ -3300,11 +3613,6 @@ public class BattleUI : MonoBehaviour
             fontStyle = FontStyle.Normal,
             normal = { textColor = new Color(1f, 0.96f, 0.85f) },
         };
-        // 카드 텍스트용 폰트 — 다크판타지 톤. 제목은 Cinzel(영문 세리프).
-        // 본문은 Hahmlet 명조 — IMFellEnglish는 한글 글리프가 없어 OS 폴백이 일어나고
-        // 숫자만 옛날체로 남아 한글과 톤이 어긋났다. 한글/숫자 폰트를 한 벌로 통일.
-        var fontTitle = Resources.Load<Font>("Fonts/Cinzel-VariableFont_wght");
-        var fontBody  = Resources.Load<Font>("Fonts/Hahmlet-VariableFont_wght");
         _cardCostStyle = new GUIStyle(GUI.skin.label)
         {
             font = fontTitle,
@@ -3527,7 +3835,14 @@ public class BattleUI : MonoBehaviour
         var mossAlive = new List<EnemyInstance>();
         foreach (var e in state.enemies)
         {
-            if (e.IsDead) continue;
+            // 사망 모션 진행 중인 적은 슬롯을 그대로 점유 — 다른 적이 그 자리로 슬라이드해 즉시 채우지 않게.
+            // view가 destroy(모션 종료)된 다음 OnGUI부터 슬롯에서 빠져 살아있는 적들이 슬라이드.
+            if (e.IsDead)
+            {
+                bool stillAnimating = _enemyViews.TryGetValue(e, out var deathView)
+                                      && deathView != null && deathView.gameObject != null;
+                if (!stillAnimating) continue;
+            }
             if (e.isMoss) { mossAlive.Add(e); continue; }
             // 적 크기는 타입별로 다름 — 발끝이 GroundY에 닿도록 센터 Y를 h/2만큼 위로.
             // staggerY는 뒤쪽 적이 멀어 보이게 하되, 안개 지평선(40%)으로 밀려나지 않을 정도로만.
@@ -3721,6 +4036,8 @@ public class BattleUI : MonoBehaviour
         for (int i = state.field.Count - 1; i >= 0; i--)
         {
             var s = state.field[i];
+            // IsDead 공룡은 IMGUI 그리기 스킵 — _dyingSummons에서 페이드 그림이 별도로 그려짐.
+            if (s.IsDead) continue;
             if (_summonDisplayPositions.TryGetValue(s, out var pos)) DrawSummon(s, i, pos);
         }
 
@@ -3852,12 +4169,15 @@ public class BattleUI : MonoBehaviour
         }
     }
 
-    // 인텐트가 데미지 액션이면 실제 BattleManager가 산출하는 피해량(floor 스케일 ± 약화)을 반환.
-    // ATTACK/MULTI/COUNTDOWN_ATTACK은 DealAttack 경유 → scale+weak 둘 다.
-    // COUNTDOWN_AOE는 자체 산출 → scale만.
-    // DRAIN은 raw intentValue 그대로 (스케일/약화 없음).
+    // 인텐트가 데미지 액션이면 실제 BattleManager가 산출하는 피해량을 매 프레임 산출.
+    // 라이브 인풋: IntentLiveValue(= intentBaseValue + 현재 extraAttack), damageScale, 적 weakTurns,
+    //              플레이어 vulnerableTurns(공룡 타겟이면 미적용), 타겟 공룡의 IRON_HIDE 패시브.
+    // ATTACK/MULTI/COUNTDOWN_ATTACK: DealAttack과 동일 순서 — scale → weak → IRON_HIDE → 취약.
+    //   타겟은 ResolveLiveAttackTarget로 미러링 (도발/사망/이탈 반영). 공룡은 vulnerable 안 걸리므로
+    //   취약 보너스는 타겟이 플레이어(null)일 때만 player.vulnerableTurns를 본다.
+    // COUNTDOWN_AOE: 자체 산출 — scale → 플레이어 취약(공룡 측 IRON_HIDE는 단일 숫자로 표기 곤란해 생략).
     // 비-데미지 액션은 raw intentValue.
-    private static int DisplayedIntentValue(EnemyInstance e)
+    private int DisplayedIntentValue(EnemyInstance e)
     {
         switch (e.intentAction)
         {
@@ -3865,11 +4185,22 @@ public class BattleUI : MonoBehaviour
             case DianoCard.Data.EnemyAction.MULTI_ATTACK:
             case DianoCard.Data.EnemyAction.COUNTDOWN_ATTACK:
             {
-                int scaled = Mathf.Max(1, Mathf.RoundToInt(e.intentValue * e.damageScale));
-                return e.weakTurns > 0 ? Mathf.Max(1, Mathf.FloorToInt(scaled * 0.75f)) : scaled;
+                int scaled = Mathf.Max(1, Mathf.RoundToInt(e.IntentLiveValue * e.damageScale));
+                int afterWeak = e.weakTurns > 0 ? Mathf.Max(1, Mathf.FloorToInt(scaled * 0.75f)) : scaled;
+                var target = ResolveLiveAttackTarget(e);
+                int afterIronHide = afterWeak;
+                if (target != null && target.data?.passiveType == DianoCard.Data.DinoPassiveType.IRON_HIDE)
+                    afterIronHide = Mathf.Max(1, afterWeak - target.data.passiveValue);
+                // 공룡은 취약 상태가 없음 → 플레이어 대상(target == null)일 때만 +50% 적용.
+                int playerVuln = target == null ? (_battle?.state?.player?.vulnerableTurns ?? 0) : 0;
+                return playerVuln > 0 ? Mathf.Max(1, Mathf.RoundToInt(afterIronHide * 1.5f)) : afterIronHide;
             }
             case DianoCard.Data.EnemyAction.COUNTDOWN_AOE:
-                return Mathf.Max(1, Mathf.RoundToInt(e.intentValue * e.damageScale));
+            {
+                int scaled = Mathf.Max(1, Mathf.RoundToInt(e.IntentLiveValue * e.damageScale));
+                int playerVuln = _battle?.state?.player?.vulnerableTurns ?? 0;
+                return playerVuln > 0 ? Mathf.Max(1, Mathf.RoundToInt(scaled * 1.5f)) : scaled;
+            }
             default:
                 return e.intentValue;
         }
@@ -5038,7 +5369,7 @@ public class BattleUI : MonoBehaviour
     }
 
     /// <summary>수동 소환수 스킬 — lunge 애니메이션 후 스킬 발동. enemyIndex는 ENEMY 타겟에서만 사용 (-1 = AOE/SELF).
-    /// 다타격 스킬(연격 등)은 hits 만큼 lunge를 반복해 연속 모션을 보여준다.</summary>
+    /// 다타격 스킬(연격 등)은 lunge → 해당 hit 데미지 → 다음 lunge 순으로 끊어서 보여준다.</summary>
     private IEnumerator ManualSummonSkillCoroutine(SummonInstance summon, int enemyIndex)
     {
         if (summon == null || _battle?.state == null) yield break;
@@ -5046,13 +5377,24 @@ public class BattleUI : MonoBehaviour
         if (currentIdx < 0) yield break;
         if (!_battle.CanUseSkill(currentIdx)) yield break;
 
-        var skill = DataManager.Instance.GetSkill(summon.data.id);
-        int lungeCount = (skill != null && skill.damage > 0 && skill.hits > 1) ? skill.hits : 1;
-        for (int i = 0; i < lungeCount; i++)
+        var ctx = _battle.BeginSummonSkill(currentIdx, enemyIndex);
+        if (ctx == null) yield break;
+
+        int hits = (ctx.skill.damage > 0 && ctx.damageTargets.Count > 0) ? ctx.skill.hits : 0;
+        if (hits > 0)
         {
+            for (int i = 0; i < hits; i++)
+            {
+                yield return AnimateLunge(summon, isSummon: true);
+                _battle.ApplySummonSkillHit(ctx);
+            }
+        }
+        else
+        {
+            // 데미지 없는 스킬도 한 번은 모션을 보여준다.
             yield return AnimateLunge(summon, isSummon: true);
         }
-        _battle.CommandSummonSkill(currentIdx, enemyIndex);
+        _battle.EndSummonSkill(ctx);
     }
 
     // 타겟팅 모드에서 선택된 카드 외곽에 부드럽게 빛나는 글로우.
@@ -5416,8 +5758,16 @@ public class BattleUI : MonoBehaviour
         _centerStyle.fontSize = prevFs;
     }
 
+    // 데미지/회복 부동 라벨 컬러 팔레트 — 다크판타지 톤(머티드 주얼/베이지/모스 그린).
+    private static readonly Color FloaterColorDamageSmall = new(0.961f, 0.914f, 0.816f); // #f5e9d0 베이지 화이트
+    private static readonly Color FloaterColorDamageBig   = new(0.851f, 0.306f, 0.227f); // #d94e3a 머티드 크림슨
+    private static readonly Color FloaterColorHeal        = new(0.561f, 0.749f, 0.478f); // #8fbf7a 모스 그린
+    private static readonly Color FloaterColorBlock       = new(0.427f, 0.643f, 0.769f); // #6da4c4 페일 블루 — 방어막 흡수
+    private static readonly Color FloaterOutline          = new(0.102f, 0.078f, 0.063f); // #1a1410 잉크 차콜
+
     private void DrawFloaters()
     {
+        var prevMatrix = GUI.matrix;
         foreach (var f in _floaters)
         {
             if (f.delay > 0) continue;
@@ -5431,14 +5781,111 @@ public class BattleUI : MonoBehaviour
             else if (!f.hasPos) continue;
 
             float progress = Mathf.Clamp01(f.age / DamageFloater.LifeTime);
-            float alpha = 1f - progress;
-            float yOffset = -70f * progress;
 
-            var rect = new Rect(f.lastPos.x - 60, f.lastPos.y - 110 + yOffset, 120, 46);
-            GUI.color = new Color(1f, 0.25f, 0.25f, alpha);
-            GUI.Label(rect, $"-{f.amount}", _damageStyle);
-            GUI.color = Color.white;
+            // 알파: 첫 20%는 풀 가시, 이후 ease-out(quart)으로 자연스럽게 사라짐.
+            float fadeT = Mathf.Clamp01((progress - 0.20f) / 0.80f);
+            float alpha = 1f - fadeT * fadeT;
+
+            // 위로 떠오름: 초반 가속 → 후반 거의 정지 (easeOut quart). 80px로 통일.
+            float riseT = 1f - Mathf.Pow(1f - progress, 4f);
+            float yOffset = -82f * riseT;
+
+            // 부유 sway — 떠오르는 동안 좌우로 사인 흔들림. 모션을 organic하게.
+            float swayT = f.age * 4.2f + f.swayPhase;
+            float sway = Mathf.Sin(swayT) * f.swayAmp * (1f - progress * 0.6f);
+
+            // 펀치 인 = 오버슈팅 (Back easeOut). 시작 1.75 → 0.92 살짝 작아짐 → 1.0 정착.
+            // 잔여 떨림: 펀치 직후 0.06초 동안 미세 jitter로 충격 잔향.
+            float punchT = Mathf.Clamp01(f.age / DamageFloater.PunchDuration);
+            const float c = 1.70158f;
+            float backOut = 1f + (c + 1f) * Mathf.Pow(punchT - 1f, 3f) + c * Mathf.Pow(punchT - 1f, 2f);
+            float scale = Mathf.Lerp(DamageFloater.PunchStartScale, 1f, backOut);
+
+            // 회전 — 처음엔 spawnRotation의 1.4배까지 흔들렸다가, 천천히 정착.
+            // 큰 데미지일수록 시작 회전이 커서 더 격렬해 보임.
+            float rotSettle = 1f - Mathf.Pow(1f - progress, 2f);
+            float rotation = f.spawnRotation * (1.4f - rotSettle * 0.9f);
+
+            // 타입+크기에 따라 컬러/폰트 사이즈 결정.
+            Color bodyColor;
+            Color glowColor;
+            int fontSize;
+            string text;
+            if (f.kind == DamageFloaterKind.Heal)
+            {
+                bodyColor = FloaterColorHeal;
+                glowColor = bodyColor;
+                fontSize = f.amount >= 10 ? 38 : 30;
+                text = $"+{f.amount}";
+            }
+            else if (f.kind == DamageFloaterKind.BlockAbsorbed)
+            {
+                bodyColor = FloaterColorBlock;
+                glowColor = bodyColor;
+                fontSize = f.amount >= 10 ? 32 : 26;
+                text = $"◆{f.amount}";
+            }
+            else
+            {
+                // 일반 데미지: 크기별 폰트 + 컬러 그라데이션. 글로우 컬러는 본체보다 더 진한 핏빛.
+                if (f.amount >= 30)        { bodyColor = FloaterColorDamageBig;   fontSize = 48; }
+                else if (f.amount >= 10)   { bodyColor = Color.Lerp(FloaterColorDamageSmall, FloaterColorDamageBig, 0.6f); fontSize = 36; }
+                else                       { bodyColor = FloaterColorDamageSmall; fontSize = 28; }
+                glowColor = FloaterColorDamageBig;
+                text = $"-{f.amount}";
+            }
+
+            int scaledFontSize = Mathf.Max(8, Mathf.RoundToInt(fontSize * scale));
+            _damageStyle.fontSize = scaledFontSize;
+
+            // 라벨 박스 — 폰트 스케일에 비례한 너비/높이로 줘서 텍스트 잘림 방지.
+            float boxW = scaledFontSize * 4.2f;
+            float boxH = scaledFontSize * 1.55f;
+            float cx = f.lastPos.x + f.xOffset + f.xJitter + sway;
+            float cy = f.lastPos.y - 110 + yOffset;
+            var rect = new Rect(cx - boxW * 0.5f, cy - boxH * 0.5f, boxW, boxH);
+
+            // 회전: 텍스트 중심 기준. 살짝 흔들리는 잉크 느낌.
+            GUI.matrix = prevMatrix * RotateAroundPivotMatrix(rotation, new Vector2(cx, cy));
+
+            // 1) 글로우 외곽 — 색상 톤(핏빛/페일블루/그린)을 살짝 퍼뜨려 깊이감.
+            //    펀치 직후 0.15초 동안만 풀 강도, 이후 빠르게 감소.
+            float glowT = 1f - Mathf.Clamp01(f.age / 0.18f);
+            float glowAlpha = alpha * 0.42f * glowT;
+            if (glowAlpha > 0.01f)
+            {
+                GUI.color = new Color(glowColor.r, glowColor.g, glowColor.b, glowAlpha);
+                const float gPx = 4f;
+                for (int dx = -1; dx <= 1; dx++)
+                for (int dy = -1; dy <= 1; dy++)
+                {
+                    if (dx == 0 && dy == 0) continue;
+                    var gr = new Rect(rect.x + dx * gPx, rect.y + dy * gPx, rect.width, rect.height);
+                    GUI.Label(gr, text, _damageStyle);
+                }
+            }
+
+            // 2) 외곽선 — 잉크 차콜. 8방향, 어떤 배경 위에서도 가독성.
+            GUI.color = new Color(FloaterOutline.r, FloaterOutline.g, FloaterOutline.b, alpha);
+            const float oPx = 2f;
+            for (int dx = -1; dx <= 1; dx++)
+            for (int dy = -1; dy <= 1; dy++)
+            {
+                if (dx == 0 && dy == 0) continue;
+                var or = new Rect(rect.x + dx * oPx, rect.y + dy * oPx, rect.width, rect.height);
+                GUI.Label(or, text, _damageStyle);
+            }
+
+            // 3) 드롭 섀도 — 잉크 떨어진 흔적. 본체 아래로 살짝, 외곽선보다 멀리.
+            GUI.color = new Color(0f, 0f, 0f, 0.55f * alpha);
+            GUI.Label(new Rect(rect.x + 1f, rect.y + 4f, rect.width, rect.height), text, _damageStyle);
+
+            // 4) 본체 텍스트
+            GUI.color = new Color(bodyColor.r, bodyColor.g, bodyColor.b, alpha);
+            GUI.Label(rect, text, _damageStyle);
         }
+        GUI.matrix = prevMatrix;
+        GUI.color = Color.white;
     }
 
     // =========================================================
@@ -5693,15 +6140,10 @@ public class BattleUI : MonoBehaviour
 
         DrawIconGlow(iconRect, glowTint, glowIntensity);
 
-        // 살짝 좌우 흔들 (다른 우측 아이콘과 동일한 패턴)
-        float angle = Mathf.Sin(Time.time * 0.7f + 0.6f) * 0.32f;
-        var prevMatrix = GUI.matrix;
-        GUIUtility.RotateAroundPivot(angle, iconRect.center);
         if (_iconTechTree != null)
             GUI.DrawTexture(iconRect, _iconTechTree, ScaleMode.ScaleToFit);
         else
             DrawTechTreeProcIcon(iconRect, hover, totalPoints > 0);
-        GUI.matrix = prevMatrix;
 
         if (!string.IsNullOrEmpty(label))
         {

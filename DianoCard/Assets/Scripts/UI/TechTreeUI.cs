@@ -692,7 +692,7 @@ public class TechTreeUI : MonoBehaviour
         const float TipW = 210f;
         bool hasDesc = !string.IsNullOrEmpty(node.description);
         float descH  = hasDesc ? 32f : 0f;
-        float tipH   = 6f + 20f + (hasDesc ? 6f + descH : 0f) + 4f + 16f + 6f;
+        float tipH   = 6f + 20f + (hasDesc ? 6f + descH : 0f) + 4f + 20f + 10f;
 
         Vector2 mp = Event.current.mousePosition;
         float tx = Mathf.Round(Mathf.Clamp(mp.x + 18f, 10f, RefW - TipW - 10f));
@@ -734,7 +734,7 @@ public class TechTreeUI : MonoBehaviour
         string costLine = curRank >= node.maxRank
             ? $"최대 랭크 ({curRank}/{node.maxRank})"
             : $"랭크 {curRank}/{node.maxRank}  ·  다음: {node.perRankCost} pt";
-        GUI.Label(new Rect(tipRect.x + 8f, cursorY, TipW - 16f, 16f),
+        GUI.Label(new Rect(tipRect.x + 8f, cursorY, TipW - 16f, 20f),
             costLine,
             new GUIStyle(GUI.skin.label)
             {

@@ -1114,11 +1114,11 @@ namespace DianoCard.Battle
                 summon.passiveConsumed = true;
                 Log($"  [Passive] {summon.data.nameKr} 기습: 첫 공격 2배 ({dmg})");
             }
-            // TENDERIZE 등 ON_ATTACK 패시브를 먼저 적용해 자신의 공격도 디버프 효과를 받게 한다.
-            ApplyOnAttackPassive(summon, target);
             target.TakeDamage(dmg);
             summon.hasAttackedThisTurn = true;
             Log($"  {summon.data.nameKr} attacks {target.data.nameKr} for {dmg} (HP {target.hp})");
+            // ON_ATTACK 패시브는 명중 후 적용 — 자신의 이번 공격은 디버프 효과를 받지 않는다.
+            ApplyOnAttackPassive(summon, target);
             // EXECUTE: 공격 후 HP ≤ threshold면 즉사
             if (!target.IsDead && summon.data?.passiveType == DinoPassiveType.EXECUTE && target.hp <= summon.data.passiveValue)
             {
@@ -1186,11 +1186,11 @@ namespace DianoCard.Battle
                 summon.passiveConsumed = true;
                 Log($"  [Passive] {summon.data.nameKr} 기습: 첫 공격 2배 ({dmg})");
             }
-            // TENDERIZE 등 ON_ATTACK 패시브를 먼저 적용해 자신의 공격도 디버프 효과를 받게 한다.
-            ApplyOnAttackPassive(summon, target);
             target.TakeDamage(dmg);
             summon.hasAttackedThisTurn = true;
             Log($"  [Command] {summon.data.nameKr} attacks {target.data.nameKr} for {dmg} (HP {target.hp})");
+            // ON_ATTACK 패시브는 명중 후 적용 — 자신의 이번 공격은 디버프 효과를 받지 않는다.
+            ApplyOnAttackPassive(summon, target);
             // EXECUTE: 공격 후 HP ≤ threshold면 즉사
             if (!target.IsDead && summon.data?.passiveType == DinoPassiveType.EXECUTE && target.hp <= summon.data.passiveValue)
             {
@@ -1376,73 +1376,103 @@ namespace DianoCard.Battle
         }
 
         /// <summary>
+        /// 시그니처 스킬 진행 컨텍스트. UI가 lunge → hit → lunge → hit 식으로
+        /// 애니메이션과 데미지를 인터리브하기 위해 사용. Begin → ApplyHit×N → End 순서.
+        /// </summary>
+        public class PendingSummonSkill
+        {
+            public int summonIndex;
+            public SummonInstance summon;
+            public DinoSkillData skill;
+            public List<EnemyInstance> damageTargets;
+        }
+
+        /// <summary>
         /// 소환수에게 시그니처 스킬 사용 명령. 일반 공격(CommandSummonAttack)과 별개 자원이라 같은 턴에 둘 다 가능.
         /// targetEnemyIndex는 ENEMY 타겟에서만 의미; -1이면 자동 선정(첫 타게터블 적).
+        /// 모든 hit을 한 번에 적용 — 애니메이션과 동기화하려면 BeginSummonSkill / ApplySummonSkillHit / EndSummonSkill을 직접 호출.
         /// </summary>
         public bool CommandSummonSkill(int summonIndex, int targetEnemyIndex = -1)
         {
-            if (summonIndex < 0 || summonIndex >= state.field.Count) return false;
+            var ctx = BeginSummonSkill(summonIndex, targetEnemyIndex);
+            if (ctx == null) return false;
+            int hits = (ctx.skill.damage > 0 && ctx.damageTargets.Count > 0) ? ctx.skill.hits : 0;
+            for (int h = 0; h < hits; h++) ApplySummonSkillHit(ctx);
+            EndSummonSkill(ctx);
+            return true;
+        }
+
+        /// <summary>
+        /// 스킬 사용 시작 — 검증/타겟 결정/로그만 수행. 데미지·부가효과·쿨다운은 아직 적용하지 않는다.
+        /// 사용 불가면 null. 이후 ApplySummonSkillHit으로 hit별 데미지, EndSummonSkill로 마무리.
+        /// </summary>
+        public PendingSummonSkill BeginSummonSkill(int summonIndex, int targetEnemyIndex = -1)
+        {
+            if (summonIndex < 0 || summonIndex >= state.field.Count) return null;
             var summon = state.field[summonIndex];
             var skill = DataManager.Instance.GetSkill(summon.data.id);
             if (skill == null)
             {
                 Log($"  ! {summon.data.nameKr}: 스킬 없음 (T0 또는 비진화 공룡)");
-                return false;
+                return null;
             }
             if (summon.IsDead || summon.silencedTurns > 0)
             {
                 Log($"  ! {summon.data.nameKr}: 스킬 사용 불가 (사망/침묵)");
-                return false;
+                return null;
             }
             if (skill.isOnceBattle)
             {
                 if (summon.skillUsedThisBattle)
                 {
                     Log($"  ! {summon.data.nameKr}: 이미 이번 전투에 {skill.nameKr} 사용함");
-                    return false;
+                    return null;
                 }
             }
             else if (summon.skillCooldownRemaining > 0)
             {
                 Log($"  ! {summon.data.nameKr}: {skill.nameKr} 쿨다운 {summon.skillCooldownRemaining}T 남음");
-                return false;
+                return null;
             }
 
             Log($"  [Skill] {summon.data.nameKr} → {skill.nameKr}");
 
-            // 데미지 타겟 결정
-            var damageTargets = ResolveSkillDamageTargets(skill, targetEnemyIndex);
-
-            // 데미지 적용 (히트 수만큼 반복)
-            if (skill.damage > 0 && damageTargets.Count > 0)
+            return new PendingSummonSkill
             {
-                for (int h = 0; h < skill.hits; h++)
+                summonIndex = summonIndex,
+                summon = summon,
+                skill = skill,
+                damageTargets = ResolveSkillDamageTargets(skill, targetEnemyIndex),
+            };
+        }
+
+        /// <summary>다타격 스킬(연격 등)을 lunge 한 번당 한 hit씩 끊어서 적용하기 위해 UI가 호출.</summary>
+        public void ApplySummonSkillHit(PendingSummonSkill ctx)
+        {
+            if (ctx == null || ctx.skill.damage <= 0 || ctx.damageTargets.Count == 0) return;
+            foreach (var t in ctx.damageTargets)
+            {
+                if (t.IsDead) continue;
+                int dmg = ApplyPlayerWeak(ctx.skill.damage);
+                t.TakeDamage(dmg);
+                Log($"    -> {t.data.nameKr} -{dmg} (HP {t.hp})");
+                if (t.IsDead)
                 {
-                    foreach (var t in damageTargets)
-                    {
-                        if (t.IsDead) continue;
-                        int dmg = ApplyPlayerWeak(skill.damage);
-                        t.TakeDamage(dmg);
-                        Log($"    -> {t.data.nameKr} -{dmg} (HP {t.hp})");
-                        if (t.IsDead)
-                        {
-                            Log($"    x {t.data.nameKr} defeated");
-                            DianoCard.Game.RelicEffects.OnEnemyKilled(this, run, summon, t);
-                        }
-                        CheckBossPhaseTransition(t);
-                        CheckPartnerDeathTrigger(t);
-                    }
+                    Log($"    x {t.data.nameKr} defeated");
+                    DianoCard.Game.RelicEffects.OnEnemyKilled(this, run, ctx.summon, t);
                 }
+                CheckBossPhaseTransition(t);
+                CheckPartnerDeathTrigger(t);
             }
+        }
 
-            // 부가 효과 적용
-            ApplySkillEffects(summon, skill, damageTargets);
-
-            // 쿨다운 갱신
-            if (skill.isOnceBattle) summon.skillUsedThisBattle = true;
-            else summon.skillCooldownRemaining = skill.cooldownTurns;
-
-            return true;
+        /// <summary>스킬 마무리 — 부가 효과(출혈 등) + 쿨다운/사용 플래그 갱신.</summary>
+        public void EndSummonSkill(PendingSummonSkill ctx)
+        {
+            if (ctx == null) return;
+            ApplySkillEffects(ctx.summon, ctx.skill, ctx.damageTargets);
+            if (ctx.skill.isOnceBattle) ctx.summon.skillUsedThisBattle = true;
+            else ctx.summon.skillCooldownRemaining = ctx.skill.cooldownTurns;
         }
 
         // =========================================================
@@ -1727,7 +1757,7 @@ namespace DianoCard.Battle
             if (enemy.graceTurnsRemaining > 0) return false;
             if (enemy.stunTurns > 0) return false;
             if (enemy.telegraphRemaining > 0) return false;
-            DealAttack(enemy, enemy.intentValue);
+            DealAttack(enemy, enemy.IntentLiveValue);
             return !state.PlayerLost;
         }
 
@@ -1818,13 +1848,13 @@ namespace DianoCard.Battle
             switch (e.intentAction)
             {
                 case EnemyAction.ATTACK:
-                    DealAttack(e, e.intentValue);
+                    DealAttack(e, e.IntentLiveValue);
                     break;
 
                 case EnemyAction.MULTI_ATTACK:
                     for (int i = 0; i < e.intentCount; i++)
                     {
-                        DealAttack(e, e.intentValue);
+                        DealAttack(e, e.IntentLiveValue);
                         if (state.PlayerLost) return;
                     }
                     break;
@@ -1911,13 +1941,16 @@ namespace DianoCard.Battle
                     break;
 
                 case EnemyAction.COUNTDOWN_ATTACK:
-                    DealAttack(e, e.intentValue);
-                    Log($"  ⚡ {e.data.nameKr} 카운트다운 강타 발동! ({e.intentValue})");
+                {
+                    int live = e.IntentLiveValue;
+                    DealAttack(e, live);
+                    Log($"  ⚡ {e.data.nameKr} 카운트다운 강타 발동! ({live})");
                     break;
+                }
 
                 case EnemyAction.COUNTDOWN_AOE:
                 {
-                    int aoeDmg = Math.Max(1, (int)Math.Round(e.intentValue * e.damageScale));
+                    int aoeDmg = Math.Max(1, (int)Math.Round(e.IntentLiveValue * e.damageScale));
                     Log($"  ⚡ {e.data.nameKr} 카운트다운 광역 발동! ({aoeDmg})");
                     state.player.TakeDamage(aoeDmg);
                     foreach (var s in state.field)
@@ -2264,6 +2297,7 @@ namespace DianoCard.Battle
                 e.intentAction = EnemyAction.IDLE;
                 e.intentType = EnemyIntentType.UNKNOWN;
                 e.intentValue = 0;
+                e.intentBaseValue = 0;
                 e.intentCount = 1;
                 e.telegraphRemaining = 0;
                 e.intentIcon = "GRACE";
@@ -2287,6 +2321,7 @@ namespace DianoCard.Battle
                 // 폴백 — 데이터 누락 시 그냥 ATTACK
                 e.intentAction = EnemyAction.ATTACK;
                 e.intentType = EnemyIntentType.ATTACK;
+                e.intentBaseValue = e.data.attack;
                 e.intentValue = e.TotalAttack;
                 e.intentCount = 1;
                 e.telegraphRemaining = 0;
@@ -2332,7 +2367,9 @@ namespace DianoCard.Battle
             if (chosen == null) chosen = StepAt(steps, 0);
 
             e.intentAction = chosen.action;
-            // 공격 계열은 BUFF_SELF로 누적된 extraAttack을 정적 패턴 값에 합산. 비공격 액션은 그대로.
+            // intentBaseValue는 패턴 raw 값. 공격 액션의 실효 데미지는 IntentLiveValue가 매번 extraAttack을 합산하므로
+            // 턴 중에 위협(C113) 등이 enemy.extraAttack을 깎아도 표시/실 데미지가 즉시 갱신됨.
+            e.intentBaseValue = chosen.value;
             e.intentValue = IsAttackAction(chosen.action) ? chosen.value + e.extraAttack : chosen.value;
             e.intentCount = Math.Max(1, chosen.count);
             e.intentTarget = chosen.target;
@@ -2376,6 +2413,7 @@ namespace DianoCard.Battle
                     if (!CheckCondition(step.condition, e)) continue;
 
                     e.intentAction = step.action;
+                    e.intentBaseValue = step.value;
                     e.intentValue = step.value;
                     e.intentCount = Math.Max(1, step.count);
                     e.intentTarget = step.target;
@@ -2390,6 +2428,7 @@ namespace DianoCard.Battle
             e.intentAction = EnemyAction.IDLE;
             e.intentType = EnemyIntentType.UNKNOWN;
             e.intentValue = 0;
+            e.intentBaseValue = 0;
             e.intentCount = 1;
             e.intentIcon = "IDLE";
             e.intentTargetDino = null;

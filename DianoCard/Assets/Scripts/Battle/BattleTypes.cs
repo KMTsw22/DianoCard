@@ -4,6 +4,34 @@ using DianoCard.Data;
 namespace DianoCard.Battle
 {
     /// <summary>
+    /// 전투 도중 발생하는 시각/사운드 이벤트 송출. 데이터 클래스(PlayerState/SummonInstance/EnemyInstance)는
+    /// 자신의 시각 표현을 모르므로, BattleUI 같은 표현 계층이 정적 이벤트에 구독해서 floater/SFX/카메라셰이크 등을 띄운다.
+    ///
+    /// 정적 이벤트라서 씬 재로딩 등에 살아남는다 — 구독자는 OnEnable/OnDisable에서 반드시 짝맞춰 (+=/-=) 해야 한다.
+    /// </summary>
+    public static class BattleEvents
+    {
+        /// <summary>(피격 엔티티, 블록으로 흡수된 양). 흡수량 > 0일 때만 발생.</summary>
+        public static event Action<object, int> OnBlockAbsorbed;
+
+        public static void RaiseBlockAbsorbed(object entity, int amount)
+        {
+            if (amount > 0) OnBlockAbsorbed?.Invoke(entity, amount);
+        }
+
+        /// <summary>
+        /// (사망 엔티티). HP가 양수였다가 0이 된 그 순간 한 번만 발생.
+        /// 이미 죽은 entity에 TakeDamage가 또 들어와도 중복 발사되지 않음 (caller 측에서 wasAlive 가드).
+        /// </summary>
+        public static event Action<object> OnEntityKilled;
+
+        public static void RaiseEntityKilled(object entity)
+        {
+            OnEntityKilled?.Invoke(entity);
+        }
+    }
+
+    /// <summary>
     /// 인텐트 시각 분류 — 적 머리 위 아이콘 결정. 실제 액션은 EnemyInstance.intentAction(EnemyAction).
     /// </summary>
     public enum EnemyIntentType
@@ -69,6 +97,7 @@ namespace DianoCard.Battle
         public void TakeDamage(int dmg)
         {
             if (cheatInvincible) return;
+            bool wasAlive = !IsDead;
             // 취약 시 raw dmg가 먼저 증폭된 뒤 block으로 흡수 (STS 방식).
             int adjusted = vulnerableTurns > 0 ? (int)System.Math.Round(dmg * 1.5f) : dmg;
             int absorbed = Math.Min(block, adjusted);
@@ -76,7 +105,11 @@ namespace DianoCard.Battle
             int remaining = adjusted - absorbed;
             hp = Math.Max(0, hp - remaining);
             if (absorbed > 0)
+            {
                 DianoCard.Audio.AudioManager.Instance?.PlaySFX("hit_block");
+                BattleEvents.RaiseBlockAbsorbed(this, absorbed);
+            }
+            if (wasAlive && IsDead) BattleEvents.RaiseEntityKilled(this);
         }
 
         public void Heal(int amount)
@@ -87,6 +120,7 @@ namespace DianoCard.Battle
         /// <summary>턴 종료 시 호출 — 독 데미지 + 약화/취약 카운트다운. 독은 block에 먼저 흡수된다.</summary>
         public void TickStatuses()
         {
+            bool wasAlive = !IsDead;
             if (poisonStacks > 0)
             {
                 if (!cheatInvincible)
@@ -94,11 +128,13 @@ namespace DianoCard.Battle
                     int absorbed = Math.Min(block, poisonStacks);
                     block -= absorbed;
                     hp = Math.Max(0, hp - (poisonStacks - absorbed));
+                    BattleEvents.RaiseBlockAbsorbed(this, absorbed);
                 }
                 poisonStacks--;
             }
             if (weakTurns > 0) weakTurns--;
             if (vulnerableTurns > 0) vulnerableTurns--;
+            if (wasAlive && IsDead) BattleEvents.RaiseEntityKilled(this);
         }
     }
 
@@ -187,10 +223,13 @@ namespace DianoCard.Battle
 
         public void TakeDamage(int dmg)
         {
+            bool wasAlive = !IsDead;
             int absorbed = Math.Min(block, dmg);
             block -= absorbed;
             int remaining = dmg - absorbed;
             hp = Math.Max(0, hp - remaining);
+            if (absorbed > 0) BattleEvents.RaiseBlockAbsorbed(this, absorbed);
+            if (wasAlive && IsDead) BattleEvents.RaiseEntityKilled(this);
         }
 
         public void Heal(int amount)
@@ -217,6 +256,10 @@ namespace DianoCard.Battle
         // === 인텐트 (이번 턴에 할 행동, 턴 시작 시 미리 공개) ===
         public EnemyIntentType intentType;
         public int intentValue;
+        // RollIntent 시점에 결정된 raw 패턴 value — extraAttack 미포함.
+        // 공격 액션의 실효 데미지는 IntentLiveValue가 매 호출 시 extraAttack을 합산해 산출하므로
+        // 턴 중에 위협(C113) 등으로 extraAttack이 바뀌어도 표시/실 데미지가 stale해지지 않음.
+        public int intentBaseValue;
         public int intentCount = 1;          // MULTI_ATTACK 분할 횟수 등
         public EnemyAction intentAction;     // 실제 액션 (실행 시 분기)
         public IntentTarget intentTarget;
@@ -269,25 +312,45 @@ namespace DianoCard.Battle
 
         public int TotalAttack => data.attack + extraAttack;
         public bool IsDead => hp <= 0;
+
+        /// <summary>
+        /// 인텐트의 raw 값 — 공격 액션이면 매 호출 시 현재 extraAttack을 합산해 turn-중 변화 반영.
+        /// damageScale·약화·취약·블록 등 후속 모디파이어는 미포함 (호출자가 단계별로 적용).
+        /// </summary>
+        public int IntentLiveValue
+        {
+            get
+            {
+                bool isAttack = intentAction == EnemyAction.ATTACK
+                             || intentAction == EnemyAction.MULTI_ATTACK
+                             || intentAction == EnemyAction.COUNTDOWN_ATTACK
+                             || intentAction == EnemyAction.COUNTDOWN_AOE;
+                if (!isAttack) return intentValue;
+                // 위협 패시브로 extraAttack이 음수까지 떨어질 수 있음 — 최소 0.
+                return System.Math.Max(0, intentBaseValue + extraAttack);
+            }
+        }
+
         public string IntentLabel
         {
             get
             {
                 if (graceTurnsRemaining > 0) return "각성 중…";
+                int liveVal = IntentLiveValue;
                 if (telegraphRemaining > 0)
-                    return $"⚠ {intentAction} {intentValue}×{intentCount} (T-{telegraphRemaining})";
+                    return $"⚠ {intentAction} {liveVal}×{intentCount} (T-{telegraphRemaining})";
                 return intentAction switch
                 {
-                    EnemyAction.ATTACK            => $"ATK {intentValue}",
-                    EnemyAction.MULTI_ATTACK      => $"ATK {intentValue}×{intentCount}",
+                    EnemyAction.ATTACK            => $"ATK {liveVal}",
+                    EnemyAction.MULTI_ATTACK      => $"ATK {liveVal}×{intentCount}",
                     EnemyAction.DEFEND            => $"DEF {intentValue}",
                     EnemyAction.POISON            => $"독 {intentValue}",
                     EnemyAction.WEAK              => $"약화 {intentValue}",
                     EnemyAction.DRAIN             => $"흡혈 {intentValue}",
                     EnemyAction.SUMMON            => $"소환 {intentValue}",
                     EnemyAction.BUFF_SELF         => $"강화 +{intentValue}",
-                    EnemyAction.COUNTDOWN_ATTACK  => $"⚠ 강타 {intentValue}",
-                    EnemyAction.COUNTDOWN_AOE     => $"⚠ 광역 {intentValue}",
+                    EnemyAction.COUNTDOWN_ATTACK  => $"⚠ 강타 {liveVal}",
+                    EnemyAction.COUNTDOWN_AOE     => $"⚠ 광역 {liveVal}",
                     EnemyAction.REFILL_MOSS       => $"이끼 보충 {intentValue}",
                     EnemyAction.STEAL_SUMMON      => $"⚠ 공룡 강탈",
                     EnemyAction.VULNERABLE        => $"취약 {intentValue}T",
@@ -313,6 +376,7 @@ namespace DianoCard.Battle
 
         public void TakeDamage(int dmg)
         {
+            bool wasAlive = !IsDead;
             // 취약 시 raw dmg가 먼저 증폭된 뒤 block으로 흡수 (STS 방식).
             int adjusted = vulnerableTurns > 0 ? (int)Math.Round(dmg * 1.5f) : dmg;
             int absorbed = Math.Min(block, adjusted);
@@ -321,16 +385,23 @@ namespace DianoCard.Battle
             // 더미는 HP가 1 아래로 내려가지 않아 전투 종료 조건이 발생하지 않음.
             hp = isDummy ? Math.Max(1, hp - remaining) : Math.Max(0, hp - remaining);
             if (absorbed > 0)
+            {
                 DianoCard.Audio.AudioManager.Instance?.PlaySFX("hit_block");
+                BattleEvents.RaiseBlockAbsorbed(this, absorbed);
+            }
+            if (wasAlive && IsDead) BattleEvents.RaiseEntityKilled(this);
         }
 
         public void TickStatuses()
         {
+            bool wasAlive = !IsDead;
+            int totalAbsorbed = 0;
             if (poisonStacks > 0)
             {
                 int absorbed = Math.Min(block, poisonStacks);
                 block -= absorbed;
                 hp = Math.Max(0, hp - (poisonStacks - absorbed));
+                totalAbsorbed += absorbed;
                 poisonStacks--;
             }
             if (burnStacks > 0)
@@ -338,6 +409,7 @@ namespace DianoCard.Battle
                 int absorbed = Math.Min(block, burnStacks);
                 block -= absorbed;
                 hp = Math.Max(0, hp - (burnStacks - absorbed));
+                totalAbsorbed += absorbed;
                 burnStacks--;
             }
             if (bleedStacks > 0)
@@ -345,11 +417,16 @@ namespace DianoCard.Battle
                 int absorbed = Math.Min(block, bleedStacks);
                 block -= absorbed;
                 hp = Math.Max(0, hp - (bleedStacks - absorbed));
+                totalAbsorbed += absorbed;
                 bleedStacks--;
             }
+            // DoT 3종(독/화상/출혈)이 block에 흡수된 총량을 한 번에 띄움.
+            // 각각 별도 floater로 띄우면 같은 위치 동시 spawn으로 겹쳐 보임 → 합산.
+            BattleEvents.RaiseBlockAbsorbed(this, totalAbsorbed);
             if (weakTurns > 0) weakTurns--;
             if (vulnerableTurns > 0) vulnerableTurns--;
             if (stunTurns > 0) stunTurns--;
+            if (wasAlive && IsDead) BattleEvents.RaiseEntityKilled(this);
         }
     }
 }

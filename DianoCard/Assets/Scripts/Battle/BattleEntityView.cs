@@ -15,6 +15,10 @@ namespace DianoCard.Battle
         private Vector3 _basePosition;
         private Coroutine _currentAnim;
         private Color _baseColor = Color.white;
+        // 사망 모션 진행 중 플래그. true가 되면 외부에서 PlayDeath 재호출 무시되고,
+        // BattleUI는 죽음 모션이 끝날 때까지 이 view를 destroy하지 않는다.
+        // DeathRoutine 마지막에 self-Destroy 되므로 별도 cleanup 불필요.
+        public bool IsDying { get; private set; }
         // 월드 단위 고정 대신 캐릭터 높이에 비례해서 둥실둥실 느낌이 카메라 스케일과 무관하게 유지되도록.
         private readonly float _idleBobFraction = 0.028f;
         private readonly float _idleBobFreq = 1.6f;
@@ -266,6 +270,9 @@ namespace DianoCard.Battle
         /// <summary>Rescales transform to target world-space height. 현재 스프라이트의 bounds를 기준으로 매번 재계산 → 프레임 스왑 시 보이는 높이 일관.</summary>
         public void SetWorldHeight(float worldHeight)
         {
+            // 사망 모션 진행 중에는 외부의 스케일 갱신을 무시 — DeathRoutine만이 transform을 컨트롤.
+            // 안 그러면 매 OnGUI마다 BattleUI가 호출하는 SetWorldHeight가 DeathRoutine의 변화를 덮어써 흔들림 발생.
+            if (IsDying) return;
             _intendedWorldHeight = worldHeight;
             // 기준 높이 캐시 (디버그·폴백용, 실제 스케일은 아래 ApplyWorldHeight가 현재 sprite 기준으로 재계산)
             if (_scaleReferenceHeight <= 0f && _sr.sprite != null && _sr.sprite.bounds.size.y > 0f)
@@ -279,6 +286,7 @@ namespace DianoCard.Battle
         /// </summary>
         private void ApplyWorldHeight()
         {
+            if (IsDying) return;
             if (_intendedWorldHeight <= 0f || _sr.sprite == null) return;
             float boundsH = _sr.sprite.bounds.size.y;
             if (boundsH <= 0.001f) return;
@@ -343,6 +351,113 @@ namespace DianoCard.Battle
             StartAnim(ActionRoutine(duration, hopFraction));
         }
 
+        /// <summary>
+        /// 사망 모션 시작. 3페이즈로 진행되며 끝나면 self-Destroy된다.
+        /// 다크판타지 톤 "잉크 잔향" — 흰 플래시 → 잉크 차콜 톤다운 → 위로 떠오르며 사라짐.
+        /// </summary>
+        public void PlayDeath()
+        {
+            if (IsDying) return;
+            IsDying = true;
+            // 기존 진행 중인 idle/공격/피격 모션 중단. ResetVisualState는 호출하지 않음 —
+            // DeathRoutine이 자체적으로 색/위치를 직접 제어하기 때문.
+            if (_currentAnim != null) StopCoroutine(_currentAnim);
+            _currentAnim = StartCoroutine(DeathRoutine());
+        }
+
+        private IEnumerator DeathRoutine()
+        {
+            // 사망 시점에 캡처. SetWorldHeight는 IsDying 가드로 막혀있어 외부 충돌 없음 — 안전하게 transform 컨트롤.
+            Vector3 startPos = transform.position;
+            Vector3 startScale = transform.localScale;
+            Quaternion startRot = transform.rotation;
+            Color startSrColor = _sr != null ? _sr.color : Color.white;
+            Color startShadowColor = _shadowSr != null ? _shadowSr.color : new Color(0f, 0f, 0f, 0f);
+
+            // 사망마다 다른 회전 — spawn에서 한 번 결정. 모든 죽음이 똑같이 안 보이게.
+            float deathRotation = UnityEngine.Random.Range(-7f, 7f);
+
+            Color inkCharcoal = new Color(0.102f, 0.078f, 0.063f, 1f);
+            const float phase1Duration = 0.06f;   // 짓눌림 + 흰 플래시 (충격 받음)
+            const float phase2Duration = 0.20f;   // 잉크 톤다운 + 위로 솟구침 도입
+            const float phase3Duration = 0.40f;   // 알파 페이드 + 떠오름 + Y 늘어남 + 회전 정착
+
+            float worldHeightUnit = _intendedWorldHeight > 0f ? _intendedWorldHeight : 1f;
+            float riseSmall = worldHeightUnit * 0.08f;
+            float riseTotal = worldHeightUnit * 0.32f;
+
+            // === Phase 1: 흰 플래시 + 짓눌림 (Y 0.92, X 1.05) ===
+            float t = 0f;
+            while (t < phase1Duration)
+            {
+                t += Time.deltaTime;
+                float p = Mathf.Clamp01(t / phase1Duration);
+                if (_sr != null)
+                    _sr.color = Color.Lerp(new Color(1.4f, 1.2f, 1.1f, 1f), startSrColor, p);
+                // 마지막 충격 — Y로 짓눌리고 X로 살짝 퍼짐. 시각적 "맞았다" 강조.
+                transform.localScale = new Vector3(
+                    startScale.x * Mathf.Lerp(1.05f, 1f, p),
+                    startScale.y * Mathf.Lerp(0.92f, 1f, p),
+                    startScale.z);
+                yield return null;
+            }
+
+            // === Phase 2: 잉크 차콜 톤다운 + 위로 솟구침 + Y stretch 도입 ===
+            t = 0f;
+            while (t < phase2Duration)
+            {
+                t += Time.deltaTime;
+                float p = Mathf.Clamp01(t / phase2Duration);
+                float eased = 1f - (1f - p) * (1f - p);
+                if (_sr != null)
+                    _sr.color = Color.Lerp(startSrColor, inkCharcoal, eased);
+                transform.position = startPos + Vector3.up * (riseSmall * eased);
+                // Y 늘어나며 X 좁아짐 — 영혼이 위로 빠지는 도입.
+                transform.localScale = new Vector3(
+                    startScale.x * Mathf.Lerp(1f, 0.96f, eased),
+                    startScale.y * Mathf.Lerp(1f, 1.08f, eased),
+                    startScale.z);
+                // 회전은 초반 30% 정도만 시작 — Phase 3에서 정착까지 끌고감.
+                transform.rotation = startRot * Quaternion.Euler(0f, 0f, deathRotation * 0.3f * eased);
+                if (_shadowSr != null)
+                {
+                    var sc = startShadowColor;
+                    _shadowSr.color = new Color(sc.r, sc.g, sc.b, sc.a * (1f - eased * 0.5f));
+                }
+                yield return null;
+            }
+
+            // === Phase 3: 알파 페이드 + 위로 더 떠오름 + Y 더 늘어남 + 회전 정착 ===
+            Color startPhase3Color = _sr != null ? _sr.color : inkCharcoal;
+            t = 0f;
+            while (t < phase3Duration)
+            {
+                t += Time.deltaTime;
+                float p = Mathf.Clamp01(t / phase3Duration);
+                float eased = 1f - Mathf.Pow(1f - p, 3f);
+                float alpha = (1f - eased) * startPhase3Color.a;
+                if (_sr != null)
+                    _sr.color = new Color(startPhase3Color.r, startPhase3Color.g, startPhase3Color.b, alpha);
+                transform.position = startPos + Vector3.up * Mathf.Lerp(riseSmall, riseTotal, eased);
+                transform.localScale = new Vector3(
+                    startScale.x * Mathf.Lerp(0.96f, 0.88f, eased),
+                    startScale.y * Mathf.Lerp(1.08f, 1.18f, eased),
+                    startScale.z);
+                transform.rotation = startRot * Quaternion.Euler(
+                    0f, 0f,
+                    Mathf.Lerp(deathRotation * 0.3f, deathRotation, eased));
+                if (_shadowSr != null)
+                {
+                    var sc = startShadowColor;
+                    _shadowSr.color = new Color(sc.r, sc.g, sc.b, sc.a * 0.5f * (1f - eased));
+                }
+                yield return null;
+            }
+
+            _currentAnim = null;
+            Destroy(gameObject);
+        }
+
         private void StartAnim(IEnumerator routine)
         {
             if (_currentAnim != null)
@@ -371,6 +486,9 @@ namespace DianoCard.Battle
 
         private void LateUpdate()
         {
+            // 사망 모션 진행 중에는 다른 모든 위치/스케일/색상 갱신을 막아 DeathRoutine이 단독 제어.
+            if (IsDying) return;
+
             // idle bob 비활성 — 캐릭터가 지면에 고정돼 있도록
             if (_currentAnim == null && _sr.sprite != null)
             {
