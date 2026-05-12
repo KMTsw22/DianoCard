@@ -4074,7 +4074,9 @@ public class BattleUI : MonoBehaviour
             float h = GetEnemyDrawHeight(e);
             // 보스는 검·갑옷 실루엣이 우측 끝을 벗어나지 않게 살짝 안쪽으로.
             float baseX = (e.data.enemyType == EnemyType.BOSS) ? 970f : 1070f;
-            _slotPositions[e] = new Vector2(baseX - aliveIdx * 160, GroundY - h / 2f - aliveIdx * 22);
+            // 보스(E901)는 머리가 상단 HUD 바에 너무 붙어 보여 발끝 기준에서 50px 더 아래로.
+            float yDrop = (e.data.enemyType == EnemyType.BOSS) ? 50f : 0f;
+            _slotPositions[e] = new Vector2(baseX - aliveIdx * 160, GroundY - h / 2f - aliveIdx * 22 + yDrop);
             if (bossRef == null && e.data.enemyType == EnemyType.BOSS) bossRef = e;
             aliveIdx++;
         }
@@ -4164,7 +4166,7 @@ public class BattleUI : MonoBehaviour
         }
         float baseH = e.data.enemyType switch
         {
-            EnemyType.BOSS  => 400f,
+            EnemyType.BOSS  => 380f,
             EnemyType.ELITE => 260f,
             _               => 180f,
         };
