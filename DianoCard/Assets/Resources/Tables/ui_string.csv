@@ -21,8 +21,8 @@ shop.sold_out,SOLD,매진
 shop.not_enough_gold,Not enough gold,골드 부족
 shop.potion_full,Potion Full,물약 가득
 shop.owned,Owned,보유중
-shop.remove_card,Card Remove,카드 제거
-shop.remove_card_used,Removed,제거됨
-shop.remove_card_pick,Pick a card to remove,제거할 카드를 선택하세요
+shop.remove_card,Purge Card,카드 제거
+shop.remove_card_used,Purged,제거됨
+shop.remove_card_pick,Pick a card to purge,제거할 카드를 선택하세요
 shop.cancel,CANCEL,취소
 shop.exit,LEAVE SHOP,상점 나가기

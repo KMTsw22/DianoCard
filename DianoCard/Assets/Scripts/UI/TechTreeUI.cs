@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using DianoCard.Game;
 using UnityEngine;
+using static DianoCard.Data.LocaleSettings;
 
 /// <summary>
 /// 테크트리 화면 — 실제 헥스 스프라이트(Resources/테크트리UI/) 사용.
@@ -323,7 +324,7 @@ public class TechTreeUI : MonoBehaviour
         bool titleHovered = e != null && e.type == EventType.Repaint && titleRect.Contains(e.mousePosition);
         if (titleHovered)
         {
-            const string hint = "노드를 클릭해 랭크업 — 같은 노드를 여러 번 찍을 수 있음";
+            string hint = L("Click a node to rank up — you can rank up the same node multiple times", "노드를 클릭해 랭크업 — 같은 노드를 여러 번 찍을 수 있음");
             var tipStyle = new GUIStyle(GUI.skin.label)
             {
                 font = _displayFontKR,
@@ -366,7 +367,7 @@ public class TechTreeUI : MonoBehaviour
                 alignment = TextAnchor.MiddleRight, fontStyle = FontStyle.Bold,
                 normal = { textColor = new Color(1f, 0.92f, 0.60f, 1f) },
             };
-            GUI.Label(new Rect(RefW - 250f, 14f, 230f, 36f), $"포인트: {pts}", numStyle);
+            GUI.Label(new Rect(RefW - 250f, 14f, 230f, 36f), L($"Points: {pts}", $"포인트: {pts}"), numStyle);
         }
     }
 
@@ -568,21 +569,21 @@ public class TechTreeUI : MonoBehaviour
             if (hexRect.Contains(Event.current.mousePosition))
             {
                 if (maxed)
-                    Flash($"{node.name} — 이미 최대 랭크 ({rank}/{node.maxRank})");
+                    Flash(L($"{node.name} — already at max rank ({rank}/{node.maxRank})", $"{node.name} — 이미 최대 랭크 ({rank}/{node.maxRank})"));
                 else if (canRankUp)
                 {
                     if (gsm.TechTree.TryRankUp(node))
-                        Flash($"✓ {node.name} 랭크업 ({gsm.TechTree.GetRank(node.id)}/{node.maxRank}) - {node.perRankCost}pt");
+                        Flash(L($"✓ {node.name} rank up ({gsm.TechTree.GetRank(node.id)}/{node.maxRank}) - {node.perRankCost}pt", $"✓ {node.name} 랭크업 ({gsm.TechTree.GetRank(node.id)}/{node.maxRank}) - {node.perRankCost}pt"));
                 }
                 else if (!string.IsNullOrEmpty(node.prereqId)
                          && node.prereqId != TechTreeCatalog.RootId
                          && !gsm.TechTree.IsUnlocked(node.prereqId))
                 {
                     var pre = TechTreeCatalog.GetNode(node.prereqId);
-                    Flash($"전제 노드 먼저: {(pre != null ? pre.name : node.prereqId)}");
+                    Flash(L($"Prerequisite first: {(pre != null ? pre.name : node.prereqId)}", $"전제 노드 먼저: {(pre != null ? pre.name : node.prereqId)}"));
                 }
                 else
-                    Flash($"포인트 부족 ({node.perRankCost}pt 필요, 보유 {gsm.TechTree.points})");
+                    Flash(L($"Not enough points ({node.perRankCost}pt needed, have {gsm.TechTree.points})", $"포인트 부족 ({node.perRankCost}pt 필요, 보유 {gsm.TechTree.points})"));
 
                 Event.current.Use();
             }
@@ -732,8 +733,8 @@ public class TechTreeUI : MonoBehaviour
 
         int curRank = gsm.TechTree.GetRank(node.id);
         string costLine = curRank >= node.maxRank
-            ? $"최대 랭크 ({curRank}/{node.maxRank})"
-            : $"랭크 {curRank}/{node.maxRank}  ·  다음: {node.perRankCost} pt";
+            ? L($"Max Rank ({curRank}/{node.maxRank})", $"최대 랭크 ({curRank}/{node.maxRank})")
+            : L($"Rank {curRank}/{node.maxRank}  ·  Next: {node.perRankCost} pt", $"랭크 {curRank}/{node.maxRank}  ·  다음: {node.perRankCost} pt");
         GUI.Label(new Rect(tipRect.x + 8f, cursorY, TipW - 16f, 20f),
             costLine,
             new GUIStyle(GUI.skin.label)

@@ -2,8 +2,8 @@ id,name_kr,name_en,chapter,description_kr,description_en,choice1_text_kr,choice1
 EV001,떠도는 상인,Wandering Merchant,1,이상한 상인이 거래를 제안한다.,A strange merchant offers you a deal.,유물과 골드 교환 (-50G),Exchange for a relic (-50G),GAIN_RELIC_LOSE_GOLD,50,그냥 지나간다,Pass by,NONE,0,,,NONE,0
 EV002,버려진 제단,Abandoned Altar,1,제단에 피를 바칠 수 있다.,You may offer blood at the altar.,HP -5 / 카드 업그레이드,HP -5 / Upgrade a card,LOSE_HP_UPGRADE_CARD,5,무시한다,Ignore,NONE,0,,,NONE,0
 EV003,부서진 알,Broken Egg,1,부서진 공룡 알을 발견했다.,You find a shattered dinosaur egg.,공룡 카드 1장 획득,Gain a dinosaur card,GAIN_RANDOM_DINO,1,골드 +30 획득,Gain +30 Gold,GAIN_GOLD,30,,,NONE,0
-EV004,신비한 샘,Mystic Spring,1,신비한 기운이 감도는 샘이다.,A spring emanating mysterious energy.,HP +20 회복,Heal +20 HP,HEAL_HP,20,최대 HP +5,+5 Max HP,GAIN_MAX_HP,5,,,NONE,0
-EV005,고대 도서관,Ancient Library,2,오래된 책들이 가득하다.,The library is filled with ancient tomes.,카드 1장 강화,Upgrade a card,UPGRADE_CARD,1,카드 1장 제거,Remove a card,REMOVE_CARD,1,,,NONE,0
+EV004,신비한 샘,Mystic Spring,1,신비한 기운이 감도는 샘이다.,A spring emanating mysterious energy.,HP +20 회복,Heal +20 HP,HEAL_HP,20,최대 HP +5,+5 max HP,GAIN_MAX_HP,5,,,NONE,0
+EV005,고대 도서관,Ancient Library,2,오래된 책들이 가득하다.,The library is filled with ancient tomes.,카드 1장 강화,Upgrade a card,UPGRADE_CARD,1,카드 1장 제거,Purge a card,REMOVE_CARD,1,,,NONE,0
 EV006,악령의 속삭임,Evil Whisper,2,악령이 속삭인다.,An evil spirit whispers to you.,골드 +100 / 저주 카드 +1,+100 Gold / Add a curse card,GAIN_GOLD_CURSE,100,거절,Refuse,NONE,0,,,NONE,0
 EV007,수상한 이방인,Suspicious Stranger,2,이방인이 거래를 제안한다.,A suspicious stranger offers you a deal.,물약 1개 획득,Gain a potion,GAIN_POTION,1,골드 +50,+50 Gold,GAIN_GOLD,50,유물 1개 획득 (HP -10),Gain a relic (HP -10),GAIN_RELIC_LOSE_HP,10
 EV008,용암 구덩이,Lava Pit,3,뜨거운 용암이 끓고 있다.,Scorching lava bubbles before you.,HP -15 / 유물 획득,HP -15 / Gain a relic,LOSE_HP_GAIN_RELIC,15,피해간다,Avoid,NONE,0,,,NONE,0

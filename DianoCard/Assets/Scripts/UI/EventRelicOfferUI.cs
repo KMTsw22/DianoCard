@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using DianoCard.Data;
 using DianoCard.Game;
 using UnityEngine;
+using static DianoCard.Data.LocaleSettings;
 
 /// <summary>
 /// 이벤트 노드 "룬을 만진다" 후 단일 유물 제안 + HP 더 내고 리롤하는 모달.
@@ -79,7 +80,8 @@ public class EventRelicOfferUI : MonoBehaviour
 
     void Start()
     {
-        _defaultRelicIcon = Resources.Load<Texture2D>("InGame/Icon/relic_default");
+        // relic_default.png는 실제로 없음 — 상단 HUD 슬롯과 동일한 Relic.png를 폴백으로 사용.
+        _defaultRelicIcon = Resources.Load<Texture2D>("InGame/Icon/Relic");
         Debug.Log("[EventRelicOfferUI] attached & ready.");
     }
 
@@ -183,10 +185,13 @@ public class EventRelicOfferUI : MonoBehaviour
         GUI.color = new Color(0f, 0f, 0f, backdropAlpha);
         GUI.DrawTexture(dimRect, Texture2D.whiteTexture);
         GUI.color = prev;
-        // 외부 클릭 차단 — HUD 영역(0~dimTopY) 클릭은 살려두고 그 외만 막는다.
-        GUI.Button(dimRect, GUIContent.none, GUIStyle.none);
 
         DrawPanel(gsm);
+
+        // 외부 클릭 차단 — HUD 영역(0~dimTopY) 클릭은 살려두고 그 외만 막는다.
+        // 반드시 DrawPanel 뒤에 둬야 함: IMGUI는 같은 좌표 위 첫 Button이 HotControl을 잡고
+        // Event.Use()로 이벤트를 소비하므로, 먼저 그리면 패널 버튼(받는다/리롤)이 클릭을 받지 못한다.
+        GUI.Button(dimRect, GUIContent.none, GUIStyle.none);
 
         GUI.matrix = matrix;
     }
@@ -200,7 +205,7 @@ public class EventRelicOfferUI : MonoBehaviour
         DrawRoundedPanel(panelRect);
 
         float cy = py + 28f;
-        GUI.Label(new Rect(px, cy, panelWidth, headerFontSize + 8f), headerText, _headerStyle);
+        GUI.Label(new Rect(px, cy, panelWidth, headerFontSize + 8f), L("The rune takes shape…", headerText), _headerStyle);
         cy += headerFontSize + 22f;
 
         // 아이콘
@@ -235,7 +240,7 @@ public class EventRelicOfferUI : MonoBehaviour
         var acceptRect = new Rect(bx, by, bw, buttonHeight);
         bool acceptHover = acceptRect.Contains(mouse);
         DrawButton(acceptRect, acceptHover, true);
-        GUI.Label(acceptRect, "받는다", _buttonStyle);
+        GUI.Label(acceptRect, L("Accept", "받는다"), _buttonStyle);
         if (GUI.Button(acceptRect, GUIContent.none, GUIStyle.none))
             _pending.Add(() => gsm.AcceptEventRelic());
 
@@ -252,7 +257,7 @@ public class EventRelicOfferUI : MonoBehaviour
             ? (rerollHover ? new Color(1f, 0.95f, 0.78f, 1f) : buttonLabelColor)
             : buttonLabelDisabled;
         LockHoverState(_buttonStyle); // hover state까지 즉시 동기화 — 마우스 위에서 색이 튀는 현상 방지
-        GUI.Label(rerollRect, $"다시 굴린다  ·  HP -{cost}", _buttonStyle);
+        GUI.Label(rerollRect, L($"Reroll  ·  HP -{cost}", $"다시 굴린다  ·  HP -{cost}"), _buttonStyle);
         _buttonStyle.normal.textColor = labelPrev;
         LockHoverState(_buttonStyle);
         if (canReroll && GUI.Button(rerollRect, GUIContent.none, GUIStyle.none))

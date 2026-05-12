@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DianoCard.Data;
 using DianoCard.Game;
 using UnityEngine;
+using static DianoCard.Data.LocaleSettings;
 
 /// <summary>
 /// 전투 승리 후 보상 화면.
@@ -29,7 +30,7 @@ public class RewardUI : MonoBehaviour
 
     [Header("Panel")]
     [Tooltip("패널 크기 (정적 고정 — 보상 개수와 무관하게 항상 동일).")]
-    [SerializeField] private Vector2 panelSize = new(440, 530);
+    [SerializeField] private Vector2 panelSize = new(380, 490);
     [Tooltip("패널 Y 오프셋 (양수 = 아래, 음수 = 위로)")]
     [SerializeField] private float panelYOffset = 0f;
     [Tooltip("패널 전체(타이틀/행/컨티뉴 영역)를 클릭해도 보상 진행")]
@@ -44,7 +45,7 @@ public class RewardUI : MonoBehaviour
     [SerializeField] private float titleXOffset = 0f;
     [Tooltip("타이틀 영역 높이 (텍스트 세로 가운데 정렬용)")]
     [SerializeField] private float titleAreaHeight = 52f;
-    [SerializeField, Range(12, 64)] private int titleFontSize = 30;
+    [SerializeField, Range(12, 64)] private int titleFontSize = 25;
     [SerializeField] private Color titleColor = new(0.788f, 0.659f, 0.412f); // #c9a86a aged-brass
     [Tooltip("폰트 변경 (None = Hahmlet)")]
     [SerializeField] private Font titleFontOverride;
@@ -60,11 +61,11 @@ public class RewardUI : MonoBehaviour
     [SerializeField, Range(1.0f, 3.5f)] private float panelGlowSizeFactor = 2.2f;
 
     [Header("Rows")]
-    [SerializeField] private Vector2 rowSize = new(360, 55);
+    [SerializeField] private Vector2 rowSize = new(300, 45);
     [Tooltip("패널 상단에서 첫 행까지의 간격 — 헤더(타이틀+디바이더 라인)가 끝나는 지점에 맞추면 됨")]
     [SerializeField] private float rowsStartYOffset = 95f;
     [SerializeField] private float rowGap = 26f;
-    [SerializeField] private int rowLabelFontSize = 18;
+    [SerializeField] private int rowLabelFontSize = 16;
     [SerializeField] private Color rowLabelColor = new(0.99f, 0.95f, 0.78f);
     [Tooltip("각 행에 마우스 올렸을 때 행 단위로 부풀어 오르는 배율 (행 안의 모든 요소가 함께 스케일)")]
     [SerializeField, Range(1f, 1.15f)] private float rowHoverScale = 1.05f;
@@ -79,7 +80,7 @@ public class RewardUI : MonoBehaviour
     [Tooltip("아이콘 크기 = 메달리온 크기 × 이 값 (프레임 안쪽에 쏙 들어가도록 작게)")]
     [SerializeField, Range(0.3f, 1.0f)] private float iconSizeFactor = 0.50f;
     [Tooltip("라벨 시작 X = 행 왼쪽 + 행 높이 × 이 값")]
-    [SerializeField, Range(0.5f, 2.5f)] private float labelStartXFactor = 1.30f;
+    [SerializeField, Range(0.5f, 2.5f)] private float labelStartXFactor = 1.45f;
 
     [Header("Row Icon Animation & Glow")]
     [Tooltip("아이콘 둥실둥실 진폭 (픽셀)")]
@@ -94,7 +95,7 @@ public class RewardUI : MonoBehaviour
     [Header("Continue Button")]
     [Tooltip("계속하기/Skip 버튼 hover 시 확대 배율")]
     [SerializeField, Range(1f, 1.3f)] private float continueHoverScale = 1.06f;
-    [SerializeField] private Vector2 continueButtonSize = new(160, 58);
+    [SerializeField] private Vector2 continueButtonSize = new(120, 48);
     [Tooltip("계속하기 버튼 하단 ~ 패널 바닥 사이 간격 (패널 바닥에 고정)")]
     [SerializeField] private float continueButtonBottomMargin = 36f;
     [Tooltip("버튼 위에 그리는 텍스트 (빈 문자열이면 안 그림)")]
@@ -166,6 +167,12 @@ public class RewardUI : MonoBehaviour
     private bool _relicDone;
     private bool _cardRemoveDone;
     private float _removeScrollY;
+
+    // 행에 마우스 올렸을 때 옆에 띄울 툴팁용 — DrawListView 매 프레임 초기화 후
+    // 해당 행에서 hover 감지 시 채워지고, 모든 행 그린 뒤 마지막에 패널 옆에 그려짐.
+    private RelicData _hoveredRelicForTip;
+    private PotionData _hoveredPotionForTip;
+    private Rect _tooltipAnchorRowRect;
 
     // 어떤 BattleReward 인스턴스에 대해 이미 ResetForNewReward를 돌렸는지 추적.
     // 상태 엣지(_prevState != Reward → Reward) 기반으로 판정하면 텍트리/덱 화면 갔다 복귀할 때
@@ -317,6 +324,10 @@ public class RewardUI : MonoBehaviour
         // 인스펙터 값이 런타임에 바뀔 수 있으므로 매번 스타일 폰트 크기 동기화
         SyncStyleFontSizes();
 
+        // 매 프레임 hover 상태 초기화 — 행 그릴 때 해당 행이 hover면 다시 세팅됨
+        _hoveredRelicForTip = null;
+        _hoveredPotionForTip = null;
+
         // ─── 1. 패널 사각형 (정적 크기 — 보상 개수와 무관) ───
         float rowH = rowSize.y;
         var panelRect = new Rect(
@@ -357,7 +368,7 @@ public class RewardUI : MonoBehaviour
                 panelRect.y + titleYOffset,
                 panelRect.width,
                 titleAreaHeight);
-            GUI.Label(titleRect, titleText, _titleStyle);
+            GUI.Label(titleRect, L("TREASURE", titleText), _titleStyle);
         }
 
         // ─── 5. 보상 행 (각 행이 자기 영역 hover 시 통째로 부풀어 오름 + 클릭 가능) ───
@@ -382,12 +393,12 @@ public class RewardUI : MonoBehaviour
             string pLabel = run.PotionSlotFull
                 ? dm.GetUIString("reward.row.potion_full")
                 : dm.GetUIString("reward.row.potion", reward.potion.name);
-            rowClicked |= DrawRewardRow(new Rect(rowX, y, rowW, rowH), GetItemIcon(reward.potion.id, true) ?? _iconPotion, pLabel, RowKind.Potion);
+            rowClicked |= DrawRewardRow(new Rect(rowX, y, rowW, rowH), GetItemIcon(reward.potion.id, true) ?? _iconPotion, pLabel, RowKind.Potion, potionForTooltip: reward.potion);
             y += rowH + rowGap;
         }
         if (!_relicDone && reward.relic != null)
         {
-            rowClicked |= DrawRewardRow(new Rect(rowX, y, rowW, rowH), GetItemIcon(reward.relic.id, false) ?? _iconRelic, dm.GetUIString("reward.row.relic", reward.relic.name), RowKind.Relic);
+            rowClicked |= DrawRewardRow(new Rect(rowX, y, rowW, rowH), GetItemIcon(reward.relic.id, false) ?? _iconRelic, dm.GetUIString("reward.row.relic", reward.relic.name), RowKind.Relic, relicForTooltip: reward.relic);
             y += rowH + rowGap;
         }
         if (!_cardRemoveDone && reward.cardRemoveOffer)
@@ -416,11 +427,11 @@ public class RewardUI : MonoBehaviour
         {
             var textRect = btnRect;
             textRect.y += continueButtonTextYOffset;
-            GUI.Label(textRect, continueButtonText, _continueTextStyle);
+            GUI.Label(textRect, L("Continue →", continueButtonText), _continueTextStyle);
         }
 
-        bool continueClicked = GUI.Button(btnRect, GUIContent.none, GUIStyle.none);
         GUI.matrix = prevMatrix;
+        bool continueClicked = GUI.Button(btnRect, GUIContent.none, GUIStyle.none);
 
         // ─── 7. 패널 빈 영역 클릭 (타이틀 영역, 행 사이 공백 등) — 가장 마지막에 폴백 ───
         bool panelEmptyClicked = false;
@@ -431,6 +442,92 @@ public class RewardUI : MonoBehaviour
         {
             _pending.Add(() => OnContinuePressed(gsm, run, reward));
         }
+
+        // ─── 8. 유물/포션 행 hover 시 패널 옆에 툴팁 (이름 + 설명) ───
+        if (_hoveredRelicForTip != null)
+            DrawItemTooltip(panelRect, _tooltipAnchorRowRect,
+                _hoveredRelicForTip.name, _hoveredRelicForTip.description,
+                new Color(0.80f, 0.76f, 0.88f));
+        else if (_hoveredPotionForTip != null)
+            DrawItemTooltip(panelRect, _tooltipAnchorRowRect,
+                _hoveredPotionForTip.name, _hoveredPotionForTip.description,
+                new Color(0.78f, 0.92f, 0.80f));
+    }
+
+    // 유물/포션 행 hover 시 띄우는 소형 툴팁 패널.
+    // 패널 옆(기본 오른쪽, 화면 밖이면 왼쪽)에 행과 세로 중심을 맞춰 그림.
+    // BattleUI의 DrawRelicTooltip / DrawPotionTooltip과 동일한 다크 바이올렛 + 브론즈 트림 톤.
+    private void DrawItemTooltip(Rect panelRect, Rect anchorRow, string nameText, string descText, Color descColor)
+    {
+        if (string.IsNullOrEmpty(nameText)) return;
+
+        const float TipW = 240f;
+        const float Pad = 10f;
+        bool hasDesc = !string.IsNullOrEmpty(descText);
+
+        // 본문 높이 계산 — 임시로 wordWrap 켜고 CalcHeight
+        int savedFS = _rowLabelStyle.fontSize;
+        var savedColor = _rowLabelStyle.normal.textColor;
+        FontStyle savedStyle = _rowLabelStyle.fontStyle;
+        bool savedWrap = _rowLabelStyle.wordWrap;
+        var savedAlign = _rowLabelStyle.alignment;
+
+        float descH = 0f;
+        if (hasDesc)
+        {
+            _rowLabelStyle.fontSize = 13;
+            _rowLabelStyle.fontStyle = FontStyle.Normal;
+            _rowLabelStyle.wordWrap = true;
+            _rowLabelStyle.alignment = TextAnchor.UpperLeft;
+            descH = _rowLabelStyle.CalcHeight(new GUIContent(descText), TipW - Pad * 2f);
+        }
+        float tipH = 30f + (hasDesc ? descH + Pad : 6f);
+
+        // 패널 오른쪽이 기본, 화면 밖이면 왼쪽으로 폴백
+        float tipX = panelRect.xMax + 14f;
+        if (tipX + TipW > RefW - 10f)
+            tipX = panelRect.x - TipW - 14f;
+        tipX = Mathf.Clamp(tipX, 10f, RefW - TipW - 10f);
+
+        float tipY = anchorRow.y + (anchorRow.height - tipH) * 0.5f;
+        tipY = Mathf.Clamp(tipY, 10f, RefH - tipH - 10f);
+
+        var tipRect = new Rect(Mathf.Round(tipX), Mathf.Round(tipY), TipW, tipH);
+
+        // 배경 + 4면 브론즈 트림
+        DrawFilledRect(tipRect, new Color(0.059f, 0.043f, 0.137f, 1f));
+        var trimCol = new Color(0.82f, 0.68f, 0.38f, 0.7f);
+        DrawFilledRect(new Rect(tipRect.x, tipRect.y, tipRect.width, 1f), trimCol);
+        DrawFilledRect(new Rect(tipRect.x, tipRect.yMax - 1f, tipRect.width, 1f), trimCol);
+        DrawFilledRect(new Rect(tipRect.x, tipRect.y + 1f, 1f, tipRect.height - 2f), trimCol);
+        DrawFilledRect(new Rect(tipRect.xMax - 1f, tipRect.y + 1f, 1f, tipRect.height - 2f), trimCol);
+
+        // 이름 — 흰색 굵게
+        _rowLabelStyle.fontSize = 14;
+        _rowLabelStyle.fontStyle = FontStyle.Bold;
+        _rowLabelStyle.wordWrap = false;
+        _rowLabelStyle.alignment = TextAnchor.MiddleLeft;
+        _rowLabelStyle.normal.textColor = Color.white;
+        GUI.Label(new Rect(tipRect.x + Pad, tipRect.y + 4f, TipW - Pad * 2f, 22f), nameText, _rowLabelStyle);
+
+        // 설명 — 호출자가 지정한 틴트 (유물=라일락, 포션=세이지)
+        if (hasDesc)
+        {
+            _rowLabelStyle.fontSize = 13;
+            _rowLabelStyle.fontStyle = FontStyle.Normal;
+            _rowLabelStyle.wordWrap = true;
+            _rowLabelStyle.alignment = TextAnchor.UpperLeft;
+            _rowLabelStyle.normal.textColor = descColor;
+            GUI.Label(new Rect(tipRect.x + Pad, tipRect.y + 28f, TipW - Pad * 2f, descH + 2f), descText, _rowLabelStyle);
+        }
+
+        // 스타일 복원
+        _rowLabelStyle.fontSize = savedFS;
+        _rowLabelStyle.normal.textColor = savedColor;
+        _rowLabelStyle.fontStyle = savedStyle;
+        _rowLabelStyle.wordWrap = savedWrap;
+        _rowLabelStyle.alignment = savedAlign;
+        LockStateColors(_rowLabelStyle);
     }
 
     private Texture2D GetItemIcon(string id, bool isPotion)
@@ -447,13 +544,31 @@ public class RewardUI : MonoBehaviour
     /// 보상 행 하나를 그림. 행 영역에 마우스가 있으면 행 전체(배경+메달리온+아이콘+라벨)가 통째로 부풀어 오름.
     /// 클릭되면 true 반환.
     /// </summary>
-    private bool DrawRewardRow(Rect rect, Texture2D icon, string label, RowKind kind)
+    private bool DrawRewardRow(Rect rect, Texture2D icon, string label, RowKind kind,
+                                RelicData relicForTooltip = null, PotionData potionForTooltip = null)
     {
         // 행 hover 판정 — 약간 확장된 영역으로 엣지 플리커 방지
         const float hoverPad = 6f;
         var hoverRect = new Rect(rect.x - hoverPad, rect.y - hoverPad,
                                   rect.width + hoverPad * 2, rect.height + hoverPad * 2);
         bool rowHovered = hoverRect.Contains(Event.current.mousePosition);
+
+        // hover 상태를 기록 — 행 다 그린 뒤 패널 옆에 툴팁으로 띄움
+        if (rowHovered)
+        {
+            if (relicForTooltip != null)
+            {
+                _hoveredRelicForTip = relicForTooltip;
+                _hoveredPotionForTip = null;
+                _tooltipAnchorRowRect = rect;
+            }
+            else if (potionForTooltip != null)
+            {
+                _hoveredPotionForTip = potionForTooltip;
+                _hoveredRelicForTip = null;
+                _tooltipAnchorRowRect = rect;
+            }
+        }
 
         // hover 시 행 전체를 한 덩어리로 스케일 (배경/메달리온/아이콘/글로우/라벨 동시 확대)
         // GUIUtility.ScaleAroundPivot는 기존 GUI.matrix(화면 fit 스케일 포함)에 추가로 곱하므로
@@ -526,10 +641,9 @@ public class RewardUI : MonoBehaviour
             rect.height);
         GUI.Label(labelRect, label, _rowLabelStyle);
 
-        // 7. 클릭 가능한 영역 (스케일된 행 위에 그대로 얹힘 — 마우스 좌표는 inverse matrix로 자동 변환)
-        bool clicked = GUI.Button(rect, GUIContent.none, GUIStyle.none);
-
+        // 7. 클릭 hit-test는 unscaled rect에서 — hover 시 스케일이 진동해도 hot control rect가 흔들리지 않음
         GUI.matrix = prevMatrix;
+        bool clicked = GUI.Button(rect, GUIContent.none, GUIStyle.none);
         return clicked;
     }
 
@@ -731,11 +845,6 @@ public class RewardUI : MonoBehaviour
 
             if (_battleUICache != null) _battleUICache.DrawCardPreview(rect, run.deck[i]);
             else DrawFilledRect(rect, new Color(0.10f, 0.14f, 0.20f, 0.96f));
-
-            var pill = new Rect(rect.x + 8f, rect.yMax - 38f, rect.width - 16f, 28f);
-            DrawFilledRect(pill, new Color(0.55f, 0.05f, 0.05f, 0.75f));
-            var pillStyle = new GUIStyle(_rowLabelStyle) { alignment = TextAnchor.MiddleCenter, fontSize = 12 };
-            GUI.Label(pill, "PURGE", pillStyle);
 
             if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
             {

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using DianoCard.Game;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using static DianoCard.Data.LocaleSettings;
 
 /// <summary>
 /// 메인 로비 화면. GameState == Lobby일 때만 그려짐.
@@ -677,8 +678,8 @@ public class LobbyUI : MonoBehaviour
         };
         LockHoverState(inactiveBtnStyle);
 
-        GUI.Label(new Rect(px, py + 18f, pw, 30f), "SETTINGS / 설정", titleStyle);
-        GUI.Label(new Rect(px, py + 64f, pw, 24f), "Language / 언어", labelStyle);
+        GUI.Label(new Rect(px, py + 18f, pw, 30f), L("SETTINGS", "설정"), titleStyle);
+        GUI.Label(new Rect(px, py + 64f, pw, 24f), L("Language", "언어"), labelStyle);
 
         var isKR = DianoCard.Data.LocaleSettings.Current == DianoCard.Data.Language.KR;
         float btnW = 120f;
@@ -718,7 +719,7 @@ public class LobbyUI : MonoBehaviour
             normal = { textColor = new Color(0.7f, 0.60f, 0.45f) },
         };
         LockHoverState(closeStyle);
-        if (GUI.Button(new Rect(px + (pw - 100f) * 0.5f, py + ph - 50f, 100f, 32f), "CLOSE / 닫기", closeStyle))
+        if (GUI.Button(new Rect(px + (pw - 100f) * 0.5f, py + ph - 50f, 100f, 32f), L("CLOSE", "닫기"), closeStyle))
             _settingsOpen = false;
     }
 
@@ -756,7 +757,7 @@ public class LobbyUI : MonoBehaviour
         GUI.DrawTexture(rect, Texture2D.whiteTexture);
         GUI.color = prev;
 
-        if (GUI.Button(rect, "[ 애니 테스트 ]", _devBtnStyle))
+        if (GUI.Button(rect, L("[ Anim Test ]", "[ 애니 테스트 ]"), _devBtnStyle))
         {
             _pending.Add(() => gsm.EnterAnimationTest());
         }

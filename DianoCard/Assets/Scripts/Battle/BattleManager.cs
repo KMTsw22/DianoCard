@@ -19,6 +19,10 @@ namespace DianoCard.Battle
         // BattleUI가 StartBattle 직후 세팅. 치트/테스트 환경에서는 null일 수 있음.
         public DianoCard.Game.RunState run;
 
+        /// <summary>카드가 손에서 소진(exhaust)되기 직전에 발행. UI가 손패 비행/번업 연출을 띄울 때 사용.
+        /// 인자: 카드 데이터, 손패 인덱스, 제거 직전의 hand.Count (부채꼴 기하 계산용).</summary>
+        public event Action<CardData, int, int> OnCardExhausting;
+
         private readonly System.Random _rng = new();
         private const int DrawPerTurn = 5;
 
@@ -135,6 +139,14 @@ namespace DianoCard.Battle
                         if (s.hp > s.maxHp) s.hp = s.maxHp;
                         s.fuseHpBonusValue = 0;
                     }
+                }
+                // 재생(C205): 매 턴 시작 시 +regenPerTurn 자가회복.
+                if (s.regenTurns > 0)
+                {
+                    s.Heal(s.regenPerTurn);
+                    Log($"    🌿 {s.data.nameKr} 재생 +{s.regenPerTurn} HP (HP {s.hp}/{s.maxHp}, {s.regenTurns - 1}T 남음)");
+                    s.regenTurns--;
+                    if (s.regenTurns == 0) s.regenPerTurn = 0;
                 }
             }
 
@@ -277,26 +289,52 @@ namespace DianoCard.Battle
                 if (!candidate.IsDead) explicitTarget = candidate;
             }
 
-            // 비용 지불 & 손에서 제거
+            // 비용 지불
             state.player.mana -= effectiveCost;
+
+            // 소진 카드는 RemoveAt 전에 이벤트 발행 — UI가 손패 부채꼴 기하로 시작 위치를
+            // 잡으려면 hand.Count가 아직 그 카드를 포함하고 있어야 한다.
+            bool exhaustOnPlay = IsExhaustOnPlay(card);
+            if (exhaustOnPlay)
+                OnCardExhausting?.Invoke(card, handIndex, state.hand.Count);
+
             state.hand.RemoveAt(handIndex);
             // 카드 위치 결정:
             //  - SUMMON 신규 소환: 필드 공룡과 바인딩 → state.bound (공룡 제거 시 discard로 복귀)
             //  - SUMMON 덮어쓰기/합성: 기존 공룡에 투입되는 "재료" → discard (재사용 가능, 최종체 T2 도달 후엔 새 소환으로 플레이됨)
-            //  - STATUS: 사용 시 소진(exhaust) — 아무 데도 안 감
+            //  - 소진(exhaust): 어디에도 안 감 — 전투 종료까지 사라짐. STATUS 저주(C901 잡초) 등.
             //  - 그 외: 일반 버림더미
             if (card.cardType == CardType.SUMMON)
             {
                 if (isOverwrite) state.discard.Add(inst);
                 else             state.bound.Add(inst);
             }
-            else if (card.subType != CardSubType.STATUS)
+            else if (!exhaustOnPlay)
                 state.discard.Add(inst);
 
             Log($"  [Play] {card.nameKr} (cost {card.cost})");
             ResolveCard(inst, explicitTarget, allyTargetIndex, isOverwrite);
 
+            if (exhaustOnPlay)
+                Log($"  ⌫ {card.nameKr} 소진 (전투 종료까지 제거)");
+
+            // 튜토리얼 단계 진행 — 매니저 비활성 시 invocation list 비어 비용 0.
+            DianoCard.Tutorial.TutorialEvents.NotifyCardPlayed(handIndex);
+            if (card.cardType == CardType.SUMMON)
+                DianoCard.Tutorial.TutorialEvents.NotifySummonPlaced();
+
             return true;
+        }
+
+        /// <summary>이 카드를 사용하면 소진(exhaust)되는지 — discard로 가지 않고 전투 종료까지 제거된다.
+        /// STATUS 서브타입(저주류 C901 잡초 등)은 무조건 소진. 그 외 카드는 description에 "소진"/"Exhaust"
+        /// 키워드가 있으면 소진으로 취급(향후 화석 폭발류 1회용 카드를 CSV에서 표기만으로 동작하게 함).</summary>
+        private static bool IsExhaustOnPlay(CardData c)
+        {
+            if (c.subType == CardSubType.STATUS) return true;
+            if (!string.IsNullOrEmpty(c.descriptionKr) && c.descriptionKr.Contains("소진")) return true;
+            if (!string.IsNullOrEmpty(c.descriptionEn) && c.descriptionEn.Contains("Exhaust")) return true;
+            return false;
         }
 
         /// <summary>필드에서 같은 base 카드 id(덮어쓰기/합성 대상)의 SummonInstance를 찾음. 없으면 null.
@@ -357,7 +395,7 @@ namespace DianoCard.Battle
                 case CardType.UTILITY:
                     if (c.subType == CardSubType.DRAW)
                     {
-                        Draw(c.value);
+                        DrawForCardEffect(c.value);
                         Log($"    Drew {c.value} cards");
                     }
                     break;
@@ -605,6 +643,11 @@ namespace DianoCard.Battle
             ApplySigilBonus(catalyst, result);
 
             Log($"    🦖 융합! {aBase} T{aTier}+T{bTier} → {nextData.nameKr} (ATK {result.TotalAttack} / HP {result.hp}/{result.maxHp}, cost {totalCost})");
+
+            // 튜토리얼: 융합 카드 사용 + 융합 발동 두 알림 모두 발행.
+            DianoCard.Tutorial.TutorialEvents.NotifyCardPlayed(catalystHandIndex);
+            DianoCard.Tutorial.TutorialEvents.NotifyFusionResolved();
+
             return true;
         }
 
@@ -777,9 +820,14 @@ namespace DianoCard.Battle
                     }
                     Log($"    -> {weakApplied}체 적 약화 1턴");
                 }
+                if (c.id == "C138")  // 원시 각인: 사용 후 복사본 1장을 버림더미에 추가
+                {
+                    state.discard.Add(new CardInstance(c));
+                    Log($"    -> {c.nameKr} 복사본 → discard");
+                }
                 if (c.id == "C139")  // 자전 섬광: 1장 드로우
                 {
-                    Draw(1);
+                    DrawForCardEffect(1);
                     Log($"    -> Drew 1 card");
                 }
             }
@@ -802,6 +850,13 @@ namespace DianoCard.Battle
                         affected++;
                     }
                     Log($"    -> {affected}체의 공룡 +{c.value} block");
+
+                    // 무리의 천막(C112): 모든 공룡 + 플레이어.
+                    if (c.id == "C112")
+                    {
+                        state.player.block += c.value;
+                        Log($"    -> 플레이어 +{c.value} block (now {state.player.block})");
+                    }
                 }
                 else
                 {
@@ -811,7 +866,7 @@ namespace DianoCard.Battle
 
                 if (c.id == "C140")  // 수목의 매듭: 1장 드로우
                 {
-                    Draw(1);
+                    DrawForCardEffect(1);
                     Log($"    -> Drew 1 card");
                 }
                 if (c.id == "C104")  // 이중 룬돔: 다음 턴 +5 방어 예약
@@ -879,22 +934,41 @@ namespace DianoCard.Battle
                     CheckPartnerDeathTrigger(t);
                     break;
                 }
-                case "C136":  // 맹독 가시: 독 +value
+                case "C136":  // 맹독 가시: 5 피해 + 독 +value
                 {
                     var t = ResolveSingle();
                     if (t == null) return;
+                    int dmg = ApplyPlayerWeak(5);
+                    t.TakeDamage(dmg);
                     t.poisonStacks += c.value;
-                    Log($"    -> {t.data.nameKr} 독 +{c.value} (총 {t.poisonStacks})");
+                    Log($"    -> {t.data.nameKr} takes {dmg} (HP {t.hp}), 독 +{c.value} (총 {t.poisonStacks})");
+                    if (t.IsDead) DianoCard.Game.RelicEffects.OnEnemyKilled(this, run, null, t);
+                    CheckBossPhaseTransition(t);
+                    CheckPartnerDeathTrigger(t);
                     break;
                 }
-                case "C142":  // 태고의 비명: 전체 적 취약 1턴
+                case "C142":  // 태고의 비명: 5 피해 + 전체 적 취약 1턴
                 {
                     int n = 0;
-                    foreach (var e in state.enemies)
+                    int dmg = ApplyPlayerWeak(5);
+                    var allSnapshot = new List<EnemyInstance>(state.enemies);
+                    foreach (var e in allSnapshot)
                     {
                         if (e.IsDead) continue;
+                        if (IsProtectedByMoss(e))
+                        {
+                            Log($"    -> {e.data.nameKr}: 이끼가 보호 중 (피해 무시)");
+                            e.vulnerableTurns += 1;
+                            n++;
+                            continue;
+                        }
+                        e.TakeDamage(dmg);
                         e.vulnerableTurns += 1;
                         n++;
+                        Log($"    -> {e.data.nameKr} takes {dmg} (HP {e.hp}), 취약 +1T");
+                        if (e.IsDead) DianoCard.Game.RelicEffects.OnEnemyKilled(this, run, null, e);
+                        CheckBossPhaseTransition(e);
+                        CheckPartnerDeathTrigger(e);
                     }
                     Log($"    -> {n}체 적 취약 +1T");
                     break;
@@ -928,8 +1002,22 @@ namespace DianoCard.Battle
 
                 case CardSubType.HEAL:
                     // 힐은 공룡 전용 — 소환사는 포션/이벤트로만 회복.
-                    foreach (var s in state.field) s.Heal(c.value);
-                    Log($"    -> All dinosaurs heal +{c.value}");
+                    if (c.id == "C205")
+                    {
+                        // 재생: 즉시 +value HP + 다음 2턴 시작 시 동일량 자가 회복(총 3턴).
+                        foreach (var s in state.field)
+                        {
+                            s.Heal(c.value);
+                            s.regenPerTurn = c.value;
+                            s.regenTurns = 2;
+                        }
+                        Log($"    -> All dinosaurs +{c.value} HP, 재생 {c.value}/T (3T)");
+                    }
+                    else
+                    {
+                        foreach (var s in state.field) s.Heal(c.value);
+                        Log($"    -> All dinosaurs heal +{c.value}");
+                    }
                     break;
 
                 case CardSubType.TAUNT:
@@ -959,6 +1047,17 @@ namespace DianoCard.Battle
                         int reduction = Math.Max(1, c.value);
                         state.player.summonCostReduction += reduction;
                         Log($"    -> 이번 턴 SUMMON 비용 -{reduction} (누적 {state.player.summonCostReduction})");
+                    }
+                    else if (c.id == "C206")  // 분노의 함성: 필드 공룡 ATK +value 영구
+                    {
+                        int n = 0;
+                        foreach (var s in state.field)
+                        {
+                            if (s.IsDead) continue;
+                            s.attack += c.value;
+                            n++;
+                        }
+                        Log($"    -> 분노의 함성: {n}체 필드 공룡 ATK +{c.value} (영구)");
                     }
                     else
                     {
@@ -1801,8 +1900,12 @@ namespace DianoCard.Battle
                 ReturnBoundCard(s);
                 state.field.RemoveAt(i);
             }
+            int handCount = state.hand.Count;
             foreach (var c in state.hand) state.discard.Add(c);
             state.hand.Clear();
+            // 버린 장수만큼 staggered burst — 3장이면 휙휙휙 3번.
+            if (handCount > 0)
+                DianoCard.Audio.AudioManager.Instance?.PlaySFXBurst("card_discard", handCount);
         }
 
         /// <summary>필드에서 제거되는 소환수의 sourceCardInstance를 bound→discard로 이동.</summary>
@@ -2538,11 +2641,12 @@ namespace DianoCard.Battle
 
         public void Draw(int count)
         {
+            int drawn = 0;
             for (int i = 0; i < count; i++)
             {
                 if (state.deck.Count == 0)
                 {
-                    if (state.discard.Count == 0) return;
+                    if (state.discard.Count == 0) break;
                     state.deck.AddRange(state.discard);
                     state.discard.Clear();
                     Shuffle(state.deck);
@@ -2551,7 +2655,21 @@ namespace DianoCard.Battle
                 var top = state.deck[0];
                 state.deck.RemoveAt(0);
                 state.hand.Add(top);
+                drawn++;
             }
+            // 뽑은 장수만큼 staggered burst — 5장이면 휘리리릭이 5번 (90ms 간격).
+            if (drawn > 0)
+                DianoCard.Audio.AudioManager.Instance?.PlaySFXBurst("card_draw", drawn);
+        }
+
+        /// <summary>카드 효과로 인한 턴 중 드로우 — Draw + 애니메이션 이벤트.
+        /// StartTurn 정기 드로우엔 쓰지 말 것 (EndTurn 코루틴이 자체 처리).</summary>
+        public void DrawForCardEffect(int count)
+        {
+            int before = state.hand.Count;
+            Draw(count);
+            int drawn = state.hand.Count - before;
+            BattleEvents.RaiseMidTurnCardsDrawn(drawn, before);
         }
 
         private void Shuffle<T>(List<T> list)

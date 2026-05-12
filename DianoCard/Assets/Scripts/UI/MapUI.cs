@@ -1288,11 +1288,12 @@ public class MapUI : MonoBehaviour
             GUI.color = prevColor;
         }
 
-        // 클릭 처리
+        // 클릭 처리 — 시각은 1.12배(rect)지만 hit-test는 hover판정과 동일한 baseSize(hitRect)로 통일.
+        // hover→rect 확장→클릭→hover 해제→rect 축소가 한 프레임 안에 진동하면 클릭 손실됨.
         if (isClickable)
         {
             var ev = Event.current;
-            if (ev.type == EventType.MouseDown && ev.button == 0 && rect.Contains(ev.mousePosition))
+            if (ev.type == EventType.MouseDown && ev.button == 0 && hitRect.Contains(ev.mousePosition))
             {
                 if (isCurrent)
                 {

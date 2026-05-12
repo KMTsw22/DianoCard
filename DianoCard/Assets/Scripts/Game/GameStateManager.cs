@@ -49,6 +49,18 @@ namespace DianoCard.Game
         /// <summary>훈련장 모드 플래그 — true면 EndBattle이 Reward/Defeat 대신 Training으로 복귀.</summary>
         public bool IsTrainingMode { get; private set; }
 
+        /// <summary>튜토리얼 모드 플래그 — 캐릭터 선택 직후 1회. true면 진짜 RunState는 백업되고
+        /// sandbox RunState로 전투. EndBattle 시 EndTutorial() 거쳐 RelicPick으로 복귀.</summary>
+        public bool IsTutorialMode { get; private set; }
+
+        // 튜토리얼 진입 시 백업해두는 진짜 런 상태 — EndTutorial 시 그대로 복원.
+        private RunState _tutorialSavedRun;
+        private MapState _tutorialSavedMap;
+        private List<RelicData> _tutorialSavedRelicChoices;
+
+        public const string TutorialCompletedKey = "DianoCard.Tutorial.CH01.Completed";
+        public static bool HasCompletedTutorial() => PlayerPrefs.GetInt(TutorialCompletedKey, 0) == 1;
+
         /// <summary>영구 메타 진행(테크트리) 상태. PlayerPrefs에서 로드, 노드 해금 시 자동 저장.</summary>
         public TechTreeState TechTree { get; private set; }
 
@@ -100,6 +112,10 @@ namespace DianoCard.Game
             if (GetComponent<PauseMenuUI>() == null) gameObject.AddComponent<PauseMenuUI>();
             if (GetComponent<EventUI>() == null) gameObject.AddComponent<EventUI>();
             if (GetComponent<EventRelicOfferUI>() == null) gameObject.AddComponent<EventRelicOfferUI>();
+            if (GetComponent<DianoCard.Tutorial.TutorialManager>() == null) gameObject.AddComponent<DianoCard.Tutorial.TutorialManager>();
+            if (GetComponent<DianoCard.Tutorial.TutorialOverlay>() == null) gameObject.AddComponent<DianoCard.Tutorial.TutorialOverlay>();
+            if (GetComponent<DianoCard.Tutorial.TutorialTipModal>() == null) gameObject.AddComponent<DianoCard.Tutorial.TutorialTipModal>();
+            if (GetComponent<DianoCard.UI.CursorManager>() == null) gameObject.AddComponent<DianoCard.UI.CursorManager>();
         }
 
         /// <summary>Lobby에서 애니메이션 테스트 화면 진입. Run 상태는 건드리지 않음.</summary>
@@ -176,7 +192,108 @@ namespace DianoCard.Game
             CurrentMap = GenerateMap(CurrentRun.chapterId);
             RelicPickChoices = BuildRelicPickChoices(CurrentRun, 3);
             _relicPickReturnState = GameState.Map;
+
+            // 튜토리얼 미완료면 진짜 RunState는 그대로 백업하고 sandbox 전투로 분기.
+            // EndTutorial이 백업을 복원하면서 RelicPick 상태로 넘김.
+            if (!HasCompletedTutorial())
+            {
+                EnterTutorial();
+                return;
+            }
+
             State = GameState.RelicPick;
+        }
+
+        // =========================================================
+        // 튜토리얼 (캐릭터 선택 직후 1회, sandbox 전투)
+        //
+        // 진짜 RunState/MapState/RelicPickChoices를 백업해두고, 격리된 sandbox
+        // RunState로 슬라임 2마리(E001×2)와 전투. sandbox 덱은 정확히 5장:
+        //   - C101 작열 송곳니 ×1 (공격, 1코 5데미지)
+        //   - C102 룬 보주 ×1 (방어, 1코 +6 블록)
+        //   - C004 랩터 ×2 (육식 T0 — 융합 재료)
+        //   - C152 융합의 각인 ×1 (융합 발동)
+        // 마나 3 고정이라 한 턴에 최대 3장 사용 → END TURN 단계가 학습 흐름에 자연스럽게 들어감.
+        // 슬라임 스케일은 BattleUI가 IsTutorialMode 보고 hp×0.35, dmg×0.5로 약화.
+        // 시그니처 스킬은 작동하면 자연 학습, MVP에서 미작동이면 단계 텍스트가 톤다운.
+        // 전투 종료(EndBattle) 시 IsTutorialMode 분기가 EndTutorial을 호출, 진짜 런 복원.
+        // =========================================================
+
+        private void EnterTutorial()
+        {
+            _tutorialSavedRun = CurrentRun;
+            _tutorialSavedMap = CurrentMap;
+            _tutorialSavedRelicChoices = RelicPickChoices;
+
+            CurrentRun = BuildTutorialRun(_tutorialSavedRun.characterId);
+            CurrentMap = null;
+            RelicPickChoices = null;
+
+            CurrentEnemies.Clear();
+            var slime = DataManager.Instance.GetEnemy("E001");
+            if (slime != null)
+            {
+                CurrentEnemies.Add(slime);
+                CurrentEnemies.Add(slime);
+            }
+
+            IsTutorialMode = true;
+            State = GameState.Battle;
+            Debug.Log("[GSM] EnterTutorial — sandbox battle vs 슬라임 ×2");
+
+            // TutorialManager는 GSM과 같은 GameObject에 AutoAttach됨.
+            // Awake 순서상 같은 프레임에 이미 attach 완료 — Instance null 체크는 안전망.
+            if (DianoCard.Tutorial.TutorialManager.Instance != null)
+                DianoCard.Tutorial.TutorialManager.Instance.Begin();
+        }
+
+        /// <summary>튜토리얼 종료 — sandbox 폐기, 진짜 RunState/Map/유물선택지 복원, RelicPick 진입.</summary>
+        public void EndTutorial()
+        {
+            PlayerPrefs.SetInt(TutorialCompletedKey, 1);
+            PlayerPrefs.Save();
+
+            CurrentRun = _tutorialSavedRun;
+            CurrentMap = _tutorialSavedMap;
+            RelicPickChoices = _tutorialSavedRelicChoices;
+            _tutorialSavedRun = null;
+            _tutorialSavedMap = null;
+            _tutorialSavedRelicChoices = null;
+
+            CurrentEnemies.Clear();
+            IsTutorialMode = false;
+            State = GameState.RelicPick;
+            Debug.Log("[GSM] EndTutorial — restored real run, → RelicPick");
+        }
+
+        // 슬라임 2마리에 맞춰 깎은 sandbox RunState. HP 낮고 덱 작게.
+        private RunState BuildTutorialRun(string characterId)
+        {
+            var deck = new List<CardData>();
+            var dm = DataManager.Instance;
+            void Add(string id, int n = 1)
+            {
+                var c = dm.GetCard(id);
+                if (c == null) { Debug.LogWarning($"[GSM] Tutorial deck missing card '{id}'"); return; }
+                for (int i = 0; i < n; i++) deck.Add(c);
+            }
+            Add("C101", 1); // 작열 송곳니 — 1코 5데미지 (공격)
+            Add("C102", 1); // 룬 보주 — 1코 +6 블록 (방어)
+            Add("C004", 2); // 랩터 ×2 — 융합 재료 (육식 T0)
+            Add("C152", 1); // 융합의 각인 — 융합 발동
+
+            return new RunState
+            {
+                playerMaxHp = 40,
+                playerCurrentHp = 40,
+                gold = 0,
+                deck = deck,
+                relics = new List<RelicData>(),
+                potions = new List<PotionData>(),
+                currentFloor = 0,
+                chapterId = "CH01",
+                characterId = characterId ?? "CH002",
+            };
         }
 
         /// <summary>
@@ -1433,6 +1550,17 @@ namespace DianoCard.Game
             if (CurrentRun == null) return;
 
             CurrentRun.playerCurrentHp = Mathf.Max(0, remainingPlayerHp);
+
+            // 튜토리얼 모드: 승패 무관하게 sandbox 폐기 + 진짜 런 복원 + RelicPick 진입.
+            // 패배해도 다시 시작시키지 않는다 — 학습 흐름을 한 번에 마치기 위함.
+            if (IsTutorialMode)
+            {
+                // 마지막 단계(finish_battle)가 BattleWon 트리거로 끝나도록 알림 발행.
+                // EndTutorial이 곧 RelicPick 전이를 잡아도 단계 시퀀스는 깨끗하게 마무리됨.
+                if (won) DianoCard.Tutorial.TutorialEvents.NotifyBattleWon();
+                EndTutorial();
+                return;
+            }
 
             // 훈련장 모드: 보상/패배 없이 맵으로 복귀. HP/덱 리셋 + 노드 미클리어 처리(같은 노드 재진입 가능).
             if (IsTrainingMode)

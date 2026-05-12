@@ -164,8 +164,20 @@ public class CheatWindow : EditorWindow
     }
 
     // =========================================================
-    // 카드 탭
+    // 카드 탭 — Excel 시트형. 컬럼: ID / 이름 / C / A / H / 희귀 / 효과 / [덱+] / [손+]
+    // 그룹: (cardType, subType) 변화 지점에 보라 띠 헤더. 검색 활성 시 그룹 헤더 생략(평탄).
     // =========================================================
+    // 카드 풀 컬럼 폭 — 합 ≈ 360px + 효과 flex. 패널 폭이 좁아도 효과 컬럼만 줄어들도록 fixed 폭 작게.
+    private const float CardW_Id     = 64f;
+    private const float CardW_Name   = 110f;
+    private const float CardW_Cost   = 22f;
+    private const float CardW_Atk    = 26f;
+    private const float CardW_Hp     = 26f;
+    private const float CardW_Rarity = 60f;
+    private const float CardW_Effect = 140f;  // 최소 폭 — 부족하면 잘림(GUI clipping)
+    private const float CardW_BtnDeck = 36f;
+    private const float CardW_BtnHand = 40f;
+
     private void DrawCardTab(GameStateManager gsm)
     {
         var run = gsm.CurrentRun;
@@ -184,7 +196,7 @@ public class CheatWindow : EditorWindow
 
         EditorGUILayout.Space(4);
 
-        // 현재 덱 — Run 있을 때만
+        // 현재 덱 — Run 있을 때만 (테이블 헤더와 같은 폭으로 표 형식 표시)
         if (hasRun)
         {
             EditorGUILayout.LabelField($"현재 덱 ({run.deck.Count}장) — 클릭=1장 제거", EditorStyles.boldLabel);
@@ -195,7 +207,7 @@ public class CheatWindow : EditorWindow
             }
             else
             {
-                const int cols = 2;
+                const int cols = 3;
                 for (int i = 0; i < deckGroups.Count; i += cols)
                 {
                     EditorGUILayout.BeginHorizontal();
@@ -205,8 +217,9 @@ public class CheatWindow : EditorWindow
                         if (idx >= deckGroups.Count) { GUILayout.FlexibleSpace(); continue; }
                         var g = deckGroups[idx];
                         var first = g.First();
-                        string lbl = g.Count() > 1 ? $"{first.nameKr} ×{g.Count()}" : first.nameKr;
-                        if (GUILayout.Button(lbl, GUILayout.Height(22)))
+                        int cnt = g.Count();
+                        string lbl = cnt > 1 ? $"{first.nameKr} ×{cnt}" : first.nameKr;
+                        if (GUILayout.Button(lbl, TableUI.Btn, GUILayout.Height(20)))
                         {
                             var toRemove = run.deck.FirstOrDefault(c => c.id == g.Key);
                             if (toRemove != null) run.deck.Remove(toRemove);
@@ -222,11 +235,22 @@ public class CheatWindow : EditorWindow
         bool inBattle = hasRun && battle != null && battle.state != null && gsm.State == GameState.Battle;
 
         var search = (_cardSearch ?? "").Trim();
-        var filtered = string.IsNullOrEmpty(search)
-            ? _allCards
-            : _allCards.Where(c =>
+        // 그룹 정렬: (cardType, subType, id). 검색 시 평탄 리스트로 충분.
+        List<CardData> filtered;
+        if (string.IsNullOrEmpty(search))
+        {
+            filtered = _allCards
+                .OrderBy(c => (int)c.cardType)
+                .ThenBy(c => (int)c.subType)
+                .ThenBy(c => c.id, StringComparer.Ordinal)
+                .ToList();
+        }
+        else
+        {
+            filtered = _allCards.Where(c =>
                 c.nameKr.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0 ||
                 c.id.IndexOf(search, StringComparison.OrdinalIgnoreCase) >= 0).ToList();
+        }
 
         EditorGUILayout.LabelField(
             $"카드 풀 ({filtered?.Count ?? 0} / 전체 {_allCards?.Count ?? 0})  " +
@@ -240,28 +264,80 @@ public class CheatWindow : EditorWindow
             return;
         }
 
-        foreach (var c in filtered)
+        // 헤더 행
+        DrawCardHeader();
+
+        // 본문 — 그룹 헤더(검색 시 생략) + 행
+        if (string.IsNullOrEmpty(search))
         {
-            EditorGUILayout.BeginHorizontal();
-            string sub = c.cardType == CardType.SUMMON ? $"·{c.subType}" : "";
-            EditorGUILayout.LabelField($"{c.id} {c.nameKr} [{c.rarity}{sub}]", GUILayout.MinWidth(180));
-            using (new EditorGUI.DisabledScope(!hasRun))
+            var groups = filtered.GroupBy(c => new ValueTuple<CardType, CardSubType>(c.cardType, c.subType));
+            foreach (var g in groups)
             {
-                if (GUILayout.Button("덱+", GUILayout.Width(48)))
-                    run.deck.Add(c);
+                TableUI.DrawGroupBar(CardGroupLabel(g.Key.Item1, g.Key.Item2), g.Count());
+                int i = 0;
+                foreach (var c in g.OrderBy(x => x.id, StringComparer.Ordinal))
+                    DrawCardRow(c, i++, run, hasRun, battle, inBattle);
             }
-            using (new EditorGUI.DisabledScope(!inBattle))
-            {
-                if (GUILayout.Button("손패+", GUILayout.Width(56)))
-                    battle.Cheat_AddCardToHand(c.id);
-            }
-            EditorGUILayout.EndHorizontal();
+        }
+        else
+        {
+            for (int i = 0; i < filtered.Count; i++)
+                DrawCardRow(filtered[i], i, run, hasRun, battle, inBattle);
         }
     }
 
+    private void DrawCardHeader()
+    {
+        GUILayout.BeginHorizontal(TableUI.HeaderRow, GUILayout.Height(22));
+        GUILayout.Label("ID",   TableUI.CellHeader, GUILayout.Width(CardW_Id));
+        GUILayout.Label("이름", TableUI.CellHeader, GUILayout.Width(CardW_Name));
+        GUILayout.Label("C",    TableUI.CellHeader, GUILayout.Width(CardW_Cost));
+        GUILayout.Label("A",    TableUI.CellHeader, GUILayout.Width(CardW_Atk));
+        GUILayout.Label("H",    TableUI.CellHeader, GUILayout.Width(CardW_Hp));
+        GUILayout.Label("희귀", TableUI.CellHeader, GUILayout.Width(CardW_Rarity));
+        GUILayout.Label("효과", TableUI.CellHeader, GUILayout.MinWidth(CardW_Effect), GUILayout.ExpandWidth(true));
+        GUILayout.Label("",     TableUI.CellHeader, GUILayout.Width(CardW_BtnDeck));
+        GUILayout.Label("",     TableUI.CellHeader, GUILayout.Width(CardW_BtnHand));
+        GUILayout.EndHorizontal();
+    }
+
+    private void DrawCardRow(CardData c, int rowIdx, RunState run, bool hasRun, BattleManager battle, bool inBattle)
+    {
+        GUILayout.BeginHorizontal(TableUI.RowFor(rowIdx), GUILayout.Height(20));
+        GUILayout.Label(c.id,     TableUI.CellBold, GUILayout.Width(CardW_Id));
+        GUILayout.Label(c.nameKr, TableUI.Cell,     GUILayout.Width(CardW_Name));
+        // SUMMON만 ATK/HP 표시, 나머지는 "-".
+        bool isSummon = c.cardType == CardType.SUMMON;
+        GUILayout.Label(c.cost.ToString(),                TableUI.CellNum, GUILayout.Width(CardW_Cost));
+        GUILayout.Label(isSummon ? c.attack.ToString() : "-", TableUI.CellNum, GUILayout.Width(CardW_Atk));
+        GUILayout.Label(isSummon ? c.hp.ToString()     : "-", TableUI.CellNum, GUILayout.Width(CardW_Hp));
+        GUILayout.Label(c.rarity.ToString(),              TableUI.Cell,    GUILayout.Width(CardW_Rarity));
+        GUILayout.Label(c.descriptionKr ?? "", TableUI.Cell, GUILayout.MinWidth(CardW_Effect), GUILayout.ExpandWidth(true));
+
+        using (new EditorGUI.DisabledScope(!hasRun))
+        {
+            if (GUILayout.Button("덱+", TableUI.Btn, GUILayout.Width(CardW_BtnDeck)))
+                run.deck.Add(c);
+        }
+        using (new EditorGUI.DisabledScope(!inBattle))
+        {
+            if (GUILayout.Button("손+", TableUI.Btn, GUILayout.Width(CardW_BtnHand)))
+                battle.Cheat_AddCardToHand(c.id);
+        }
+        GUILayout.EndHorizontal();
+    }
+
     // =========================================================
-    // 유물 탭
+    // 유물 탭 — Excel 시트형. 컬럼: ID / 이름 / 희귀 / 출처 / 효과 / [획득]
+    // 그룹: rarity별.
     // =========================================================
+    private const float RelicW_Id     = 56f;
+    private const float RelicW_Name   = 120f;
+    private const float RelicW_Rarity = 64f;
+    private const float RelicW_Source = 54f;
+    private const float RelicW_Effect = 140f;
+    private const float RelicW_Btn    = 50f;
+
     private void DrawRelicTab(GameStateManager gsm)
     {
         var run = gsm.CurrentRun;
@@ -279,7 +355,7 @@ public class CheatWindow : EditorWindow
             }
             else
             {
-                const int cols = 2;
+                const int cols = 3;
                 var owned = run.relics.ToList();
                 for (int i = 0; i < owned.Count; i += cols)
                 {
@@ -289,7 +365,7 @@ public class CheatWindow : EditorWindow
                         int idx = i + j;
                         if (idx >= owned.Count) { GUILayout.FlexibleSpace(); continue; }
                         var r = owned[idx];
-                        if (GUILayout.Button(r.nameKr, GUILayout.Height(24)))
+                        if (GUILayout.Button(r.nameKr, TableUI.Btn, GUILayout.Height(20)))
                             run.relics.Remove(r);
                     }
                     EditorGUILayout.EndHorizontal();
@@ -306,22 +382,63 @@ public class CheatWindow : EditorWindow
                 EditorStyles.miniLabel);
             return;
         }
-        foreach (var r in _allRelics)
+
+        DrawRelicHeader();
+
+        var groups = _allRelics
+            .OrderBy(r => (int)r.rarity)
+            .ThenBy(r => r.id, StringComparer.Ordinal)
+            .GroupBy(r => r.rarity);
+        foreach (var g in groups)
         {
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField($"{r.id}  {r.nameKr}", GUILayout.MinWidth(180));
-            using (new EditorGUI.DisabledScope(!hasRun))
-            {
-                if (GUILayout.Button("획득", GUILayout.Width(60)))
-                    gsm.Cheat_AcquireRelic(r.id);
-            }
-            EditorGUILayout.EndHorizontal();
+            TableUI.DrawGroupBar(g.Key.ToString(), g.Count());
+            int i = 0;
+            foreach (var r in g)
+                DrawRelicRow(r, i++, gsm, hasRun);
         }
     }
 
+    private void DrawRelicHeader()
+    {
+        GUILayout.BeginHorizontal(TableUI.HeaderRow, GUILayout.Height(22));
+        GUILayout.Label("ID",   TableUI.CellHeader, GUILayout.Width(RelicW_Id));
+        GUILayout.Label("이름", TableUI.CellHeader, GUILayout.Width(RelicW_Name));
+        GUILayout.Label("희귀", TableUI.CellHeader, GUILayout.Width(RelicW_Rarity));
+        GUILayout.Label("출처", TableUI.CellHeader, GUILayout.Width(RelicW_Source));
+        GUILayout.Label("효과", TableUI.CellHeader, GUILayout.MinWidth(RelicW_Effect), GUILayout.ExpandWidth(true));
+        GUILayout.Label("",     TableUI.CellHeader, GUILayout.Width(RelicW_Btn));
+        GUILayout.EndHorizontal();
+    }
+
+    private void DrawRelicRow(RelicData r, int rowIdx, GameStateManager gsm, bool hasRun)
+    {
+        GUILayout.BeginHorizontal(TableUI.RowFor(rowIdx), GUILayout.Height(20));
+        GUILayout.Label(r.id,     TableUI.CellBold, GUILayout.Width(RelicW_Id));
+        GUILayout.Label(r.nameKr, TableUI.Cell,     GUILayout.Width(RelicW_Name));
+        GUILayout.Label(r.rarity.ToString(), TableUI.Cell, GUILayout.Width(RelicW_Rarity));
+        GUILayout.Label(ShortSource(r.source), TableUI.Cell, GUILayout.Width(RelicW_Source));
+        GUILayout.Label(r.descriptionKr ?? "", TableUI.Cell, GUILayout.MinWidth(RelicW_Effect), GUILayout.ExpandWidth(true));
+
+        using (new EditorGUI.DisabledScope(!hasRun))
+        {
+            if (GUILayout.Button("획득", TableUI.Btn, GUILayout.Width(RelicW_Btn)))
+                gsm.Cheat_AcquireRelic(r.id);
+        }
+        GUILayout.EndHorizontal();
+    }
+
     // =========================================================
-    // 물약 탭
+    // 물약 탭 — Excel 시트형. 컬럼: ID / 이름 / 희귀 / 구매 / 가격 / 효과 / [획득]
+    // 그룹: potionType별 (공격/방어/유틸).
     // =========================================================
+    private const float PotionW_Id     = 56f;
+    private const float PotionW_Name   = 120f;
+    private const float PotionW_Rarity = 64f;
+    private const float PotionW_Buy    = 36f;
+    private const float PotionW_Price  = 46f;
+    private const float PotionW_Effect = 140f;
+    private const float PotionW_Btn    = 50f;
+
     private void DrawPotionTab(GameStateManager gsm)
     {
         var run = gsm.CurrentRun;
@@ -340,7 +457,7 @@ public class CheatWindow : EditorWindow
             }
             else
             {
-                const int cols = 2;
+                const int cols = 3;
                 var owned = run.potions.ToList();
                 for (int i = 0; i < owned.Count; i += cols)
                 {
@@ -350,7 +467,7 @@ public class CheatWindow : EditorWindow
                         int idx = i + j;
                         if (idx >= owned.Count) { GUILayout.FlexibleSpace(); continue; }
                         var p = owned[idx];
-                        if (GUILayout.Button(p.nameKr, GUILayout.Height(24)))
+                        if (GUILayout.Button(p.nameKr, TableUI.Btn, GUILayout.Height(20)))
                             run.potions.Remove(p);
                     }
                     EditorGUILayout.EndHorizontal();
@@ -368,17 +485,52 @@ public class CheatWindow : EditorWindow
             return;
         }
         bool full = hasRun && run.PotionSlotFull;
-        foreach (var p in _allPotions)
+
+        DrawPotionHeader();
+
+        var groups = _allPotions
+            .OrderBy(p => (int)p.potionType)
+            .ThenBy(p => (int)p.rarity)
+            .ThenBy(p => p.id, StringComparer.Ordinal)
+            .GroupBy(p => p.potionType);
+        foreach (var g in groups)
         {
-            EditorGUILayout.BeginHorizontal();
-            EditorGUILayout.LabelField($"{p.id}  {p.nameKr}", GUILayout.MinWidth(180));
-            using (new EditorGUI.DisabledScope(!hasRun || full))
-            {
-                if (GUILayout.Button("획득", GUILayout.Width(60)))
-                    gsm.Cheat_AcquirePotion(p.id);
-            }
-            EditorGUILayout.EndHorizontal();
+            TableUI.DrawGroupBar(PotionGroupLabel(g.Key), g.Count());
+            int i = 0;
+            foreach (var p in g)
+                DrawPotionRow(p, i++, gsm, hasRun, full);
         }
+    }
+
+    private void DrawPotionHeader()
+    {
+        GUILayout.BeginHorizontal(TableUI.HeaderRow, GUILayout.Height(22));
+        GUILayout.Label("ID",   TableUI.CellHeader, GUILayout.Width(PotionW_Id));
+        GUILayout.Label("이름", TableUI.CellHeader, GUILayout.Width(PotionW_Name));
+        GUILayout.Label("희귀", TableUI.CellHeader, GUILayout.Width(PotionW_Rarity));
+        GUILayout.Label("구매", TableUI.CellHeader, GUILayout.Width(PotionW_Buy));
+        GUILayout.Label("가격", TableUI.CellHeader, GUILayout.Width(PotionW_Price));
+        GUILayout.Label("효과", TableUI.CellHeader, GUILayout.MinWidth(PotionW_Effect), GUILayout.ExpandWidth(true));
+        GUILayout.Label("",     TableUI.CellHeader, GUILayout.Width(PotionW_Btn));
+        GUILayout.EndHorizontal();
+    }
+
+    private void DrawPotionRow(PotionData p, int rowIdx, GameStateManager gsm, bool hasRun, bool full)
+    {
+        GUILayout.BeginHorizontal(TableUI.RowFor(rowIdx), GUILayout.Height(20));
+        GUILayout.Label(p.id,     TableUI.CellBold, GUILayout.Width(PotionW_Id));
+        GUILayout.Label(p.nameKr, TableUI.Cell,     GUILayout.Width(PotionW_Name));
+        GUILayout.Label(p.rarity.ToString(), TableUI.Cell,    GUILayout.Width(PotionW_Rarity));
+        GUILayout.Label(p.buyable ? "O" : "X",        TableUI.CellNum, GUILayout.Width(PotionW_Buy));
+        GUILayout.Label(p.price > 0 ? $"{p.price}G" : "-", TableUI.CellNum, GUILayout.Width(PotionW_Price));
+        GUILayout.Label(p.descriptionKr ?? "", TableUI.Cell, GUILayout.MinWidth(PotionW_Effect), GUILayout.ExpandWidth(true));
+
+        using (new EditorGUI.DisabledScope(!hasRun || full))
+        {
+            if (GUILayout.Button("획득", TableUI.Btn, GUILayout.Width(PotionW_Btn)))
+                gsm.Cheat_AcquirePotion(p.id);
+        }
+        GUILayout.EndHorizontal();
     }
 
     // =========================================================
@@ -630,5 +782,147 @@ public class CheatWindow : EditorWindow
         var go = new GameObject("[CheatUI]");
         UnityEngine.Object.DontDestroyOnLoad(go);
         return go.AddComponent<CheatUI>();
+    }
+
+    // =========================================================
+    // 표 스타일 — 카드/유물/물약 풀을 Excel 시트처럼 컬럼 정렬해 보여주기 위한 캐시.
+    // 텍스처는 1x1 단색 + GUIStyle.normal.background에 박아서 행 배경으로 사용. 매 OnGUI마다 생성 안 함.
+    // =========================================================
+    private static class TableUI
+    {
+        private static Texture2D _texEven, _texOdd, _texHeader, _texGroup;
+        private static GUIStyle _rowEven, _rowOdd, _header, _group;
+        private static GUIStyle _cell, _cellBold, _cellNum, _cellHeader, _btn;
+        private static bool _ready;
+
+        public static GUIStyle RowEven    { get { Ensure(); return _rowEven; } }
+        public static GUIStyle RowOdd     { get { Ensure(); return _rowOdd; } }
+        public static GUIStyle HeaderRow  { get { Ensure(); return _header; } }
+        public static GUIStyle GroupRow   { get { Ensure(); return _group; } }
+        public static GUIStyle Cell       { get { Ensure(); return _cell; } }
+        public static GUIStyle CellBold   { get { Ensure(); return _cellBold; } }
+        public static GUIStyle CellNum    { get { Ensure(); return _cellNum; } }
+        public static GUIStyle CellHeader { get { Ensure(); return _cellHeader; } }
+        public static GUIStyle Btn        { get { Ensure(); return _btn; } }
+
+        public static GUIStyle RowFor(int idx) => (idx & 1) == 0 ? RowEven : RowOdd;
+
+        public static void Ensure()
+        {
+            if (_ready && _texEven != null) return;
+            _texEven   = MakeTex(new Color(0.205f, 0.205f, 0.225f, 1f));
+            _texOdd    = MakeTex(new Color(0.165f, 0.165f, 0.185f, 1f));
+            _texHeader = MakeTex(new Color(0.30f, 0.255f, 0.36f, 1f));
+            _texGroup  = MakeTex(new Color(0.40f, 0.32f, 0.52f, 1f));
+            _rowEven = new GUIStyle { normal = { background = _texEven } };
+            _rowOdd  = new GUIStyle { normal = { background = _texOdd } };
+            _header  = new GUIStyle { normal = { background = _texHeader } };
+            _group   = new GUIStyle { normal = { background = _texGroup } };
+
+            var fgWhite = new Color(0.94f, 0.94f, 0.95f);
+            var fgAmber = new Color(1.00f, 0.92f, 0.72f);
+            var fgMuted = new Color(0.78f, 0.78f, 0.82f);
+
+            _cell = new GUIStyle(EditorStyles.label)
+            {
+                padding = new RectOffset(4, 4, 2, 2),
+                clipping = TextClipping.Clip,
+                normal = { textColor = fgWhite, background = null },
+                hover = { textColor = fgWhite },
+                fontSize = 11,
+            };
+            _cellBold = new GUIStyle(_cell) { fontStyle = FontStyle.Bold, normal = { textColor = fgAmber } };
+            _cellNum  = new GUIStyle(_cell) { alignment = TextAnchor.MiddleCenter, normal = { textColor = fgMuted } };
+            _cellHeader = new GUIStyle(_cell)
+            {
+                fontStyle = FontStyle.Bold,
+                alignment = TextAnchor.MiddleLeft,
+                normal = { textColor = new Color(1f, 0.95f, 0.78f) },
+            };
+
+            _btn = new GUIStyle(GUI.skin.button) { fontSize = 11, fixedHeight = 18f, padding = new RectOffset(4, 4, 0, 0) };
+            _ready = true;
+        }
+
+        private static Texture2D MakeTex(Color c)
+        {
+            var t = new Texture2D(1, 1, TextureFormat.RGBA32, false);
+            t.SetPixel(0, 0, c);
+            t.Apply();
+            t.hideFlags = HideFlags.HideAndDontSave;
+            return t;
+        }
+
+        // 그룹 헤더 한 줄: 보라 띠 + 좌측 라벨 + 우측 카운트.
+        public static void DrawGroupBar(string label, int count)
+        {
+            GUILayout.BeginHorizontal(GroupRow, GUILayout.Height(22));
+            GUILayout.Label("  " + label, CellHeader, GUILayout.ExpandWidth(true));
+            GUILayout.Label($"{count}장", CellHeader, GUILayout.Width(50));
+            GUILayout.EndHorizontal();
+        }
+    }
+
+    // CardType + CardSubType → 한국어 그룹 라벨. dev 라벨이라 너무 의역 X.
+    private static string CardGroupLabel(CardType ct, CardSubType st)
+    {
+        string a;
+        switch (ct)
+        {
+            case CardType.SUMMON:  a = "공룡 소환"; break;
+            case CardType.MAGIC:   a = "마법"; break;
+            case CardType.BUFF:    a = "버프"; break;
+            case CardType.UTILITY: a = "유틸"; break;
+            case CardType.RITUAL:  a = "의식"; break;
+            default:               a = ct.ToString(); break;
+        }
+        string b;
+        switch (st)
+        {
+            case CardSubType.NONE:        b = ""; break;
+            case CardSubType.HERBIVORE:   b = "초식"; break;
+            case CardSubType.CARNIVORE:   b = "육식"; break;
+            case CardSubType.OMNIVORE:    b = "잡식"; break;
+            case CardSubType.ATTACK:      b = "공격"; break;
+            case CardSubType.DEFENSE:     b = "방어"; break;
+            case CardSubType.HEAL:        b = "회복"; break;
+            case CardSubType.DRAW:        b = "드로우"; break;
+            case CardSubType.SACRIFICE:   b = "제물"; break;
+            case CardSubType.ATTACK_BUFF: b = "공격 버프"; break;
+            case CardSubType.SPECIAL:     b = "특수"; break;
+            case CardSubType.PURIFY:      b = "정화"; break;
+            case CardSubType.STATUS:      b = "상태"; break;
+            case CardSubType.TAUNT:       b = "도발"; break;
+            case CardSubType.FEED:        b = "먹이"; break;
+            case CardSubType.FUSION:      b = "융합"; break;
+            case CardSubType.DEBUFF:      b = "디버프"; break;
+            case CardSubType.REINFORCE:   b = "증원"; break;
+            default:                       b = st.ToString(); break;
+        }
+        return string.IsNullOrEmpty(b) ? a : $"{a} · {b}";
+    }
+
+    private static string ShortSource(RelicSource s)
+    {
+        switch (s)
+        {
+            case RelicSource.START: return "시작";
+            case RelicSource.ELITE: return "엘리트";
+            case RelicSource.BOSS:  return "보스";
+            case RelicSource.SHOP:  return "상점";
+            case RelicSource.EVENT: return "이벤트";
+            default: return s.ToString();
+        }
+    }
+
+    private static string PotionGroupLabel(PotionType t)
+    {
+        switch (t)
+        {
+            case PotionType.ATTACK:  return "공격 물약";
+            case PotionType.DEFENSE: return "방어 물약";
+            case PotionType.UTILITY: return "유틸 물약";
+            default: return t.ToString();
+        }
     }
 }

@@ -6,12 +6,12 @@ P004,방어 물약,Defense Potion,DEFENSE,COMMON,SELF,10,50,방어도 10 획득.
 P005,상급 방어 물약,Greater Defense Potion,DEFENSE,UNCOMMON,SELF,20,60,방어도 20 획득.,Gain 20 Block.,FALSE
 P006,최상급 방어 물약,Supreme Defense Potion,DEFENSE,RARE,SELF,30,70,방어도 30 획득.,Gain 30 Block.,FALSE
 P007,드로우 물약,Draw Potion,UTILITY,COMMON,SELF,3,50,카드 3장 드로우.,Draw 3 cards.,TRUE
-P008,마나 물약,Mana Potion,UTILITY,UNCOMMON,SELF,2,60,이번 턴 마나 +2.,Gain +2 mana this turn.,FALSE
+P008,마나 물약,Mana Potion,UTILITY,UNCOMMON,SELF,2,60,이번 턴 마나 +2.,Gain +2 Mana this turn.,FALSE
 P009,축복 물약,Blessing Potion,UTILITY,RARE,ALL_ALLY,0,70,모든 아군 공격력 +2 / 체력 +5.,All allies gain +2 attack and +5 HP.,FALSE
 P010,회복 물약,Heal Potion,UTILITY,COMMON,SELF,15,50,플레이어 HP를 15 회복합니다.,Restore 15 HP to the player.,TRUE
 P011,소환 물약,Summon Potion,UTILITY,COMMON,SELF,1,50,손패의 랜덤 공룡 카드 1장을 마나 소모 없이 즉시 소환.,Summon a random dinosaur card from your hand for free.,TRUE
 P012,정화 물약,Cleanse Potion,UTILITY,COMMON,SELF,1,50,모든 디버프 제거 후 카드 1장 드로우.,Remove all debuffs then draw 1 card.,TRUE
-P013,강화 물약,Empower Potion,UTILITY,UNCOMMON,ALLY,3,60,아군 공룡 1마리 이번 전투 공격력 +3.,Give an ally dinosaur +3 attack this battle.,FALSE
+P013,강화 물약,Empower Potion,UTILITY,UNCOMMON,ALLY,3,60,아군 공룡 1마리 이번 전투 공격력 +3.,Give an ally dinosaur +3 attack this combat.,FALSE
 P014,빙결 물약,Freeze Potion,ATTACK,UNCOMMON,ENEMY,1,60,적 1마리 1턴 행동 불가.,Stun an enemy for 1 turn.,FALSE
-P015,각성 물약,Awaken Potion,UTILITY,RARE,ALLY,1,70,아군 공룡 1마리 이번 전투 1티어 임시 진화.,Temporarily evolve an ally dinosaur by 1 tier this battle.,FALSE
+P015,각성 물약,Awaken Potion,UTILITY,RARE,ALLY,1,70,아군 공룡 1마리 이번 전투 1티어 임시 진화.,Temporarily evolve an ally dinosaur by 1 tier this combat.,FALSE
 P016,균열 물약,Rift Potion,UTILITY,RARE,SELF,1,70,손패의 베이스 공룡 2장을 융합 카드로 합성.,Fuse 2 base dinosaur cards in hand into a fusion card.,FALSE

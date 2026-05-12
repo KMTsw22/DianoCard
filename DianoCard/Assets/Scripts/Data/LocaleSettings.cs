@@ -38,5 +38,8 @@ namespace DianoCard.Data
             if (!string.IsNullOrEmpty(en)) return en;
             return kr ?? "";
         }
+
+        // 하드코딩 UI 문자열용. en 먼저(코드 가독성). 둘 다 있다고 가정.
+        public static string L(string en, string kr) => Current == Language.KR ? kr : en;
     }
 }

@@ -1,5 +1,6 @@
 using System;
 using DianoCard.Data;
+using static DianoCard.Data.LocaleSettings;
 
 namespace DianoCard.Battle
 {
@@ -28,6 +29,14 @@ namespace DianoCard.Battle
         public static void RaiseEntityKilled(object entity)
         {
             OnEntityKilled?.Invoke(entity);
+        }
+
+        /// <summary>(드로우한 장수, 손패 내 시작 인덱스). 카드 효과로 인한 턴 중 드로우에서만 발생 — StartTurn의 정기 드로우는 EndTurn 코루틴이 자체적으로 애니메이션을 처리하므로 별도 발사하지 않는다.</summary>
+        public static event Action<int, int> OnMidTurnCardsDrawn;
+
+        public static void RaiseMidTurnCardsDrawn(int count, int fromHandIdx)
+        {
+            if (count > 0) OnMidTurnCardsDrawn?.Invoke(count, fromHandIdx);
         }
     }
 
@@ -205,6 +214,10 @@ namespace DianoCard.Battle
         public int fuseHpBonusValue;
         public int fuseHpBonusTurns;
 
+        // 재생(C205): 매 StartTurn마다 regenPerTurn만큼 자가 회복. turns가 0이면 비활성.
+        public int regenPerTurn;
+        public int regenTurns;
+
         public bool CanAttack => !IsDead && !hasAttackedThisTurn && silencedTurns <= 0;
         public bool IsTaunting => !IsDead && tauntTurns > 0;
         public int TotalAttack => attack + tempAttackBonus;
@@ -335,7 +348,7 @@ namespace DianoCard.Battle
         {
             get
             {
-                if (graceTurnsRemaining > 0) return "각성 중…";
+                if (graceTurnsRemaining > 0) return L("Awakening…", "각성 중…");
                 int liveVal = IntentLiveValue;
                 if (telegraphRemaining > 0)
                     return $"⚠ {intentAction} {liveVal}×{intentCount} (T-{telegraphRemaining})";
@@ -344,19 +357,19 @@ namespace DianoCard.Battle
                     EnemyAction.ATTACK            => $"ATK {liveVal}",
                     EnemyAction.MULTI_ATTACK      => $"ATK {liveVal}×{intentCount}",
                     EnemyAction.DEFEND            => $"DEF {intentValue}",
-                    EnemyAction.POISON            => $"독 {intentValue}",
-                    EnemyAction.WEAK              => $"약화 {intentValue}",
-                    EnemyAction.DRAIN             => $"흡혈 {intentValue}",
-                    EnemyAction.SUMMON            => $"소환 {intentValue}",
-                    EnemyAction.BUFF_SELF         => $"강화 +{intentValue}",
-                    EnemyAction.COUNTDOWN_ATTACK  => $"⚠ 강타 {liveVal}",
-                    EnemyAction.COUNTDOWN_AOE     => $"⚠ 광역 {liveVal}",
-                    EnemyAction.REFILL_MOSS       => $"이끼 보충 {intentValue}",
-                    EnemyAction.STEAL_SUMMON      => $"⚠ 공룡 강탈",
-                    EnemyAction.VULNERABLE        => $"취약 {intentValue}T",
-                    EnemyAction.ARMOR_UP          => $"장갑 +{intentValue}",
-                    EnemyAction.CLOG_DECK         => $"⚠ 잡초 +{intentValue}",
-                    EnemyAction.SILENCE           => $"⚠ 침묵 {intentValue}T",
+                    EnemyAction.POISON            => L($"Poison {intentValue}", $"독 {intentValue}"),
+                    EnemyAction.WEAK              => L($"Weak {intentValue}", $"약화 {intentValue}"),
+                    EnemyAction.DRAIN             => L($"Drain {intentValue}", $"흡혈 {intentValue}"),
+                    EnemyAction.SUMMON            => L($"Summon {intentValue}", $"소환 {intentValue}"),
+                    EnemyAction.BUFF_SELF         => L($"Buff +{intentValue}", $"강화 +{intentValue}"),
+                    EnemyAction.COUNTDOWN_ATTACK  => L($"⚠ Heavy {liveVal}", $"⚠ 강타 {liveVal}"),
+                    EnemyAction.COUNTDOWN_AOE     => L($"⚠ AoE {liveVal}", $"⚠ 광역 {liveVal}"),
+                    EnemyAction.REFILL_MOSS       => L($"Moss +{intentValue}", $"이끼 보충 {intentValue}"),
+                    EnemyAction.STEAL_SUMMON      => L($"⚠ Steal", $"⚠ 공룡 강탈"),
+                    EnemyAction.VULNERABLE        => L($"Vulnerable {intentValue}T", $"취약 {intentValue}T"),
+                    EnemyAction.ARMOR_UP          => L($"Block +{intentValue}", $"장갑 +{intentValue}"),
+                    EnemyAction.CLOG_DECK         => L($"⚠ Weed +{intentValue}", $"⚠ 잡초 +{intentValue}"),
+                    EnemyAction.SILENCE           => L($"⚠ Silence {intentValue}T", $"⚠ 침묵 {intentValue}T"),
                     EnemyAction.IDLE              => "—",
                     _                             => "?",
                 };

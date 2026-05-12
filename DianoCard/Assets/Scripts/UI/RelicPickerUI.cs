@@ -169,7 +169,8 @@ public class RelicPickerUI : MonoBehaviour
 
     void Start()
     {
-        _defaultRelicIcon = Resources.Load<Texture2D>("InGame/Icon/relic_default");
+        // relic_default.png는 실제로 없음 — 상단 HUD 슬롯과 동일한 Relic.png를 폴백으로 사용.
+        _defaultRelicIcon = Resources.Load<Texture2D>("InGame/Icon/Relic");
         PickVariantAndLoad();
     }
 

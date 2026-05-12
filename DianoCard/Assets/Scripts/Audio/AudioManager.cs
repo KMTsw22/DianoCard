@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -44,13 +45,19 @@ namespace DianoCard.Audio
         }
 
         // SFX 키별 Resources 경로 매핑. 새 키 추가 시 여기 한 줄 박으면 됨.
+        // 파일 없으면 PlaySFX는 no-op (Resources.Load가 null 반환 → 캐시되고 무음).
         private static readonly Dictionary<string, string> SfxPaths = new()
         {
-            { "card_attack",  "Audio/SFX/Cards/card_attack"  },
-            { "card_buff",    "Audio/SFX/Cards/card_buff"    },
-            { "card_debuff",  "Audio/SFX/Cards/card_debuff"  },
-            { "card_summon",  "Audio/SFX/Cards/card_summon"  }, // 예약 (미파일)
-            { "hit_block",    "Audio/SFX/Hits/hit_block"     }, // 예약 (미파일)
+            { "card_attack",   "Audio/SFX/Cards/card_attack"   },
+            { "card_buff",     "Audio/SFX/Cards/card_buff"     },
+            { "card_debuff",   "Audio/SFX/Cards/card_debuff"   },
+            { "card_summon",   "Audio/SFX/Cards/card_summon"   },
+            { "card_draw",     "Audio/SFX/Cards/card_draw"     },
+            { "card_discard",  "Audio/SFX/Cards/card_discard"  },
+            { "card_exhaust",  "Audio/SFX/Cards/card_exhaust"  },
+            { "hit_block",     "Audio/SFX/Hits/hit_block"      },
+            // 물리 타격 통합 SFX (공룡/적 양쪽 swing 모션에 공용). card_attack(마법 카드)과 분리.
+            { "attack",        "Audio/SFX/Hits/attack"         },
         };
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -92,6 +99,26 @@ namespace DianoCard.Audio
                 _cache[key] = clip; // null도 캐시 (반복 로드 회피)
             }
             if (clip != null) _sfxSource.PlayOneShot(clip, _sfxVolume);
+        }
+
+        /// <summary>
+        /// 같은 SFX를 N번 짧은 간격으로 재생 (예: 카드 5장 드로우 → 5번 휘리리릭).
+        /// 한 번에 다 쳐서 레이어드 카오스가 되는 걸 막기 위해 staggered.
+        /// </summary>
+        public void PlaySFXBurst(string key, int count, float intervalSec = 0.09f)
+        {
+            if (count <= 0) return;
+            if (count == 1) { PlaySFX(key); return; }
+            StartCoroutine(PlaySFXBurstCo(key, count, intervalSec));
+        }
+
+        private IEnumerator PlaySFXBurstCo(string key, int count, float intervalSec)
+        {
+            for (int i = 0; i < count; i++)
+            {
+                PlaySFX(key);
+                if (i < count - 1) yield return new WaitForSeconds(intervalSec);
+            }
         }
     }
 }
