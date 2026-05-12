@@ -737,7 +737,7 @@ MonoBehaviour:
   servicePriceUsePlaque: 1
   servicePlaqueWidth: 65
   servicePlaqueHeight: 34
-  servicePlaqueXOffset: 20
+  servicePlaqueXOffset: -17.5
   servicePlaqueYOffset: 10
   servicePlaqueFontSize: 16
   servicePlaqueIconSize: 18

@@ -3220,8 +3220,7 @@ public class BattleUI : MonoBehaviour
         return chipRect.width;
     }
 
-    /// <summary>적의 패시브 + 누적 STRENGTH를 한 줄 아이콘 칩으로 그림.
-    /// 살아있는 이끼 카운트는 HP 바 옆 MOSS_LEAF 인라인 뱃지로 표시되므로 여기선 생략.</summary>
+    /// <summary>적의 패시브 + 누적 STRENGTH를 한 줄 아이콘 칩으로 그림.</summary>
     private void DrawEnemyPassives(Rect rowRect, EnemyInstance e)
     {
         if (e == null) return;
@@ -5567,21 +5566,14 @@ public class BattleUI : MonoBehaviour
             : new Color(0.65f, 0.16f, 0.18f);
         DrawHpBar(enemyHpRect, e.hp, e.maxHp, hpFill, entity: e);
 
-        // 방패 아이콘 — moss 보호막은 MOSS_LEAF로 표시(생명선이 이끼라는 의미가 한눈에),
-        // 일반 block은 DEFEND 방패로.
-        if (mossShielded)
+        // moss 보호막은 HP 바 회색 틴트로만 표시 — 인라인 MOSS_LEAF 뱃지는 HP 바 아래 패시브 칩과 겹쳐 제거.
+        if (!mossShielded && e.block > 0)
         {
-            DrawBlockBadge(new Vector2(enemyHpRect.x, enemyHpRect.center.y), mossAliveCount, 40f,
-                           HeadIcon("MOSS_LEAF"));
-        }
-        else if (e.block > 0)
-        {
-            // HP 바 왼쪽 끝에 살짝 겹치게 — 플레이어 파란 방패와 미러 대칭
             DrawBlockBadge(new Vector2(enemyHpRect.x, enemyHpRect.center.y), e.block, 40f,
                            HeadIcon("DEFEND"));
         }
 
-        // 패시브 + 누적 STRENGTH — HP 바 바로 아래 한 줄. 이끼 카운트는 HP 바 옆 MOSS_LEAF 인라인 뱃지로.
+        // 패시브 + 누적 STRENGTH — HP 바 바로 아래 한 줄.
         // X/width를 HP 바에 맞춰 정렬 — 플레이어/소환수와 동일하게 칩이 HP 바 좌측 끝에서 시작.
         DrawEnemyPassives(new Rect(enemyHpRect.x, enemyHpRect.yMax + 4f, enemyHpRect.width, 26f), e);
 

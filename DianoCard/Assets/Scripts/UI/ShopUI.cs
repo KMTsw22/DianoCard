@@ -290,7 +290,7 @@ public class ShopUI : MonoBehaviour
     [SerializeField] private bool servicePriceUsePlaque = true;
     [SerializeField, Range(40f, 240f)] private float servicePlaqueWidth = 65f;
     [SerializeField, Range(20f, 100f)] private float servicePlaqueHeight = 34f;
-    [SerializeField, Range(-100f, 100f)] private float servicePlaqueXOffset = 20f;
+    [SerializeField, Range(-100f, 100f)] private float servicePlaqueXOffset = -17.5f;
     [SerializeField, Range(-30f, 100f)] private float servicePlaqueYOffset = 10f;
     [SerializeField, Range(8, 36)] private int servicePlaqueFontSize = 16;
     [SerializeField, Range(8f, 48f)] private float servicePlaqueIconSize = 18f;
@@ -1010,8 +1010,13 @@ public class ShopUI : MonoBehaviour
         bool hover = purchasable && svcPriceRect.Contains(Event.current.mousePosition);
         bool tooltipHover = rowR.Contains(Event.current.mousePosition) || svcPriceRect.Contains(Event.current.mousePosition);
 
+        // EN "Purge Card"는 Cinzel 폰트 폭이 커서 한 줄에 안 들어감 → 공백을 개행으로
+        string svcLabel = DataManager.Instance.GetUIString("shop.remove_card");
+        if (DianoCard.Data.LocaleSettings.Current == DianoCard.Data.Language.EN)
+            svcLabel = svcLabel.Replace(' ', '\n');
+
         DrawItemRow(rowR, _removeCardIcon,
-                    DataManager.Instance.GetUIString("shop.remove_card"),
+                    svcLabel,
                     shop.cardRemovePrice, shop.cardRemoveUsed,
                     run.gold >= shop.cardRemovePrice, hover, serviceIconSize,
                     svcNameRect, svcPriceRect,
