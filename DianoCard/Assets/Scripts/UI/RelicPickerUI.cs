@@ -499,7 +499,10 @@ public class RelicPickerUI : MonoBehaviour
             _promptStyle.normal.textColor = fadeColor;
             LockHoverState(_promptStyle);
             GUI.Label(new Rect(rowX, startY - promptYAboveRows, rowWidth, 34f),
-                "...시작 유물을 선택하세요...", _promptStyle);
+                DataManager.Instance != null
+                    ? DataManager.Instance.GetUIString("relic_pick.prompt")
+                    : "...시작 유물을 선택하세요...",
+                _promptStyle);
             _promptStyle.normal.textColor = promptColor; // 복원
             LockHoverState(_promptStyle);
         }

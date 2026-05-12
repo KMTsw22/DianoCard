@@ -290,7 +290,7 @@ public class ShopUI : MonoBehaviour
     [SerializeField] private bool servicePriceUsePlaque = true;
     [SerializeField, Range(40f, 240f)] private float servicePlaqueWidth = 65f;
     [SerializeField, Range(20f, 100f)] private float servicePlaqueHeight = 34f;
-    [SerializeField, Range(-100f, 100f)] private float servicePlaqueXOffset = -17.5f;
+    [SerializeField, Range(-100f, 100f)] private float servicePlaqueXOffset = 20f;
     [SerializeField, Range(-30f, 100f)] private float servicePlaqueYOffset = 10f;
     [SerializeField, Range(8, 36)] private int servicePlaqueFontSize = 16;
     [SerializeField, Range(8f, 48f)] private float servicePlaqueIconSize = 18f;
