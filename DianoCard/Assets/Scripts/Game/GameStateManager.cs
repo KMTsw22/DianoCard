@@ -509,17 +509,24 @@ namespace DianoCard.Game
                 if (ch != null) archetype = ch.archetype;
             }
 
-            // 우선 EVENT 풀에서 뽑되, 비면 START → SHOP 순으로 폴백.
-            // (CH01 EVENT 풀이 3개라 보유분이 차면 폴백 없으면 무음 advance가 발생할 수 있음.)
+            // 우선 EVENT 풀에서 뽑되, 비면 ELITE → BOSS → SHOP → START 순으로 폴백.
+            // (보유하지 않은 ELITE/BOSS 유물도 이벤트 노드에서 등장 가능하도록 풀 통합 — 한 런에
+            // 거의 모든 ELITE/BOSS 유물 획득 가능하게 하는 조치.)
             var first = TryRollByPool(DianoCard.Data.RelicSource.EVENT, archetype);
             Debug.Log($"[GSM] RollSingleEventRelic: EVENT pool → {first?.id ?? "<empty>"} (archetype={archetype ?? "<null>"}, owned={CurrentRun.relics.Count}, shown={_eventShownRelicIds.Count})");
             if (first != null) return first;
-            var second = TryRollByPool(DianoCard.Data.RelicSource.START, archetype);
-            Debug.Log($"[GSM] RollSingleEventRelic: START fallback → {second?.id ?? "<empty>"}");
-            if (second != null) return second;
-            var third = TryRollByPool(DianoCard.Data.RelicSource.SHOP, archetype);
-            Debug.Log($"[GSM] RollSingleEventRelic: SHOP fallback → {third?.id ?? "<empty>"}");
-            return third;
+            var elite = TryRollByPool(DianoCard.Data.RelicSource.ELITE, archetype);
+            Debug.Log($"[GSM] RollSingleEventRelic: ELITE fallback → {elite?.id ?? "<empty>"}");
+            if (elite != null) return elite;
+            var boss = TryRollByPool(DianoCard.Data.RelicSource.BOSS, archetype);
+            Debug.Log($"[GSM] RollSingleEventRelic: BOSS fallback → {boss?.id ?? "<empty>"}");
+            if (boss != null) return boss;
+            var shop = TryRollByPool(DianoCard.Data.RelicSource.SHOP, archetype);
+            Debug.Log($"[GSM] RollSingleEventRelic: SHOP fallback → {shop?.id ?? "<empty>"}");
+            if (shop != null) return shop;
+            var start = TryRollByPool(DianoCard.Data.RelicSource.START, archetype);
+            Debug.Log($"[GSM] RollSingleEventRelic: START fallback → {start?.id ?? "<empty>"}");
+            return start;
         }
 
         // 모든 source 풀에서 보유하지 않은 첫 유물 — 정말 모든 1차 풀이 비었을 때 마지막 보루.
@@ -1574,8 +1581,8 @@ namespace DianoCard.Game
 
             if (won)
             {
-                // 유물 BATTLE_END 트리거 — R012 태초의 알 등이 일시 카드를 RunState에 추가.
-                // 보상 화면 전에 호출해서 다음 전투 시작 시 시작 덱에 자동 합류되도록 한다.
+                // 유물 BATTLE_END 트리거 (현재는 placeholder).
+                // R012 태초의 알의 추가 카드 보상은 RewardGenerator.Generate에서 직접 처리.
                 RelicEffects.OnBattleEnd(CurrentRun, true);
 
                 // 테크 포인트 — 전투 클리어 시 노드 등급별 지급. 일반 +1 / 엘리트 +2 / 보스 +3.

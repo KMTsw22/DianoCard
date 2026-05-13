@@ -26,6 +26,24 @@ namespace DianoCard.Game
 
             // === 카드 3장 (중복 없음) ===
             reward.cardChoices = PickCards(enemy.enemyType, run, 3);
+            reward.totalCardPickRounds = reward.cardChoices.Count > 0 ? 1 : 0;
+
+            // === R012 태초의 알: 카드 보상 라운드 추가 (3장 set이 +1씩 쌓임) ===
+            // 같은 set 내에선 중복이 없지만 set 간에는 같은 카드가 다시 나올 수 있음(독립 roll).
+            int extraCardPickRounds = 0;
+            foreach (var r in run.relics)
+            {
+                if (r != null && r.effectType == "EXTRA_CARD_PICK") extraCardPickRounds += r.value;
+            }
+            for (int i = 0; i < extraCardPickRounds; i++)
+            {
+                var extraSet = PickCards(enemy.enemyType, run, 3);
+                if (extraSet != null && extraSet.Count > 0)
+                {
+                    reward.extraCardChoiceSets.Add(extraSet);
+                    reward.totalCardPickRounds++;
+                }
+            }
 
             // === 물약 ===
             float potionChance = enemy.enemyType switch
@@ -40,13 +58,10 @@ namespace DianoCard.Game
             }
 
             // === 유물 (엘리트/보스 확정) ===
-            if (enemy.enemyType == EnemyType.ELITE)
+            // source(ELITE/BOSS/...) 게이팅 없이 START를 제외한 통합 풀에서 rarity 가중으로 뽑는다.
+            if (enemy.enemyType == EnemyType.ELITE || enemy.enemyType == EnemyType.BOSS)
             {
-                reward.relic = PickRelic(RelicSource.ELITE, run);
-            }
-            else if (enemy.enemyType == EnemyType.BOSS)
-            {
-                reward.relic = PickRelic(RelicSource.BOSS, run);
+                reward.relic = PickRelic(run);
             }
 
             // === 카드 제거 기회 (일반 전투만 15% — 엘리트/보스는 유물로 대신) ===
@@ -60,7 +75,7 @@ namespace DianoCard.Game
 
         /// <summary>
         /// 마을 보물상자 무료 개봉 보상.
-        /// ELITE 풀에서 유물 1개 + 약간의 보너스 골드만 — 카드/물약은 없음.
+        /// 비-START 통합 풀에서 유물 1개(60/30/10 가중) + 약간의 보너스 골드만 — 카드/물약은 없음.
         /// 유물 풀이 비면(이미 다 보유) 골드만 더 얹어 보너스를 보강한다.
         /// </summary>
         public static BattleReward GenerateTreasureChest(RunState run)
@@ -68,16 +83,11 @@ namespace DianoCard.Game
             var reward = new BattleReward
             {
                 gold = Random.Range(15, 31),
-                relic = PickRelic(RelicSource.ELITE, run),
+                relic = PickRelic(run),
             };
             if (reward.relic == null)
             {
-                // 풀이 비면 BOSS 풀에서 보충 시도
-                reward.relic = PickRelic(RelicSource.BOSS, run);
-            }
-            if (reward.relic == null)
-            {
-                // 그래도 없으면 보너스 골드로 대체
+                // 풀이 마르면 보너스 골드로 대체
                 reward.gold += Random.Range(40, 71);
             }
             return reward;
@@ -197,16 +207,60 @@ namespace DianoCard.Game
         // Relic pool
         // ---------------------------------------------------------
 
-        private static RelicData PickRelic(RelicSource source, RunState run)
+        // 엘리트/보스/보물상자 공용 유물 뽑기.
+        // source(ELITE/BOSS/SHOP/EVENT) 게이팅 없이 START를 제외한 통합 풀에서
+        // rarity 가중 COMMON 60 / UNCOMMON 30 / RARE 10 으로 뽑는다.
+        // 굴린 등급이 비면 다른 등급으로 폴백해 최소 1개는 보장.
+        private static RelicData PickRelic(RunState run)
         {
-            var pool = new List<RelicData>();
-            foreach (var r in DataManager.Instance.Relics.Values)
+            var dm = DataManager.Instance;
+            if (dm == null) return null;
+
+            string archetype = null;
+            if (!string.IsNullOrEmpty(run.characterId))
             {
-                if (r.source != source) continue;
-                if (run.relics.Contains(r)) continue; // 중복 방지
-                pool.Add(r);
+                var character = dm.GetCharacter(run.characterId);
+                if (character != null) archetype = character.archetype;
             }
-            return pool.Count > 0 ? pool[Random.Range(0, pool.Count)] : null;
+
+            var common   = new List<RelicData>();
+            var uncommon = new List<RelicData>();
+            var rare     = new List<RelicData>();
+
+            foreach (var r in dm.Relics.Values)
+            {
+                if (r == null) continue;
+                if (r.source == RelicSource.START) continue;
+                if (!string.IsNullOrEmpty(r.archetypeLock)
+                    && !string.IsNullOrEmpty(archetype)
+                    && !r.archetypeLock.Equals(archetype, System.StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (run.relics.Contains(r)) continue;
+                switch (r.rarity)
+                {
+                    case Rarity.RARE:     rare.Add(r); break;
+                    case Rarity.UNCOMMON: uncommon.Add(r); break;
+                    default:              common.Add(r); break;
+                }
+            }
+
+            const int wCommon = 60, wUncommon = 30, wRare = 10;
+            int total = wCommon + wUncommon + wRare;
+            int roll = Random.Range(0, total);
+            List<RelicData> bucket =
+                roll < wCommon ? common
+              : roll < wCommon + wUncommon ? uncommon
+              : rare;
+
+            if (bucket.Count == 0)
+            {
+                if (common.Count > 0) bucket = common;
+                else if (uncommon.Count > 0) bucket = uncommon;
+                else if (rare.Count > 0) bucket = rare;
+                else return null;
+            }
+
+            return bucket[Random.Range(0, bucket.Count)];
         }
     }
 }

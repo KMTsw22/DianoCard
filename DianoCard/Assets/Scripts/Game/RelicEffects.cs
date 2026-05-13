@@ -15,9 +15,10 @@ namespace DianoCard.Game
     ///   - OnTurnStart  — 매 플레이어 턴 시작 (방어도/마나/HP 임계 체크)
     ///   - OnTurnEnd    — 매 턴 종료 (현재 사용처 없음, 확장용)
     ///   - OnSummon     — 공룡 소환 직후 (소환된 공룡 ATK 버프)
+    ///   - OnFusionPlayed — 융합 카드 성공 직후 (FUSION_REFUND 마나 환급)
     ///   - OnEnemyKilled — 적 처치 시 (KILL 트리거: GOLD/HEAL_KILLER)
     ///   - OnNodeEnter  — 새 맵 노드 진입 (NODE_ENTER 트리거: GOLD)
-    ///   - OnBattleEnd  — 전투 승리 시 (BATTLE_END 트리거: 임시 카드 추가)
+    ///   - OnBattleEnd  — 전투 승리 시 (BATTLE_END 트리거: 현재는 placeholder, 보상 단계의 EXTRA_CARD_PICK는 RewardGenerator가 직접 처리)
     ///
     /// effect_type 문자열은 relic.csv 컬럼 값을 그대로 사용. 신규 유물 추가 시 이 파일의 switch 케이스만 늘리면 됨.
     ///
@@ -239,8 +240,10 @@ namespace DianoCard.Game
             }
             if (manaBonus > 0)
             {
+                // maxMana도 같이 올려서 UI가 "4/4"로 보이게 한다. StartTurn에서 baseMana로 리셋되므로 누적되지 않음.
+                mgr.state.player.maxMana += manaBonus;
                 mgr.state.player.mana += manaBonus;
-                Debug.Log($"[Relic] TURN_START: 마나 +{manaBonus} (now {mgr.state.player.mana})");
+                Debug.Log($"[Relic] TURN_START: 마나 +{manaBonus} (now {mgr.state.player.mana}/{mgr.state.player.maxMana})");
             }
             if (hpLowAtkBonus > 0)
             {
@@ -280,6 +283,52 @@ namespace DianoCard.Game
             {
                 summon.attack += bonus;
                 Debug.Log($"[Relic] OnSummon {summon.data.nameKr}: ATK +{bonus} (now {summon.attack})");
+            }
+
+            // R016 광폭의 부적 등 HP_LOW 트리거 — 현재 HP가 임계 이하면 새 소환수도 즉시 임시 ATK 버프.
+            // OnTurnStart는 턴 시작 시점 필드 전원에 부여하므로, 턴 도중 등장한 공룡은 여기서 보충.
+            // tempAttackBonus 사용 → 다음 턴 시작에 OnTurnStart가 다시 부여하므로 더블카운트 없음.
+            if (mgr != null && mgr.state?.player != null && mgr.state.player.maxHp > 0)
+            {
+                float hpRatio = (float)mgr.state.player.hp / mgr.state.player.maxHp;
+                if (hpRatio <= 0.50f)
+                {
+                    int hpLowBonus = 0;
+                    foreach (var relic in run.relics)
+                    {
+                        if (relic == null) continue;
+                        if (relic.trigger == RelicTrigger.HP_LOW && relic.effectType == "ATTACK_BUFF")
+                            hpLowBonus += relic.value;
+                    }
+                    if (hpLowBonus > 0)
+                    {
+                        summon.tempAttackBonus += hpLowBonus;
+                        Debug.Log($"[Relic] OnSummon HP_LOW: {summon.data.nameKr} 임시 ATK +{hpLowBonus} (HP {(int)(hpRatio * 100)}%)");
+                    }
+                }
+            }
+        }
+
+        // =========================================================
+        // 트리거: 융합 카드 사용
+        // =========================================================
+
+        /// <summary>융합(UTILITY/FUSION) 카드가 성공적으로 해소된 직후 호출.
+        /// R021 균열의 인장 — FUSION_REFUND: 사용한 마나 일부를 즉시 돌려준다.
+        /// 마나 캡(maxMana)은 R003/R014와 마찬가지로 무시 — refund는 일시적 초과 허용.</summary>
+        public static void OnFusionPlayed(BattleManager mgr, RunState run)
+        {
+            if (mgr == null || run == null) return;
+            int refund = 0;
+            foreach (var relic in run.relics)
+            {
+                if (relic == null) continue;
+                if (relic.effectType == "FUSION_REFUND") refund += relic.value;
+            }
+            if (refund > 0)
+            {
+                mgr.state.player.mana += refund;
+                Debug.Log($"[Relic] FUSION_REFUND: 마나 +{refund} (now {mgr.state.player.mana})");
             }
         }
 
@@ -346,59 +395,15 @@ namespace DianoCard.Game
         // =========================================================
 
         /// <summary>
-        /// 전투 승리 직후 호출. R012 태초의 알: 랜덤 공룡 카드 1장을 RunState.pendingTemporaryCards에 추가.
-        /// 다음 전투 시작 시 시작 덱에 합류하고 즉시 비워진다 (= 일시 카드).
+        /// 전투 승리 직후, 보상 생성 직전에 호출.
+        /// R012 태초의 알(EXTRA_CARD_PICK)은 RewardGenerator에서 직접 처리하므로 여기선 별도 BATTLE_END 효과 없음 —
+        /// 추후 BATTLE_END 트리거 유물이 추가될 때 분기를 늘리는 자리.
         /// 패배 시(won=false)에는 아무 효과도 없음.
         /// </summary>
         public static void OnBattleEnd(RunState run, bool won)
         {
             if (run == null || !won) return;
-            foreach (var relic in run.relics)
-            {
-                if (relic == null || relic.trigger != RelicTrigger.BATTLE_END) continue;
-                if (relic.effectType == "CARD")
-                {
-                    var card = PickRandomDinoCard(run);
-                    if (card != null)
-                    {
-                        run.pendingTemporaryCards.Add(card);
-                        Debug.Log($"[Relic] {relic.id}: 일시 공룡 카드 +1 ({card.nameKr})");
-                    }
-                }
-            }
-        }
-
-        /// <summary>현재 챕터의 SUMMON 카드 중 1장 랜덤 선택. 실패 시 null.</summary>
-        private static CardData PickRandomDinoCard(RunState run)
-        {
-            if (DataManager.Instance == null) return null;
-            int chapterNum = ParseChapterNumber(run?.chapterId);
-            // T1/T2 진화 결과체는 융합 전용 — 일시 카드 풀에서도 제외(보상·상점과 동일 안전망).
-            var evoResults = DataManager.Instance.EvolutionResultIds;
-            var pool = new List<CardData>();
-            foreach (var kv in DataManager.Instance.Cards)
-            {
-                var c = kv.Value;
-                if (c == null) continue;
-                if (c.cardType != CardType.SUMMON) continue;
-                if (evoResults != null && evoResults.Contains(c.id)) continue;
-                if (chapterNum > 0 && c.chapter != chapterNum) continue;
-                pool.Add(c);
-            }
-            if (pool.Count == 0) return null;
-            return pool[UnityEngine.Random.Range(0, pool.Count)];
-        }
-
-        /// <summary>"CH01" → 1, "CH02" → 2. 0 반환 시 챕터 필터링 안 함.</summary>
-        private static int ParseChapterNumber(string chapterId)
-        {
-            if (string.IsNullOrEmpty(chapterId)) return 0;
-            int n = 0;
-            foreach (char ch in chapterId)
-            {
-                if (ch >= '0' && ch <= '9') n = n * 10 + (ch - '0');
-            }
-            return n;
+            // 현재 BATTLE_END 트리거를 사용하는 유물 효과 없음 (R012는 RewardGenerator에서 처리).
         }
     }
 }

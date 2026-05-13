@@ -65,19 +65,6 @@ namespace DianoCard.Battle
                 state.deck.Add(new CardInstance(c));
             }
 
-            // R012 태초의 알 등으로 RunState에 누적된 일시 카드를 시작 덱에 합류시킨 뒤 비운다.
-            // 일시 카드는 이번 전투 한정 — 다음 전투 시작 시 다시 비어있는 상태로 들어감.
-            if (run != null && run.pendingTemporaryCards != null && run.pendingTemporaryCards.Count > 0)
-            {
-                foreach (var c in run.pendingTemporaryCards)
-                {
-                    if (c == null) continue;
-                    state.deck.Add(new CardInstance(c));
-                    Log($"  + 일시 카드 합류: {c.nameKr}");
-                }
-                run.pendingTemporaryCards.Clear();
-            }
-
             Shuffle(state.deck);
 
             Log("=== Battle Start ===");
@@ -643,6 +630,9 @@ namespace DianoCard.Battle
             ApplySigilBonus(catalyst, result);
 
             Log($"    🦖 융합! {aBase} T{aTier}+T{bTier} → {nextData.nameKr} (ATK {result.TotalAttack} / HP {result.hp}/{result.maxHp}, cost {totalCost})");
+
+            // 유물 FUSION 트리거 (R021 균열의 인장: 마나 +1 환급). 상태 변경 완료 후 발화.
+            DianoCard.Game.RelicEffects.OnFusionPlayed(this, run);
 
             // 튜토리얼: 융합 카드 사용 + 융합 발동 두 알림 모두 발행.
             DianoCard.Tutorial.TutorialEvents.NotifyCardPlayed(catalystHandIndex);
@@ -2796,6 +2786,22 @@ namespace DianoCard.Battle
             state.player.weakTurns = 0;
             state.player.vulnerableTurns = 0;
             Log("[CHEAT] 플레이어 풀 회복");
+        }
+
+        /// <summary>플레이어 HP 직접 설정 — 1~maxHp로 클램프. 유물 발동 임계 테스트용(R016/R020 등).</summary>
+        public void Cheat_SetPlayerHp(int newHp)
+        {
+            if (state?.player == null) return;
+            state.player.hp = Mathf.Clamp(newHp, 1, state.player.maxHp);
+            Log($"[CHEAT] 플레이어 HP → {state.player.hp}/{state.player.maxHp}");
+        }
+
+        /// <summary>플레이어 HP를 maxHp 비율로 설정 (0.5f면 절반). 임계 테스트용.</summary>
+        public void Cheat_SetPlayerHpRatio(float ratio)
+        {
+            if (state?.player == null) return;
+            int target = Mathf.Max(1, Mathf.RoundToInt(state.player.maxHp * Mathf.Clamp01(ratio)));
+            Cheat_SetPlayerHp(target);
         }
 
         /// <summary>플레이어 무적 토글 — on일 때 모든 피해 무시.</summary>

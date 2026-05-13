@@ -561,6 +561,19 @@ public class CheatWindow : EditorWindow
             if (GUILayout.Button(invLabel, GUILayout.Height(24)))
                 battle.Cheat_ToggleInvincible();
             EditorGUILayout.EndHorizontal();
+
+            // 전투 중 HP 깎기 — R016(50%)/R020(30%) 등 임계 트리거 테스트용.
+            string hpLabel = inBattle
+                ? $"HP {battle.state.player.hp}/{battle.state.player.maxHp}"
+                : "HP (전투 중에만)";
+            EditorGUILayout.LabelField(hpLabel);
+            EditorGUILayout.BeginHorizontal();
+            if (GUILayout.Button("-10",  GUILayout.Height(22))) battle.Cheat_SetPlayerHp(battle.state.player.hp - 10);
+            if (GUILayout.Button("-50",  GUILayout.Height(22))) battle.Cheat_SetPlayerHp(battle.state.player.hp - 50);
+            if (GUILayout.Button("50%",  GUILayout.Height(22))) battle.Cheat_SetPlayerHpRatio(0.5f);
+            if (GUILayout.Button("30%",  GUILayout.Height(22))) battle.Cheat_SetPlayerHpRatio(0.3f);
+            if (GUILayout.Button("HP 1", GUILayout.Height(22))) battle.Cheat_SetPlayerHp(1);
+            EditorGUILayout.EndHorizontal();
         }
         if (!inBattle)
             EditorGUILayout.HelpBox("전투에 들어가면 위 버튼 활성화.", MessageType.None);

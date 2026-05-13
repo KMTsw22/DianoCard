@@ -149,11 +149,22 @@ namespace DianoCard.Game
         {
             const int TARGET = 6;
 
+            // SHOP 풀 자체는 3개뿐이라 ELITE/BOSS도 보유하지 않은 것만 함께 후보로 올린다.
+            // (한 런에 BOSS 유물 1개 / ELITE 유물 2~3개만 받는 구조였음 → 상점에서도 노출되어
+            // 챕터 안에 거의 모든 보스/엘리트 유물 획득 가능하도록 풀을 통합.)
+            string archetype = dm.GetCharacter(run.characterId)?.archetype;
+
             var pool = new List<RelicData>();
             foreach (var r in dm.Relics.Values)
             {
-                if (r.source != RelicSource.SHOP) continue;
+                if (r.source != RelicSource.SHOP
+                    && r.source != RelicSource.ELITE
+                    && r.source != RelicSource.BOSS) continue;
                 if (run.relics.Contains(r)) continue;
+                if (!string.IsNullOrEmpty(r.archetypeLock)
+                    && !string.IsNullOrEmpty(archetype)
+                    && !r.archetypeLock.Equals(archetype, System.StringComparison.OrdinalIgnoreCase))
+                    continue;
                 pool.Add(r);
             }
             if (pool.Count == 0) return;

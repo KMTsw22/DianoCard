@@ -343,7 +343,7 @@ public class BattleUI : MonoBehaviour
     private Dictionary<string, Texture2D> _headIcons;
     private static readonly string[] HeadIconIds = {
         "ATTACK","MULTI_ATTACK","DEFEND","BUFF","DEBUFF","SUMMON","COUNTDOWN",
-        "HEAL","UNKNOWN","POISON","VULNERABLE","WEAK","BIND","FEAR","STOLEN",
+        "HEAL","UNKNOWN","POISON","BURN","VULNERABLE","WEAK","BIND","FEAR","STOLEN",
         "STRENGTH","WARD","ROOTED",
         "MULTI_ACTION","MOSS_LEAF",
         "TARGET_PLAYER","TARGET_DINO",
@@ -3099,8 +3099,12 @@ public class BattleUI : MonoBehaviour
         {
             var map = gsm.CurrentMap;
             int totalFloors = map != null ? map.totalFloors : 5;
+            // Reward 상태에선 RunState 기준으로 표시 — 보상에서 MAX_HP 유물(R011/R022) 픽 시 즉시 반영.
+            // 전투 PlayerState는 EndBattle 시점에 동결되므로 OnAcquired의 maxHp 증가가 안 보임.
+            bool inReward = gsm.State == GameState.Reward;
             DrawTopBar(HudContext.Battle, run, run.currentFloor, totalFloors,
-                       hpCurrent: state.player.hp, hpMax: state.player.maxHp,
+                       hpCurrent: inReward ? run.playerCurrentHp : state.player.hp,
+                       hpMax:     inReward ? run.playerMaxHp     : state.player.maxHp,
                        turnNumber: state.turn);
         }
         DrawTurnInfo(state);
@@ -3290,6 +3294,16 @@ public class BattleUI : MonoBehaviour
                          HeadIcon("FEAR"), e.bleedStacks,
                          "출혈 (Bleed)",
                          $"턴 종료마다 {e.bleedStacks} 피해. 매 턴 1씩 감소.");
+            x += chipSize + chipGap;
+        }
+
+        // 5.5) 화상 스택 — R010 화산재 유물, 이끼 BURN 패턴 등이 부여. DoT 동작은 독/출혈과 동일.
+        if (e.burnStacks > 0 && x + chipSize <= rowRect.xMax)
+        {
+            DrawIconChip(new Rect(x, y, chipSize, chipSize),
+                         HeadIcon("BURN"), e.burnStacks,
+                         "화상 (Burn)",
+                         $"턴 종료마다 {e.burnStacks} 피해. 매 턴 1씩 감소.");
             x += chipSize + chipGap;
         }
 

@@ -385,7 +385,11 @@ public class RewardUI : MonoBehaviour
         }
         if (!_cardDone && reward.cardChoices != null && reward.cardChoices.Count > 0)
         {
-            rowClicked |= DrawRewardRow(new Rect(rowX, y, rowW, rowH), _iconCard, dm.GetUIString("reward.row.card"), RowKind.Card);
+            // R012 태초의 알처럼 라운드가 2회 이상이면 "카드 선택 ×2" 표기로 사전 안내.
+            string cardRowLabel = reward.totalCardPickRounds > 1
+                ? dm.GetUIString("reward.row.card_multi", reward.totalCardPickRounds)
+                : dm.GetUIString("reward.row.card");
+            rowClicked |= DrawRewardRow(new Rect(rowX, y, rowW, rowH), _iconCard, cardRowLabel, RowKind.Card);
             y += rowH + rowGap;
         }
         if (!_potionDone && reward.potion != null)
@@ -713,13 +717,26 @@ public class RewardUI : MonoBehaviour
 
         var prevTitleColor = GUI.color;
         GUI.color = new Color(prevTitleColor.r, prevTitleColor.g, prevTitleColor.b, prevTitleColor.a * titleAlpha);
-        GUI.Label(new Rect(0, cpTitleY + yOff, RefW, cpTitleHeight), DataManager.Instance.GetUIString("reward.title"), _pickerTitleStyle);
+        // 총 라운드가 2회 이상이면 현재 진행 라운드를 "1/2" 식으로 보여 줘서 R012 추가 픽인 걸 안내.
+        // 현재 라운드 = total - 남은 extra set 수 (cardChoices는 항상 "지금 그리는" set).
+        string pickerTitle;
+        if (reward.totalCardPickRounds > 1)
+        {
+            int remaining = reward.extraCardChoiceSets != null ? reward.extraCardChoiceSets.Count : 0;
+            int currentRound = Mathf.Clamp(reward.totalCardPickRounds - remaining, 1, reward.totalCardPickRounds);
+            pickerTitle = DataManager.Instance.GetUIString("reward.title.round", currentRound, reward.totalCardPickRounds);
+        }
+        else
+        {
+            pickerTitle = DataManager.Instance.GetUIString("reward.title");
+        }
+        GUI.Label(new Rect(0, cpTitleY + yOff, RefW, cpTitleHeight), pickerTitle, _pickerTitleStyle);
         GUI.color = prevTitleColor;
 
         int n = reward.cardChoices.Count;
         if (n == 0)
         {
-            _pending.Add(() => { _cardDone = true; _view = View.List; });
+            _pending.Add(() => AdvanceCardPickRound(reward));
             return;
         }
 
@@ -758,12 +775,13 @@ public class RewardUI : MonoBehaviour
 
             if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
             {
-                int captured = i;
+                // 클릭 시점 카드 캡처 — AdvanceCardPickRound가 cardChoices를 다음 set으로 교체하기 때문
+                // 인덱스만 캡처하면 두 번째 라운드 진입 시 잘못된 카드를 잡게 됨 (R012 태초의 알 케이스).
+                var pickedCard = reward.cardChoices[i];
                 _pending.Add(() =>
                 {
-                    GameStateManager.Instance?.TakeCardReward(reward.cardChoices[captured]);
-                    _cardDone = true;
-                    _view = View.List;
+                    GameStateManager.Instance?.TakeCardReward(pickedCard);
+                    AdvanceCardPickRound(reward);
                 });
             }
         }
@@ -790,8 +808,26 @@ public class RewardUI : MonoBehaviour
         GUI.Label(skipDraw, DataManager.Instance.GetUIString("reward.skip"), _skipButtonStyle);
         if (GUI.Button(skipRect, GUIContent.none, GUIStyle.none))
         {
-            _pending.Add(() => { _cardDone = true; _view = View.List; });
+            _pending.Add(() => AdvanceCardPickRound(reward));
         }
+    }
+
+    /// <summary>
+    /// 카드 1장을 고르거나 스킵한 직후 호출.
+    /// extraCardChoiceSets가 남아있으면(R012 태초의 알 등) 첫 set을 cardChoices로 끌어와 picker를 유지.
+    /// 모두 소진되면 _cardDone 처리 후 보상 목록으로 복귀.
+    /// </summary>
+    private void AdvanceCardPickRound(BattleReward reward)
+    {
+        if (reward.extraCardChoiceSets != null && reward.extraCardChoiceSets.Count > 0)
+        {
+            reward.cardChoices = reward.extraCardChoiceSets[0];
+            reward.extraCardChoiceSets.RemoveAt(0);
+            // 같은 _view = View.CardPicker 유지 — 다음 프레임에 새 cardChoices로 다시 그려짐
+            return;
+        }
+        _cardDone = true;
+        _view = View.List;
     }
 
     // =========================================================

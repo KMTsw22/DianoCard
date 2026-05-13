@@ -10,10 +10,10 @@ R008,비늘 망토,Scale Cloak,UNCOMMON,ELITE,BATTLE_START,HEAL,5,전투 시작 
 R009,티라노의 이빨,Tyrant Tooth,UNCOMMON,ELITE,KILL,GOLD,3,적 처치 시 골드 +3.,Gain 3 Gold whenever an enemy is killed.,
 R010,화산재,Volcanic Ash,UNCOMMON,SHOP,BATTLE_START,BURN,3,전투 시작 시 모든 적에게 화상 3.,Apply Burn 3 to all enemies at the start of combat.,
 R011,공룡의 심장,Dino Heart,RARE,BOSS,PASSIVE,MAX_HP,25,최대 HP +25.,Start with +25 max HP.,
-R012,태초의 알,Primal Egg,RARE,BOSS,BATTLE_END,CARD,0,전투 승리 시 랜덤 공룡 카드 1장 획득 (일시).,After winning a combat gain a random dinosaur card (temporary).,
+R012,태초의 알,Primal Egg,RARE,BOSS,BATTLE_END,EXTRA_CARD_PICK,1,전투 승리 시 카드 보상이 한 번 더 등장 — 두 번 선택할 수 있다.,After winning a combat the card reward appears one extra time — pick twice.,
 R014,왕의 왕관,King's Crown,RARE,BOSS,PASSIVE,MANA,1,매 턴 마나 +1.,Gain +1 Mana each turn.,
 R015,영원의 모래시계,Eternal Hourglass,RARE,BOSS,BATTLE_START,DRAW,3,전투 시작 시 3장 추가 드로우.,Draw 3 extra cards at the start of combat.,
-R016,광폭의 부적,Rage Amulet,RARE,EVENT,HP_LOW,ATTACK_BUFF,3,HP 50% 이하 시 공격력 +3.,When below 50% HP all allies gain +3 attack.,
+R016,광폭의 부적,Rage Amulet,RARE,EVENT,HP_LOW,ATTACK_BUFF,3,플레이어 HP 50% 미만 시 공룡 ATK +3.,When the player's HP is below 50% all dinosaurs gain +3 attack.,
 R017,고고학자의 일지,Archaeologist Log,SHOP,SHOP,NODE_ENTER,GOLD,5,새 노드 진입 시 골드 +5.,Gain 5 Gold whenever you enter a new node.,
 R018,어린 무리,Young Pack,COMMON,START,BATTLE_START,SUMMON_COMPY,1,전투 시작 시 콤프소그나투스 1마리 무료 소환.,Summon 1 free Compy at the start of each combat.,CARN
 R019,사냥꾼 본능,Hunter Instinct,COMMON,EVENT,KILL,HEAL_KILLER,2,적 처치 시 처치한 아군 공룡 HP +2.,When an ally kills an enemy that ally heals 2 HP.,
