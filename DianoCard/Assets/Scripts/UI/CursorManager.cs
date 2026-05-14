@@ -67,14 +67,18 @@ namespace DianoCard.UI
             _defaultTex = Resources.Load<Texture2D>("UI/Cursors/cursor_default");
             float defaultScale = 1f;
             if (_defaultTex == null) _defaultTex = BuildArrow(pressed: false);
-            else { var src = _defaultTex; _defaultTex = DownsampleToHardwareSize(src, out defaultScale); }
+            // 모든 경로(외부 PNG/절차 생성) 동일하게 HardwareCursorMaxSize로 cap.
+            // Mac은 32, Windows/Linux는 64. Retina 환경에서 logical pixel 기준 시각 크기 통일.
+            {
+                var src = _defaultTex;
+                _defaultTex = DownsampleToHardwareSize(src, out defaultScale);
+            }
 
             _pressedTex = Resources.Load<Texture2D>("UI/Cursors/cursor_pressed");
             if (_pressedTex == null) _pressedTex = BuildArrow(pressed: true);
-            else _pressedTex = DownsampleToHardwareSize(_pressedTex, out _);
+            _pressedTex = DownsampleToHardwareSize(_pressedTex, out _);
 
-            // 외부 PNG였으면 hotspot도 같은 비율로 — 픽셀 좌표라 같이 줄여야 tip 위치 유지.
-            // 절차 생성이면 TexSize 기준이라 그대로.
+            // hotspot도 같은 비율로 — 픽셀 좌표라 같이 줄여야 tip 위치 유지.
             if (defaultScale < 1f) hotspot = new Vector2(hotspot.x * defaultScale, hotspot.y * defaultScale);
 
             if (_defaultTex == null)
@@ -109,9 +113,14 @@ namespace DianoCard.UI
             Debug.Log($"[CursorManager] SetCursor 호출 완료 (Auto, {_defaultTex.width}x{_defaultTex.height}).");
         }
 
-        // OS hardware cursor 호환 최대 사이즈. Windows 10/11에서 64×64까지 OS가 그려줌. 더 크면
-        // Unity가 자동으로 software 모드로 폴백 → 게임 freeze 시 마우스가 같이 멈춤.
+        // OS hardware cursor 호환 최대 사이즈. Windows 10/11에서 64×64까지 OS가 그려줌.
+        // Mac Retina는 logical pixel 기준이라 64는 device 128px = 시각적으로 2배 큼.
+        // → Mac은 32로 cap. Linux/Windows는 64 유지.
+#if UNITY_STANDALONE_OSX
+        private const int HardwareCursorMaxSize = 32;
+#else
         private const int HardwareCursorMaxSize = 64;
+#endif
 
         /// <summary>GPU Blit으로 64x64 이하 텍스처 새로 생성. isReadable 설정 무관하게 동작 — Resources의 sprite는 보통 isReadable=0이라 GetPixels32가 안 된다. scale은 원본 대비 축소 비율 (1f 이하).</summary>
         private static Texture2D DownsampleToHardwareSize(Texture2D src, out float scale)
