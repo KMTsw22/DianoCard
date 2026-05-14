@@ -1486,7 +1486,9 @@ public class CharacterSelectUI : MonoBehaviour
                 ? new Color(0.65f, 0.24f, 0.24f, 0.95f)
                 : new Color(0.26f, 0.55f, 0.30f, 0.95f);
             DrawRoundedRect(ModeToggleRect, 12f, hovered ? hoverFill : baseFill);
-            string label = isCarn ? "초식 모드로 전환  →" : "←  육식 모드로 전환";
+            string label = isCarn
+                ? LocaleSettings.L("Switch to Herbivore  →", "초식 모드로 전환  →")
+                : LocaleSettings.L("←  Switch to Carnivore", "←  육식 모드로 전환");
             GUI.Label(ModeToggleRect, label, _modeToggleStyle);
         }
 

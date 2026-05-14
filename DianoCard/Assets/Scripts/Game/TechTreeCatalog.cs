@@ -25,8 +25,8 @@ namespace DianoCard.Game
         public static readonly TechNode Root = new TechNode
         {
             id = RootId,
-            name = "기원",
-            description = "모든 가지의 시작점",
+            nameKr = "기원", nameEn = "Origin",
+            descriptionKr = "모든 가지의 시작점", descriptionEn = "Starting point of all branches",
             direction = TechDirection.Center,
             maxRank = 1,
             perRankCost = 0,
@@ -39,22 +39,30 @@ namespace DianoCard.Game
         {
             // ── 우측: 공격 (Right) ──────────────────────────────
             new TechNode {
-                id = "A1", name = "야성의 손톱", description = "시작 덱 공룡 카드 ATK +1",
+                id = "A1",
+                nameKr = "야성의 손톱", nameEn = "Wild Claws",
+                descriptionKr = "시작 덱 공룡 카드 ATK +1", descriptionEn = "Starting deck dinosaur cards ATK +1",
                 direction = TechDirection.Right, maxRank = 3, perRankCost = 1,
                 prereqId = RootId, pos = new Vector2(CenterX + 130f, CenterY),
             },
             new TechNode {
-                id = "A2", name = "화염각", description = "공격 마법 피해 +1",
+                id = "A2",
+                nameKr = "화염각", nameEn = "Flame Strike",
+                descriptionKr = "공격 마법 피해 +1", descriptionEn = "Attack Spell damage +1",
                 direction = TechDirection.Right, maxRank = 3, perRankCost = 1,
                 prereqId = "A1", pos = new Vector2(CenterX + 240f, CenterY - 60f),
             },
             new TechNode {
-                id = "A3", name = "살의", description = "단일 공격 5% 확률로 ×1.5 크리티컬",
+                id = "A3",
+                nameKr = "살의", nameEn = "Killing Intent",
+                descriptionKr = "단일 공격 5% 확률로 ×1.5 크리티컬", descriptionEn = "Single attacks have a 5% chance to deal ×1.5 critical damage",
                 direction = TechDirection.Right, maxRank = 2, perRankCost = 1,
                 prereqId = "A1", pos = new Vector2(CenterX + 240f, CenterY + 60f),
             },
             new TechNode {
-                id = "A4", name = "광폭", description = "[캡스톤] 첫 턴 모든 공격 ×2",
+                id = "A4",
+                nameKr = "광폭", nameEn = "Frenzy",
+                descriptionKr = "[캡스톤] 첫 턴 모든 공격 ×2", descriptionEn = "[Capstone] First turn, all attacks deal ×2 damage",
                 direction = TechDirection.Right, maxRank = 1, perRankCost = 5,
                 prereqId = "A2", pos = new Vector2(CenterX + 360f, CenterY),
                 isCapstone = true,
@@ -62,22 +70,30 @@ namespace DianoCard.Game
 
             // ── 좌측: 방어 (Left) ───────────────────────────────
             new TechNode {
-                id = "D1", name = "단단한 가죽", description = "최대 HP +5",
+                id = "D1",
+                nameKr = "단단한 가죽", nameEn = "Tough Hide",
+                descriptionKr = "최대 HP +5", descriptionEn = "Max HP +5",
                 direction = TechDirection.Left, maxRank = 3, perRankCost = 1,
                 prereqId = RootId, pos = new Vector2(CenterX - 130f, CenterY),
             },
             new TechNode {
-                id = "D2", name = "굳건함", description = "매 턴 시작 시 block +1",
+                id = "D2",
+                nameKr = "굳건함", nameEn = "Steadfast",
+                descriptionKr = "매 턴 시작 시 block +1", descriptionEn = "Block +1 at the start of each turn",
                 direction = TechDirection.Left, maxRank = 3, perRankCost = 1,
                 prereqId = "D1", pos = new Vector2(CenterX - 240f, CenterY - 60f),
             },
             new TechNode {
-                id = "D3", name = "조롱", description = "시작 덱에 도발 카드 +1",
+                id = "D3",
+                nameKr = "조롱", nameEn = "Provoke",
+                descriptionKr = "시작 덱에 도발 카드 +1", descriptionEn = "Add 1 Taunt card to your starting deck",
                 direction = TechDirection.Left, maxRank = 1, perRankCost = 2,
                 prereqId = "D1", pos = new Vector2(CenterX - 240f, CenterY + 60f),
             },
             new TechNode {
-                id = "D4", name = "불사", description = "[캡스톤] 패배 시 1회, HP 50%로 부활",
+                id = "D4",
+                nameKr = "불사", nameEn = "Undying",
+                descriptionKr = "[캡스톤] 패배 시 1회, HP 50%로 부활", descriptionEn = "[Capstone] On defeat, revive once at 50% HP",
                 direction = TechDirection.Left, maxRank = 1, perRankCost = 5,
                 prereqId = "D2", pos = new Vector2(CenterX - 360f, CenterY),
                 isCapstone = true,
@@ -85,22 +101,30 @@ namespace DianoCard.Game
 
             // ── 상단: 공룡 (Up) ─────────────────────────────────
             new TechNode {
-                id = "N1", name = "원시의 각성", description = "Run 시작 시 공룡 카드 1장 강화",
+                id = "N1",
+                nameKr = "원시의 각성", nameEn = "Primal Awakening",
+                descriptionKr = "Run 시작 시 공룡 카드 1장 강화", descriptionEn = "Upgrade 1 dinosaur card at run start",
                 direction = TechDirection.Up, maxRank = 3, perRankCost = 1,
                 prereqId = RootId, pos = new Vector2(CenterX, CenterY - 130f),
             },
             new TechNode {
-                id = "N2", name = "진화 가속", description = "진화 비용 1 감소",
+                id = "N2",
+                nameKr = "진화 가속", nameEn = "Accelerated Evolution",
+                descriptionKr = "진화 비용 1 감소", descriptionEn = "Evolution cost -1",
                 direction = TechDirection.Up, maxRank = 3, perRankCost = 1,
                 prereqId = "N1", pos = new Vector2(CenterX - 60f, CenterY - 240f),
             },
             new TechNode {
-                id = "N3", name = "야수의 유대", description = "공룡 소환 시 +1 ATK 부여",
+                id = "N3",
+                nameKr = "야수의 유대", nameEn = "Beast Bond",
+                descriptionKr = "공룡 소환 시 +1 ATK 부여", descriptionEn = "Summoned dinosaurs gain +1 ATK",
                 direction = TechDirection.Up, maxRank = 1, perRankCost = 2,
                 prereqId = "N1", pos = new Vector2(CenterX + 60f, CenterY - 240f),
             },
             new TechNode {
-                id = "N4", name = "정점의 군주", description = "[캡스톤] 공룡 전원에게 매 전투 시작 ATK +2",
+                id = "N4",
+                nameKr = "정점의 군주", nameEn = "Apex Lord",
+                descriptionKr = "[캡스톤] 공룡 전원에게 매 전투 시작 ATK +2", descriptionEn = "[Capstone] All dinosaurs gain ATK +2 at the start of every Combat",
                 direction = TechDirection.Up, maxRank = 1, perRankCost = 5,
                 prereqId = "N2", pos = new Vector2(CenterX, CenterY - 350f),
                 isCapstone = true,
@@ -108,22 +132,30 @@ namespace DianoCard.Game
 
             // ── 하단: 운영 (Down) ───────────────────────────────
             new TechNode {
-                id = "U1", name = "맑은 정신", description = "시작 손패 +1장 (6장 드로우)",
+                id = "U1",
+                nameKr = "맑은 정신", nameEn = "Clear Mind",
+                descriptionKr = "시작 손패 +1장 (6장 드로우)", descriptionEn = "Starting hand +1 card (Draw 6)",
                 direction = TechDirection.Down, maxRank = 1, perRankCost = 2,
                 prereqId = RootId, pos = new Vector2(CenterX, CenterY + 130f),
             },
             new TechNode {
-                id = "U2", name = "풍요", description = "시작 마나 +1",
+                id = "U2",
+                nameKr = "풍요", nameEn = "Abundance",
+                descriptionKr = "시작 마나 +1", descriptionEn = "Starting Mana +1",
                 direction = TechDirection.Down, maxRank = 2, perRankCost = 3,
                 prereqId = "U1", pos = new Vector2(CenterX - 60f, CenterY + 240f),
             },
             new TechNode {
-                id = "U3", name = "상인의 감각", description = "상점 가격 10% 할인",
+                id = "U3",
+                nameKr = "상인의 감각", nameEn = "Merchant's Eye",
+                descriptionKr = "상점 가격 10% 할인", descriptionEn = "Shop prices 10% off",
                 direction = TechDirection.Down, maxRank = 1, perRankCost = 2,
                 prereqId = "U1", pos = new Vector2(CenterX + 60f, CenterY + 240f),
             },
             new TechNode {
-                id = "U4", name = "시작의 축복", description = "[캡스톤] Run 시작 시 T1 유물 1개",
+                id = "U4",
+                nameKr = "시작의 축복", nameEn = "Starting Blessing",
+                descriptionKr = "[캡스톤] Run 시작 시 T1 유물 1개", descriptionEn = "[Capstone] Gain 1 T1 Relic at run start",
                 direction = TechDirection.Down, maxRank = 1, perRankCost = 5,
                 prereqId = "U2", pos = new Vector2(CenterX, CenterY + 350f),
                 isCapstone = true,

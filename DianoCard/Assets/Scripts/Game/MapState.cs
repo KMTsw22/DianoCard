@@ -23,6 +23,7 @@ namespace DianoCard.Game
     /// floor f의 노드가 floor f+1의 어떤 column들로 연결되는지를 저장한다.
     /// 보스 직전 층(15)의 노드들은 모두 보스 column(중앙)으로 fan-in.
     /// </summary>
+    [System.Serializable]
     public class MapNode
     {
         public int floor;                    // 1-based. 1 = 첫 층, 15 = 휴식, 16 = 보스
@@ -36,6 +37,7 @@ namespace DianoCard.Game
     /// <summary>
     /// 한 run의 맵 레이아웃 & 진행 상태.
     /// </summary>
+    [System.Serializable]
     public class MapState
     {
         public List<MapNode> nodes = new();

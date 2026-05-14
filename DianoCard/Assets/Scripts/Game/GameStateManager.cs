@@ -35,7 +35,7 @@ namespace DianoCard.Game
     /// UI 컴포넌트(LobbyUI/MapUI/BattleUI/RewardUI/GameOverUI)는 같은 GameObject에
     /// 자동으로 attach되며, 각자 State에 따라 자기 OnGUI를 on/off함.
     /// </summary>
-    public class GameStateManager : MonoBehaviour
+    public partial class GameStateManager : MonoBehaviour
     {
         public static GameStateManager Instance { get; private set; }
 
@@ -52,6 +52,11 @@ namespace DianoCard.Game
         /// <summary>튜토리얼 모드 플래그 — 캐릭터 선택 직후 1회. true면 진짜 RunState는 백업되고
         /// sandbox RunState로 전투. EndBattle 시 EndTutorial() 거쳐 RelicPick으로 복귀.</summary>
         public bool IsTutorialMode { get; private set; }
+
+        // 튜토리얼이 막 끝나서 RelicPick으로 진입할 때만 1프레임짜리 신호 — RelicPickerUI가 "시작 유물을 선택하세요" 토스트를 띄울지 판단.
+        // 토스트 시작 후 즉시 false로 소비된다. 일반 런의 RelicPick에선 항상 false이므로 토스트가 안 뜬다.
+        public bool PendingStartingRelicHint { get; private set; }
+        public void ConsumeStartingRelicHint() => PendingStartingRelicHint = false;
 
         // 튜토리얼 진입 시 백업해두는 진짜 런 상태 — EndTutorial 시 그대로 복원.
         private RunState _tutorialSavedRun;
@@ -267,6 +272,8 @@ namespace DianoCard.Game
             // farewell(Timer) 단계 도중 전투가 끝나도 오버레이가 RelicPick 위로 깜빡이지 않게
             // TutorialManager 상태도 함께 강제 리셋.
             DianoCard.Tutorial.TutorialManager.Instance?.ForceEnd();
+            // 튜토리얼 직후 RelicPick 진입임을 표시 — RelicPickerUI가 토스트를 띄우고 소비.
+            PendingStartingRelicHint = true;
             State = GameState.RelicPick;
             Debug.Log("[GSM] EndTutorial — restored real run, → RelicPick");
         }
@@ -348,6 +355,8 @@ namespace DianoCard.Game
             }
 
             State = _relicPickReturnState;
+            // 시작 유물 선택 직후 Map 진입은 런이 본격 시작되는 시점 — 첫 세이브.
+            if (State == GameState.Map) SaveCurrentRun();
         }
 
         private GameState _relicPickReturnState = GameState.Map;
@@ -1561,12 +1570,14 @@ namespace DianoCard.Game
             if (CurrentMap.currentFloor >= BossFloor)
             {
                 State = GameState.Victory;
+                ClearSavedRun();
                 return;
             }
             CurrentMap.currentFloor++;
             CurrentMap.currentColumn = -1;
             CurrentRun.currentFloor = CurrentMap.currentFloor;
             State = GameState.Map;
+            SaveCurrentRun();
         }
 
         // =========================================================
@@ -1639,6 +1650,7 @@ namespace DianoCard.Game
             else
             {
                 State = GameState.Defeat;
+                ClearSavedRun();
             }
         }
 
@@ -1797,6 +1809,9 @@ namespace DianoCard.Game
 
         public void ReturnToLobby()
         {
+            // ⚠️ save를 자동으로 지우지 않는다 — Map/CharSelect의 뒤로가기 버튼도 이 메서드를 호출하므로,
+            // 사용자가 "로비 다녀오기" 의도로 눌렀을 때 진행도를 보존해야 함.
+            // 명시적 폐기는 PauseMenuUI의 Abandon Run, 그리고 Victory/Defeat 분기가 직접 ClearSavedRun()을 호출.
             CurrentRun = null;
             CurrentMap = null;
             CurrentShop = null;

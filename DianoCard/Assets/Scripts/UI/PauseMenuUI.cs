@@ -422,6 +422,9 @@ public class PauseMenuUI : MonoBehaviour
             () => _pending.Add(() =>
             {
                 Close();
+                // 명시적 포기 — 진행도 저장 폐기 후 로비로.
+                // (Map/CharSelect 뒤로가기 버튼은 ReturnToLobby만 호출해 save를 유지하는 것과 대비)
+                DianoCard.Game.GameStateManager.ClearSavedRun();
                 GameStateManager.Instance?.ReturnToLobby();
             })
         );

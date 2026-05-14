@@ -578,9 +578,11 @@ public class LobbyUI : MonoBehaviour
         float startY = _menuStartY;
         float x = _menuX;
 
+        // Single Play 하나로 통합 — 저장된 런이 있으면 자동 이어하기, 없으면 새 런.
+        // 명시적으로 런을 폐기하고 새로 시작하려면 게임 중 ESC > Abandon Run 사용.
         if (DrawTextMenuItem(new Rect(x, startY, btnW, btnH), "Single Play", "SINGLE PLAY", true))
         {
-            _pending.Add(() => StartSinglePlay(gsm));
+            _pending.Add(() => StartOrContinueRun(gsm));
         }
 
         if (DrawTextMenuItem(new Rect(x, startY + (btnH + gap) * 1, btnW, btnH), "Settings", "SETTINGS", true))
@@ -599,6 +601,22 @@ public class LobbyUI : MonoBehaviour
 #endif
             });
         }
+    }
+
+    private void StartOrContinueRun(GameStateManager gsm)
+    {
+        bool hasSave = GameStateManager.HasSavedRun();
+        Debug.Log($"[LobbyUI] StartOrContinueRun. hasSave={hasSave} state before={gsm.State}");
+
+        if (hasSave && gsm.LoadSavedRun())
+        {
+            Debug.Log($"[LobbyUI] Resumed saved run → state after={gsm.State}");
+            return;
+        }
+
+        // 로드 실패 또는 저장 없음 — 새 런 시작.
+        if (hasSave) Debug.LogWarning("[LobbyUI] HasSavedRun=true but LoadSavedRun failed — fallback to new run");
+        StartSinglePlay(gsm);
     }
 
     private void StartSinglePlay(GameStateManager gsm)

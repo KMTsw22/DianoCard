@@ -417,17 +417,19 @@ public class VillageUI : MonoBehaviour
         DrawOptionCard(
             leftRect,
             _treasureIconTex,
-            treasureName,
+            DianoCard.Data.LocaleSettings.L(treasureName, "수수께끼"),
             treasureNameColor,
-            treasureDesc,
+            DianoCard.Data.LocaleSettings.L(treasureDesc, "유물 1개 무료 획득"),
             treasureGlowColor,
             leftHover);
 
-        string restBody = $"Recover {pctLabel}% HP\n<color=#E84A4A>{run.playerCurrentHp} → {afterHp}</color>";
+        string restBody = DianoCard.Data.LocaleSettings.L(
+            $"Recover {pctLabel}% HP\n<color=#E84A4A>{run.playerCurrentHp} → {afterHp}</color>",
+            $"HP {pctLabel}% 회복\n<color=#E84A4A>{run.playerCurrentHp} → {afterHp}</color>");
         DrawOptionCard(
             rightRect,
             _restIconTex,
-            restName,
+            DianoCard.Data.LocaleSettings.L(restName, "휴식"),
             restNameColor,
             restBody,
             restGlowColor,

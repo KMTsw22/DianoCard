@@ -1,7 +1,9 @@
 using System.Collections.Generic;
 using DianoCard.Data;
 using DianoCard.Game;
+using DianoCard.Tutorial;
 using UnityEngine;
+using static DianoCard.Data.LocaleSettings;
 
 /// <summary>
 /// 시작 유물 선택 화면. GameState == RelicPick 일 때만 그려짐.
@@ -164,7 +166,13 @@ public class RelicPickerUI : MonoBehaviour
     private GUIStyle _nameStyle;
     private GUIStyle _descStyle;
     private GUIStyle _promptStyle;
+    private GUIStyle _firstTimeToastStyle;
     private bool _stylesBuilt;
+
+    // 첫 RelicPick 진입 시 가운데 "시작 유물을 선택하세요" 토스트 — 3초간 페이드 인/아웃 후 영구 플래그.
+    private float _toastStartTime = -1f;
+    private bool _toastResolved = false;
+    private const float ToastDuration = 3f;
 
     private readonly List<System.Action> _pending = new();
 
@@ -271,8 +279,23 @@ public class RelicPickerUI : MonoBehaviour
 
     void Update()
     {
-        if (GameStateManager.Instance != null && GameStateManager.Instance.State == GameState.RelicPick)
+        var gsmU = GameStateManager.Instance;
+        if (gsmU != null && gsmU.State == GameState.RelicPick)
+        {
             HandleVariantCheatKeys();
+            // 토스트 — 튜토리얼 직후 RelicPick 진입에서만 트리거. GSM의 1회용 신호를 소비.
+            if (_toastStartTime < 0f && !_toastResolved && gsmU.PendingStartingRelicHint)
+            {
+                _toastStartTime = Time.unscaledTime;
+                gsmU.ConsumeStartingRelicHint();
+            }
+        }
+        else
+        {
+            // RelicPick 빠져나가면 토스트 상태 리셋(다음 첫 진입 때 다시 평가).
+            _toastStartTime = -1f;
+            _toastResolved = false;
+        }
 
         if (_bgFrames == null || _bgFrames.Length == 0) return;
 
@@ -336,6 +359,19 @@ public class RelicPickerUI : MonoBehaviour
         };
         _promptStyle.normal.textColor = promptColor;
 
+        // 첫 진입 토스트 — 큰 명조체 가운데 정렬. KR는 Hahmlet, EN은 Cinzel.
+        var enFont = Resources.Load<Font>("Fonts/Cinzel-VariableFont_wght");
+        bool isKR = LocaleSettings.Current == Language.KR;
+        _firstTimeToastStyle = new GUIStyle(GUI.skin.label)
+        {
+            font = isKR ? krFont : (enFont != null ? enFont : krFont),
+            fontSize = 40,
+            fontStyle = FontStyle.Bold,
+            alignment = TextAnchor.MiddleCenter,
+            wordWrap = true,
+        };
+        _firstTimeToastStyle.normal.textColor = new Color(1f, 0.92f, 0.72f);
+
         // GUI.skin.label 기본 hover state의 색 swap을 차단해 호버 시 텍스트가 깜빡이는 느낌을 없앤다.
         LockHoverState(_nameStyle);
         LockHoverState(_descStyle);
@@ -388,8 +424,60 @@ public class RelicPickerUI : MonoBehaviour
 
         DrawBackground();
         DrawRows(gsm);
+        DrawFirstTimeToast();
 
         GUI.matrix = matrix;
+    }
+
+    /// <summary>처음 RelicPick 진입에서만 3초 동안 가운데에 큰 글씨 안내.
+    /// 페이드 인(0.4s) → 유지 → 페이드 아웃(0.4s). 종료 시 SaveSystem 플래그 영구 저장.</summary>
+    private void DrawFirstTimeToast()
+    {
+        if (_toastResolved) return;
+        if (_toastStartTime < 0f) return;
+        float elapsed = Time.unscaledTime - _toastStartTime;
+        if (elapsed >= ToastDuration)
+        {
+            _toastResolved = true;
+            return;
+        }
+
+        // 0~0.4 fade-in, 0.4~2.6 hold, 2.6~3.0 fade-out
+        const float FadeIn = 0.4f;
+        const float FadeOut = 0.4f;
+        float a;
+        if (elapsed < FadeIn) a = elapsed / FadeIn;
+        else if (elapsed > ToastDuration - FadeOut) a = (ToastDuration - elapsed) / FadeOut;
+        else a = 1f;
+        a = Mathf.Clamp01(a);
+
+        string msg = L("Choose your starting Relic", "시작 유물을 선택하세요");
+
+        // 가운데 상단 — 유물 목록과 안 겹치는 위치(rowBlockCenterY가 0.82라 화면 위쪽에 여백).
+        // 박스 높이는 폰트 + 위아래 여유(ascender/descender) 충분히 둠.
+        float boxW = RefW * 0.70f;
+        float boxH = 90f;
+        float boxX = (RefW - boxW) * 0.5f;
+        float boxY = RefH * 0.30f - boxH * 0.5f;
+        var rect = new Rect(boxX, boxY, boxW, boxH);
+
+        // 검정 그림자 8방향
+        var prevColor = GUI.color;
+        GUI.color = new Color(0f, 0f, 0f, 0.95f * a);
+        var prevText = _firstTimeToastStyle.normal.textColor;
+        _firstTimeToastStyle.normal.textColor = new Color(0f, 0f, 0f, 0.95f * a);
+        int s = 3;
+        int[,] off = new int[,] { { -s, 0 }, { s, 0 }, { 0, -s }, { 0, s }, { -s, -s }, { s, -s }, { -s, s }, { s, s } };
+        for (int i = 0; i < 8; i++)
+            GUI.Label(new Rect(rect.x + off[i, 0], rect.y + off[i, 1], rect.width, rect.height), msg, _firstTimeToastStyle);
+
+        // 본체 — 호박색
+        _firstTimeToastStyle.normal.textColor = new Color(1f, 0.92f, 0.72f, a);
+        GUI.color = new Color(1f, 1f, 1f, a);
+        GUI.Label(rect, msg, _firstTimeToastStyle);
+
+        _firstTimeToastStyle.normal.textColor = prevText;
+        GUI.color = prevColor;
     }
 
     private void DrawBackground()

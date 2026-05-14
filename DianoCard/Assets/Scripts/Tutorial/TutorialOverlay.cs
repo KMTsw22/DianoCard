@@ -17,18 +17,18 @@ namespace DianoCard.Tutorial
         // 비율은 화면 폭/높이 대비. 해상도 바뀌어도 같은 비율로 적용.
 
         [Header("Text Banner Position (화면 비율, 0~1)")]
-        [SerializeField, Range(0f, 0.5f), Tooltip("화면 상단에서 텍스트 박스 시작까지 거리 (Screen.height 비율)")]
-        private float bannerTopRatio = 0.08f;
+        [SerializeField, Range(0f, 0.5f), Tooltip("화면 상단에서 텍스트 박스 시작까지 거리 (Screen.height 비율) — 상단 바와 안 겹치도록 0.12 정도가 적당, 캐릭터 머리(0.30~)와도 안 겹침")]
+        private float bannerTopRatio = 0.12f;
 
-        [SerializeField, Range(0.30f, 1.00f), Tooltip("텍스트 박스 폭 (Screen.width 비율)")]
-        private float bannerWidthRatio = 0.72f;
+        [SerializeField, Range(0.30f, 1.00f), Tooltip("텍스트 박스 폭 (Screen.width 비율) — 양옆 좀 더 좁혀 캐릭터 얼굴이 잘 보이게 0.56 정도")]
+        private float bannerWidthRatio = 0.56f;
 
-        [SerializeField, Range(0.05f, 0.30f), Tooltip("텍스트 박스 높이 (Screen.height 비율)")]
-        private float bannerHeightRatio = 0.16f;
+        [SerializeField, Range(0.05f, 0.30f), Tooltip("텍스트 박스 높이 (Screen.height 비율) — 빌드 폰트 메트릭이 에디터보다 살짝 넓어 wrap 3줄까지 가는 경우 대비")]
+        private float bannerHeightRatio = 0.20f;
 
         [Header("Font Size (화면 높이 비율, 0~0.1)")]
-        [SerializeField, Range(0.020f, 0.080f), Tooltip("메시지 본문 폰트 사이즈 (Screen.height 비율)")]
-        private float messageFontRatio = 0.044f;
+        [SerializeField, Range(0.020f, 0.080f), Tooltip("메시지 본문 폰트 사이즈 (Screen.height 비율) — 빌드 측 폭이 더 잡히는 경우 wrap 방지용 추가 마진")]
+        private float messageFontRatio = 0.036f;
 
         [SerializeField, Range(0.012f, 0.040f), Tooltip("진행 힌트 폰트 사이즈 (Screen.height 비율)")]
         private float hintFontRatio = 0.024f;
@@ -38,8 +38,8 @@ namespace DianoCard.Tutorial
 
         [Header("Text Backplate (가독성 보조)")]
         [SerializeField, Range(0f, 0.95f),
-         Tooltip("안내 텍스트 뒤 반투명 검정 — 거의 안 보일 정도로만 깔아 자주색 위 호박 글자가 살짝 떠 보이게. 0이면 완전 비활성.")]
-        private float backplateAlpha = 0.18f;
+         Tooltip("안내 텍스트 뒤 반투명 검정 — 배경 일러스트 위에서도 호박 글자가 또렷이 보이게 충분히 깐다.")]
+        private float backplateAlpha = 0.55f;
 
         [SerializeField, Range(0f, 120f),
          Tooltip("백플레이트 가장자리 페이드 폭(px) — 폭이 클수록 박스 가장자리가 더 자연스럽게 사라진다.")]
@@ -296,6 +296,10 @@ namespace DianoCard.Tutorial
                     e.Use();
                 }
             }
+
+            // 5) 마지막 — BattleUI의 hover 툴팁을 한 번 더 그려 메시지 박스 위로 올림.
+            // (BattleUI도 자기 OnGUI에서 한 번 그렸지만 우리 OnGUI(execOrder 1100)가 그 위에 덮어 가린다.)
+            if (_battleUI != null) _battleUI.DrawHoverTooltipTopmost();
         }
 
         private int hintRowHeight() => Mathf.RoundToInt(Screen.height * 0.030f);
@@ -330,16 +334,64 @@ namespace DianoCard.Tutorial
                     DrawAreaHighlight(new Rect(Screen.width - 220, Screen.height - 150, 200, 120), pulse);
                     break;
                 case TutorialHighlight.PotionIcon:
-                    if (_battleUI != null && _battleUI.TryGetTopBarPotionRect(out var pr))
-                        DrawAreaHighlight(VirtualToScreenRect(pr, 6f), pulse);
-                    else // 폴백: 상단 바 대략 위치
-                        DrawAreaHighlight(new Rect(Screen.width * 0.18f, 4f, 110f, 56f), pulse);
+                    {
+                        // 드로어가 열려있으면 (TryGetPotionDrawerItemRect가 채워졌으면) 글로우를 첫 마실 포션으로 이전.
+                        // 닫혀있으면 상단 바 아이콘 강조.
+                        Rect target;
+                        if (_battleUI != null && _battleUI.TryGetPotionDrawerItemRect(out var dr))
+                        {
+                            target = VirtualToScreenRect(dr, 6f);
+                        }
+                        else if (_battleUI != null && _battleUI.TryGetTopBarPotionRect(out var pr))
+                        {
+                            target = VirtualToScreenRect(pr, 6f);
+                        }
+                        else
+                        {
+                            target = new Rect(Screen.width * 0.18f, 4f, 110f, 56f);
+                        }
+                        DrawWarmHalo(target, pulse, 60f, 0.50f);
+                        DrawAreaHighlight(target, pulse);
+                    }
                     break;
                 case TutorialHighlight.RelicIcon:
-                    if (_battleUI != null && _battleUI.TryGetTopBarRelicRect(out var rr))
-                        DrawAreaHighlight(VirtualToScreenRect(rr, 6f), pulse);
-                    else
-                        DrawAreaHighlight(new Rect(Screen.width * 0.26f, 4f, 100f, 56f), pulse);
+                    {
+                        Rect target = (_battleUI != null && _battleUI.TryGetTopBarRelicRect(out var rr))
+                            ? VirtualToScreenRect(rr, 6f)
+                            : new Rect(Screen.width * 0.26f, 4f, 100f, 56f);
+                        DrawWarmHalo(target, pulse, 60f, 0.50f);
+                        DrawAreaHighlight(target, pulse);
+                    }
+                    break;
+                case TutorialHighlight.ManaOrb:
+                    {
+                        Rect target = (_battleUI != null && _battleUI.TryGetManaOrbRect(out var mr))
+                            ? VirtualToScreenRect(mr, 10f)
+                            : new Rect(Screen.width * 0.08f, Screen.height - 180f, 130f, 130f);
+                        DrawWarmHalo(target, pulse, 70f, 0.50f);
+                        DrawAreaHighlight(target, pulse);
+                    }
+                    break;
+                case TutorialHighlight.SwordBadge:
+                    {
+                        // 공룡 머리 위 검 뱃지 — 가상 좌표라 변환. 폴백은 화면 중하단 임의 위치(에러 케이스).
+                        if (_battleUI != null && _battleUI.TryGetSwordBadgeRect(out var sb))
+                        {
+                            var target = VirtualToScreenRect(sb, 4f);
+                            DrawWarmHalo(target, pulse, 40f, 0.55f);
+                            DrawAreaHighlight(target, pulse);
+                        }
+                    }
+                    break;
+                case TutorialHighlight.SkillBadge:
+                    {
+                        if (_battleUI != null && _battleUI.TryGetSkillBadgeRect(out var sk))
+                        {
+                            var target = VirtualToScreenRect(sk, 4f);
+                            DrawWarmHalo(target, pulse, 40f, 0.55f);
+                            DrawAreaHighlight(target, pulse);
+                        }
+                    }
                     break;
             }
         }
@@ -399,6 +451,27 @@ namespace DianoCard.Tutorial
             DrawBorder(rect, baseColor, highlightThickness);
 
             GUI.matrix = prev;
+        }
+
+        /// <summary>작은 상단 아이콘(포션/유물/마나 오브)용 추가 halo — 외곽선 글로우만으론
+        /// 작은 아이콘이 배경에 묻혀 잘 안 보이는 문제 해결용. 채워진 따뜻한 광원을 펄스로 깐 뒤
+        /// 위에 DrawAreaHighlight의 외곽선이 겹쳐져 시선이 강하게 끌린다.
+        /// **아이콘 본체 영역(r)은 절대 가리지 않는다** — r의 가장자리부터 바깥쪽으로만 도넛 모양으로 그린다.</summary>
+        private void DrawWarmHalo(Rect r, float pulse, float padPx, float maxAlpha)
+        {
+            Color baseColor = new(1.00f, 0.78f, 0.42f, Mathf.Lerp(0.18f, maxAlpha, pulse));
+            int pad = Mathf.RoundToInt(padPx);
+            for (int i = pad; i >= 3; i -= 3)
+            {
+                float frac = 1f - (float)i / pad;   // 바깥(0) → 안쪽(1) — 가장자리에서 진해진다
+                var c = new Color(baseColor.r, baseColor.g, baseColor.b, baseColor.a * frac);
+                Rect outer = new Rect(r.x - i, r.y - i, r.width + i * 2, r.height + i * 2);
+                // 도넛 4분할 — top / bottom / left / right 띠. inner(r) 영역은 비운다.
+                DrawRect(new Rect(outer.x, outer.y, outer.width, r.y - outer.y), c);                            // top
+                DrawRect(new Rect(outer.x, r.yMax, outer.width, outer.yMax - r.yMax), c);                       // bottom
+                DrawRect(new Rect(outer.x, r.y, r.x - outer.x, r.height), c);                                   // left
+                DrawRect(new Rect(r.xMax, r.y, outer.xMax - r.xMax, r.height), c);                              // right
+            }
         }
 
         private void DrawAreaHighlight(Rect r, float pulse)
@@ -469,6 +542,10 @@ namespace DianoCard.Tutorial
             TutorialAdvanceTrigger.TurnEnded => L("(Auto-advances when you end the turn)", "(턴을 종료하면 진행됩니다)"),
             TutorialAdvanceTrigger.BattleWon => L("(Auto-advances when you win combat)", "(전투를 끝내면 진행됩니다)"),
             TutorialAdvanceTrigger.PotionUsed => L("(Auto-advances when you drink a potion)", "(포션을 마시면 진행됩니다)"),
+            TutorialAdvanceTrigger.SummonAttacked => L("(Auto-advances when your dino attacks)", "(공룡으로 공격하면 진행됩니다)"),
+            TutorialAdvanceTrigger.SkillUsed => L("(Auto-advances when the skill fires)", "(스킬을 발동하면 진행됩니다)"),
+            TutorialAdvanceTrigger.RelicHovered => L("(Hover the relic icon to continue)", "(유물 아이콘 위에 마우스를 올리면 진행됩니다)"),
+            TutorialAdvanceTrigger.ManaHovered => L("(Hover the mana orb to continue)", "(마나 오브 위에 마우스를 올리면 진행됩니다)"),
             _ => "",
         };
 

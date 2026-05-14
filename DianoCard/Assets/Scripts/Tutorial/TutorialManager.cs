@@ -39,6 +39,10 @@ namespace DianoCard.Tutorial
             TutorialEvents.OnTurnEnded += HandleTurnEnded;
             TutorialEvents.OnBattleWon += HandleBattleWon;
             TutorialEvents.OnPotionUsed += HandlePotionUsed;
+            TutorialEvents.OnSummonAttacked += HandleSummonAttacked;
+            TutorialEvents.OnSkillUsed += HandleSkillUsed;
+            TutorialEvents.OnRelicHovered += HandleRelicHovered;
+            TutorialEvents.OnManaHovered += HandleManaHovered;
         }
 
         void OnDisable()
@@ -49,6 +53,10 @@ namespace DianoCard.Tutorial
             TutorialEvents.OnTurnEnded -= HandleTurnEnded;
             TutorialEvents.OnBattleWon -= HandleBattleWon;
             TutorialEvents.OnPotionUsed -= HandlePotionUsed;
+            TutorialEvents.OnSummonAttacked -= HandleSummonAttacked;
+            TutorialEvents.OnSkillUsed -= HandleSkillUsed;
+            TutorialEvents.OnRelicHovered -= HandleRelicHovered;
+            TutorialEvents.OnManaHovered -= HandleManaHovered;
         }
 
         /// <summary>GSM.EnterTutorial이 호출. 첫 단계는 즉시 표시(인트로),
@@ -114,8 +122,21 @@ namespace DianoCard.Tutorial
             return CurrentStep.highlight == TutorialHighlight.RelicIcon;
         }
 
-        // 공룡 수동 공격 / 시그니처 스킬 — Timer 자유 플레이에서만 활성 중에도 허용.
-        public bool IsManualSummonAllowed() => !IsActive || IsFreePlay;
+        // 공룡 수동 공격(검 뱃지) — SummonAttacked 실습 단계 + Timer 자유 플레이.
+        public bool IsManualSummonAllowed()
+        {
+            if (!IsActive) return true;
+            if (IsFreePlay) return true;
+            return CurrentStep.trigger == TutorialAdvanceTrigger.SummonAttacked;
+        }
+
+        // 시그니처 스킬 — Manual 공격과 동일 조건 + SkillUsed 트리거 단계(실습 단계)에서도 허용.
+        public bool IsSkillUseAllowed()
+        {
+            if (!IsActive) return true;
+            if (IsFreePlay) return true;
+            return CurrentStep.trigger == TutorialAdvanceTrigger.SkillUsed;
+        }
 
         // END TURN은 TurnEnded / BattleWon / Timer 자유 플레이에서 허용.
         // 락업 안전망은 BattleUI 쪽에서 "강조된 카드가 손패에 없으면" 별도 허용 처리.
@@ -160,6 +181,10 @@ namespace DianoCard.Tutorial
         private void HandleTurnEnded() => Advance(TutorialAdvanceTrigger.TurnEnded);
         private void HandleBattleWon() => Advance(TutorialAdvanceTrigger.BattleWon);
         private void HandlePotionUsed() => Advance(TutorialAdvanceTrigger.PotionUsed);
+        private void HandleSummonAttacked() => Advance(TutorialAdvanceTrigger.SummonAttacked);
+        private void HandleSkillUsed() => Advance(TutorialAdvanceTrigger.SkillUsed);
+        private void HandleRelicHovered() => Advance(TutorialAdvanceTrigger.RelicHovered);
+        private void HandleManaHovered() => Advance(TutorialAdvanceTrigger.ManaHovered);
 
         private void Advance(TutorialAdvanceTrigger trigger)
         {

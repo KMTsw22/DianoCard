@@ -10,6 +10,10 @@ namespace DianoCard.Tutorial
         TurnEnded,        // 턴 종료 버튼
         BattleWon,        // 전투 승리
         PotionUsed,       // 포션 사용 — 어떤 포션이든 OK
+        SummonAttacked,   // 공룡 평타(수동) 완료 — CommandSummonAttack 성공
+        SkillUsed,        // 진화 공룡 시그니처 스킬 발동 완료
+        RelicHovered,     // 상단 유물 아이콘 위에 마우스 — 패시브 패널 본 것으로 간주
+        ManaHovered,      // 좌하단 마나 오브 위에 마우스 — 마나 툴팁 본 것으로 간주
         Timer,            // autoAdvanceSeconds 후 자동 진행. 그동안 모든 게이트 해제(자유 플레이).
     }
 
@@ -21,8 +25,11 @@ namespace DianoCard.Tutorial
         FieldArea,       // 플레이어 필드
         EnemyArea,       // 적 영역
         EndTurnButton,   // 우하단 END TURN
-        PotionIcon,      // 상단 바 포션 아이콘
+        PotionIcon,      // 상단 바 포션 아이콘 (드로어 열렸으면 자동으로 첫 드로어 슬롯으로 글로우 이전)
         RelicIcon,       // 상단 바 유물 아이콘
+        ManaOrb,         // 좌하단 마나 오브
+        SwordBadge,      // 공격 가능한 첫 공룡 머리 위 검 뱃지 (좁은 영역)
+        SkillBadge,      // 진화 공룡의 시그니처 스킬 아이콘 (좁은 영역)
     }
 
     public class TutorialStep

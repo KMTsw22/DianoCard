@@ -450,7 +450,7 @@ MonoBehaviour:
   hpBarMinWidth: 110
   hpBarMaxWidth: 170
   hpBarHeight: 18
-  handBottomOffset: 55
+  handBottomOffset: 32
   handAnglePerCard: 6.5
   handFanRadius: 1250
   cardBgRectPct: {x: 0.045, y: 0.03, z: 0.91, w: 0.94}

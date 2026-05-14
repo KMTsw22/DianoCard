@@ -325,6 +325,39 @@ public class EventUI : MonoBehaviour
         _cachedVigSoftness = vignetteSoftness;
     }
 
+    // 활성 언어로 본 이벤트 제목/본문/선택지. 인스펙터 SerializeField는 KR 폴백으로만 사용.
+    private string LocalizedTitle()
+        => L("Broken Rune Altar", string.IsNullOrEmpty(titleText) ? "부서진 룬 제단" : titleText);
+
+    private static readonly string[] BodyLinesKR =
+    {
+        "고대의 제단이 희미한 보랏빛으로 맥동한다.",
+        "표면을 덮은 룬 하나가 아직도 살아있는 듯하다.",
+        "손을 대면 무언가 일어날지도 모른다.",
+    };
+    private static readonly string[] BodyLinesEN =
+    {
+        "The ancient altar pulses with a faint violet glow.",
+        "One of the runes on its surface still seems alive.",
+        "Touching it might cause something to happen.",
+    };
+
+    private static readonly string[] ButtonLabelsKR =
+    {
+        "룬을 만진다  ·  HP -3, 유물 1개 획득",
+        "그냥 지나간다",
+    };
+    private static readonly string[] ButtonLabelsEN =
+    {
+        "Touch the rune  ·  HP -3, gain 1 Relic",
+        "Walk past",
+    };
+
+    private string[] LocalizedBodyLines() =>
+        DianoCard.Data.LocaleSettings.Current == DianoCard.Data.Language.KR ? BodyLinesKR : BodyLinesEN;
+    private string[] LocalizedButtonLabels() =>
+        DianoCard.Data.LocaleSettings.Current == DianoCard.Data.Language.KR ? ButtonLabelsKR : ButtonLabelsEN;
+
     private void DrawTitleAndBody()
     {
         // ─── Title ─────────────────────────────────────────────
@@ -333,6 +366,7 @@ public class EventUI : MonoBehaviour
         // 헤일로/섀도우 색이 본문 색으로 보이는 깜빡임을 차단.
         var titleRect = new Rect(0, titleY, RefW, titleFontSize + 16f);
         var prev = _titleStyle.normal.textColor;
+        string activeTitle = LocalizedTitle();
 
         if (titleHaloShadow)
         {
@@ -341,40 +375,42 @@ public class EventUI : MonoBehaviour
             _titleStyle.normal.textColor = halo;
             LockHoverState(_titleStyle);
             float d = 2f;
-            GUI.Label(new Rect(titleRect.x - d, titleRect.y,     titleRect.width, titleRect.height), titleText, _titleStyle);
-            GUI.Label(new Rect(titleRect.x + d, titleRect.y,     titleRect.width, titleRect.height), titleText, _titleStyle);
-            GUI.Label(new Rect(titleRect.x,     titleRect.y - d, titleRect.width, titleRect.height), titleText, _titleStyle);
-            GUI.Label(new Rect(titleRect.x,     titleRect.y + d, titleRect.width, titleRect.height), titleText, _titleStyle);
+            GUI.Label(new Rect(titleRect.x - d, titleRect.y,     titleRect.width, titleRect.height), activeTitle, _titleStyle);
+            GUI.Label(new Rect(titleRect.x + d, titleRect.y,     titleRect.width, titleRect.height), activeTitle, _titleStyle);
+            GUI.Label(new Rect(titleRect.x,     titleRect.y - d, titleRect.width, titleRect.height), activeTitle, _titleStyle);
+            GUI.Label(new Rect(titleRect.x,     titleRect.y + d, titleRect.width, titleRect.height), activeTitle, _titleStyle);
         }
 
         _titleStyle.normal.textColor = titleShadowColor;
         LockHoverState(_titleStyle);
         GUI.Label(new Rect(titleRect.x + titleShadowOffset.x, titleRect.y + titleShadowOffset.y, titleRect.width, titleRect.height),
-                  titleText, _titleStyle);
+                  activeTitle, _titleStyle);
 
         _titleStyle.normal.textColor = prev;
         LockHoverState(_titleStyle);
-        GUI.Label(titleRect, titleText, _titleStyle);
+        GUI.Label(titleRect, activeTitle, _titleStyle);
 
         // ─── Body ──────────────────────────────────────────────
+        var lines = LocalizedBodyLines();
         float bodyStartY = titleY + (titleFontSize + 16f) + bodyTopGap;
         var bodyPrev = _bodyStyle.normal.textColor;
-        for (int i = 0; i < bodyLines.Length; i++)
+        for (int i = 0; i < lines.Length; i++)
         {
             float y = bodyStartY + i * bodyLineHeight;
             // 옅은 그림자
             _bodyStyle.normal.textColor = bodyShadowColor;
             LockHoverState(_bodyStyle);
-            GUI.Label(new Rect(bodyShadowOffset.x, y + bodyShadowOffset.y, RefW, bodyLineHeight + 4f), bodyLines[i], _bodyStyle);
+            GUI.Label(new Rect(bodyShadowOffset.x, y + bodyShadowOffset.y, RefW, bodyLineHeight + 4f), lines[i], _bodyStyle);
             _bodyStyle.normal.textColor = bodyPrev;
             LockHoverState(_bodyStyle);
-            GUI.Label(new Rect(0, y, RefW, bodyLineHeight + 4f), bodyLines[i], _bodyStyle);
+            GUI.Label(new Rect(0, y, RefW, bodyLineHeight + 4f), lines[i], _bodyStyle);
         }
     }
 
     private void DrawButtons(GameStateManager gsm)
     {
-        int n = buttonLabels != null ? buttonLabels.Length : 0;
+        var labels = LocalizedButtonLabels();
+        int n = labels != null ? labels.Length : 0;
         if (n == 0) return;
 
         float btnW = RefW * buttonWidthRatio;
@@ -393,7 +429,7 @@ public class EventUI : MonoBehaviour
             bool hovered = rect.Contains(mouse);
 
             DrawButtonChrome(rect, hovered);
-            GUI.Label(rect, buttonLabels[i], _buttonLabelStyle);
+            GUI.Label(rect, labels[i], _buttonLabelStyle);
 
             if (GUI.Button(rect, GUIContent.none, GUIStyle.none))
             {

@@ -25,15 +25,20 @@ namespace DianoCard.Game
     public class TechNode
     {
         public string id;
-        public string name;
+        public string nameKr;
+        public string nameEn;
         /// <summary>"+{r}" 같은 토큰을 직접 박지 않고, 효과 한 줄을 그대로 보여줌. UI에서 currentRank/maxRank를 함께 표기.</summary>
-        public string description;
+        public string descriptionKr;
+        public string descriptionEn;
         public TechDirection direction;
         public int maxRank;
         public int perRankCost;
         public string prereqId;
         public Vector2 pos;        // 가상 1280×720 좌표
         public bool isCapstone;
+
+        public string name => LocaleSettings.Pick(nameKr, nameEn);
+        public string description => LocaleSettings.Pick(descriptionKr, descriptionEn);
     }
 
     [Serializable]

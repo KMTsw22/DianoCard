@@ -60,8 +60,17 @@ public class BattleUI : MonoBehaviour
     // DrawTopBar에서 hit-rect와 동일하게 채워준다. 비어 있으면 rect.width == 0.
     private Rect _topBarPotionRect;
     private Rect _topBarRelicRect;
+    private Rect _manaOrbRect;
+    // 튜토리얼 강조용 — 매 OnGUI 시작에 reset, DrawSummon/포션 드로어가 채운다. 가상 1280×720 좌표.
+    private Rect _firstSwordBadgeRect;     // 공격 가능한 첫 공룡 머리 위 검 뱃지
+    private Rect _firstSkillBadgeRect;     // 시그니처 스킬 보유한 첫 공룡의 스킬 아이콘
+    private Rect _firstPotionDrawerItemRect; // 포션 드로어가 열려 있을 때 첫 마실 수 있는 포션 슬롯
     public bool TryGetTopBarPotionRect(out Rect r) { r = _topBarPotionRect; return r.width > 0f; }
     public bool TryGetTopBarRelicRect(out Rect r)  { r = _topBarRelicRect;  return r.width > 0f; }
+    public bool TryGetManaOrbRect(out Rect r)      { r = _manaOrbRect;      return r.width > 0f; }
+    public bool TryGetSwordBadgeRect(out Rect r)   { r = _firstSwordBadgeRect; return r.width > 0f; }
+    public bool TryGetSkillBadgeRect(out Rect r)   { r = _firstSkillBadgeRect; return r.width > 0f; }
+    public bool TryGetPotionDrawerItemRect(out Rect r) { r = _firstPotionDrawerItemRect; return r.width > 0f; }
 
     // 직전 프레임에 호버된 손패 인덱스. 호버 시 카드가 확대되어 원본 부채꼴 영역을 벗어날 수 있어,
     // 확대된 hoverRect 기준으로 hover를 유지(끈적이게)하기 위한 sticky 상태.
@@ -644,7 +653,7 @@ public class BattleUI : MonoBehaviour
     [Header("Hand Fan Layout")]
     [Tooltip("손패 카드의 화면 하단 노출 오프셋. 값↑ = 카드가 더 아래로 가려짐. 기본 57")]
     [Range(0f, 200f)]
-    [SerializeField] private float handBottomOffset = 57f;
+    [SerializeField] private float handBottomOffset = 32f;
 
     [Tooltip("카드 사이 각도(도). 값↑ = 부채꼴 더 펼쳐짐. 기본 6.5")]
     [Range(0f, 20f)]
@@ -2981,6 +2990,11 @@ public class BattleUI : MonoBehaviour
         _arrowTargetRects.Clear();
         _attackPreviewEnemy = null;
 
+        // 튜토리얼 강조용 — 이번 프레임에 검/스킬 뱃지 그릴 때 채워짐. 비어있으면 강조 폴백.
+        _firstSwordBadgeRect = default;
+        _firstSkillBadgeRect = default;
+        _firstPotionDrawerItemRect = default;
+
         bool active = gsm.State == GameState.Battle;
 
         if (active)
@@ -2994,11 +3008,11 @@ public class BattleUI : MonoBehaviour
                 bool _tutSilent = DianoCard.Tutorial.TutorialManager.Instance?.IsActive == true;
                 if (!_tutSilent)
                 {
-                    if (_targetingSummonIndex >= 0) ShowToast("공격을 취소합니다");
-                    else if (_targetingSummonSkillIndex >= 0) ShowToast("스킬을 취소합니다");
-                    else if (_targetingPotionIndex >= 0) ShowToast("포션 사용을 취소합니다");
-                    else if (_cannibalFeedFromIndex >= 0) ShowToast("동족포식을 취소합니다");
-                    else if (_reinforcePickerCardIndex >= 0) ShowToast("증원을 취소합니다");
+                    if (_targetingSummonIndex >= 0) ShowToast(L("Attack canceled", "공격을 취소합니다"));
+                    else if (_targetingSummonSkillIndex >= 0) ShowToast(L("Skill canceled", "스킬을 취소합니다"));
+                    else if (_targetingPotionIndex >= 0) ShowToast(L("Potion use canceled", "포션 사용을 취소합니다"));
+                    else if (_cannibalFeedFromIndex >= 0) ShowToast(L("Cannibal canceled", "동족포식을 취소합니다"));
+                    else if (_reinforcePickerCardIndex >= 0) ShowToast(L("Reinforcement canceled", "증원을 취소합니다"));
                 }
                 _targetingCardIndex = -1;
                 _targetingSummonIndex = -1;
@@ -3256,8 +3270,9 @@ public class BattleUI : MonoBehaviour
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("STRENGTH"), e.extraAttack,
-                         "강화 (Strength)",
-                         $"이 적의 공격력이 영구 +{e.extraAttack} 누적되었습니다.");
+                         L("Strength", "강화 (Strength)"),
+                         L($"This enemy's attack is permanently increased by +{e.extraAttack}.",
+                           $"이 적의 공격력이 영구 +{e.extraAttack} 누적되었습니다."));
             x += chipSize + chipGap;
         }
 
@@ -3286,8 +3301,9 @@ public class BattleUI : MonoBehaviour
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("VULNERABLE"), e.vulnerableTurns,
-                         "취약 (Vulnerable)",
-                         $"받는 피해 50% 증가. {e.vulnerableTurns}턴 남음.");
+                         L("Vulnerable", "취약 (Vulnerable)"),
+                         L($"Takes 50% more damage. {e.vulnerableTurns} turn(s) left.",
+                           $"받는 피해 50% 증가. {e.vulnerableTurns}턴 남음."));
             x += chipSize + chipGap;
         }
 
@@ -3296,8 +3312,9 @@ public class BattleUI : MonoBehaviour
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("POISON"), e.poisonStacks,
-                         "독 (Poison)",
-                         $"턴 종료마다 {e.poisonStacks} 피해. 매 턴 1씩 감소.");
+                         L("Poison", "독 (Poison)"),
+                         L($"{e.poisonStacks} damage at end of turn. Decreases by 1 each turn.",
+                           $"턴 종료마다 {e.poisonStacks} 피해. 매 턴 1씩 감소."));
             x += chipSize + chipGap;
         }
 
@@ -3306,8 +3323,9 @@ public class BattleUI : MonoBehaviour
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("FEAR"), e.bleedStacks,
-                         "출혈 (Bleed)",
-                         $"턴 종료마다 {e.bleedStacks} 피해. 매 턴 1씩 감소.");
+                         L("Bleed", "출혈 (Bleed)"),
+                         L($"{e.bleedStacks} damage at end of turn. Decreases by 1 each turn.",
+                           $"턴 종료마다 {e.bleedStacks} 피해. 매 턴 1씩 감소."));
             x += chipSize + chipGap;
         }
 
@@ -3316,8 +3334,9 @@ public class BattleUI : MonoBehaviour
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("BURN"), e.burnStacks,
-                         "화상 (Burn)",
-                         $"턴 종료마다 {e.burnStacks} 피해. 매 턴 1씩 감소.");
+                         L("Burn", "화상 (Burn)"),
+                         L($"{e.burnStacks} damage at end of turn. Decreases by 1 each turn.",
+                           $"턴 종료마다 {e.burnStacks} 피해. 매 턴 1씩 감소."));
             x += chipSize + chipGap;
         }
 
@@ -3326,8 +3345,9 @@ public class BattleUI : MonoBehaviour
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("WEAK"), e.weakTurns,
-                         "약화 (Weak)",
-                         $"가하는 피해 25% 감소. {e.weakTurns}턴 남음.");
+                         L("Weak", "약화 (Weak)"),
+                         L($"Deals 25% less damage. {e.weakTurns} turn(s) left.",
+                           $"가하는 피해 25% 감소. {e.weakTurns}턴 남음."));
             x += chipSize + chipGap;
         }
 
@@ -3349,32 +3369,36 @@ public class BattleUI : MonoBehaviour
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("POISON"), p.poisonStacks,
-                         "독 (Poison)",
-                         $"턴 종료마다 {p.poisonStacks} 피해. 매 턴 1씩 감소.");
+                         L("Poison", "독 (Poison)"),
+                         L($"{p.poisonStacks} damage at end of turn. Decreases by 1 each turn.",
+                           $"턴 종료마다 {p.poisonStacks} 피해. 매 턴 1씩 감소."));
             x += chipSize + chipGap;
         }
         if (p.weakTurns > 0 && x + chipSize <= rowRect.xMax)
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("WEAK"), p.weakTurns,
-                         "약화 (Weak)",
-                         $"가하는 피해 25% 감소. {p.weakTurns}턴 남음.");
+                         L("Weak", "약화 (Weak)"),
+                         L($"Deals 25% less damage. {p.weakTurns} turn(s) left.",
+                           $"가하는 피해 25% 감소. {p.weakTurns}턴 남음."));
             x += chipSize + chipGap;
         }
         if (p.vulnerableTurns > 0 && x + chipSize <= rowRect.xMax)
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("VULNERABLE"), p.vulnerableTurns,
-                         "취약 (Vulnerable)",
-                         $"받는 피해 50% 증가. {p.vulnerableTurns}턴 남음.");
+                         L("Vulnerable", "취약 (Vulnerable)"),
+                         L($"Takes 50% more damage. {p.vulnerableTurns} turn(s) left.",
+                           $"받는 피해 50% 증가. {p.vulnerableTurns}턴 남음."));
             x += chipSize + chipGap;
         }
         if (p.summonCostReduction > 0 && x + chipSize <= rowRect.xMax)
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("BUFF"), p.summonCostReduction,
-                         "총출동",
-                         $"이번 턴 소환 카드 코스트 -{p.summonCostReduction}.");
+                         L("All Out", "총출동"),
+                         L($"Summon cards cost -{p.summonCostReduction} this turn.",
+                           $"이번 턴 소환 카드 코스트 -{p.summonCostReduction}."));
             x += chipSize + chipGap;
         }
     }
@@ -3420,53 +3444,72 @@ public class BattleUI : MonoBehaviour
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("TARGET_DINO"), s.tauntTurns,
-                         "도발",
-                         $"적 공격을 이 공룡이 받습니다. {s.tauntTurns}턴 남음.");
+                         L("Taunt", "도발"),
+                         L($"This dinosaur draws enemy attacks. {s.tauntTurns} turn(s) left.",
+                           $"적 공격을 이 공룡이 받습니다. {s.tauntTurns}턴 남음."));
             x += chipSize + chipGap;
         }
         if (s.silencedTurns > 0)
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("BIND"), s.silencedTurns,
-                         "침묵",
-                         $"이 공룡은 행동 불가. {s.silencedTurns}턴 남음.");
+                         L("Silence", "침묵"),
+                         L($"This dinosaur cannot act. {s.silencedTurns} turn(s) left.",
+                           $"이 공룡은 행동 불가. {s.silencedTurns}턴 남음."));
             x += chipSize + chipGap;
         }
         if (s.tempAttackBonus > 0)
         {
             // 격노의 각인이 활성이면 다음 턴 재충전 예정임을 안내.
             string atkBody = s.fuseAtkRefreshTurns > 0
-                ? $"이번 턴 ATK +{s.tempAttackBonus}. 격노의 각인으로 다음 턴에도 +{s.fuseAtkRefreshValue} 유지."
-                : $"이번 턴 ATK +{s.tempAttackBonus}.";
+                ? L($"ATK +{s.tempAttackBonus} this turn. Sigil of Rage maintains +{s.fuseAtkRefreshValue} next turn.",
+                    $"이번 턴 ATK +{s.tempAttackBonus}. 격노의 각인으로 다음 턴에도 +{s.fuseAtkRefreshValue} 유지.")
+                : L($"ATK +{s.tempAttackBonus} this turn.",
+                    $"이번 턴 ATK +{s.tempAttackBonus}.");
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("STRENGTH"), s.tempAttackBonus,
-                         "공격 강화", atkBody);
+                         L("Attack Up", "공격 강화"), atkBody);
             x += chipSize + chipGap;
         }
         if (s.fuseHpBonusTurns > 0)
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("HEAL"), s.fuseHpBonusValue,
-                         "생명의 각인",
-                         $"최대 HP +{s.fuseHpBonusValue}. {s.fuseHpBonusTurns}턴 후 환원.");
+                         L("Sigil of Life", "생명의 각인"),
+                         L($"Max HP +{s.fuseHpBonusValue}. Reverts in {s.fuseHpBonusTurns} turn(s).",
+                           $"최대 HP +{s.fuseHpBonusValue}. {s.fuseHpBonusTurns}턴 후 환원."));
             x += chipSize + chipGap;
         }
         if (s.fuseBlockRefreshTurns > 0)
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("DEFEND"), s.fuseBlockRefreshValue,
-                         "가호의 각인",
-                         $"턴 시작 시 방어 +{s.fuseBlockRefreshValue} 충전. {s.fuseBlockRefreshTurns}턴 더 적용.");
+                         L("Sigil of Ward", "가호의 각인"),
+                         L($"Gains Block +{s.fuseBlockRefreshValue} at the start of each turn. {s.fuseBlockRefreshTurns} more turn(s).",
+                           $"턴 시작 시 방어 +{s.fuseBlockRefreshValue} 충전. {s.fuseBlockRefreshTurns}턴 더 적용."));
             x += chipSize + chipGap;
         }
         if (s.regenTurns > 0)
         {
             DrawIconChip(new Rect(x, y, chipSize, chipSize),
                          HeadIcon("HEAL"), s.regenTurns,
-                         "재생",
-                         $"매 턴 시작 시 +{s.regenPerTurn} HP. {s.regenTurns}턴 남음.");
+                         L("Regenerate", "재생"),
+                         L($"+{s.regenPerTurn} HP at the start of each turn. {s.regenTurns} turn(s) left.",
+                           $"매 턴 시작 시 +{s.regenPerTurn} HP. {s.regenTurns}턴 남음."));
             x += chipSize + chipGap;
         }
+    }
+
+    /// <summary>TutorialOverlay가 메시지/강조 박스를 그린 다음 호출 — 호버 툴팁만 다시 한 번 위에 덮어
+    /// 튜토리얼 메시지 박스가 마우스 hover 패널을 가리는 문제 해결.
+    /// 매 프레임 같은 hover 상태(_hoveredPassiveTitle)를 사용하므로 이중 그리기는 시각상 동일 위치에 같은 패널.</summary>
+    public void DrawHoverTooltipTopmost()
+    {
+        if (string.IsNullOrEmpty(_hoveredPassiveTitle)) return;
+        var prev = GUI.matrix;
+        GUI.matrix = DianoCard.UI.AspectScaler.GuiMatrix;
+        DrawPassiveTooltip();
+        GUI.matrix = prev;
     }
 
     /// <summary>호버 중인 패시브 툴팁 — 마우스 근처에 둥근 패널로. ShopUI 툴팁과 같은 톤.</summary>
@@ -3507,45 +3550,64 @@ public class BattleUI : MonoBehaviour
         int v = d.passiveValue;
         return d.passiveType switch
         {
-            DinoPassiveType.LACERATE      => ("열상 (Lacerate)",
-                $"공격마다 적에게 출혈 +{v} 스택.\n출혈은 매 턴 종료 시 스택만큼 피해 후 1 감소."),
-            DinoPassiveType.TENDERIZE     => ("연육 (Tenderize)",
-                $"공격 명중 후 적에게 취약 +{v}턴 부여.\n취약 상태의 적은 받는 피해 +50% (이번 공격에는 적용되지 않음)."),
-            DinoPassiveType.APEX_PRESENCE => ("정점의 위압 (Apex Presence)",
-                $"매 턴 시작, 모든 적에게 약화 {v}턴 부여.\n약화 상태의 적은 가하는 피해 -25%."),
-            DinoPassiveType.SCOUT         => ("정찰 (Scout)",
-                $"매 턴 시작, 카드 +{v}장 추가 드로우."),
-            DinoPassiveType.BLOOD_FRENZY  => ("피의 광란 (Blood Frenzy)",
-                $"자신 HP가 50% 이하일 때 ATK +{v} (자동 발동)."),
-            DinoPassiveType.CANNIBAL      => ("동족포식 (Cannibal)",
-                "필드의 다른 아군 공룡 1마리를 잡아먹는다 (1턴 1회, 코스트 0).\n제물의 현재 ATK·HP를 흡수해 자신의 공격력·최대 HP가 영구 상승.\n발동: 마준가 머리 위 송곳니(牙) 뱃지 클릭 → 잡아먹을 아군 클릭."),
-            DinoPassiveType.REAPER        => ("수확 (Reaper)",
-                $"공격마다 자신 방어도 +{v}."),
-            DinoPassiveType.COUNTER       => ("반격 (Counter)",
-                $"공격받을 때마다 공격자에게 {v} 반격 피해."),
-            DinoPassiveType.TOXIC_SLASH   => ("독성 베기 (Toxic Slash)",
-                $"공격마다 적에게 출혈 +{v} 및 독 +{v}.\n출혈·독 모두 매 턴 종료 시 스택만큼 피해 후 1 감소."),
-            DinoPassiveType.SWIFT_DODGE   => ("기민한 회피 (Swift Dodge)",
-                $"매 턴 시작, 방어도 +{v} 충전."),
-            DinoPassiveType.ENRAGE        => ("분노 (Enrage)",
-                $"피격마다 ATK 영구 +{v} (누적 무제한)."),
-            DinoPassiveType.AMBUSH        => ("매복 기습 (Ambush)",
-                "소환 후 첫 공격만 2배 데미지.\n발동 후 소멸 (1회 한정)."),
-            DinoPassiveType.RAMPAGE       => ("난동 (Rampage)",
-                "적 처치 시 즉시 다음 적에게 추가 공격 1회."),
-            DinoPassiveType.INTIMIDATE    => ("위협 (Intimidate)",
-                $"공격마다 목표 적 ATK 영구 -{v}.\n적 ATK는 0 이하로 내려가지 않음."),
-            DinoPassiveType.EXECUTE       => ("처형 (Execute)",
-                $"목표 적 HP가 {v} 이하이면 즉시 처치."),
-            DinoPassiveType.BULWARK       => ("방벽 (Bulwark)",
-                $"매 턴 시작, 모든 아군 공룡에게 방어 +{v}."),
-            DinoPassiveType.OSTEODERM     => ("등판 갑주 (Osteoderm)",
-                $"공격받을 때마다 자신 방어 +{v}."),
-            DinoPassiveType.IRON_HIDE     => ("강철 가죽 (Iron Hide)",
-                $"받는 모든 피해 -{v} (최소 1)."),
-            DinoPassiveType.HERD_RALLY    => ("무리 호령 (Herd Rally)",
-                $"매 턴 시작, 모든 아군 공룡 ATK +{v} (1턴)."),
-            _                             => (d.nameKr, ""),
+            DinoPassiveType.LACERATE      => (L("Lacerate", "열상 (Lacerate)"),
+                L($"On each attack, inflict Bleed +{v}.\nBleed deals damage equal to stacks at end of turn, then decreases by 1.",
+                  $"공격마다 적에게 출혈 +{v} 스택.\n출혈은 매 턴 종료 시 스택만큼 피해 후 1 감소.")),
+            DinoPassiveType.TENDERIZE     => (L("Tenderize", "연육 (Tenderize)"),
+                L($"After a successful attack, apply Vulnerable for {v} turn(s).\nVulnerable enemies take 50% more damage (does not apply to this attack).",
+                  $"공격 명중 후 적에게 취약 +{v}턴 부여.\n취약 상태의 적은 받는 피해 +50% (이번 공격에는 적용되지 않음).")),
+            DinoPassiveType.APEX_PRESENCE => (L("Apex Presence", "정점의 위압 (Apex Presence)"),
+                L($"At the start of each turn, apply Weak for {v} turn(s) to all enemies.\nWeak enemies deal 25% less damage.",
+                  $"매 턴 시작, 모든 적에게 약화 {v}턴 부여.\n약화 상태의 적은 가하는 피해 -25%.")),
+            DinoPassiveType.SCOUT         => (L("Scout", "정찰 (Scout)"),
+                L($"At the start of each turn, Draw +{v} extra card(s).",
+                  $"매 턴 시작, 카드 +{v}장 추가 드로우.")),
+            DinoPassiveType.BLOOD_FRENZY  => (L("Blood Frenzy", "피의 광란 (Blood Frenzy)"),
+                L($"While at 50% HP or below, ATK +{v} (auto-active).",
+                  $"자신 HP가 50% 이하일 때 ATK +{v} (자동 발동).")),
+            DinoPassiveType.CANNIBAL      => (L("Cannibal", "동족포식 (Cannibal)"),
+                L("Devour another ally dinosaur on the field (once per turn, cost 0).\nAbsorbs the prey's current ATK and HP, permanently increasing this dinosaur's attack and max HP.\nActivate: click the fang badge above Majunga, then click the ally to devour.",
+                  "필드의 다른 아군 공룡 1마리를 잡아먹는다 (1턴 1회, 코스트 0).\n제물의 현재 ATK·HP를 흡수해 자신의 공격력·최대 HP가 영구 상승.\n발동: 마준가 머리 위 송곳니(牙) 뱃지 클릭 → 잡아먹을 아군 클릭.")),
+            DinoPassiveType.REAPER        => (L("Reaper", "수확 (Reaper)"),
+                L($"On each attack, gain Block +{v}.",
+                  $"공격마다 자신 방어도 +{v}.")),
+            DinoPassiveType.COUNTER       => (L("Counter", "반격 (Counter)"),
+                L($"When attacked, deal {v} damage back to the attacker.",
+                  $"공격받을 때마다 공격자에게 {v} 반격 피해.")),
+            DinoPassiveType.TOXIC_SLASH   => (L("Toxic Slash", "독성 베기 (Toxic Slash)"),
+                L($"On each attack, inflict Bleed +{v} and Poison +{v}.\nBoth deal damage equal to stacks at end of turn, then decrease by 1.",
+                  $"공격마다 적에게 출혈 +{v} 및 독 +{v}.\n출혈·독 모두 매 턴 종료 시 스택만큼 피해 후 1 감소.")),
+            DinoPassiveType.SWIFT_DODGE   => (L("Swift Dodge", "기민한 회피 (Swift Dodge)"),
+                L($"Gain Block +{v} at the start of each turn.",
+                  $"매 턴 시작, 방어도 +{v} 충전.")),
+            DinoPassiveType.ENRAGE        => (L("Enrage", "분노 (Enrage)"),
+                L($"When hit, permanently gain ATK +{v} (unlimited stacking).",
+                  $"피격마다 ATK 영구 +{v} (누적 무제한).")),
+            DinoPassiveType.AMBUSH        => (L("Ambush", "매복 기습 (Ambush)"),
+                L("The first attack after summoning deals double damage.\nConsumed after triggering (once only).",
+                  "소환 후 첫 공격만 2배 데미지.\n발동 후 소멸 (1회 한정).")),
+            DinoPassiveType.RAMPAGE       => (L("Rampage", "난동 (Rampage)"),
+                L("When an enemy is defeated, immediately make one extra attack on the next enemy.",
+                  "적 처치 시 즉시 다음 적에게 추가 공격 1회.")),
+            DinoPassiveType.INTIMIDATE    => (L("Intimidate", "위협 (Intimidate)"),
+                L($"On each attack, permanently reduce target enemy ATK by {v}.\nEnemy ATK cannot drop below 0.",
+                  $"공격마다 목표 적 ATK 영구 -{v}.\n적 ATK는 0 이하로 내려가지 않음.")),
+            DinoPassiveType.EXECUTE       => (L("Execute", "처형 (Execute)"),
+                L($"If target enemy HP is {v} or below, defeat them instantly.",
+                  $"목표 적 HP가 {v} 이하이면 즉시 처치.")),
+            DinoPassiveType.BULWARK       => (L("Bulwark", "방벽 (Bulwark)"),
+                L($"At the start of each turn, grant Block +{v} to all ally dinosaurs.",
+                  $"매 턴 시작, 모든 아군 공룡에게 방어 +{v}.")),
+            DinoPassiveType.OSTEODERM     => (L("Osteoderm", "등판 갑주 (Osteoderm)"),
+                L($"When attacked, gain Block +{v}.",
+                  $"공격받을 때마다 자신 방어 +{v}.")),
+            DinoPassiveType.IRON_HIDE     => (L("Iron Hide", "강철 가죽 (Iron Hide)"),
+                L($"All damage taken -{v} (minimum 1).",
+                  $"받는 모든 피해 -{v} (최소 1).")),
+            DinoPassiveType.HERD_RALLY    => (L("Herd Rally", "무리 호령 (Herd Rally)"),
+                L($"At the start of each turn, all ally dinosaurs gain ATK +{v} for 1 turn.",
+                  $"매 턴 시작, 모든 아군 공룡 ATK +{v} (1턴).")),
+            _                             => (d.name, ""),
         };
     }
 
@@ -4477,7 +4539,7 @@ public class BattleUI : MonoBehaviour
             else
             {
                 GUI.Label(new Rect(center.x - 80f, center.y - 12f, 160f, 24f),
-                          $"속박 {e.stunTurns}T", _intentStyle);
+                          L($"Bind {e.stunTurns}T", $"속박 {e.stunTurns}T"), _intentStyle);
             }
             return;
         }
@@ -4528,7 +4590,9 @@ public class BattleUI : MonoBehaviour
         // 속박 중이면 행동이 봉인되므로 원래 인텐트 대신 속박 정보를 그대로 노출.
         if (e.stunTurns > 0)
         {
-            return ("속박 (Bind)", $"이번 턴 행동 불가. {e.stunTurns}턴 남음.");
+            return (L("Bind", "속박 (Bind)"),
+                    L($"Cannot act this turn. {e.stunTurns} turn(s) left.",
+                      $"이번 턴 행동 불가. {e.stunTurns}턴 남음."));
         }
 
         // 데미지 액션은 스케일된 실효 피해량(d), 그 외 효과 수치는 raw intentValue(v).
@@ -4540,40 +4604,82 @@ public class BattleUI : MonoBehaviour
         // 라이브 재해결 — 도발/사망/이탈 후 실제 DealAttack이 향할 곳을 그대로 표기 (뱃지와 동일 로직).
         var liveTarget = ResolveLiveAttackTarget(e);
         string atkTarget = liveTarget != null
-            ? (!string.IsNullOrEmpty(liveTarget.data?.nameKr)
-                ? liveTarget.data.nameKr
-                : "아군 공룡")
-            : "플레이어";
+            ? (liveTarget.data != null && !string.IsNullOrEmpty(liveTarget.data.name)
+                ? liveTarget.data.name
+                : L("an ally dinosaur", "아군 공룡"))
+            : L("the player", "플레이어");
 
         // 카운트다운 잔여 턴 표기 — 0/1을 자연스럽게 분기.
         string countdownPhrase =
-            t <= 0 ? "이번 턴" :
-            t == 1 ? "다음 턴" :
-                     $"{t}턴 후";
+            t <= 0 ? L("this turn", "이번 턴") :
+            t == 1 ? L("next turn", "다음 턴") :
+                     L($"in {t} turns", $"{t}턴 후");
 
         switch (e.intentAction)
         {
-            case DianoCard.Data.EnemyAction.ATTACK:           return ("공격",         $"{atkTarget}에게 {d} 피해.");
-            case DianoCard.Data.EnemyAction.MULTI_ATTACK:     return ("다중 공격",    $"{atkTarget}에게 {d} 피해 × {c}회.");
-            case DianoCard.Data.EnemyAction.DEFEND:           return ("방어",         $"자신 방어도 +{v}.");
-            case DianoCard.Data.EnemyAction.POISON:           return ("독 부여",      $"플레이어에게 독 +{v}.\n독은 매 턴 종료 시 스택만큼 피해 후 1씩 감소.");
-            case DianoCard.Data.EnemyAction.WEAK:             return ("약화 부여",    $"플레이어를 {v}턴 약화.\n약화 상태에서는 가하는 피해 -25%.");
-            case DianoCard.Data.EnemyAction.VULNERABLE:       return ("취약 부여",    $"플레이어를 {v}턴 취약.\n취약 상태에서는 받는 피해 +50%.");
-            case DianoCard.Data.EnemyAction.DRAIN:            return ("흡혈",         $"플레이어에게 {d} 피해 후 자신 HP를 같은 양만큼 회복.");
-            case DianoCard.Data.EnemyAction.SILENCE:          return ("침묵",         $"아군 공룡 전체를 {v}턴 침묵.\n침묵된 공룡은 행동 불가.");
-            case DianoCard.Data.EnemyAction.STEAL_SUMMON:     return ("공룡 강탈",    "아군 공룡 1체를 적 진영으로 전환.\n정화(PURIFY) 효과로 되찾을 수 있음.");
-            case DianoCard.Data.EnemyAction.SUMMON:           return ("소환",         $"쫄 {Mathf.Max(1, v)}체 소환.");
-            case DianoCard.Data.EnemyAction.REFILL_MOSS:      return ("이끼 보충",    $"이끼 정령을 최대 {v}체까지 보충.");
-            case DianoCard.Data.EnemyAction.BUFF_SELF:        return ("자가 강화",    $"자신 ATK 영구 +{v}.");
-            case DianoCard.Data.EnemyAction.EMPOWER_BOSS:     return ("보스 강화",    $"보스의 다음 공격 피해 +{v}.");
-            case DianoCard.Data.EnemyAction.ARMOR_UP:         return ("장갑",         $"매 턴 시작 방어도 +{v} (영구).");
-            case DianoCard.Data.EnemyAction.HEAL_BOSS:        return ("보스 회복",    $"보스 HP {v} 회복.");
-            case DianoCard.Data.EnemyAction.BLOCK_BOSS:       return ("보스 방어",    $"보스 방어도 +{v}.");
-            case DianoCard.Data.EnemyAction.COUNTDOWN_ATTACK: return ("예고 강타",    $"{countdownPhrase}에 {atkTarget}에게 {d} 피해.");
-            case DianoCard.Data.EnemyAction.COUNTDOWN_AOE:    return ("예고 광역",    $"{countdownPhrase}에 플레이어 및 모든 공룡에게 {d} 피해.");
-            case DianoCard.Data.EnemyAction.CLOG_DECK:        return ("방해 카드",    $"플레이어 버림더미에 잡초 카드 {v}장 추가.");
-            case DianoCard.Data.EnemyAction.IDLE:             return ("대기",         "이번 턴 행동하지 않음.");
-            default:                                          return ("?",           "다음 행동을 알 수 없음.");
+            case DianoCard.Data.EnemyAction.ATTACK:           return (L("Attack", "공격"),
+                                                                     L($"Deal {d} damage to {atkTarget}.",
+                                                                       $"{atkTarget}에게 {d} 피해."));
+            case DianoCard.Data.EnemyAction.MULTI_ATTACK:     return (L("Multi Attack", "다중 공격"),
+                                                                     L($"Deal {d} damage × {c} hit(s) to {atkTarget}.",
+                                                                       $"{atkTarget}에게 {d} 피해 × {c}회."));
+            case DianoCard.Data.EnemyAction.DEFEND:           return (L("Defend", "방어"),
+                                                                     L($"Gain Block +{v}.",
+                                                                       $"자신 방어도 +{v}."));
+            case DianoCard.Data.EnemyAction.POISON:           return (L("Apply Poison", "독 부여"),
+                                                                     L($"Apply Poison +{v} to the player.\nPoison deals damage equal to stacks at end of turn, then decreases by 1.",
+                                                                       $"플레이어에게 독 +{v}.\n독은 매 턴 종료 시 스택만큼 피해 후 1씩 감소."));
+            case DianoCard.Data.EnemyAction.WEAK:             return (L("Apply Weak", "약화 부여"),
+                                                                     L($"Apply Weak for {v} turn(s) to the player.\nWeak makes you deal 25% less damage.",
+                                                                       $"플레이어를 {v}턴 약화.\n약화 상태에서는 가하는 피해 -25%."));
+            case DianoCard.Data.EnemyAction.VULNERABLE:       return (L("Apply Vulnerable", "취약 부여"),
+                                                                     L($"Apply Vulnerable for {v} turn(s) to the player.\nVulnerable makes you take 50% more damage.",
+                                                                       $"플레이어를 {v}턴 취약.\n취약 상태에서는 받는 피해 +50%."));
+            case DianoCard.Data.EnemyAction.DRAIN:            return (L("Drain", "흡혈"),
+                                                                     L($"Deal {d} damage to the player, then heal for the same amount.",
+                                                                       $"플레이어에게 {d} 피해 후 자신 HP를 같은 양만큼 회복."));
+            case DianoCard.Data.EnemyAction.SILENCE:          return (L("Silence", "침묵"),
+                                                                     L($"Silence all ally dinosaurs for {v} turn(s).\nSilenced dinosaurs cannot act.",
+                                                                       $"아군 공룡 전체를 {v}턴 침묵.\n침묵된 공룡은 행동 불가."));
+            case DianoCard.Data.EnemyAction.STEAL_SUMMON:     return (L("Steal Dinosaur", "공룡 강탈"),
+                                                                     L("Convert 1 ally dinosaur to the enemy side.\nCan be reclaimed with Purify effects.",
+                                                                       "아군 공룡 1체를 적 진영으로 전환.\n정화(PURIFY) 효과로 되찾을 수 있음."));
+            case DianoCard.Data.EnemyAction.SUMMON:           return (L("Summon", "소환"),
+                                                                     L($"Summon {Mathf.Max(1, v)} minion(s).",
+                                                                       $"쫄 {Mathf.Max(1, v)}체 소환."));
+            case DianoCard.Data.EnemyAction.REFILL_MOSS:      return (L("Refill Moss", "이끼 보충"),
+                                                                     L($"Replenish Moss Spirits up to {v}.",
+                                                                       $"이끼 정령을 최대 {v}체까지 보충."));
+            case DianoCard.Data.EnemyAction.BUFF_SELF:        return (L("Self Buff", "자가 강화"),
+                                                                     L($"Permanently gain ATK +{v}.",
+                                                                       $"자신 ATK 영구 +{v}."));
+            case DianoCard.Data.EnemyAction.EMPOWER_BOSS:     return (L("Empower Boss", "보스 강화"),
+                                                                     L($"Boss's next attack deals +{v} damage.",
+                                                                       $"보스의 다음 공격 피해 +{v}."));
+            case DianoCard.Data.EnemyAction.ARMOR_UP:         return (L("Armor Up", "장갑"),
+                                                                     L($"Gain Block +{v} at the start of each turn (permanent).",
+                                                                       $"매 턴 시작 방어도 +{v} (영구)."));
+            case DianoCard.Data.EnemyAction.HEAL_BOSS:        return (L("Heal Boss", "보스 회복"),
+                                                                     L($"Heal boss for {v} HP.",
+                                                                       $"보스 HP {v} 회복."));
+            case DianoCard.Data.EnemyAction.BLOCK_BOSS:       return (L("Block Boss", "보스 방어"),
+                                                                     L($"Grant boss Block +{v}.",
+                                                                       $"보스 방어도 +{v}."));
+            case DianoCard.Data.EnemyAction.COUNTDOWN_ATTACK: return (L("Telegraphed Strike", "예고 강타"),
+                                                                     L($"{countdownPhrase}, deal {d} damage to {atkTarget}.",
+                                                                       $"{countdownPhrase}에 {atkTarget}에게 {d} 피해."));
+            case DianoCard.Data.EnemyAction.COUNTDOWN_AOE:    return (L("Telegraphed AoE", "예고 광역"),
+                                                                     L($"{countdownPhrase}, deal {d} damage to the player and all dinosaurs.",
+                                                                       $"{countdownPhrase}에 플레이어 및 모든 공룡에게 {d} 피해."));
+            case DianoCard.Data.EnemyAction.CLOG_DECK:        return (L("Clog Deck", "방해 카드"),
+                                                                     L($"Add {v} weed card(s) to the player's discard pile.",
+                                                                       $"플레이어 버림더미에 잡초 카드 {v}장 추가."));
+            case DianoCard.Data.EnemyAction.IDLE:             return (L("Idle", "대기"),
+                                                                     L("Does not act this turn.",
+                                                                       "이번 턴 행동하지 않음."));
+            default:                                          return ("?",
+                                                                     L("Next action unknown.",
+                                                                       "다음 행동을 알 수 없음."));
         }
     }
 
@@ -4583,8 +4689,9 @@ public class BattleUI : MonoBehaviour
         EnsurePassiveStyles();
 
         var (intentTitle, intentBody) = GetIntentTooltipText(e);
-        string nameStr = !string.IsNullOrEmpty(e.data?.nameKr) ? e.data.nameKr
-                          : (!string.IsNullOrEmpty(e.data?.nameEn) ? e.data.nameEn : "Enemy");
+        string nameStr = e.data != null && !string.IsNullOrEmpty(e.data.name)
+            ? e.data.name
+            : L("Enemy", "적");
 
         const float tw = 240f;
         const float pad = 11f;
@@ -4670,13 +4777,13 @@ public class BattleUI : MonoBehaviour
     private static string BuildEnemyStatusLine(EnemyInstance e)
     {
         var parts = new System.Collections.Generic.List<string>();
-        if (e.poisonStacks    > 0) parts.Add($"독 {e.poisonStacks}");
-        if (e.bleedStacks     > 0) parts.Add($"출혈 {e.bleedStacks}");
-        if (e.burnStacks      > 0) parts.Add($"화상 {e.burnStacks}");
-        if (e.weakTurns       > 0) parts.Add($"약화 {e.weakTurns}턴");
-        if (e.vulnerableTurns > 0) parts.Add($"취약 {e.vulnerableTurns}턴");
-        if (e.stunTurns       > 0) parts.Add($"기절 {e.stunTurns}턴");
-        return parts.Count == 0 ? "" : "상태이상:  " + string.Join("  ·  ", parts);
+        if (e.poisonStacks    > 0) parts.Add(L($"Poison {e.poisonStacks}", $"독 {e.poisonStacks}"));
+        if (e.bleedStacks     > 0) parts.Add(L($"Bleed {e.bleedStacks}", $"출혈 {e.bleedStacks}"));
+        if (e.burnStacks      > 0) parts.Add(L($"Burn {e.burnStacks}", $"화상 {e.burnStacks}"));
+        if (e.weakTurns       > 0) parts.Add(L($"Weak {e.weakTurns}T", $"약화 {e.weakTurns}턴"));
+        if (e.vulnerableTurns > 0) parts.Add(L($"Vulnerable {e.vulnerableTurns}T", $"취약 {e.vulnerableTurns}턴"));
+        if (e.stunTurns       > 0) parts.Add(L($"Stun {e.stunTurns}T", $"기절 {e.stunTurns}턴"));
+        return parts.Count == 0 ? "" : L("Status:  ", "상태이상:  ") + string.Join("  ·  ", parts);
     }
 
     // 인텐트 아이콘 우상단 코너에 작은 타겟 뱃지(플레이어/공룡) 표시.
@@ -4751,7 +4858,7 @@ public class BattleUI : MonoBehaviour
 
     // 공격 아이콘(검) + 데미지 숫자 뱃지. 적은 -45°, 아군은 +45°. boosted면 숫자를 강조 색으로.
     // dimmed=true면 검 아이콘과 숫자가 살짝 어두워짐 (아군 공룡이 이번 턴 공격 완료한 상태).
-    private void DrawAttackIconBadge(Vector2 center, int value, float angleDeg, bool boosted, bool dimmed = false)
+    private void DrawAttackIconBadge(Vector2 center, int value, float angleDeg, bool boosted, bool dimmed = false, float scale = 1f)
     {
         var tex = HeadIcon("ATTACK");
         if (tex == null) return;
@@ -4761,21 +4868,21 @@ public class BattleUI : MonoBehaviour
         {
             Color prev = GUI.color;
             GUI.color = new Color(0.50f, 0.50f, 0.52f, 1f);
-            DrawSideBySideBadge(center, value, tex, angleDeg, textCol);
+            DrawSideBySideBadge(center, value, tex, angleDeg, textCol, scale);
             GUI.color = prev;
         }
         else
         {
-            DrawSideBySideBadge(center, value, tex, angleDeg, textCol);
+            DrawSideBySideBadge(center, value, tex, angleDeg, textCol, scale);
         }
     }
 
     // 아이콘은 center에 정중앙으로 배치, 숫자는 아이콘 우하단 코너에 작은 뱃지로 살짝 겹쳐 표시.
-    private void DrawSideBySideBadge(Vector2 center, int value, Texture2D icon, float angleDeg, Color textCol)
+    private void DrawSideBySideBadge(Vector2 center, int value, Texture2D icon, float angleDeg, Color textCol, float scale = 1f)
     {
-        const float iconSize = 40f;
-        const float numW = 18f;
-        const float numH = 16f;
+        float iconSize = 40f * scale;
+        float numW = 18f * scale;
+        float numH = 16f * scale;
 
         var iconRect = new Rect(center.x - iconSize / 2f, center.y - iconSize / 2f, iconSize, iconSize);
 
@@ -5080,7 +5187,7 @@ public class BattleUI : MonoBehaviour
         {
             FillRect(rect, new Color(0.4f, 0.7f, 0.4f, 0.8f));
             GUI.Label(new Rect(rect.x, rect.y + h / 2 - 10, rect.width, 22),
-                      s.data.nameKr, _centerStyle);
+                      s.data.name, _centerStyle);
         }
 
         GUI.color = prevGuiColor;
@@ -5109,7 +5216,7 @@ public class BattleUI : MonoBehaviour
         }
         else if (s.stacks > 0)
         {
-            stackText = $"스택 {s.stacks}";
+            stackText = L($"Stacks {s.stacks}", $"스택 {s.stacks}");
         }
 
         // 상태 칩 — HP바 바로 아래, HP바 왼쪽 끝에서 오른쪽으로 쌓임.
@@ -5142,11 +5249,17 @@ public class BattleUI : MonoBehaviour
         // ATK 뱃지 — 머리 위 (적 intent와 미러 대칭). 아군은 검을 +45°로 회전.
         // 이 뱃지를 클릭하면 공격 타겟팅 시작 (예전엔 공룡 전체 클릭). 클릭 영역은 시인성보다 살짝 크게.
         Vector2 badgeCenter = new Vector2(rect.center.x + pairOffset, rect.y - 12f);
-        DrawAttackIconBadge(badgeCenter, s.TotalAttack, 0f, s.tempAttackBonus > 0, attackBadgeDim);
         var badgeHitRect = new Rect(badgeCenter.x - 36f, badgeCenter.y - 36f, 72f, 72f);
         bool badgeActive = !inReward && _battle?.state != null && !_battle.state.IsOver
             && _targetingCardIndex < 0 && _swapFromCardIndex < 0
             && _reinforcePickerCardIndex < 0 && s.CanAttack;
+        // 사용 가능 + hover 시 살짝 확대 — 클릭 가능한 뱃지임을 알리는 친절 효과.
+        bool badgeHover = badgeActive && Event.current != null && badgeHitRect.Contains(Event.current.mousePosition);
+        float badgeScale = badgeHover ? 1.10f : 1.0f;
+        DrawAttackIconBadge(badgeCenter, s.TotalAttack, 0f, s.tempAttackBonus > 0, attackBadgeDim, badgeScale);
+        // 튜토리얼 강조용 — 공격 가능한 첫 공룡의 검 뱃지 위치를 저장(가상 좌표).
+        if (badgeActive && _firstSwordBadgeRect.width <= 0f)
+            _firstSwordBadgeRect = new Rect(badgeCenter.x - 22f, badgeCenter.y - 22f, 44f, 44f);
         if (badgeActive)
         {
             var ev2 = Event.current;
@@ -5326,12 +5439,20 @@ public class BattleUI : MonoBehaviour
 
         // 검+스킬 한 쌍을 공룡 정중앙에 정렬 — DrawSummon의 pairOffset과 동일 식.
         // 검 단독일 땐 정중앙, 둘 다 뜨면 검은 좌측 -24 / 스킬은 우측 +24.
-        const float iconSize = 40f;
+        const float baseIconSize = 40f;
         const float swordSize = 40f;
         const float gap = 8f;
         Vector2 swordCenter = new Vector2(summonRect.center.x - (swordSize + gap) * 0.5f, summonRect.y - 12f);
-        Vector2 iconCenter = new Vector2(swordCenter.x + (swordSize / 2f) + gap + (iconSize / 2f), swordCenter.y);
+        Vector2 iconCenter = new Vector2(swordCenter.x + (swordSize / 2f) + gap + (baseIconSize / 2f), swordCenter.y);
+        var baseIconRect = new Rect(iconCenter.x - baseIconSize / 2f, iconCenter.y - baseIconSize / 2f, baseIconSize, baseIconSize);
+
+        // 사용 가능(ready) + hover 시 살짝 확대 — 검 뱃지와 동일 톤. 데미지/칩 rect도 같은 iconRect 기반이라 같이 따라온다.
+        bool skillHover = ready && Event.current != null && baseIconRect.Contains(Event.current.mousePosition);
+        float iconSize = skillHover ? baseIconSize * 1.10f : baseIconSize;
         var iconRect = new Rect(iconCenter.x - iconSize / 2f, iconCenter.y - iconSize / 2f, iconSize, iconSize);
+        // 튜토리얼 강조용 — 사용 가능한 첫 시그니처 스킬 뱃지 위치를 저장(가상 좌표).
+        if (ready && _firstSkillBadgeRect.width <= 0f)
+            _firstSkillBadgeRect = baseIconRect;
 
         var icon = GetSkillIcon(skill);
         var prevColor = GUI.color;
@@ -5401,9 +5522,9 @@ public class BattleUI : MonoBehaviour
         if (!hitRect.Contains(ev.mousePosition)) return;
         ev.Use();
 
-        // 튜토리얼: 시그니처 스킬 사용 금지.
+        // 튜토리얼: 시그니처 스킬 사용 금지 (skill_use 실습 단계와 자유 플레이에선 허용).
         var _tutSk = DianoCard.Tutorial.TutorialManager.Instance;
-        if (_tutSk != null && _tutSk.IsActive && !_tutSk.IsManualSummonAllowed())
+        if (_tutSk != null && _tutSk.IsActive && !_tutSk.IsSkillUseAllowed())
         {
             _tutSk.NotifyBlocked();
             return;
@@ -5555,7 +5676,7 @@ public class BattleUI : MonoBehaviour
             FillRect(rect, col);
             DrawBorder(rect, 2, Color.black);
             GUI.Label(new Rect(rect.x, rect.y + h / 2 - 10, rect.width, 22),
-                      e.data.nameKr, _centerStyle);
+                      e.data.name, _centerStyle);
         }
 
         // intent 앵커 — 검 아이콘(56px) + 타겟 힌트 박스(~22px)가 스프라이트 위로 완전히 올라가도록 충분히 띄움.
@@ -5579,7 +5700,7 @@ public class BattleUI : MonoBehaviour
         if (string.IsNullOrEmpty(e.data.image))
         {
             GUI.Label(new Rect(rect.x, rect.center.y - 11, rect.width, 22),
-                      e.data.nameKr, _centerStyle);
+                      e.data.name, _centerStyle);
         }
 
         // 방어막 FX — 적이 BLOCK intent를 수행해 block이 증가한 직후 트리거.
@@ -5816,6 +5937,13 @@ public class BattleUI : MonoBehaviour
     {
         if (!_arrowSourceValid || state == null) return;
 
+        // 융합 모드 — 타겟 위치와 무관하게 항상 위로 솟구치는 아치로 통일(유저 혼동 방지).
+        // 2단계(첫 재료 클릭 후)는 리본을 더 얇게 — 짝 맞추기 정밀도가 핵심이라 두꺼우면 가린다.
+        bool fusionMode = _targetingCardIndex >= 0
+            && _targetingCardIndex < state.hand.Count
+            && CardNeedsFusionTargets(state.hand[_targetingCardIndex].data);
+        bool fusionStage2 = fusionMode && _fusionMaterialAPicked;
+
         // 끝점 — 호버된 valid 타겟이 있으면 중심에 스냅, 없으면 마우스를 따라간다.
         Vector2 mouse = Event.current != null ? Event.current.mousePosition : _arrowSourceRect.center;
         bool snapped = false;
@@ -5831,8 +5959,8 @@ public class BattleUI : MonoBehaviour
             }
         }
 
-        // 출발 — 타겟이 source 아래(HUD 포션 → 적/아군)면 아래 변에서, 위(카드/공룡 → 적)면 윗변에서.
-        bool targetBelow = to.y > _arrowSourceRect.center.y;
+        // 출발 — 융합 모드면 항상 윗변에서, 그 외엔 타겟이 source 아래(HUD 포션)면 아랫변/위면 윗변.
+        bool targetBelow = !fusionMode && to.y > _arrowSourceRect.center.y;
         float fromY = targetBelow ? (_arrowSourceRect.yMax - 12f) : (_arrowSourceRect.y + 12f);
         Vector2 from = new Vector2(_arrowSourceRect.center.x, fromY);
 
@@ -5840,7 +5968,7 @@ public class BattleUI : MonoBehaviour
         if (!snapped && Vector2.Distance(from, to) < 36f) return;
 
         EnsureArrowDotTexture();
-        DrawBezierArrow(from, to, snapped);
+        DrawBezierArrow(from, to, snapped, forceUpArc: fusionMode, thin: fusionStage2);
 
         // 공룡 공격 타겟팅에서만 — 화살표 끝(V) 바로 위에 실효 데미지 숫자를 띄운다.
         // 아이콘 없이 진한 빨간 큰 숫자 + 두꺼운 검은 외곽선만 — 다른 ATK 뱃지/인텐트와 즉각 구분.
@@ -5936,13 +6064,14 @@ public class BattleUI : MonoBehaviour
         _arrowDotTex.Apply(false, false);
     }
 
-    private void DrawBezierArrow(Vector2 from, Vector2 to, bool snapped)
+    private void DrawBezierArrow(Vector2 from, Vector2 to, bool snapped, bool forceUpArc = false, bool thin = false)
     {
         // 컨트롤 포인트: source에서 진행 방향으로 들어올린 뒤 target 너머에서 되돌아오도록 잡음.
         // 타겟이 source 위(카드 → 적)면 위로 솟구치는 호, 아래(HUD 포션 → 적/아군)면 아래로 부푸는 호.
+        // forceUpArc(융합 모드)면 타겟 위치와 무관하게 항상 위로 — 유저가 방향 다양성에 혼동하지 않도록.
         float dist = Vector2.Distance(from, to);
         float lift = Mathf.Min(240f, dist * 0.55f);
-        float liftDir = (to.y >= from.y) ? +1f : -1f;
+        float liftDir = forceUpArc ? -1f : ((to.y >= from.y) ? +1f : -1f);
         Vector2 c1 = new Vector2(from.x, from.y + lift * 0.95f * liftDir);
         Vector2 c2 = new Vector2(to.x,   to.y   + lift * 0.55f * liftDir);
 
@@ -5958,7 +6087,9 @@ public class BattleUI : MonoBehaviour
             : new Color(1.00f, 0.85f, 0.35f, 1f);  // 평소: 따뜻한 골든
 
         // 충분히 촘촘하게 찍어 점이 아닌 두꺼운 연속 리본으로 보이게 (간격 < 점 반지름).
+        // thin(융합 2단계)에선 약 55% 두께 — 후보 슬롯/카드를 덜 가려 짝짓기 가독성을 확보.
         const int N = 56;
+        float thickScale = thin ? 0.55f : 1f;
         var prevColor = GUI.color;
 
         // Pass 1 — 어두운 외곽 헤일로 (큰 점, 낮은 알파). 카드/배경에서 곡선을 분리.
@@ -5966,7 +6097,7 @@ public class BattleUI : MonoBehaviour
         {
             float t = i / (float)(N - 1);
             Vector2 p = CubicBezier(from, c1, c2, to, t);
-            float size = Mathf.Lerp(22f, 44f, t);  // 시작 22 → 끝 44 (두꺼운 리본 폭)
+            float size = Mathf.Lerp(22f, 44f, t) * thickScale;  // 시작 22 → 끝 44 (두꺼운 리본 폭)
             float a = Mathf.Lerp(0.55f, 0.95f, t) * pulse;
             GUI.color = new Color(halo.r, halo.g, halo.b, a);
             GUI.DrawTexture(
@@ -5979,7 +6110,7 @@ public class BattleUI : MonoBehaviour
         {
             float t = i / (float)(N - 1);
             Vector2 p = CubicBezier(from, c1, c2, to, t);
-            float size = Mathf.Lerp(11f, 24f, t);
+            float size = Mathf.Lerp(11f, 24f, t) * thickScale;
             float a = Mathf.Lerp(0.85f, 1.00f, t) * pulse;
             GUI.color = new Color(core.r, core.g, core.b, a);
             GUI.DrawTexture(
@@ -5992,9 +6123,9 @@ public class BattleUI : MonoBehaviour
         // 화살촉 — 끝점 접선 기준 V자. 큰 헤일로 깃 → 작은 코어 깃 두 패스로 두꺼운 외곽선 효과.
         Vector2 tangent = CubicBezierTangent(from, c1, c2, to, 1f);
         float angleDeg = Mathf.Atan2(tangent.y, tangent.x) * Mathf.Rad2Deg;
-        float headLen = snapped ? 44f : 38f;
-        DrawArrowHead(to, angleDeg, headLen + 6f, 12f, new Color(halo.r, halo.g, halo.b, pulse));
-        DrawArrowHead(to, angleDeg, headLen,      7f,  new Color(core.r, core.g, core.b, pulse));
+        float headLen = (snapped ? 44f : 38f) * thickScale;
+        DrawArrowHead(to, angleDeg, headLen + 6f * thickScale, 12f * thickScale, new Color(halo.r, halo.g, halo.b, pulse));
+        DrawArrowHead(to, angleDeg, headLen,                   7f  * thickScale, new Color(core.r, core.g, core.b, pulse));
     }
 
     // 끝점 to에서 진행 방향(angleDeg) 반대쪽으로 ±32° 벌어진 두 짧은 막대를 그려 V자 화살촉을 만든다.
@@ -6453,8 +6584,9 @@ public class BattleUI : MonoBehaviour
         {
             right = DrawRightSlot(right, barY, barH, iconY, iconSize, iconLabelGap,
                 _iconTurn, turnNumber.ToString(), new Color(0.75f, 0.90f, 1f), wobblePhase: 1.8f,
-                tipTitle: "턴 (Turn)",
-                tipBody: $"현재 {turnNumber}턴.\n매 턴 시작에 마나가 가득 차고, 카드를 새로 드로우한다.");
+                tipTitle: L("Turn", "턴 (Turn)"),
+                tipBody: L($"Turn {turnNumber}.\nAt the start of each turn, Mana refills and you Draw new cards.",
+                           $"현재 {turnNumber}턴.\n매 턴 시작에 마나가 가득 차고, 카드를 새로 드로우한다."));
             anyDrawn = true;
         }
 
@@ -6465,8 +6597,9 @@ public class BattleUI : MonoBehaviour
             if (anyDrawn) right -= rightSlotGap;
             right = DrawRightSlot(right, barY, barH, iconY, iconSize, iconLabelGap,
                 _iconFloor, floorLabel, new Color(1f, 0.82f, 0.35f), wobblePhase: 2.4f,
-                tipTitle: "층 (Floor)",
-                tipBody: $"현재 진행도 {floorLabel}.\n맨 위층의 보스를 처치하면 챕터가 끝난다.");
+                tipTitle: L("Floor", "층 (Floor)"),
+                tipBody: L($"Floor {floorLabel}.\nDefeat the Boss on the top floor to end the Chapter.",
+                           $"현재 진행도 {floorLabel}.\n맨 위층의 보스를 처치하면 챕터가 끝난다."));
             anyDrawn = true;
         }
 
@@ -6478,14 +6611,18 @@ public class BattleUI : MonoBehaviour
             anyDrawn = true;
         }
 
-        // 테크트리 진입 슬롯 — 맵 화면에서만 표시 (전투 중 진입 시 상태 초기화 방지).
+        // 테크트리 진입 슬롯 — 출시 빌드에서는 숨김. 포인트는 내부적으로 누적되지만 사용 UI 미노출.
+        // 재활성화하려면 _techTreeHudEnabled = true.
         var gsm = GameStateManager.Instance;
-        if (ctx == HudContext.Map && gsm != null && gsm.TechTree != null)
+        if (_techTreeHudEnabled && ctx == HudContext.Map && gsm != null && gsm.TechTree != null)
         {
             if (anyDrawn) right -= rightSlotGap;
             DrawTechTreeRightSlot(right, barY, barH, iconY, iconSize, iconLabelGap, gsm.TechTree.points);
         }
     }
+
+    // 출시 빌드에서 테크트리 HUD 슬롯/진입을 숨길지 여부. true로 바꾸면 다시 노출.
+    private const bool _techTreeHudEnabled = false;
 
     // 계단 왼쪽에 위치한 덱 뷰 버튼. 덱 카운트를 라벨로 표시하고 클릭 시 오버레이를 토글.
     private float DrawDeckViewRightSlot(float right, float barY, float barH,
@@ -6508,8 +6645,9 @@ public class BattleUI : MonoBehaviour
         {
             FillRect(hitRect, new Color(1f, 0.82f, 0.35f, 0.10f));
             DrawBorder(hitRect, 1f, new Color(1f, 0.82f, 0.35f, 0.35f));
-            _hoveredPassiveTitle = "덱 보기 (Deck)";
-            _hoveredPassiveBody  = $"전체 덱 카드 {deckCount}장.\n클릭하면 덱 전체를 펼쳐 본다 (전투/맵 어디서든).";
+            _hoveredPassiveTitle = L("Deck", "덱 보기 (Deck)");
+            _hoveredPassiveBody  = L($"{deckCount} cards in your full deck.\nClick to view the entire deck (anywhere in Combat or on the map).",
+                                     $"전체 덱 카드 {deckCount}장.\n클릭하면 덱 전체를 펼쳐 본다 (전투/맵 어디서든).");
         }
 
         // HUD 우측 덱 카운트 슬롯 — Floor 바로 옆 — CardBack 텍스처 사용 (코너 더미는 _iconDeck 별도 사용).
@@ -6566,10 +6704,12 @@ public class BattleUI : MonoBehaviour
         {
             FillRect(hitRect, new Color(1f, 0.82f, 0.35f, 0.10f));
             DrawBorder(hitRect, 1f, new Color(1f, 0.82f, 0.35f, 0.35f));
-            _hoveredPassiveTitle = "테크트리 (Tech Tree)";
+            _hoveredPassiveTitle = L("Tech Tree", "테크트리 (Tech Tree)");
             _hoveredPassiveBody  = totalPoints > 0
-                ? $"보유 포인트 {totalPoints}.\n클릭해 4방위 노드에서 영구 강화를 해금한다."
-                : "포인트가 없다.\n맵 진행 보상으로 모이며, 4방위 노드에서 영구 강화를 해금한다.";
+                ? L($"{totalPoints} point(s) available.\nClick to unlock permanent upgrades in the 4-direction nodes.",
+                    $"보유 포인트 {totalPoints}.\n클릭해 4방위 노드에서 영구 강화를 해금한다.")
+                : L("No points yet.\nEarn them from map progress to unlock permanent upgrades in the 4-direction nodes.",
+                    "포인트가 없다.\n맵 진행 보상으로 모이며, 4방위 노드에서 영구 강화를 해금한다.");
         }
 
         DrawIconGlow(iconRect, glowTint, glowIntensity);
@@ -6730,11 +6870,13 @@ public class BattleUI : MonoBehaviour
         int hpNow = hpCurrent ?? run.playerCurrentHp;
         int hpCap = hpMax ?? run.playerMaxHp;
         DrawSlot(_iconHP,     $"{hpNow}/{hpCap}",                          new Color(1f, 0.55f, 0.50f), 1.6f,
-                 tipTitle: "체력 (HP)",
-                 tipBody: $"현재 체력 {hpNow} / 최대 {hpCap}.\n0이 되면 런이 종료된다. 휴식지·포션·유물로 회복할 수 있다.");
+                 tipTitle: L("HP", "체력 (HP)"),
+                 tipBody: L($"HP {hpNow} / max {hpCap}.\nAt 0, the run ends. Restore HP via Rests, Potions, and Relics.",
+                            $"현재 체력 {hpNow} / 최대 {hpCap}.\n0이 되면 런이 종료된다. 휴식지·포션·유물로 회복할 수 있다."));
         DrawSlot(_iconGold,   $"{run.gold}",                               new Color(1f, 0.82f, 0.35f),
-                 tipTitle: "골드 (Gold)",
-                 tipBody: $"보유 골드 {run.gold}. 상점에서 카드·유물·포션을 구매하거나 카드 제거에 사용한다.");
+                 tipTitle: L("Gold", "골드 (Gold)"),
+                 tipBody: L($"{run.gold} Gold. Spend it at the Merchant to buy Cards, Relics, and Potions, or to purge cards.",
+                            $"보유 골드 {run.gold}. 상점에서 카드·유물·포션을 구매하거나 카드 제거에 사용한다."));
         // 포션 슬롯 — 호버 시 아이콘 확대 + 클릭 시 포션 row 패널 토글
         {
             var evP = Event.current;
@@ -6773,8 +6915,9 @@ public class BattleUI : MonoBehaviour
 
             if (potionHov)
             {
-                _hoveredPassiveTitle = "포션 (Potion)";
-                _hoveredPassiveBody  = $"보유 {run.potions.Count} / 슬롯 {run.MaxPotionSlots}.\n클릭하면 포션 목록이 펼쳐진다. 전투 중 마시거나 휴식지에서 보관한다.";
+                _hoveredPassiveTitle = L("Potion", "포션 (Potion)");
+                _hoveredPassiveBody  = L($"{run.potions.Count} owned / {run.MaxPotionSlots} slot(s).\nClick to open your Potion list. Drink during Combat or store at a Rest.",
+                                         $"보유 {run.potions.Count} / 슬롯 {run.MaxPotionSlots}.\n클릭하면 포션 목록이 펼쳐진다. 전투 중 마시거나 휴식지에서 보관한다.");
             }
 
             if (potionHov && evP.type == EventType.MouseDown && evP.button == 0)
@@ -6827,8 +6970,10 @@ public class BattleUI : MonoBehaviour
 
             if (relicHov)
             {
-                _hoveredPassiveTitle = "유물 (Relic)";
-                _hoveredPassiveBody  = $"보유 유물 {run.relics.Count}개.\n클릭하면 유물 목록이 펼쳐진다. 전투/맵에서 자동 발동되는 영구 효과들.";
+                _hoveredPassiveTitle = L("Relic", "유물 (Relic)");
+                _hoveredPassiveBody  = L($"{run.relics.Count} Relic(s) owned.\nClick to open the Relic list. Permanent effects that trigger automatically in Combat or on the map.",
+                                         $"보유 유물 {run.relics.Count}개.\n클릭하면 유물 목록이 펼쳐진다. 전투/맵에서 자동 발동되는 영구 효과들.");
+                DianoCard.Tutorial.TutorialEvents.NotifyRelicHovered();
             }
 
             if (relicHov && evR.type == EventType.MouseDown && evR.button == 0)
@@ -6914,6 +7059,7 @@ public class BattleUI : MonoBehaviour
         float orbCx = manaOrbCenterX;
         float orbCy = RefH - manaOrbBottomOffset;
         var orbRect = new Rect(orbCx - orbSize * 0.5f, orbCy - orbSize * 0.5f, orbSize, orbSize);
+        _manaOrbRect = orbRect;
 
         var orbBodyTex = GetCharacterManaOrb() ?? (_manaOrbTexture != null ? _manaOrbTexture : _manaFrameTexture);
 
@@ -6953,8 +7099,10 @@ public class BattleUI : MonoBehaviour
         // 마나 오브 호버 툴팁 — 오브 본체 영역 위에 마우스가 있을 때만.
         if (orbRect.Contains(Event.current.mousePosition))
         {
-            _hoveredPassiveTitle = "마나 (Mana)";
-            _hoveredPassiveBody  = $"현재 {p.mana} / 최대 {p.maxMana}.\n카드 사용 시 코스트만큼 소모되며, 매 턴 시작에 가득 채워진다.";
+            _hoveredPassiveTitle = L("Mana", "마나 (Mana)");
+            _hoveredPassiveBody  = L($"Mana {p.mana} / max {p.maxMana}.\nSpent when playing cards, and refills at the start of each turn.",
+                                     $"현재 {p.mana} / 최대 {p.maxMana}.\n카드 사용 시 코스트만큼 소모되며, 매 턴 시작에 가득 채워진다.");
+            DianoCard.Tutorial.TutorialEvents.NotifyManaHovered();
         }
 
         // 좌하단 덱 더미 / 우하단 버린 카드 더미 — 호버 시 살짝 커지는 버튼 느낌.
@@ -6975,8 +7123,9 @@ public class BattleUI : MonoBehaviour
         DrawCardPile(deckPileRect, GetCharacterDeckIcon() ?? _iconDeck, deckDisplay, skyBlue, deckPulse);
         if (deckHover)
         {
-            _hoveredPassiveTitle = "남은 덱 (Draw Pile)";
-            _hoveredPassiveBody  = $"앞으로 뽑을 카드 {deckDisplay}장.\n클릭하면 남은 카드를 펼쳐 본다.";
+            _hoveredPassiveTitle = L("Draw Pile", "남은 덱 (Draw Pile)");
+            _hoveredPassiveBody  = L($"{deckDisplay} card(s) left to Draw.\nClick to view the remaining cards.",
+                                     $"앞으로 뽑을 카드 {deckDisplay}장.\n클릭하면 남은 카드를 펼쳐 본다.");
         }
 
         // 우하단 버린 카드 더미 — 좌측 덱과 동일한 하늘색 뱃지.
@@ -6994,8 +7143,9 @@ public class BattleUI : MonoBehaviour
         DrawCardPile(discardPileRect, GetCharacterDiscardIcon() ?? _iconDiscard, discardDisplay, skyBlue, discardPulse);
         if (discardHover)
         {
-            _hoveredPassiveTitle = "버린 덱 (Discard Pile)";
-            _hoveredPassiveBody  = $"이번 전투에서 버려진 카드 {discardDisplay}장.\n덱이 비면 섞여 다시 드로우 풀로 돌아간다. 클릭하면 펼쳐 본다.";
+            _hoveredPassiveTitle = L("Discard Pile", "버린 덱 (Discard Pile)");
+            _hoveredPassiveBody  = L($"{discardDisplay} card(s) discarded this Combat.\nWhen the draw pile is empty, the discard pile is shuffled back. Click to view.",
+                                     $"이번 전투에서 버려진 카드 {discardDisplay}장.\n덱이 비면 섞여 다시 드로우 풀로 돌아간다. 클릭하면 펼쳐 본다.");
         }
 
         // StS 스타일 — 좌하 더미 클릭 → 뽑을 카드, 우하 더미 클릭 → 버린 카드 뷰어.
@@ -9076,7 +9226,7 @@ public class BattleUI : MonoBehaviour
         if (relic == null) return;
         EnsureStyles();
 
-        string nameText = relic.nameKr ?? relic.id;
+        string nameText = !string.IsNullOrEmpty(relic.name) ? relic.name : relic.id;
         string descText = relic.description ?? "";
         Color rarityCol = RelicRarityColor(relic.rarity);
 
@@ -9250,6 +9400,9 @@ public class BattleUI : MonoBehaviour
                 bool iHov = iconRect.Contains(ev.mousePosition);
                 bool isSelected = (_selectedPotionIndex == i);
                 if (iHov) hovered = i;
+                // 튜토리얼 강조용 — 드로어에 보이는 첫 포션 슬롯 위치 저장(가상 좌표).
+                if (_firstPotionDrawerItemRect.width <= 0f)
+                    _firstPotionDrawerItemRect = iconRect;
 
                 Color typeCol = PotionTypeColor(p.potionType);
                 DrawIconGlow(iconRect, typeCol, isSelected ? 1.6f : (iHov ? 1.3f : 0.6f));
@@ -9315,7 +9468,7 @@ public class BattleUI : MonoBehaviour
                 _labelStyle.fontStyle = FontStyle.Bold;
                 _labelStyle.normal.textColor = Color.white;
                 GUI.Label(new Rect(popRect.x + 10f, popRect.y + 6f, PopW - 18f, 20f),
-                          selP.nameKr ?? selP.id, _labelStyle);
+                          !string.IsNullOrEmpty(selP.name) ? selP.name : selP.id, _labelStyle);
                 _labelStyle.fontStyle = FontStyle.Normal;
 
                 _labelStyle.fontSize = 11;
@@ -9375,7 +9528,7 @@ public class BattleUI : MonoBehaviour
         if (p == null) return;
         EnsureStyles();
 
-        string nameText = p.nameKr ?? p.id;
+        string nameText = !string.IsNullOrEmpty(p.name) ? p.name : p.id;
         string descText = p.description ?? "";
         Color typeCol = PotionTypeColor(p.potionType);
 
@@ -9462,18 +9615,18 @@ public class BattleUI : MonoBehaviour
         // 전투 외(state==null)에서 1/2를 누른 적 없겠지만 안전망으로 0으로 폴백.
         var battleState = _battle?.state;
         List<CardData> sourceCards = run.deck;
-        string sourceLabel = "덱";
+        string sourceLabel = L("Deck", "덱");
         if (_deckViewerSource == 1 && battleState != null)
         {
             sourceCards = new List<CardData>(battleState.deck.Count);
             for (int i = 0; i < battleState.deck.Count; i++) sourceCards.Add(battleState.deck[i].data);
-            sourceLabel = "뽑을 카드";
+            sourceLabel = L("Draw Pile", "뽑을 카드");
         }
         else if (_deckViewerSource == 2 && battleState != null)
         {
             sourceCards = new List<CardData>(battleState.discard.Count);
             for (int i = 0; i < battleState.discard.Count; i++) sourceCards.Add(battleState.discard[i].data);
-            sourceLabel = "버린 카드";
+            sourceLabel = L("Discard Pile", "버린 카드");
         }
 
         // 패널은 9-slice (코너 필리그리 보존). 탭은 DrawTexture로 단순 stretch — 9-slice 캡이
@@ -9536,7 +9689,11 @@ public class BattleUI : MonoBehaviour
         }
 
         // 5) 정렬 탭 — 획득순 / 유형 / 비용. 9-slice 안 쓰고 그냥 stretch.
-        string[] tabs = { "획득순", "유형", "비용" };
+        string[] tabs = {
+            L("Acquired", "획득순"),
+            L("Type", "유형"),
+            L("Cost", "비용"),
+        };
         float tabsY = panelRect.y + _deckTabStart.y;
         float tabsStartX = panelRect.x + _deckTabStart.x;
 
@@ -9605,7 +9762,7 @@ public class BattleUI : MonoBehaviour
                     if (t != 0) return t;
                     int co = a.data.cost.CompareTo(b.data.cost);
                     if (co != 0) return co;
-                    return string.Compare(a.data.nameKr, b.data.nameKr, StringComparison.CurrentCulture);
+                    return string.Compare(a.data.name, b.data.name, StringComparison.CurrentCulture);
                 });
                 break;
             case 2:  // 비용 (비용 → 이름)
@@ -9613,7 +9770,7 @@ public class BattleUI : MonoBehaviour
                 {
                     int co = a.data.cost.CompareTo(b.data.cost);
                     if (co != 0) return co;
-                    return string.Compare(a.data.nameKr, b.data.nameKr, StringComparison.CurrentCulture);
+                    return string.Compare(a.data.name, b.data.name, StringComparison.CurrentCulture);
                 });
                 break;
             default:  // 획득순 — run.deck 등장 순서 유지

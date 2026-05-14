@@ -15,6 +15,10 @@ namespace DianoCard.Tutorial
         public static event Action OnTurnEnded;
         public static event Action OnBattleWon;
         public static event Action OnPotionUsed;          // 어떤 포션이든 사용 성공 시
+        public static event Action OnSummonAttacked;      // 공룡 평타(수동) 발동 성공
+        public static event Action OnSkillUsed;           // 진화 공룡 시그니처 스킬 발동 완료
+        public static event Action OnRelicHovered;        // 상단 유물 hover
+        public static event Action OnManaHovered;         // 마나 오브 hover
         public static event Action OnTutorialActionBlocked;  // 게이트가 액션을 차단했을 때 (BattleUI에서 시각/소리 피드백 유발)
 
         public static void NotifyCardPlayed(int handIndex) => OnCardPlayed?.Invoke(handIndex);
@@ -23,6 +27,10 @@ namespace DianoCard.Tutorial
         public static void NotifyTurnEnded() => OnTurnEnded?.Invoke();
         public static void NotifyBattleWon() => OnBattleWon?.Invoke();
         public static void NotifyPotionUsed() => OnPotionUsed?.Invoke();
+        public static void NotifySummonAttacked() => OnSummonAttacked?.Invoke();
+        public static void NotifySkillUsed() => OnSkillUsed?.Invoke();
+        public static void NotifyRelicHovered() => OnRelicHovered?.Invoke();
+        public static void NotifyManaHovered() => OnManaHovered?.Invoke();
         public static void NotifyActionBlocked() => OnTutorialActionBlocked?.Invoke();
     }
 }

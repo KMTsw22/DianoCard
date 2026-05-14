@@ -1392,6 +1392,7 @@ namespace DianoCard.Battle
             }
             CheckBossPhaseTransition(target);
             CheckPartnerDeathTrigger(target);
+            DianoCard.Tutorial.TutorialEvents.NotifySummonAttacked();
             return true;
         }
 
@@ -1648,6 +1649,7 @@ namespace DianoCard.Battle
             ApplySkillEffects(ctx.summon, ctx.skill, ctx.damageTargets);
             if (ctx.skill.isOnceBattle) ctx.summon.skillUsedThisBattle = true;
             else ctx.summon.skillCooldownRemaining = ctx.skill.cooldownTurns;
+            DianoCard.Tutorial.TutorialEvents.NotifySkillUsed();
         }
 
         // =========================================================

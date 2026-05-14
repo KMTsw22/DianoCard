@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using DianoCard.Data;
 
@@ -7,6 +8,7 @@ namespace DianoCard.Game
     /// 한 run(전체 게임 한 판) 동안 유지되는 플레이어 상태.
     /// Lobby에서 NEW RUN 시 생성, Defeat/Victory 시 Lobby로 돌아가면서 폐기.
     /// </summary>
+    [Serializable]
     public class RunState
     {
         public int playerMaxHp = 70;
@@ -34,7 +36,10 @@ namespace DianoCard.Game
         public int unknownPityShop = 0;
         public int unknownPityTreasure = 0;
 
-        // 직전 전투 클리어 시 생성된 보상 (RewardUI가 읽음)
+        // 직전 전투 클리어 시 생성된 보상 (RewardUI가 읽음).
+        // BattleReward.extraCardChoiceSets가 List<List<>>라 JsonUtility로 직렬화 불가 — Save 대상에서 제외.
+        // 결과적으로 Reward 도중 강제 종료 시 보상은 forfeit, 사용자는 해당 노드 재진입(SaveSnapshot이 currentColumn=-1로 정규화).
+        [NonSerialized]
         public BattleReward pendingReward;
 
         /// <summary>

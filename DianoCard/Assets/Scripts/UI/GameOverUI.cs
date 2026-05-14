@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using DianoCard.Game;
 using UnityEngine;
+using static DianoCard.Data.LocaleSettings;
 
 /// <summary>
 /// 승리/패배 화면. GameState == Victory 또는 Defeat일 때만 그려짐.
@@ -59,22 +60,24 @@ public class GameOverUI : MonoBehaviour
         GUI.Label(new Rect(0, 160, RefW, 140), title, _titleStyle);
 
         // 서브 문구
-        string sub = isVictory ? "1챕터를 클리어했습니다!" : "당신의 모험은 여기서 끝났다...";
+        string sub = isVictory
+            ? L("You cleared Chapter 1!", "1챕터를 클리어했습니다!")
+            : L("Your adventure ends here...", "당신의 모험은 여기서 끝났다...");
         GUI.Label(new Rect(0, 310, RefW, 30), sub, _subStyle);
 
         // 런 통계
         if (gsm.CurrentRun != null)
         {
             var run = gsm.CurrentRun;
-            string stats =
-                $"Floor {run.currentFloor}   Gold {run.gold}\n" +
-                $"Deck {run.deck.Count}   Relics {run.relics.Count}   Potions {run.potions.Count}";
+            string stats = L(
+                $"Floor {run.currentFloor}   Gold {run.gold}\nDeck {run.deck.Count}   Relics {run.relics.Count}   Potions {run.potions.Count}",
+                $"층 {run.currentFloor}   골드 {run.gold}\n덱 {run.deck.Count}   유물 {run.relics.Count}   포션 {run.potions.Count}");
             GUI.Label(new Rect(0, 360, RefW, 60), stats, _subStyle);
         }
 
         // 로비로 돌아가기
         const float btnW = 280, btnH = 68;
-        if (GUI.Button(new Rect((RefW - btnW) / 2f, 480, btnW, btnH), "BACK TO LOBBY", _buttonStyle))
+        if (GUI.Button(new Rect((RefW - btnW) / 2f, 480, btnW, btnH), L("BACK TO LOBBY", "로비로 돌아가기"), _buttonStyle))
         {
             _pending.Add(() => gsm.ReturnToLobby());
         }
