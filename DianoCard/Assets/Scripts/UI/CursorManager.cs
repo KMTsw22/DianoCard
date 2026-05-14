@@ -59,6 +59,14 @@ namespace DianoCard.UI
             Cursor.visible = true;
             Cursor.lockState = CursorLockMode.None;
 
+#if UNITY_STANDALONE_OSX
+            // Mac은 시스템 기본 화살표가 디스플레이 DPI에 맞춰 정확하게 렌더링됨.
+            // 우리 커스텀 텍스처는 Retina 환경에서 logical pixel scaling 때문에 크게 보임.
+            // → Mac은 OS 디폴트 사용. 게임 freeze 시에도 OS가 그리므로 안전.
+            Debug.Log("[CursorManager] Mac 환경 — OS 기본 커서 사용");
+            return;
+#endif
+
             Debug.Log($"[CursorManager] Awake 시작 — Screen={Screen.width}x{Screen.height}, fullscreen={Screen.fullScreen}");
 
             // OS 하드웨어 커서로 동작시키려면 Windows의 64×64 cap을 넘으면 안 됨 — 넘으면 Unity가
@@ -117,7 +125,7 @@ namespace DianoCard.UI
         // Mac Retina는 logical pixel 기준이라 64는 device 128px = 시각적으로 2배 큼.
         // → Mac은 32로 cap. Linux/Windows는 64 유지.
 #if UNITY_STANDALONE_OSX
-        private const int HardwareCursorMaxSize = 32;
+        private const int HardwareCursorMaxSize = 24;  // Mac Retina용 — 작게
 #else
         private const int HardwareCursorMaxSize = 64;
 #endif
