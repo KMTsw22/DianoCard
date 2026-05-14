@@ -1772,7 +1772,11 @@ public class CharacterSelectUI : MonoBehaviour
         {
             font = _displayFont,
             fontSize = 24,
+            // Mac에서만 Bold 끔 — Variable Font(Cinzel) + FontStyle.Bold 조합이 Mac Unity에서 글리프 깨짐.
+            // Windows는 정상 렌더링되므로 Bold 유지.
+#if !UNITY_STANDALONE_OSX
             fontStyle = FontStyle.Bold,
+#endif
             normal = { textColor = Color.white },
         };
         _hpStyleMid = new GUIStyle(_statStyle)
