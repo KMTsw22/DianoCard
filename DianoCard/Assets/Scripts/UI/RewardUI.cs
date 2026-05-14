@@ -21,8 +21,9 @@ using static DianoCard.Data.LocaleSettings;
 [DefaultExecutionOrder(1000)]
 public class RewardUI : MonoBehaviour
 {
-    private const float RefW = 1280f;
-    private const float RefH = 720f;
+    // 반응형 (AspectScaler) — 화면 비율에 맞춰 자동 확장.
+    private static float RefW => DianoCard.UI.AspectScaler.ScreenW;
+    private static float RefH => DianoCard.UI.AspectScaler.ScreenH;
 
     // =========================================================
     // 인스펙터 튜닝 값 (플레이모드에서도 실시간 조정 가능)
@@ -215,6 +216,9 @@ public class RewardUI : MonoBehaviour
         var gsm = GameStateManager.Instance;
         if (gsm == null) return;
 
+        // 치트 핫키 (F9/F10) — 출시 빌드에서는 컴파일 제외.
+        bool jumpToCardPicker = false;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         // 치트: F9 — 언제든 Reward 화면 강제 진입 (전리품 리스트부터)
         var kb = UnityEngine.InputSystem.Keyboard.current;
         if (kb != null && kb.f9Key.wasPressedThisFrame)
@@ -223,12 +227,12 @@ public class RewardUI : MonoBehaviour
         }
 
         // 치트: F10 — 카드 피커 뷰로 바로 점프 (카드 UI 이터레이션용)
-        bool jumpToCardPicker = false;
         if (kb != null && kb.f10Key.wasPressedThisFrame)
         {
             gsm.Cheat_TriggerReward();
             jumpToCardPicker = true;
         }
+#endif
 
         var pending = gsm.CurrentRun?.pendingReward;
         if (gsm.State == GameState.Reward && pending != null && !ReferenceEquals(_initializedReward, pending))
@@ -298,8 +302,8 @@ public class RewardUI : MonoBehaviour
 
         EnsureStyles();
 
-        float scale = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
-        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1));
+        float scale = DianoCard.UI.AspectScaler.Scale;
+        GUI.matrix = DianoCard.UI.AspectScaler.GuiMatrix;
 
         // 전체 살짝 어두운 반투명 오버레이 (뒤 씬이 살짝만 비쳐 보이도록)
         var prev = GUI.color;

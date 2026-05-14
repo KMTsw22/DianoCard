@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DianoCard.Audio;
 using DianoCard.Game;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -15,8 +16,9 @@ using static DianoCard.Data.LocaleSettings;
 /// </summary>
 public class LobbyUI : MonoBehaviour
 {
-    private const float RefW = 1280f;
-    private const float RefH = 720f;
+    // 반응형 — 실제 화면 비율에 맞춰 RefW/RefH가 자동 확장 (AspectScaler 참고).
+    private static float RefW => DianoCard.UI.AspectScaler.ScreenW;
+    private static float RefH => DianoCard.UI.AspectScaler.ScreenH;
 
     // ── 불꽃 파티클 ─────────────────────────────────────────────
     [Serializable]
@@ -213,10 +215,24 @@ public class LobbyUI : MonoBehaviour
     private Texture2D[] _flameTextures;
     private Font _displayFont;
 
+    // 설정 패널 — ESC 메뉴와 동일한 벡터 이미지(Resources/PauseUI/*) + 폰트 공용
+    private Texture2D _settingsPanelTex;
+    private Texture2D _settingsBtnIdleTex;
+    private Font _settingsFontEN;
+    private Font _settingsFontKR;
+    private GUIStyle _settingsTitleStyle;
+    private GUIStyle _settingsLabelStyle;
+    private GUIStyle _settingsValueStyle;
+    private GUIStyle _settingsBtnIdleStyle;
+    private GUIStyle _settingsBtnHoverStyle;
+    private bool _settingsStylesReady;
+
     private GUIStyle _invisibleStyle;
     private GUIStyle _menuTextStyle;
     private GUIStyle _menuTextShadowStyle;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     private GUIStyle _devBtnStyle;
+#endif
     private bool _stylesReady;
     private bool _assetsLoaded;
 
@@ -256,12 +272,20 @@ public class LobbyUI : MonoBehaviour
         }
         _flameTextures = flames.ToArray();
 
+        // 설정 패널 — ESC 메뉴와 동일 벡터 이미지 + 폰트 공유
+        _settingsPanelTex = Resources.Load<Texture2D>("PauseUI/Panel_Pause_BG");
+        _settingsBtnIdleTex = Resources.Load<Texture2D>("PauseUI/Panel_Button_Idle");
+        _settingsFontEN = Resources.Load<Font>("Fonts/Cinzel-VariableFont_wght");
+        _settingsFontKR = Resources.Load<Font>("Fonts/Hahmlet-VariableFont_wght");
+
         if (_bgTexture == null) Debug.LogWarning("[LobbyUI] Missing: Resources/Lobby/배경_1");
         if (_titleTexture == null) Debug.LogWarning("[LobbyUI] Missing: Resources/Lobby/글씨_1-Photoroom");
         if (_charTexture == null) Debug.LogWarning("[LobbyUI] Missing: Resources/Lobby/Main_Character");
         if (_charFrames == null || _charFrames.Length == 0) Debug.LogWarning("[LobbyUI] Missing: Resources/Lobby/CharacterAnimation/* (idle 단일 컷으로 폴백)");
         if (_displayFont == null) Debug.LogWarning("[LobbyUI] Missing: Resources/Fonts/IMFellEnglish-Regular");
         if (_flameTextures.Length == 0) Debug.LogWarning("[LobbyUI] Missing: Resources/FX/Flames/* (falling back to radial glow)");
+        if (_settingsPanelTex == null) Debug.LogWarning("[LobbyUI] Missing: Resources/PauseUI/Panel_Pause_BG (설정 패널 폴백 사용)");
+        if (_settingsBtnIdleTex == null) Debug.LogWarning("[LobbyUI] Missing: Resources/PauseUI/Panel_Button_Idle (설정 버튼 폴백 사용)");
 
         _assetsLoaded = true;
     }
@@ -292,8 +316,9 @@ public class LobbyUI : MonoBehaviour
             GUI.color = prev;
         }
 
-        float scale = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
-        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1));
+        // 반응형 IMGUI — AspectScaler가 화면 비율 무관하게 좌상단 (0,0) anchored 스케일 적용.
+        // RefW/RefH가 동적이라 화면 edge 기준 좌표가 자동 정렬됨.
+        GUI.matrix = DianoCard.UI.AspectScaler.GuiMatrix;
 
         // 캐릭터 박스 옮기면 손 glow도 따라가게 — DrawEmbers 전에 갱신
         if (_drawCharacter && _bindFireHandToCharacter && _overrideFireHandGlow)
@@ -304,9 +329,17 @@ public class LobbyUI : MonoBehaviour
         DrawCharacter();
         DrawTitleLogo();
         DrawEmbers();
-        DrawButtons(gsm);
+        // 설정 패널 열려있을 땐 로비 메뉴/DevTools 클릭 차단 — IMGUI는 먼저 그린 버튼이
+        // MouseDown을 잡고 Event.Use()로 소비해서, 패널 위 버튼을 눌러도 그 좌표가
+        // 로비 메뉴 버튼 영역 안이면 로비가 먼저 먹어버린다. 통째로 안 그리는 게 안전.
+        if (!_settingsOpen)
+        {
+            DrawButtons(gsm);
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            DrawDevTools(gsm);
+#endif
+        }
         DrawVersion();
-        DrawDevTools(gsm);
         if (_settingsOpen) DrawSettingsPanel();
     }
 
@@ -630,97 +663,220 @@ public class LobbyUI : MonoBehaviour
 
     private void DrawSettingsPanel()
     {
-        const float pw = 360f;
-        const float ph = 220f;
+        EnsureSettingsStyles();
+
+        const float pw = 480f;
+        const float ph = 440f;
         float px = (RefW - pw) * 0.5f;
         float py = (RefH - ph) * 0.5f;
 
-        // 패널 배경 — 반투명 어두운 박스
-        var prev = GUI.color;
-        GUI.color = new Color(0.06f, 0.04f, 0.10f, 0.92f);
-        GUI.DrawTexture(new Rect(px, py, pw, ph), Texture2D.whiteTexture);
-        GUI.color = prev;
+        // 화면 디밍 — ESC 메뉴 톤(StS 0.35 alpha)
+        var prevDim = GUI.color;
+        GUI.color = new Color(0f, 0f, 0f, 0.45f);
+        GUI.DrawTexture(new Rect(0, 0, RefW, RefH), Texture2D.whiteTexture);
+        GUI.color = prevDim;
 
-        // 테두리
-        GUI.color = new Color(0.7f, 0.55f, 0.25f, 0.8f);
-        GUI.DrawTexture(new Rect(px, py, pw, 2f), Texture2D.whiteTexture);
-        GUI.DrawTexture(new Rect(px, py + ph - 2f, pw, 2f), Texture2D.whiteTexture);
-        GUI.DrawTexture(new Rect(px, py, 2f, ph), Texture2D.whiteTexture);
-        GUI.DrawTexture(new Rect(px + pw - 2f, py, 2f, ph), Texture2D.whiteTexture);
-        GUI.color = prev;
+        // 패널 배경 — ESC와 동일한 벡터 이미지. 없으면 폴백.
+        DrawSettingsPanelBG(new Rect(px, py, pw, ph));
 
-        var titleStyle = new GUIStyle(GUI.skin.label)
+        // 타이틀 + brass 디바이더
+        GUI.Label(new Rect(px, py + 24f, pw, 36f), L("SETTINGS", "설정"), _settingsTitleStyle);
+        DrawBrassDivider(px, py + 24f + 40f + 14f, pw);
+
+        const float rowH = 28f;
+        const float labelW = 100f;
+        const float sliderW = 220f;
+        const float valueW = 50f;
+        float contentX = px + 40f;
+        float rowY = py + 110f;
+
+        // BGM 슬라이더 — AudioManager에 실시간 sync
+        var am = AudioManager.Instance;
+        float curBgm = am != null ? am.BgmVolume : 1f;
+        GUI.Label(new Rect(contentX, rowY, labelW, rowH), L("BGM", "음악"), _settingsLabelStyle);
+        float newBgm = GUI.HorizontalSlider(new Rect(contentX + labelW, rowY + 8f, sliderW, rowH),
+                                            curBgm, 0f, 1f);
+        GUI.Label(new Rect(contentX + labelW + sliderW + 8f, rowY, valueW, rowH),
+                  Mathf.RoundToInt(newBgm * 100f) + "%", _settingsValueStyle);
+        if (!Mathf.Approximately(newBgm, curBgm) && am != null) am.BgmVolume = newBgm;
+
+        // SFX 슬라이더
+        rowY += 50f;
+        float curSfx = am != null ? am.SfxVolume : 1f;
+        GUI.Label(new Rect(contentX, rowY, labelW, rowH), L("SFX", "효과음"), _settingsLabelStyle);
+        float newSfx = GUI.HorizontalSlider(new Rect(contentX + labelW, rowY + 8f, sliderW, rowH),
+                                            curSfx, 0f, 1f);
+        GUI.Label(new Rect(contentX + labelW + sliderW + 8f, rowY, valueW, rowH),
+                  Mathf.RoundToInt(newSfx * 100f) + "%", _settingsValueStyle);
+        if (!Mathf.Approximately(newSfx, curSfx) && am != null) am.SfxVolume = newSfx;
+
+        // 언어
+        rowY += 70f;
+        GUI.Label(new Rect(contentX, rowY, labelW, rowH), L("Language", "언어"), _settingsLabelStyle);
+
+        bool isKR = DianoCard.Data.LocaleSettings.Current == DianoCard.Data.Language.KR;
+        const float langBtnW = 140f;
+        const float langBtnH = 40f;
+        const float langGap = 16f;
+        float langTotalW = langBtnW * 2 + langGap;
+        float langX = px + (pw - langTotalW) * 0.5f;
+        float langY = rowY + 36f;
+
+        if (DrawSettingsButton(new Rect(langX, langY, langBtnW, langBtnH), "한국어", isKR))
         {
-            font = _displayFont,
-            fontSize = 22,
+            DianoCard.Data.LocaleSettings.Set(DianoCard.Data.Language.KR);
+            _settingsStylesReady = false;  // 폰트 즉시 Hahmlet으로 스왑
+        }
+        if (DrawSettingsButton(new Rect(langX + langBtnW + langGap, langY, langBtnW, langBtnH), "English", !isKR))
+        {
+            DianoCard.Data.LocaleSettings.Set(DianoCard.Data.Language.EN);
+            _settingsStylesReady = false;  // 폰트 즉시 Cinzel으로 스왑
+        }
+
+        // 닫기
+        const float closeW = 160f;
+        const float closeH = 44f;
+        float closeX = px + (pw - closeW) * 0.5f;
+        float closeY = py + ph - closeH - 28f;
+        if (DrawSettingsButton(new Rect(closeX, closeY, closeW, closeH), L("CLOSE", "닫기"), false))
+            _settingsOpen = false;
+    }
+
+    private void DrawSettingsPanelBG(Rect rect)
+    {
+        if (_settingsPanelTex != null)
+        {
+            GUI.DrawTexture(rect, _settingsPanelTex, ScaleMode.StretchToFill, true);
+            return;
+        }
+        // 폴백 — 텍스처 못 찾으면 기존 다크 박스 + brass 테두리
+        var prev = GUI.color;
+        GUI.color = new Color(0.08f, 0.06f, 0.10f, 0.96f);
+        GUI.DrawTexture(rect, Texture2D.whiteTexture);
+        GUI.color = new Color(0.70f, 0.55f, 0.25f, 0.85f);
+        GUI.DrawTexture(new Rect(rect.x, rect.y, rect.width, 2f), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(rect.x, rect.y + rect.height - 2f, rect.width, 2f), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(rect.x, rect.y, 2f, rect.height), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(rect.x + rect.width - 2f, rect.y, 2f, rect.height), Texture2D.whiteTexture);
+        GUI.color = prev;
+    }
+
+    private static void DrawBrassDivider(float panelX, float y, float panelWidth)
+    {
+        float w = panelWidth * 0.85f;
+        float x = panelX + (panelWidth - w) * 0.5f;
+        var prev = GUI.color;
+        GUI.color = new Color(0.78f, 0.62f, 0.32f, 0.85f);
+        GUI.DrawTexture(new Rect(x, y, w, 1.5f), Texture2D.whiteTexture);
+        GUI.color = prev;
+    }
+
+    /// <summary>ESC 메뉴 톤의 벡터 버튼 — idle 텍스처 + hover/active 시 노란빛 보더 오버레이.</summary>
+    private bool DrawSettingsButton(Rect rect, string label, bool active)
+    {
+        bool hovered = Event.current != null && rect.Contains(Event.current.mousePosition);
+        var style = hovered || active ? _settingsBtnHoverStyle : _settingsBtnIdleStyle;
+
+        if (_settingsBtnIdleTex != null)
+        {
+            // 텍스처 모드 — idle 텍스처. 비활성 상태는 살짝 dim.
+            var prevC = GUI.color;
+            if (!hovered && !active) GUI.color = new Color(0.78f, 0.78f, 0.78f, prevC.a);
+            bool clicked = GUI.Button(rect, label, style);
+            GUI.color = prevC;
+            if (hovered || active) DrawHoverBorder(rect);
+            return clicked;
+        }
+
+        // 폴백 — 텍스처 없을 때 코드 드로우(다크 + 브라스 테두리)
+        var prev = GUI.color;
+        GUI.color = new Color(0.12f, 0.10f, 0.13f, 0.92f);
+        GUI.DrawTexture(rect, Texture2D.whiteTexture);
+        Color bc = (hovered || active)
+            ? new Color(0.92f, 0.74f, 0.40f, 1f)
+            : new Color(0.69f, 0.55f, 0.32f, 1f);
+        float bw = (hovered || active) ? 2.5f : 1.5f;
+        GUI.color = bc;
+        GUI.DrawTexture(new Rect(rect.x, rect.y, rect.width, bw), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(rect.x, rect.y + rect.height - bw, rect.width, bw), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(rect.x, rect.y, bw, rect.height), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(rect.x + rect.width - bw, rect.y, bw, rect.height), Texture2D.whiteTexture);
+        GUI.color = prev;
+        return GUI.Button(rect, label, style);
+    }
+
+    private static void DrawHoverBorder(Rect rect)
+    {
+        var prev = GUI.color;
+        GUI.color = new Color(0.93f, 0.78f, 0.36f, 0.95f);
+        const float bw = 2f;
+        const float inset = 1f;
+        float x = rect.x + inset, y = rect.y + inset;
+        float w = rect.width - inset * 2f, h = rect.height - inset * 2f;
+        GUI.DrawTexture(new Rect(x, y, w, bw), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(x, y + h - bw, w, bw), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(x, y, bw, h), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(x + w - bw, y, bw, h), Texture2D.whiteTexture);
+        GUI.color = prev;
+    }
+
+    private void EnsureSettingsStyles()
+    {
+        if (_settingsStylesReady) return;
+
+        bool isKR = DianoCard.Data.LocaleSettings.Current == DianoCard.Data.Language.KR;
+        Font menuFont = isKR ? _settingsFontKR : _settingsFontEN;
+
+        _settingsTitleStyle = new GUIStyle(GUI.skin.label)
+        {
+            font = menuFont,
+            fontSize = 26,
+            fontStyle = FontStyle.Bold,
             alignment = TextAnchor.MiddleCenter,
             normal = { textColor = new Color(0.93f, 0.86f, 0.66f, 1f) },
         };
-        LockHoverState(titleStyle);
-        var labelStyle = new GUIStyle(GUI.skin.label)
+        _settingsLabelStyle = new GUIStyle(GUI.skin.label)
         {
+            font = menuFont,
             fontSize = 16,
+            alignment = TextAnchor.MiddleLeft,
+            normal = { textColor = new Color(0.88f, 0.84f, 0.72f) },
+        };
+        _settingsValueStyle = new GUIStyle(_settingsLabelStyle)
+        {
             alignment = TextAnchor.MiddleCenter,
-            normal = { textColor = new Color(0.8f, 0.78f, 0.7f, 1f) },
         };
-        LockHoverState(labelStyle);
-        var activeBtnStyle = new GUIStyle(GUI.skin.button)
-        {
-            fontSize = 18,
-            fontStyle = FontStyle.Bold,
-            normal = { textColor = new Color(0.1f, 0.06f, 0.18f), background = Texture2D.whiteTexture },
-        };
-        LockHoverState(activeBtnStyle);
-        var inactiveBtnStyle = new GUIStyle(GUI.skin.button)
-        {
-            fontSize = 18,
-            normal = { textColor = new Color(0.65f, 0.60f, 0.45f) },
-        };
-        LockHoverState(inactiveBtnStyle);
 
-        GUI.Label(new Rect(px, py + 18f, pw, 30f), L("SETTINGS", "설정"), titleStyle);
-        GUI.Label(new Rect(px, py + 64f, pw, 24f), L("Language", "언어"), labelStyle);
-
-        var isKR = DianoCard.Data.LocaleSettings.Current == DianoCard.Data.Language.KR;
-        float btnW = 120f;
-        float btnH = 44f;
-        float btnGap = 20f;
-        float btnTotalW = btnW * 2 + btnGap;
-        float btnX = px + (pw - btnTotalW) * 0.5f;
-        float btnY = py + 100f;
-
-        // KR 버튼
-        var krStyle = isKR ? activeBtnStyle : inactiveBtnStyle;
-        if (isKR)
+        _settingsBtnIdleStyle = new GUIStyle
         {
-            GUI.color = new Color(0.85f, 0.70f, 0.30f, 1f);
-            GUI.DrawTexture(new Rect(btnX, btnY, btnW, btnH), Texture2D.whiteTexture);
-            GUI.color = prev;
-        }
-        if (GUI.Button(new Rect(btnX, btnY, btnW, btnH), "한국어", krStyle))
-            DianoCard.Data.LocaleSettings.Set(DianoCard.Data.Language.KR);
-
-        // EN 버튼
-        float enX = btnX + btnW + btnGap;
-        var enStyle = !isKR ? activeBtnStyle : inactiveBtnStyle;
-        if (!isKR)
-        {
-            GUI.color = new Color(0.85f, 0.70f, 0.30f, 1f);
-            GUI.DrawTexture(new Rect(enX, btnY, btnW, btnH), Texture2D.whiteTexture);
-            GUI.color = prev;
-        }
-        if (GUI.Button(new Rect(enX, btnY, btnW, btnH), "English", enStyle))
-            DianoCard.Data.LocaleSettings.Set(DianoCard.Data.Language.EN);
-
-        // 닫기
-        var closeStyle = new GUIStyle(GUI.skin.button)
-        {
+            font = menuFont,
             fontSize = 14,
-            normal = { textColor = new Color(0.7f, 0.60f, 0.45f) },
+            fontStyle = FontStyle.Bold,
+            alignment = TextAnchor.MiddleCenter,
+            padding = new RectOffset(12, 12, 8, 8),
         };
-        LockHoverState(closeStyle);
-        if (GUI.Button(new Rect(px + (pw - 100f) * 0.5f, py + ph - 50f, 100f, 32f), L("CLOSE", "닫기"), closeStyle))
-            _settingsOpen = false;
+        if (_settingsBtnIdleTex != null)
+        {
+            _settingsBtnIdleStyle.normal.background = _settingsBtnIdleTex;
+            _settingsBtnIdleStyle.hover.background = _settingsBtnIdleTex;
+            _settingsBtnIdleStyle.active.background = _settingsBtnIdleTex;
+        }
+        _settingsBtnIdleStyle.normal.textColor = new Color(0.91f, 0.83f, 0.65f, 1f);
+        _settingsBtnIdleStyle.hover.textColor = new Color(0.91f, 0.83f, 0.65f, 1f);
+        _settingsBtnIdleStyle.active.textColor = new Color(0.91f, 0.83f, 0.65f, 1f);
+
+        _settingsBtnHoverStyle = new GUIStyle(_settingsBtnIdleStyle);
+        _settingsBtnHoverStyle.normal.textColor = new Color(0.98f, 0.90f, 0.62f, 1f);
+        _settingsBtnHoverStyle.hover.textColor = new Color(0.98f, 0.90f, 0.62f, 1f);
+        _settingsBtnHoverStyle.active.textColor = new Color(0.98f, 0.90f, 0.62f, 1f);
+
+        LockHoverState(_settingsTitleStyle);
+        LockHoverState(_settingsLabelStyle);
+        LockHoverState(_settingsValueStyle);
+        LockHoverState(_settingsBtnIdleStyle);
+        LockHoverState(_settingsBtnHoverStyle);
+
+        _settingsStylesReady = true;
     }
 
     private void DrawVersion()
@@ -733,6 +889,7 @@ public class LobbyUI : MonoBehaviour
         GUI.Label(new Rect(RefW - 130, RefH - 32, 110, 22), "v0.1 MVP", style);
     }
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
     private void DrawDevTools(GameStateManager gsm)
     {
         if (_devBtnStyle == null)
@@ -762,6 +919,7 @@ public class LobbyUI : MonoBehaviour
             _pending.Add(() => gsm.EnterAnimationTest());
         }
     }
+#endif // UNITY_EDITOR || DEVELOPMENT_BUILD
 
 
     private void EnsureStyles()

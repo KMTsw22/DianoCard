@@ -106,7 +106,7 @@ namespace DianoCard.Game
                 // === UTILITY ===
                 case "P007": // 드로우 물약 — 카드 3장 드로우
                 {
-                    mgr.Draw(potion.value);
+                    mgr.DrawForCardEffect(potion.value);
                     Debug.Log($"[Potion] {potion.id} {potion.nameKr}: 카드 {potion.value}장 드로우");
                     return true;
                 }
@@ -163,7 +163,7 @@ namespace DianoCard.Game
                     player.poisonStacks = 0;
                     player.weakTurns = 0;
                     player.vulnerableTurns = 0;
-                    mgr.Draw(1);
+                    mgr.DrawForCardEffect(1);
                     Debug.Log($"[Potion] {potion.id} {potion.nameKr}: 디버프 제거 + 드로우 1");
                     return true;
                 }
@@ -178,26 +178,40 @@ namespace DianoCard.Game
                     return true;
                 }
 
-                case "P015": // 각성 물약 — 1티어 임시 진화 (MVP 미구현)
+                case "P015": // 각성 물약 — 아군 공룡 1티어 임시 진화 (전투)
                 {
-                    // 진화 시스템이 MVP에 없어 1티어 진화는 적용 불가.
-                    // 대체 효과: 대상 공룡 ATK +5 / 최대 HP +10 (이번 전투, 진화 위력에 준하는 강력 버프).
+                    // sprite와 시그니처 스킬은 SummonInstance.data.id 기반으로 lookup되므로
+                    // data를 다음 진화체로 스왑하기만 하면 비주얼/스킬이 자동으로 따라온다.
+                    // 카드(state.hand/discard/draw)는 손대지 않으니 다음 전투 재소환 시 T0로 복귀 → "임시(전투)" 자동 충족.
                     var ally = ResolveAllyTarget(state, targetIndex);
                     if (ally == null) return false;
-                    int hpBonus = Mathf.RoundToInt(10 * RelicEffects.GetHealMultiplier(run));
-                    ally.attack += 5;
+                    var evo = DataManager.Instance.GetEvolution(ally.data.id);
+                    var nextData = evo != null ? DataManager.Instance.GetCard(evo.resultCardId) : null;
+                    if (nextData == null)
+                    {
+                        Debug.LogWarning($"[Potion] {potion.id} {potion.nameKr}: {ally.data.nameKr} 진화 경로 없음 (T2이거나 비진화 종) — 포션 보존");
+                        return false;
+                    }
+                    var prev = ally.data;
+                    int atkBonus = Mathf.Max(0, nextData.attack - prev.attack);
+                    int hpBonus = Mathf.Max(0, nextData.hp - prev.hp);
+                    ally.data = nextData;
+                    ally.attack += atkBonus;
                     ally.maxHp += hpBonus;
                     ally.hp = Mathf.Min(ally.maxHp, ally.hp + hpBonus);
-                    Debug.Log($"[Potion] {potion.id} {potion.nameKr}: {ally.data.nameKr} 각성 (ATK +5, HP +{hpBonus}) — 진화 시스템 부재 대체 효과");
+                    Debug.Log($"[Potion] {potion.id} {potion.nameKr}: {prev.nameKr} → {nextData.nameKr} 진화 (ATK {ally.attack} / HP {ally.hp}/{ally.maxHp})");
                     return true;
                 }
 
-                case "P016": // 균열 물약 — 손패 베이스 공룡 2장 융합 (MVP 미구현 — 융합 카드 CSV 누락)
+                case "P016": // 균열 물약 — 손패 베이스 공룡 2장을 융합해 다음 티어로 즉시 소환
                 {
-                    // 융합 시스템이 데이터 미완성이라 적용 불가.
-                    // 대체 효과: 손패에서 베이스 공룡 카드를 임의로 1장 골라 다음 티어 공룡으로 즉시 변환 시도. 데이터 없으면 노op.
-                    Debug.LogWarning($"[Potion] {potion.id} {potion.nameKr}: 융합 시스템 미완성 — 효과 적용 안 됨 (포션은 그대로 소비)");
-                    return true; // 슬롯은 비움 (false 반환하면 포션이 안 사라짐)
+                    if (!mgr.TryPotionFuseFromHand())
+                    {
+                        Debug.LogWarning($"[Potion] {potion.id} {potion.nameKr}: 융합 가능한 손패 페어 없음 또는 필드 만석 — 포션 보존");
+                        return false;
+                    }
+                    Debug.Log($"[Potion] {potion.id} {potion.nameKr}: 손패 베이스 공룡 2장 융합 완료");
+                    return true;
                 }
 
                 default:

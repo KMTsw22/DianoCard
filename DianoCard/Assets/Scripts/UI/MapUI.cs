@@ -116,8 +116,9 @@ public class MapUI : MonoBehaviour
     private const int MapWidth = 7;
 
     // =========================================================
-    private const float RefW = 1280f;
-    private const float RefH = 720f;
+    // 반응형 (AspectScaler) — 실제 화면 비율에 맞춰 자동 확장.
+    private static float RefW => DianoCard.UI.AspectScaler.ScreenW;
+    private static float RefH => DianoCard.UI.AspectScaler.ScreenH;
 
     private const float NodeSize = 46f;
     private const float BossSize = 90.18f;
@@ -131,7 +132,7 @@ public class MapUI : MonoBehaviour
     // 스크롤 가능한 맵 컨텐츠 영역 (스크린 가상 좌표)
     // 화면 전체를 차지 — 상단 HUD / 하단 버튼은 그 위에 오버레이로 그린다
     private const float MapAreaY = 0f;
-    private const float MapAreaH = RefH;
+    private static float MapAreaH => RefH;  // RefH가 동적이라 const 불가
 
     // 층 간격 235px — 15층 맵이 화면을 넘어가므로 스크롤로 탐색.
     private const float Floor1Y = 500f;
@@ -377,8 +378,7 @@ public class MapUI : MonoBehaviour
         DrawMapBackground();
 
         // 2) 이후는 1280x720 가상 좌표
-        float scale = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
-        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1));
+        GUI.matrix = DianoCard.UI.AspectScaler.GuiMatrix;
 
         // 3) 현재 층이 바뀌면 보이는 영역 안으로 자동 정렬
         HandleScrollAutoSnap(map);
@@ -400,7 +400,7 @@ public class MapUI : MonoBehaviour
         // 5.5) 비네팅 — 노드 위, HUD 아래. 가장자리 시선 모음.
         DrawVignette();
         // DrawVignette가 GUI.matrix를 identity로 되돌렸으므로 가상좌표 매트릭스 복원
-        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1));
+        GUI.matrix = DianoCard.UI.AspectScaler.GuiMatrix;
 
         // 6) 헤더/UI는 스크롤과 무관 (스크린 가상 좌표)
         //    상단 HUD는 배틀/맵/마을 공용 BattleUI.DrawTopBar 사용.

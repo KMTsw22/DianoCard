@@ -16,8 +16,9 @@ using UnityEngine;
 [DefaultExecutionOrder(1050)]
 public class RelicPickerUI : MonoBehaviour
 {
-    private const float RefW = 1280f;
-    private const float RefH = 720f;
+    // 반응형 (AspectScaler) — 화면 비율에 맞춰 자동 확장.
+    private static float RefW => DianoCard.UI.AspectScaler.ScreenW;
+    private static float RefH => DianoCard.UI.AspectScaler.ScreenH;
 
     // ─── Background Animation ────────────────────────────────────
     [Header("Background Animation")]
@@ -381,10 +382,9 @@ public class RelicPickerUI : MonoBehaviour
         LockHoverState(_descStyle);
         LockHoverState(_promptStyle);
 
-        float scaleX = Screen.width / RefW;
-        float scaleY = Screen.height / RefH;
+        // 반응형 uniform 스케일 (RefW/RefH가 동적이라 edge 정렬 자동).
         var matrix = GUI.matrix;
-        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scaleX, scaleY, 1f));
+        GUI.matrix = DianoCard.UI.AspectScaler.GuiMatrix;
 
         DrawBackground();
         DrawRows(gsm);

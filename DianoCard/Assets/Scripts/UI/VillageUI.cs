@@ -16,8 +16,9 @@ using UnityEngine;
 [DefaultExecutionOrder(1000)]
 public class VillageUI : MonoBehaviour
 {
-    private const float RefW = 1280f;
-    private const float RefH = 720f;
+    // 반응형 (AspectScaler) — 화면 비율에 맞춰 자동 확장.
+    private static float RefW => DianoCard.UI.AspectScaler.ScreenW;
+    private static float RefH => DianoCard.UI.AspectScaler.ScreenH;
 
     // =========================================================
     // Inspector 튜닝 필드
@@ -230,12 +231,14 @@ public class VillageUI : MonoBehaviour
         var gsm = GameStateManager.Instance;
         if (gsm == null) return;
 
-        // 치트: F7 — 언제든 마을 강제 진입
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        // 치트: F7 — 언제든 마을 강제 진입 (출시 빌드에서는 컴파일 제외)
         var kb = UnityEngine.InputSystem.Keyboard.current;
         if (kb != null && kb.f7Key.wasPressedThisFrame)
         {
             gsm.Cheat_EnterVillage();
         }
+#endif
 
         // Village 진입 엣지에서 인트로 타이머 리셋. 진입 후에는 계속 누적 (호흡은 Time.time 사용).
         bool inVillage = gsm.State == GameState.Village;
@@ -263,8 +266,8 @@ public class VillageUI : MonoBehaviour
         ApplyStyleValues();  // Inspector 값 실시간 반영
 
         GUI.depth = 0;
-        float scale = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
-        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1));
+        float scale = DianoCard.UI.AspectScaler.Scale;
+        GUI.matrix = DianoCard.UI.AspectScaler.GuiMatrix;
 
         DrawBackdrop();
         DrawNPC();

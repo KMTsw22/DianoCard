@@ -59,7 +59,7 @@ namespace DianoCard.Game
         private List<RelicData> _tutorialSavedRelicChoices;
 
         public const string TutorialCompletedKey = "DianoCard.Tutorial.CH01.Completed";
-        public static bool HasCompletedTutorial() => PlayerPrefs.GetInt(TutorialCompletedKey, 0) == 1;
+        public static bool HasCompletedTutorial() => SaveSystem.GetInt(TutorialCompletedKey, 0) == 1;
 
         /// <summary>영구 메타 진행(테크트리) 상태. PlayerPrefs에서 로드, 노드 해금 시 자동 저장.</summary>
         public TechTreeState TechTree { get; private set; }
@@ -107,7 +107,9 @@ namespace DianoCard.Game
             if (GetComponent<ShopUI>() == null) gameObject.AddComponent<ShopUI>();
             if (GetComponent<VillageUI>() == null) gameObject.AddComponent<VillageUI>();
             if (GetComponent<GameOverUI>() == null) gameObject.AddComponent<GameOverUI>();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             if (GetComponent<AnimationTestUI>() == null) gameObject.AddComponent<AnimationTestUI>();
+#endif
             if (GetComponent<TechTreeUI>() == null) gameObject.AddComponent<TechTreeUI>();
             if (GetComponent<PauseMenuUI>() == null) gameObject.AddComponent<PauseMenuUI>();
             if (GetComponent<EventUI>() == null) gameObject.AddComponent<EventUI>();
@@ -169,7 +171,7 @@ namespace DianoCard.Game
                 potions = new List<PotionData>(),
                 currentFloor = 0,
                 chapterId = "CH01",
-                characterId = "CH001",
+                characterId = "CH002",  // 1차 출시: Arkane(아케네) 단일 캐릭터
             };
 
             // 캐릭터 선택 화면을 먼저 보여주고, 거기서 확인하면 맵을 생성한다
@@ -250,8 +252,8 @@ namespace DianoCard.Game
         /// <summary>튜토리얼 종료 — sandbox 폐기, 진짜 RunState/Map/유물선택지 복원, RelicPick 진입.</summary>
         public void EndTutorial()
         {
-            PlayerPrefs.SetInt(TutorialCompletedKey, 1);
-            PlayerPrefs.Save();
+            SaveSystem.SetInt(TutorialCompletedKey, 1);
+            SaveSystem.Save();
 
             CurrentRun = _tutorialSavedRun;
             CurrentMap = _tutorialSavedMap;
@@ -262,6 +264,9 @@ namespace DianoCard.Game
 
             CurrentEnemies.Clear();
             IsTutorialMode = false;
+            // farewell(Timer) 단계 도중 전투가 끝나도 오버레이가 RelicPick 위로 깜빡이지 않게
+            // TutorialManager 상태도 함께 강제 리셋.
+            DianoCard.Tutorial.TutorialManager.Instance?.ForceEnd();
             State = GameState.RelicPick;
             Debug.Log("[GSM] EndTutorial — restored real run, → RelicPick");
         }
@@ -282,18 +287,33 @@ namespace DianoCard.Game
             Add("C004", 2); // 랩터 ×2 — 융합 재료 (육식 T0)
             Add("C152", 1); // 융합의 각인 — 융합 발동
 
-            return new RunState
+            // 튜토리얼 sandbox에 포션/유물 1개씩 시드. 사용·확인 단계에서 가르친다.
+            var potions = new List<PotionData>();
+            var defensePotion = dm.GetPotion("P004"); // 방어 물약 — SELF 타겟, 즉시 +10 블록
+            if (defensePotion != null) potions.Add(defensePotion);
+            else Debug.LogWarning("[GSM] Tutorial sandbox missing potion 'P004'");
+
+            var relics = new List<RelicData>();
+            var ancientBone = dm.GetRelic("R001"); // 고대의 뼈 — START PASSIVE +10 MAX HP
+            if (ancientBone != null) relics.Add(ancientBone);
+            else Debug.LogWarning("[GSM] Tutorial sandbox missing relic 'R001'");
+
+            var run = new RunState
             {
                 playerMaxHp = 40,
                 playerCurrentHp = 40,
                 gold = 0,
                 deck = deck,
-                relics = new List<RelicData>(),
-                potions = new List<PotionData>(),
+                relics = relics,
+                potions = potions,
                 currentFloor = 0,
                 chapterId = "CH01",
                 characterId = characterId ?? "CH002",
             };
+
+            // 유물 PASSIVE 효과(MAX_HP 등)는 RunState 빌드 직후 OnAcquired로 단일 경로 적용.
+            if (ancientBone != null) RelicEffects.OnAcquired(run, ancientBone);
+            return run;
         }
 
         /// <summary>
@@ -731,8 +751,9 @@ namespace DianoCard.Game
             return new HashSet<string>();
         }
 
-        // 오버로드 — 인자 없이 호출 시 HERB 덱을 기본 반환(치트/훈련 경로용).
-        private List<CardData> BuildStarterDeck() => BuildStarterDeck("CH001");
+        // 오버로드 — 인자 없이 호출 시 Arkane(육식 조련사) 덱을 기본 반환.
+        // 1차 출시: 단일 캐릭터(CH002)이므로 폴백도 CH002로 통일.
+        private List<CardData> BuildStarterDeck() => BuildStarterDeck("CH002");
 
         private List<CardData> BuildStarterDeck(string characterId)
         {
@@ -1896,7 +1917,7 @@ namespace DianoCard.Game
         {
             if (CurrentRun == null) return;
             if (CurrentRun.deck != null && CurrentRun.deck.Count > 0) return;
-            string cid = string.IsNullOrEmpty(CurrentRun.characterId) ? "CH001" : CurrentRun.characterId;
+            string cid = string.IsNullOrEmpty(CurrentRun.characterId) ? "CH002" : CurrentRun.characterId;
             CurrentRun.deck = BuildStarterDeck(cid);
             Debug.Log($"[GSM] Cheat: rebuilt empty deck (characterId={cid}, cards={CurrentRun.deck.Count})");
         }

@@ -16,8 +16,9 @@ using UnityEngine;
 [DefaultExecutionOrder(1000)]
 public class ShopUI : MonoBehaviour
 {
-    private const float RefW = 1280f;
-    private const float RefH = 720f;
+    // 반응형 (AspectScaler) — 화면 비율에 맞춰 자동 확장.
+    private static float RefW => DianoCard.UI.AspectScaler.ScreenW;
+    private static float RefH => DianoCard.UI.AspectScaler.ScreenH;
 
     private enum View { Intro, Main, RemovePicker }
     private View _view = View.Intro;
@@ -359,8 +360,10 @@ public class ShopUI : MonoBehaviour
         var gsm = GameStateManager.Instance;
         if (gsm == null) return;
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         var kb = UnityEngine.InputSystem.Keyboard.current;
         if (kb != null && kb.f8Key.wasPressedThisFrame) gsm.Cheat_EnterShop();
+#endif
 
         // Shop에 처음 들어올 때마다 Intro로 초기화
         if (_prevState != GameState.Shop && gsm.State == GameState.Shop)
@@ -392,8 +395,7 @@ public class ShopUI : MonoBehaviour
         UpdateStyleSizes();
 
         GUI.depth = 0;
-        float scale = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
-        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1f));
+        GUI.matrix = DianoCard.UI.AspectScaler.GuiMatrix;
 
         switch (_view)
         {

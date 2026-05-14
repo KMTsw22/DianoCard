@@ -9,8 +9,9 @@ using UnityEngine;
 /// </summary>
 public class GameOverUI : MonoBehaviour
 {
-    private const float RefW = 1280f;
-    private const float RefH = 720f;
+    // 반응형 (AspectScaler) — 화면 비율에 맞춰 자동 확장.
+    private static float RefW => DianoCard.UI.AspectScaler.ScreenW;
+    private static float RefH => DianoCard.UI.AspectScaler.ScreenH;
 
     private readonly List<Action> _pending = new();
 
@@ -36,8 +37,7 @@ public class GameOverUI : MonoBehaviour
 
         EnsureStyles();
 
-        float scale = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
-        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1));
+        GUI.matrix = DianoCard.UI.AspectScaler.GuiMatrix;
 
         bool isVictory = gsm.State == GameState.Victory;
 

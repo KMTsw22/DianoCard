@@ -1,3 +1,4 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using DianoCard.Battle;
@@ -9,6 +10,7 @@ using UnityEditor;
 
 /// <summary>
 /// 애니메이션 프레임 프리뷰 UI — GameState == AnimationTest일 때만 활성.
+/// 출시 빌드(Development Build OFF)에서는 컴파일에서 제거됨.
 ///
 /// ● 재생은 <see cref="BattleEntityView"/>를 그대로 사용해서 실제 전투와 100% 같은
 ///   프레임 스왑 + 위치 thrust + idle bob + 스케일 보정 동작을 보여준다.
@@ -23,8 +25,9 @@ using UnityEditor;
 /// </summary>
 public class AnimationTestUI : MonoBehaviour
 {
-    private const float RefW = 1280f;
-    private const float RefH = 720f;
+    // 반응형 (AspectScaler) — 화면 비율에 맞춰 자동 확장.
+    private static float RefW => DianoCard.UI.AspectScaler.ScreenW;
+    private static float RefH => DianoCard.UI.AspectScaler.ScreenH;
 
     [SerializeField] private List<string> _manualCharacterFolders = new();
 
@@ -390,7 +393,7 @@ public class AnimationTestUI : MonoBehaviour
     {
         var cam = _cachedMainCam != null ? _cachedMainCam : Camera.main;
         if (cam == null) return Vector3.zero;
-        float scale = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
+        float scale = DianoCard.UI.AspectScaler.Scale;
         float sx = guiPos.x * scale;
         float sy = Screen.height - guiPos.y * scale;
         Vector3 world = cam.ScreenToWorldPoint(new Vector3(sx, sy, 10f));
@@ -432,9 +435,8 @@ public class AnimationTestUI : MonoBehaviour
         if (_characters.Count == 0 && _monsters.Count == 0 && string.IsNullOrEmpty(_statusMessage))
             RefreshAll();
 
-        float scale = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
         var prevMatrix = GUI.matrix;
-        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1f));
+        GUI.matrix = DianoCard.UI.AspectScaler.GuiMatrix;
 
         DrawHeader(gsm);
         if (_showLeftPanel) DrawLeftPanel();
@@ -486,7 +488,7 @@ public class AnimationTestUI : MonoBehaviour
     private Vector2 _leftScroll;
     private void DrawLeftPanel()
     {
-        const float x = 12f, y = 64f, w = 230f, h = RefH - 100f;
+        float x = 12f, y = 64f, w = 230f, h = RefH - 100f;  // RefH 동적이라 const 불가
         DrawPanelBg(new Rect(x, y, w, h));
 
         GUI.Label(new Rect(x + 12, y + 8, w - 24, 22), "캐릭터 / 몬스터", _smallStyle);
@@ -590,7 +592,7 @@ public class AnimationTestUI : MonoBehaviour
     private Vector2 _rightScroll;
     private void DrawRightPanel()
     {
-        const float x = RefW - 262f, y = 64f, w = 250f, h = RefH - 100f;
+        float x = RefW - 262f, y = 64f, w = 250f, h = RefH - 100f;  // RefW/RefH 동적이라 const 불가
         DrawPanelBg(new Rect(x, y, w, h));
 
         _rightScroll = GUI.BeginScrollView(
@@ -1193,3 +1195,4 @@ public class AnimationTestUI : MonoBehaviour
         s.onFocused.textColor = c; s.onFocused.background = bg;
     }
 }
+#endif // UNITY_EDITOR || DEVELOPMENT_BUILD

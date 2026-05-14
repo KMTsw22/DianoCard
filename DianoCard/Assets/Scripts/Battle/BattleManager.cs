@@ -205,6 +205,8 @@ namespace DianoCard.Battle
                     Log($"  ! Cannot play {card.nameKr}: fusion targets required");
                     return false;
                 }
+                // 융합 결과는 새 공룡 — card_summon 톤이 적합.
+                DianoCard.Audio.AudioManager.Instance?.PlaySFX("card_summon");
                 return TryPlayFusion(handIndex, inst, card, fusion.Value);
             }
 
@@ -216,6 +218,8 @@ namespace DianoCard.Battle
                     Log($"  ! Cannot play {card.nameKr}: reinforcement target required");
                     return false;
                 }
+                // 증원도 보유 공룡 손패 추가 — card_summon 톤.
+                DianoCard.Audio.AudioManager.Instance?.PlaySFX("card_summon");
                 return TryPlayReinforce(handIndex, inst, card, reinforcementCardId);
             }
 
@@ -369,8 +373,11 @@ namespace DianoCard.Battle
                     break;
 
                 case CardType.MAGIC:
-                    // ATTACK / DEBUFF(value>0) 카드는 화염구 임팩트까지 PlayCard가 지연되므로
+                    // ATTACK / DEBUFF 카드는 화염구 임팩트까지 PlayCard가 지연되므로
                     // SFX는 BattleUI 카드 클릭 시점에서 즉시 재생됨 (이 위치는 너무 늦음).
+                    // DEFENSE(수호 마법) / PURIFY(정화)는 화염구 X → 여기서 card_buff 발동.
+                    if (c.subType == CardSubType.DEFENSE || c.subType == CardSubType.PURIFY)
+                        DianoCard.Audio.AudioManager.Instance?.PlaySFX("card_buff");
                     ResolveMagic(c, explicitTarget, allyTargetIndex);
                     break;
 
@@ -382,6 +389,8 @@ namespace DianoCard.Battle
                 case CardType.UTILITY:
                     if (c.subType == CardSubType.DRAW)
                     {
+                        // DRAW 카드 자체 사용 임팩트 — card_draw burst는 카드 추가 시점에 별도 발동.
+                        DianoCard.Audio.AudioManager.Instance?.PlaySFX("card_buff");
                         DrawForCardEffect(c.value);
                         Log($"    Drew {c.value} cards");
                     }
@@ -1076,11 +1085,14 @@ namespace DianoCard.Battle
             var potion = run.potions[slotIndex];
             if (potion == null) return false;
 
+            // SFX는 효과 적용 시점과 동기 — UI 클릭은 단일 슬롯/타겟이라 즉시 효과 발동.
+            DianoCard.Audio.AudioManager.Instance?.PlaySFX("potion_use");
             bool ok = DianoCard.Game.PotionEffects.Use(this, run, potion, targetIndex);
             if (ok)
             {
                 run.potions.RemoveAt(slotIndex);
                 Log($"  [Potion] {potion.nameKr} 사용 → 슬롯 {slotIndex} 비움 (남은 {run.potions.Count}/{run.MaxPotionSlots})");
+                DianoCard.Tutorial.TutorialEvents.NotifyPotionUsed();
             }
             return ok;
         }
@@ -1122,6 +1134,80 @@ namespace DianoCard.Battle
 
             Log($"  [Potion] 소환 물약 → 손패 무작위 {card.nameKr} 소환");
             ResolveCard(inst, null, -1, isOverwrite);
+            return true;
+        }
+
+        /// <summary>P016 균열 물약 — 손패에서 같은 베이스 공룡 2장을 찾아 그 자리에서 다음 티어로 융합해 필드에 소환.
+        /// 페어가 없거나 진화 경로가 없거나 필드 만석이면 false (포션 환불). 융합 카드(C152~) 없이 마나 0으로 수행.</summary>
+        public bool TryPotionFuseFromHand()
+        {
+            if (state == null) return false;
+
+            // 1) 손패에서 같은 id를 가진 SUMMON CARNIVORE T0 카드를 그룹핑. 진화 경로가 있는 첫 쌍을 채택.
+            var idToIndices = new Dictionary<string, List<int>>();
+            for (int i = 0; i < state.hand.Count; i++)
+            {
+                var c = state.hand[i]?.data;
+                if (c == null) continue;
+                if (c.cardType != CardType.SUMMON || c.subType != CardSubType.CARNIVORE) continue;
+                // T1/T2는 손패에 등장하지 않는다는 가정이지만 안전망: 진화체는 제외.
+                if (c.id.EndsWith("_T1") || c.id.EndsWith("_T2")) continue;
+                if (!idToIndices.TryGetValue(c.id, out var list))
+                {
+                    list = new List<int>();
+                    idToIndices[c.id] = list;
+                }
+                list.Add(i);
+            }
+
+            string chosenId = null;
+            CardData nextData = null;
+            foreach (var kv in idToIndices)
+            {
+                if (kv.Value.Count < 2) continue;
+                var evo = DianoCard.Data.DataManager.Instance.GetEvolution(kv.Key);
+                var next = evo != null ? DianoCard.Data.DataManager.Instance.GetCard(evo.resultCardId) : null;
+                if (next == null) continue;
+                chosenId = kv.Key;
+                nextData = next;
+                break;
+            }
+            if (chosenId == null || nextData == null)
+            {
+                Log("  ! [Potion] 균열 물약: 손패에 동종 베이스 공룡 2장 페어 없음 — 포션 보존");
+                return false;
+            }
+
+            // 2) 필드 자리 확보 — hand+hand 융합은 필드 +1이므로 빈 슬롯 필수.
+            if (state.field.Count >= state.maxFieldSize)
+            {
+                Log($"  ! [Potion] 균열 물약: 필드 꽉 참 ({state.field.Count}/{state.maxFieldSize}) — 포션 보존");
+                return false;
+            }
+
+            // 3) 두 장 제거 — 인덱스 큰 쪽부터.
+            var picks = idToIndices[chosenId];
+            int i1 = picks[0];
+            int i2 = picks[1];
+            int hi = Math.Max(i1, i2);
+            int lo = Math.Min(i1, i2);
+            var instHi = state.hand[hi];
+            var instLo = state.hand[lo];
+            state.hand.RemoveAt(hi);
+            state.hand.RemoveAt(lo);
+            state.discard.Add(instHi);
+            state.discard.Add(instLo);
+
+            // 4) 결과체 필드 진입 — 정상 hand+hand 융합 경로와 동일하게 originCardId=베이스, 풀 HP.
+            var result = new SummonInstance(nextData) { originCardId = chosenId };
+            result.attack = nextData.attack;
+            result.maxHp  = nextData.hp;
+            result.hp     = result.maxHp;
+            state.field.Add(result);
+            DianoCard.Game.RelicEffects.OnSummon(this, run, result);
+            DianoCard.Game.RelicEffects.OnFusionPlayed(this, run);
+
+            Log($"  [Potion] 균열 물약: {chosenId} ×2 → {nextData.nameKr} 융합 소환 (ATK {result.attack} / HP {result.hp}/{result.maxHp})");
             return true;
         }
 
@@ -1890,12 +1976,10 @@ namespace DianoCard.Battle
                 ReturnBoundCard(s);
                 state.field.RemoveAt(i);
             }
-            int handCount = state.hand.Count;
             foreach (var c in state.hand) state.discard.Add(c);
             state.hand.Clear();
-            // 버린 장수만큼 staggered burst — 3장이면 휙휙휙 3번.
-            if (handCount > 0)
-                DianoCard.Audio.AudioManager.Instance?.PlaySFXBurst("card_discard", handCount);
+            // card_discard SFX는 BattleUI의 BeginDiscardFlyAnimation 시점에서 재생 — 여기서 호출하면
+            // 비행 애니메이션이 끝난 뒤에야 발동되어 시각/청각이 분리되고 직후 draw 버스트에 마스킹됨.
         }
 
         /// <summary>필드에서 제거되는 소환수의 sourceCardInstance를 bound→discard로 이동.</summary>
@@ -2647,9 +2731,8 @@ namespace DianoCard.Battle
                 state.hand.Add(top);
                 drawn++;
             }
-            // 뽑은 장수만큼 staggered burst — 5장이면 휘리리릭이 5번 (90ms 간격).
-            if (drawn > 0)
-                DianoCard.Audio.AudioManager.Instance?.PlaySFXBurst("card_draw", drawn);
+            // card_draw SFX는 BattleUI의 BeginDrawFlyAnimation 시점에서 재생 — 여기서 호출하면
+            // 데이터 갱신 시점에 발동되어 비행 모션보다 먼저 들려 시각/청각 분리 발생.
         }
 
         /// <summary>카드 효과로 인한 턴 중 드로우 — Draw + 애니메이션 이벤트.

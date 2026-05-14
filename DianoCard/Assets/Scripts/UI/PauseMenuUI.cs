@@ -13,8 +13,9 @@ using UnityEngine.InputSystem;
 /// </summary>
 public class PauseMenuUI : MonoBehaviour
 {
-    private const float RefW = 1280f;
-    private const float RefH = 720f;
+    // 반응형 (AspectScaler) — 모든 RefH/RefW 사용 좌표가 자동으로 실제 화면 edge/center로 정렬.
+    private static float RefW => DianoCard.UI.AspectScaler.ScreenW;
+    private static float RefH => DianoCard.UI.AspectScaler.ScreenH;
 
     private enum Screen_ { Main, Settings, ConfirmAbandon, ConfirmQuit }
 
@@ -25,7 +26,7 @@ public class PauseMenuUI : MonoBehaviour
 
     private readonly List<System.Action> _pending = new();
 
-    // 캐시: Settings 진입 시 최초 1회 PlayerPrefs/Screen에서 로드
+    // 캐시: Settings 진입 시 최초 1회 SaveSystem/Screen에서 로드
     private float _bgmVol = 1f;
     private float _sfxVol = 1f;
     private bool _fullscreen;
@@ -237,15 +238,14 @@ public class PauseMenuUI : MonoBehaviour
         GUI.DrawTexture(new Rect(0, 0, UnityEngine.Screen.width, UnityEngine.Screen.height), Texture2D.whiteTexture);
         GUI.color = dimPrev;
 
-        // 풀스크린 invisible 클릭 차단 — PauseMenuUI가 component list 마지막이라
-        // 이 Button이 가장 늦게 그려져 underlying UI Button들의 hot control을 덮어씀.
-        // 메뉴 패널 버튼은 이 다음에 그려져서 또 덮어쓰므로 정상 동작.
-        GUI.Button(new Rect(0, 0, UnityEngine.Screen.width, UnityEngine.Screen.height),
-                   GUIContent.none, GUIStyle.none);
+        // (이전 버전에 풀스크린 invisible 클릭 트랩이 있었으나, IMGUI는 같은 OnGUI 패스에서
+        //  먼저 호출된 GUI.Button이 MouseDown을 Event.Use()로 소비하기 때문에
+        //  트랩이 패널 자체의 버튼/슬라이더 클릭까지 흡수해버리는 버그가 있었음.
+        //  다른 UI들은 모두 OnGUI 맨 위에서 `if (PauseMenuUI.IsOpen) return;` 가드로
+        //  안 그리므로 트랩이 막아야 할 underlying 버튼 자체가 없어 트랩을 제거.)
 
-        // 패널은 1280x720 가상좌표로
-        float scale = Mathf.Min(UnityEngine.Screen.width / RefW, UnityEngine.Screen.height / RefH);
-        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1));
+        // 반응형 IMGUI — RefH/RefW가 실제 화면 크기 따라가므로 letterbox 없이 모든 비율에서 정상 정렬.
+        GUI.matrix = DianoCard.UI.AspectScaler.GuiMatrix;
 
         switch (_screen)
         {
@@ -254,10 +254,6 @@ public class PauseMenuUI : MonoBehaviour
             case Screen_.ConfirmAbandon: DrawConfirmAbandon();break;
             case Screen_.ConfirmQuit:    DrawConfirmQuit();   break;
         }
-
-        // 패널 밖 클릭이 그대로 다른 OnGUI로 흘러가지 않도록 — 화면 가장자리 클릭은
-        // 일단 잡되, 메인 패널 내부 버튼은 위에서 이미 처리됨.
-        // (다른 UI들은 OnGUI 맨 위에서 IsOpen 가드로 빠지므로 이중 안전망)
     }
 
     // =========================================================

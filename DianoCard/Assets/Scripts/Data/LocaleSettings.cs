@@ -16,15 +16,15 @@ namespace DianoCard.Data
 
         private static Language Load()
         {
-            int saved = PlayerPrefs.GetInt(PrefsKey, (int)Language.KR);
+            int saved = SaveSystem.GetInt(PrefsKey, (int)Language.EN);
             return (Language)saved;
         }
 
         public static void Set(Language lang)
         {
             Current = lang;
-            PlayerPrefs.SetInt(PrefsKey, (int)lang);
-            PlayerPrefs.Save();
+            SaveSystem.SetInt(PrefsKey, (int)lang);
+            SaveSystem.Save();
         }
 
         // KR 우선 → 비어있으면 EN 폴백. EN 모드에선 반대. 점진적 번역에 안전.

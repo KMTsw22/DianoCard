@@ -1,3 +1,4 @@
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
 using System.IO;
 using DianoCard.Data;
 using UnityEngine;
@@ -10,6 +11,7 @@ using UnityEditor;
 /// 게임플레이 치트는 모두 에디터의 Cheat Panel(Tools/Cheat Panel)에서 직접 조작.
 /// 이 컴포넌트는 디자인 검토 시 BG/카드 프리뷰 그리기를 담당.
 /// 자동 스폰: CheatWindow가 처음 호출될 때 GetOrCreateCheatUI 로 씬에 추가.
+/// 출시 빌드(Development Build OFF)에서는 컴파일 자체에서 제거됨.
 /// </summary>
 [DefaultExecutionOrder(2000)]
 public class CheatUI : MonoBehaviour
@@ -41,8 +43,7 @@ public class CheatUI : MonoBehaviour
         if (!_cardPreviewOpen && !_previewIsolateMode) return;
 
         var matrix = GUI.matrix;
-        float scale = Screen.width / 1280f;
-        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1f));
+        GUI.matrix = DianoCard.UI.AspectScaler.GuiMatrix;
 
         EnsureStyles();
 
@@ -376,3 +377,4 @@ public class CheatUI : MonoBehaviour
         ClearPreviewBg();
     }
 }
+#endif // UNITY_EDITOR || DEVELOPMENT_BUILD

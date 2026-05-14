@@ -18,23 +18,32 @@ namespace DianoCard.Tutorial
 
         [Header("Text Banner Position (화면 비율, 0~1)")]
         [SerializeField, Range(0f, 0.5f), Tooltip("화면 상단에서 텍스트 박스 시작까지 거리 (Screen.height 비율)")]
-        private float bannerTopRatio = 0.10f;
+        private float bannerTopRatio = 0.08f;
 
         [SerializeField, Range(0.30f, 1.00f), Tooltip("텍스트 박스 폭 (Screen.width 비율)")]
-        private float bannerWidthRatio = 0.62f;
+        private float bannerWidthRatio = 0.72f;
 
         [SerializeField, Range(0.05f, 0.30f), Tooltip("텍스트 박스 높이 (Screen.height 비율)")]
-        private float bannerHeightRatio = 0.13f;
+        private float bannerHeightRatio = 0.16f;
 
         [Header("Font Size (화면 높이 비율, 0~0.1)")]
-        [SerializeField, Range(0.020f, 0.060f), Tooltip("메시지 본문 폰트 사이즈 (Screen.height 비율)")]
-        private float messageFontRatio = 0.032f;
+        [SerializeField, Range(0.020f, 0.080f), Tooltip("메시지 본문 폰트 사이즈 (Screen.height 비율)")]
+        private float messageFontRatio = 0.044f;
 
-        [SerializeField, Range(0.012f, 0.030f), Tooltip("진행 힌트 폰트 사이즈 (Screen.height 비율)")]
-        private float hintFontRatio = 0.017f;
+        [SerializeField, Range(0.012f, 0.040f), Tooltip("진행 힌트 폰트 사이즈 (Screen.height 비율)")]
+        private float hintFontRatio = 0.024f;
 
         [SerializeField, Range(0.012f, 0.025f), Tooltip("스킵 버튼 폰트 사이즈 (Screen.height 비율)")]
-        private float skipBtnFontRatio = 0.016f;
+        private float skipBtnFontRatio = 0.018f;
+
+        [Header("Text Backplate (가독성 보조)")]
+        [SerializeField, Range(0f, 0.95f),
+         Tooltip("안내 텍스트 뒤 반투명 검정 — 거의 안 보일 정도로만 깔아 자주색 위 호박 글자가 살짝 떠 보이게. 0이면 완전 비활성.")]
+        private float backplateAlpha = 0.18f;
+
+        [SerializeField, Range(0f, 120f),
+         Tooltip("백플레이트 가장자리 페이드 폭(px) — 폭이 클수록 박스 가장자리가 더 자연스럽게 사라진다.")]
+        private float backplateFadePx = 64f;
 
         [Header("Highlight Pulse Outline")]
         [SerializeField, Range(1f, 8f), Tooltip("강조 외곽선 두께 (px)")]
@@ -51,6 +60,28 @@ namespace DianoCard.Tutorial
         [SerializeField, Range(0f, 0.7f),
          Tooltip("UserClick 단계(읽기 시간)에서만 게임 화면을 어둡게 — 펄스/공격취소 안내 등 잔여 효과 가림. CardPlayed 같은 액션 단계는 0(투명) 유지하여 게임 잘 보이게.")]
         private float userClickDimAlpha = 0.40f;
+
+        [Header("Non-highlight Card Dim (HandCard 액션 단계)")]
+        [SerializeField, Range(0f, 0.8f),
+         Tooltip("HandCard 강조 단계에서 강조 대상이 아닌 손패 카드 위에 어둡게 깔 알파 — 안내된 카드와 시각 분리.")]
+        private float nonHighlightCardDimAlpha = 0.45f;
+
+        [Header("Skip Button Gate")]
+        [SerializeField, Range(0, 4),
+         Tooltip("이 단계까지는 Skip 버튼을 숨긴다(첫 안내를 못 보고 스킵 누르는 사고 방지).")]
+        private int hideSkipUntilStepIndex = 1;
+
+        [Header("Blocked-action Text Pulse")]
+        [SerializeField, Range(0.10f, 1.00f),
+         Tooltip("잘못된 액션 차단 시 안내 텍스트가 잠깐 커졌다가 돌아오는 펄스 지속 시간(초).")]
+        private float blockedPulseDuration = 0.32f;
+        [SerializeField, Range(1.00f, 1.50f),
+         Tooltip("펄스 최고 시점에서의 텍스트 스케일 배율(1.0 = 변화 없음).")]
+        private float blockedPulsePeakScale = 1.18f;
+
+        // 차단 펄스 — TutorialEvents.OnTutorialActionBlocked 받을 때마다 갱신되는 시작 시각.
+        // OnGUI에서 (now - start) / duration 으로 0..1 진행도 계산, sin 곡선 한 번 그려 스케일 적용.
+        private float _blockedPulseStartTime = -1f;
 
         // ===== 색 톤 (게임 다크판타지 톤에 맞춘 호박/금) =====
         private static readonly Color TextColorWarm = new(1.00f, 0.92f, 0.72f);
@@ -80,6 +111,19 @@ namespace DianoCard.Tutorial
             if (_fontKR == null) Debug.LogWarning("[TutorialOverlay] Missing Fonts/Hahmlet-VariableFont_wght");
             if (_fontEN == null) Debug.LogWarning("[TutorialOverlay] Missing Fonts/Cinzel-VariableFont_wght");
         }
+
+        void OnEnable()
+        {
+            TutorialEvents.OnTutorialActionBlocked += HandleBlocked;
+        }
+
+        void OnDisable()
+        {
+            TutorialEvents.OnTutorialActionBlocked -= HandleBlocked;
+        }
+
+        // 차단 신호 받으면 펄스 타이머 리셋. 짧은 시간 내 연속 차단도 매번 새로 펄스.
+        private void HandleBlocked() => _blockedPulseStartTime = Time.unscaledTime;
 
         private void EnsureStyles()
         {
@@ -142,16 +186,21 @@ namespace DianoCard.Tutorial
 
         void OnGUI()
         {
+            // ESC 메뉴 열려있으면 튜토리얼 오버레이는 양보. 안 그러면 UserClick 단계의
+            // 화면 전체 MouseDown catcher가 Resume/Abandon 클릭을 가로챈다.
+            if (PauseMenuUI.IsOpen) return;
             var mgr = TutorialManager.Instance;
             if (mgr == null || !mgr.IsActive) return;
             EnsureStyles();
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
             // 스킵 모달은 명시적 결정 다이얼로그라 dim + 박스 유지.
             if (mgr.SkipPromptOpen)
             {
                 DrawSkipPrompt(mgr);
                 return;
             }
+#endif
 
             var step = mgr.CurrentStep;
             if (step == null) return;
@@ -171,7 +220,16 @@ namespace DianoCard.Tutorial
                     new Color(0f, 0f, 0f, userClickDimAlpha));
             }
 
-            // 1) 강조 — 텍스트보다 먼저 그려야 텍스트가 위에 옴.
+            // 1) 비-강조 손패 카드 dim — HandCard 강조 단계에서 다른 카드들 위에 어둡게 깔아 안내 카드와 시각 분리.
+            if (step.highlight == TutorialHighlight.HandCard
+                && !string.IsNullOrEmpty(step.highlightCardId)
+                && nonHighlightCardDimAlpha > 0f
+                && _battleUI != null)
+            {
+                DrawNonHighlightHandDim(step.highlightCardId);
+            }
+
+            // 1.5) 강조 — 텍스트보다 먼저 그려야 텍스트가 위에 옴.
             DrawHighlight(step, pulse);
 
             // 2) 텍스트 영역 — Inspector ratio로 위치/크기 결정. 게임 요소는 절대 가리지 않도록 상단 위주.
@@ -181,23 +239,52 @@ namespace DianoCard.Tutorial
             int boxY = Mathf.RoundToInt(Screen.height * bannerTopRatio);
             var boxRect = new Rect(boxX, boxY, boxW, boxH);
 
-            // 텍스트 — 검은 안개 띠 없이 8방향 그림자만으로 가독성 확보. 색은 고정(펄스 보간 없음).
+            // 차단 펄스 스케일 — 잘못된 액션 직후 짧게 텍스트가 커졌다가 돌아온다.
+            // 사용자 시선을 안내 문구로 다시 끌어오는 시각 신호.
+            float blockedScale = ComputeBlockedPulseScale();
+            Matrix4x4 prevMat = GUI.matrix;
+            if (blockedScale != 1f)
+            {
+                GUIUtility.ScaleAroundPivot(new Vector2(blockedScale, blockedScale), boxRect.center);
+            }
+
+            // 진행 힌트 영역도 백플레이트가 같이 덮어 텍스트 두 줄을 한 묶음으로 읽히게 함.
+            var hintRect = new Rect(boxRect.x, boxRect.yMax + 4, boxRect.width, hintRowHeight());
+
+            // 2a) 백플레이트 — 자주색 하늘 위에서 호박 글자가 묻히는 걸 막는 부드러운 검정 스크림.
+            // 가장자리는 fade로 자연스럽게 사라져 직사각형 박스 느낌 안 남.
+            if (backplateAlpha > 0f)
+            {
+                var plateRect = new Rect(boxRect.x - 12f, boxRect.y - 6f,
+                                          boxRect.width + 24f,
+                                          (hintRect.yMax - boxRect.y) + 12f);
+                DrawSoftBackplate(plateRect, new Color(0f, 0f, 0f, backplateAlpha), backplateFadePx);
+            }
+
+            // 2b) 텍스트 — 8방향 그림자 + 본체. 색은 고정(펄스 보간 없음).
             string msg = step.message;
             DrawTextShadow(boxRect, msg);
             _messageStyle.normal.textColor = TextColorWarm;
             GUI.Label(boxRect, msg, _messageStyle);
 
             // 진행 힌트
-            var hintRect = new Rect(boxRect.x, boxRect.yMax + 4, boxRect.width, hintRowHeight());
             GUI.Label(hintRect, HintFor(step.trigger), _hintStyle);
 
-            // 3) 우상단 스킵 버튼
-            int btnW = Mathf.RoundToInt(Screen.width * 0.085f);
-            int btnH = Mathf.RoundToInt(Screen.height * 0.040f);
-            if (GUI.Button(new Rect(Screen.width - btnW - 18, 18, btnW, btnH), L("Skip Tutorial", "튜토리얼 스킵"), _skipBtnStyle))
+            if (blockedScale != 1f) GUI.matrix = prevMat;
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            // 3) 우상단 스킵 버튼 — 초반 hideSkipUntilStepIndex 단계까지는 숨김(첫 안내 못 보고 누르는 사고 방지).
+            // 출시 빌드에서는 컴파일에서 제거됨 — 튜토리얼은 끝까지 봐야 함.
+            if (mgr.StepIndex > hideSkipUntilStepIndex)
             {
-                mgr.OpenSkipPrompt();
+                int btnW = Mathf.RoundToInt(Screen.width * 0.085f);
+                int btnH = Mathf.RoundToInt(Screen.height * 0.040f);
+                if (GUI.Button(new Rect(Screen.width - btnW - 18, 18, btnW, btnH), L("Skip Tutorial", "튜토리얼 스킵"), _skipBtnStyle))
+                {
+                    mgr.OpenSkipPrompt();
+                }
             }
+#endif
 
             // 4) UserClick 트리거 — 화면 어디든 클릭하면 진행 (스킵 버튼은 위에서 먼저 처리돼 이벤트가 소비됨)
             if (step.trigger == TutorialAdvanceTrigger.UserClick)
@@ -212,6 +299,17 @@ namespace DianoCard.Tutorial
         }
 
         private int hintRowHeight() => Mathf.RoundToInt(Screen.height * 0.030f);
+
+        // 차단 펄스 스케일 — sin 곡선 한 번 (0 → peak → 0). 진행도 t∈[0,1] 동안만 활성, 끝나면 1.0 반환.
+        // OutBack/easing 대신 단순 sin이 "통통 튀는" 느낌 없이 깔끔한 호흡.
+        private float ComputeBlockedPulseScale()
+        {
+            if (_blockedPulseStartTime < 0f || blockedPulseDuration <= 0f) return 1f;
+            float t = (Time.unscaledTime - _blockedPulseStartTime) / blockedPulseDuration;
+            if (t < 0f || t >= 1f) return 1f;
+            float bump = Mathf.Sin(t * Mathf.PI); // 0 → 1 → 0
+            return 1f + (blockedPulsePeakScale - 1f) * bump;
+        }
 
         private void DrawHighlight(TutorialStep step, float pulse)
         {
@@ -231,6 +329,48 @@ namespace DianoCard.Tutorial
                 case TutorialHighlight.EndTurnButton:
                     DrawAreaHighlight(new Rect(Screen.width - 220, Screen.height - 150, 200, 120), pulse);
                     break;
+                case TutorialHighlight.PotionIcon:
+                    if (_battleUI != null && _battleUI.TryGetTopBarPotionRect(out var pr))
+                        DrawAreaHighlight(VirtualToScreenRect(pr, 6f), pulse);
+                    else // 폴백: 상단 바 대략 위치
+                        DrawAreaHighlight(new Rect(Screen.width * 0.18f, 4f, 110f, 56f), pulse);
+                    break;
+                case TutorialHighlight.RelicIcon:
+                    if (_battleUI != null && _battleUI.TryGetTopBarRelicRect(out var rr))
+                        DrawAreaHighlight(VirtualToScreenRect(rr, 6f), pulse);
+                    else
+                        DrawAreaHighlight(new Rect(Screen.width * 0.26f, 4f, 100f, 56f), pulse);
+                    break;
+            }
+        }
+
+        // BattleUI는 가상 1280×720 좌표계로 상단 바 rect를 저장한다 (AspectScaler가 uniform 스케일 + 좌상단 anchored).
+        // 오버레이 OnGUI는 identity matrix라 스크린 픽셀 좌표로 변환 필요.
+        private Rect VirtualToScreenRect(Rect virtRect, float padPx)
+        {
+            float scale = DianoCard.UI.AspectScaler.Scale;
+            return new Rect(virtRect.x * scale - padPx,
+                            virtRect.y * scale - padPx,
+                            virtRect.width  * scale + padPx * 2f,
+                            virtRect.height * scale + padPx * 2f);
+        }
+
+        /// <summary>강조되지 않은 손패 카드들 위에 반투명 검정을 깔아 시각적으로 비활성처럼 보이게.
+        /// 강조 카드는 펄스 외곽선으로 분리되어 자연스럽게 부각된다.</summary>
+        private void DrawNonHighlightHandDim(string highlightCardId)
+        {
+            // BattleUI는 손패 카드 수만큼 인덱스를 갖는다. 강조 카드 인덱스 외 모두 dim.
+            if (!_battleUI.TryFindHandCardIndexById(highlightCardId, out int hlIdx)) return;
+            for (int i = 0; i < 12; i++) // 손패 최대치 여유 — 없으면 TryGetHandCardScreenRect가 false
+            {
+                if (i == hlIdx) continue;
+                if (!_battleUI.TryGetHandCardScreenRect(i, out var rect, out float angleDeg)) continue;
+
+                var pivot = new Vector2(rect.center.x, rect.center.y);
+                Matrix4x4 prev = GUI.matrix;
+                GUIUtility.RotateAroundPivot(angleDeg, pivot);
+                DrawRect(rect, new Color(0f, 0f, 0f, nonHighlightCardDimAlpha));
+                GUI.matrix = prev;
             }
         }
 
@@ -276,6 +416,22 @@ namespace DianoCard.Tutorial
             DrawBorder(r, baseColor, Mathf.Max(2f, highlightThickness - 1f));
         }
 
+        /// <summary>안내 텍스트 뒤 부드러운 다크 스크림. 가장자리에서 안쪽으로 갈수록 알파가 누적돼
+        /// 가운데는 baseColor 그대로, 바깥은 fade로 사라진다(직사각형 박스 느낌 제거).
+        /// DrawSoftGlow와 같은 패턴: 큰 rect(낮은 알파) → 작은 rect(점점 높은 알파) → 본체 단색.</summary>
+        private void DrawSoftBackplate(Rect inner, Color baseColor, float fadePx)
+        {
+            int pad = Mathf.RoundToInt(fadePx);
+            for (int i = pad; i > 0; i -= 4)
+            {
+                float frac = 1f - (float)i / pad; // 바깥 0 → 안쪽 1
+                var c = new Color(baseColor.r, baseColor.g, baseColor.b, baseColor.a * frac * 0.45f);
+                var r = new Rect(inner.x - i, inner.y - i, inner.width + i * 2, inner.height + i * 2);
+                DrawRect(r, c);
+            }
+            DrawRect(inner, baseColor);
+        }
+
         // 텍스트 뒤에 부드러운 안개 띠를 4단 알파로 깔아 가독성 보강.
         private void DrawSoftGlow(Rect inner, Color baseColor, int padding)
         {
@@ -291,7 +447,13 @@ namespace DianoCard.Tutorial
 
         private void DrawTextShadow(Rect r, string text)
         {
-            var offsets = new (int, int)[] { (-2, 0), (2, 0), (0, -2), (0, 2), (-1, -1), (1, 1), (-1, 1), (1, -1) };
+            // 메시지 폰트 크기에 비례한 그림자 오프셋. 큰 폰트일수록 더 멀리 펴 가독성 확보.
+            int s = Mathf.Max(2, Mathf.RoundToInt(_messageStyle.fontSize * 0.10f));
+            var offsets = new (int, int)[]
+            {
+                (-s, 0), (s, 0), (0, -s), (0, s),
+                (-s, -s), (s, s), (-s, s), (s, -s),
+            };
             foreach (var (dx, dy) in offsets)
             {
                 GUI.Label(new Rect(r.x + dx, r.y + dy, r.width, r.height), text, _messageShadowStyle);
@@ -306,9 +468,11 @@ namespace DianoCard.Tutorial
             TutorialAdvanceTrigger.FusionResolved => L("(Auto-advances when Fusion triggers)", "(융합을 발동하면 진행됩니다)"),
             TutorialAdvanceTrigger.TurnEnded => L("(Auto-advances when you end the turn)", "(턴을 종료하면 진행됩니다)"),
             TutorialAdvanceTrigger.BattleWon => L("(Auto-advances when you win combat)", "(전투를 끝내면 진행됩니다)"),
+            TutorialAdvanceTrigger.PotionUsed => L("(Auto-advances when you drink a potion)", "(포션을 마시면 진행됩니다)"),
             _ => "",
         };
 
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
         private void DrawSkipPrompt(TutorialManager mgr)
         {
             DrawRect(new Rect(0, 0, Screen.width, Screen.height), new Color(0, 0, 0, 0.55f));
@@ -338,6 +502,7 @@ namespace DianoCard.Tutorial
                 mgr.ConfirmSkip();
             }
         }
+#endif // UNITY_EDITOR || DEVELOPMENT_BUILD
 
         // GUI.skin.label 기본 hover/active 색이 normal과 다르면 마우스 올릴 때 글씨 색이 바뀐다.
         // 모든 state(normal/hover/active/focused + on* 4종)에 같은 색을 강제로 박아 변색 방지.

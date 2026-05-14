@@ -21,9 +21,10 @@ using static DianoCard.Data.LocaleSettings;
 /// </summary>
 public class BattleUI : MonoBehaviour
 {
-    // 가상 해상도 — 실제 화면 크기에 맞춰 스케일링됨
-    private const float RefW = 1280f;
-    private const float RefH = 720f;
+    // 가상 해상도 — 실제 화면 비율에 맞춰 자동으로 늘어남 (16:10이면 RefH가 800, 21:9면 RefW가 1720 등).
+    // 모든 `RefH - X` (화면 바닥 기준), `RefW * 0.5f` (화면 중앙) 등 좌표 표현이 자동으로 실제 화면 edge/center로 정렬.
+    private static float RefW => DianoCard.UI.AspectScaler.ScreenW;
+    private static float RefH => DianoCard.UI.AspectScaler.ScreenH;
 
     private BattleManager _battle;
     /// <summary>치트/훈련장 UI에서 현재 전투의 매니저에 접근하기 위한 퍼블릭 getter.</summary>
@@ -54,6 +55,13 @@ public class BattleUI : MonoBehaviour
 
     // 포션 아이콘 클릭 시 열리는 "마시기" 팝업 슬롯 (-1 = 닫힘).
     private int _selectedPotionIndex = -1;
+
+    // 튜토리얼 오버레이가 상단 바 포션/유물 아이콘에 글로우를 정확히 얹을 수 있게 매 OnGUI마다 갱신되는 rect.
+    // DrawTopBar에서 hit-rect와 동일하게 채워준다. 비어 있으면 rect.width == 0.
+    private Rect _topBarPotionRect;
+    private Rect _topBarRelicRect;
+    public bool TryGetTopBarPotionRect(out Rect r) { r = _topBarPotionRect; return r.width > 0f; }
+    public bool TryGetTopBarRelicRect(out Rect r)  { r = _topBarRelicRect;  return r.width > 0f; }
 
     // 직전 프레임에 호버된 손패 인덱스. 호버 시 카드가 확대되어 원본 부채꼴 영역을 벗어날 수 있어,
     // 확대된 hoverRect 기준으로 hover를 유지(끈적이게)하기 위한 sticky 상태.
@@ -144,9 +152,10 @@ public class BattleUI : MonoBehaviour
     private const float DiscardLandPulseDuration = 0.25f;
     // 모이기 단계에서 사용하는 2차 Bezier 제어점 — 곡선이 제어점에 끌려올라가며
     // 결과적으로 화면 중앙 높이를 지나가는 아치를 만든다.
-    private static readonly Vector2 DiscardFlyControl = new Vector2(RefW * 0.5f, 150f);
+    // RefW가 동적이라 static readonly 불가 → 프로퍼티로.
+    private static Vector2 DiscardFlyControl => new Vector2(RefW * 0.5f, 150f);
     // 카드가 모이는 최종 지점 Y — 화면 중앙보다 살짝 위
-    private const float DiscardGatherCenterY = RefH * 0.48f;
+    private static float DiscardGatherCenterY => RefH * 0.48f;
     // 모일 때 카드 간 가로 간격 (중앙을 기준으로 좌우로 배치)
     private const float DiscardGatherSpacing = 22f;
 
@@ -2574,7 +2583,7 @@ public class BattleUI : MonoBehaviour
     private Vector3 GuiToWorld(Vector2 guiPos)
     {
         var cam = Camera.main;
-        float scale = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
+        float scale = DianoCard.UI.AspectScaler.Scale;
         float sx = guiPos.x * scale;
         float sy = Screen.height - guiPos.y * scale;
         Vector3 world = cam.ScreenToWorldPoint(new Vector3(sx, sy, _vfxZDistance));
@@ -2981,11 +2990,16 @@ public class BattleUI : MonoBehaviour
                 && Event.current.type == EventType.MouseDown
                 && Event.current.button == 1)
             {
-                if (_targetingSummonIndex >= 0) ShowToast("공격을 취소합니다");
-                else if (_targetingSummonSkillIndex >= 0) ShowToast("스킬을 취소합니다");
-                else if (_targetingPotionIndex >= 0) ShowToast("포션 사용을 취소합니다");
-                else if (_cannibalFeedFromIndex >= 0) ShowToast("동족포식을 취소합니다");
-                else if (_reinforcePickerCardIndex >= 0) ShowToast("증원을 취소합니다");
+                // 튜토리얼 중에는 우클릭 취소 안내 토스트 억제 — 상단 안내 메시지에 집중하도록.
+                bool _tutSilent = DianoCard.Tutorial.TutorialManager.Instance?.IsActive == true;
+                if (!_tutSilent)
+                {
+                    if (_targetingSummonIndex >= 0) ShowToast("공격을 취소합니다");
+                    else if (_targetingSummonSkillIndex >= 0) ShowToast("스킬을 취소합니다");
+                    else if (_targetingPotionIndex >= 0) ShowToast("포션 사용을 취소합니다");
+                    else if (_cannibalFeedFromIndex >= 0) ShowToast("동족포식을 취소합니다");
+                    else if (_reinforcePickerCardIndex >= 0) ShowToast("증원을 취소합니다");
+                }
                 _targetingCardIndex = -1;
                 _targetingSummonIndex = -1;
                 _targetingSummonSkillIndex = -1;
@@ -3080,9 +3094,9 @@ public class BattleUI : MonoBehaviour
         GUI.matrix = Matrix4x4.identity;
         DrawBackground();
 
-        // 2) 이후 UI는 1280x720 가상 좌표로 그린 뒤 스케일링
-        float scale = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
-        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1));
+        // 2) UI는 디자인 캔버스 1280×720 기준 좌표 → 반응형 스케일 적용.
+        // RefW/RefH는 동적이라 화면 비율 무관하게 edge 기준 좌표가 자동 정렬됨.
+        GUI.matrix = DianoCard.UI.AspectScaler.GuiMatrix;
 
         // Normal1 배경 전용 바닥 안개 — 월드 스프라이트(캐릭터/배경)는 뒤, 손패/HP 바 등 IMGUI는 앞.
         DrawNormal1Fog();
@@ -5140,7 +5154,11 @@ public class BattleUI : MonoBehaviour
                 && badgeHitRect.Contains(ev2.mousePosition))
             {
                 ev2.Use();
-                _targetingSummonIndex = (_targetingSummonIndex == summonIndex) ? -1 : summonIndex;
+                var _tutS = DianoCard.Tutorial.TutorialManager.Instance;
+                if (_tutS == null || !_tutS.IsActive || _tutS.IsManualSummonAllowed())
+                    _targetingSummonIndex = (_targetingSummonIndex == summonIndex) ? -1 : summonIndex;
+                else
+                    _tutS.NotifyBlocked();
             }
         }
 
@@ -5383,6 +5401,14 @@ public class BattleUI : MonoBehaviour
         if (!hitRect.Contains(ev.mousePosition)) return;
         ev.Use();
 
+        // 튜토리얼: 시그니처 스킬 사용 금지.
+        var _tutSk = DianoCard.Tutorial.TutorialManager.Instance;
+        if (_tutSk != null && _tutSk.IsActive && !_tutSk.IsManualSummonAllowed())
+        {
+            _tutSk.NotifyBlocked();
+            return;
+        }
+
         // 같은 공룡 스킬 재클릭 → 타겟팅 해제
         if (_targetingSummonSkillIndex == summonIndex)
         {
@@ -5612,10 +5638,13 @@ public class BattleUI : MonoBehaviour
                 ev.Use();
                 int cardIdx = _targetingCardIndex;
                 int eIdx = enemyIndex;
+                var clickedCard = _battle.state.hand[cardIdx].data;
                 _targetingCardIndex = -1;
                 // SFX는 카드 클릭 즉시 재생 — PlayCard가 화염구 임팩트 시점까지 지연되므로
                 // ResolveCard에서 트리거하면 사운드가 늦게 들림.
-                DianoCard.Audio.AudioManager.Instance?.PlaySFX("card_attack");
+                // DEBUFF 카드는 ENEMY 타겟이어도 card_debuff 톤(IsAttackSpell=true여서 분기 통과).
+                string enemyTargetSfx = (clickedCard.subType == CardSubType.DEBUFF) ? "card_debuff" : "card_attack";
+                DianoCard.Audio.AudioManager.Instance?.PlaySFX(enemyTargetSfx);
                 _pending.Add(() => {
                     // 모션과 화염구는 즉시 시작. PlayCard(데미지/마나/상태)는 화염구 임팩트 시점까지 지연.
                     _playerView?.PlayAttack(ComputeAttackDir(eIdx), distance: 0.08f, duration: PlayerAttackDuration);
@@ -5787,11 +5816,8 @@ public class BattleUI : MonoBehaviour
     {
         if (!_arrowSourceValid || state == null) return;
 
-        // 출발 — 카드/공룡 rect의 상단보다 약간 안쪽. 회전된 카드라도 center.x는 회전 피벗이라 안정적.
-        Vector2 from = new Vector2(_arrowSourceRect.center.x, _arrowSourceRect.y + 12f);
-
         // 끝점 — 호버된 valid 타겟이 있으면 중심에 스냅, 없으면 마우스를 따라간다.
-        Vector2 mouse = Event.current != null ? Event.current.mousePosition : from;
+        Vector2 mouse = Event.current != null ? Event.current.mousePosition : _arrowSourceRect.center;
         bool snapped = false;
         Vector2 to = mouse;
         for (int i = 0; i < _arrowTargetRects.Count; i++)
@@ -5805,7 +5831,12 @@ public class BattleUI : MonoBehaviour
             }
         }
 
-        // 마우스가 카드 위에 머물러 화살표 길이가 거의 0일 때는 그리지 않는다 — 자기 자신 가리키는 모양 방지.
+        // 출발 — 타겟이 source 아래(HUD 포션 → 적/아군)면 아래 변에서, 위(카드/공룡 → 적)면 윗변에서.
+        bool targetBelow = to.y > _arrowSourceRect.center.y;
+        float fromY = targetBelow ? (_arrowSourceRect.yMax - 12f) : (_arrowSourceRect.y + 12f);
+        Vector2 from = new Vector2(_arrowSourceRect.center.x, fromY);
+
+        // 마우스가 source 위에 머물러 화살표 길이가 거의 0일 때는 그리지 않는다 — 자기 자신 가리키는 모양 방지.
         if (!snapped && Vector2.Distance(from, to) < 36f) return;
 
         EnsureArrowDotTexture();
@@ -5907,11 +5938,13 @@ public class BattleUI : MonoBehaviour
 
     private void DrawBezierArrow(Vector2 from, Vector2 to, bool snapped)
     {
-        // 컨트롤 포인트: source에서 위로 들어올린 뒤 target 위쪽에서 내려오도록 잡음 → 카드에서 솟아오르는 호.
+        // 컨트롤 포인트: source에서 진행 방향으로 들어올린 뒤 target 너머에서 되돌아오도록 잡음.
+        // 타겟이 source 위(카드 → 적)면 위로 솟구치는 호, 아래(HUD 포션 → 적/아군)면 아래로 부푸는 호.
         float dist = Vector2.Distance(from, to);
         float lift = Mathf.Min(240f, dist * 0.55f);
-        Vector2 c1 = new Vector2(from.x, from.y - lift * 0.95f);
-        Vector2 c2 = new Vector2(to.x, to.y - lift * 0.55f);
+        float liftDir = (to.y >= from.y) ? +1f : -1f;
+        Vector2 c1 = new Vector2(from.x, from.y + lift * 0.95f * liftDir);
+        Vector2 c2 = new Vector2(to.x,   to.y   + lift * 0.55f * liftDir);
 
         // 두 가지 컬러: 외부 헤일로(어두운 적색)와 내부 코어(밝은 옐로우-오렌지) — STS 톤.
         // 헤일로가 검은 외곽선처럼 카드/배경 어디에서나 곡선을 분리시켜 가독성 확보.
@@ -6654,7 +6687,7 @@ public class BattleUI : MonoBehaviour
         float s = navBarMasterScale;
         const float barX = 10f;
         float barY = 8f * s;
-        const float barW = RefW - 20f;
+        float barW = RefW - 20f;  // RefW가 동적이라 const 불가
         float barH = 58.14f * s;
         var barRect = new Rect(barX, barY, barW, barH);
         _navBarBottomY = barY + barH + 4f;
@@ -6710,6 +6743,7 @@ public class BattleUI : MonoBehaviour
             float totalPotionW = (_iconPotion != null ? iconSize + iconLabelGap : 0f) + potionLabelSz.x;
             var potionHitRect = new Rect(cursorX - 4f, barY, totalPotionW + 12f, barH);
             _potionDropdownAnchorX = potionHitRect.x;
+            _topBarPotionRect = potionHitRect;
             bool potionHov = potionHitRect.Contains(evP.mousePosition);
 
             if (_iconPotion != null)
@@ -6745,11 +6779,20 @@ public class BattleUI : MonoBehaviour
 
             if (potionHov && evP.type == EventType.MouseDown && evP.button == 0)
             {
-                _potionViewerOpen = !_potionViewerOpen;
-                _selectedPotionIndex = -1;
-                if (_potionViewerOpen) _relicViewerOpen = false;
-                run.hasNewPotion = false; // 클릭 = 인지, 토글 방향 무관하게 즉시 OFF
-                evP.Use();
+                var _tutP = DianoCard.Tutorial.TutorialManager.Instance;
+                if (_tutP != null && _tutP.IsActive && !_tutP.IsPotionAllowed())
+                {
+                    evP.Use();
+                    _tutP.NotifyBlocked();
+                }
+                else
+                {
+                    _potionViewerOpen = !_potionViewerOpen;
+                    _selectedPotionIndex = -1;
+                    if (_potionViewerOpen) _relicViewerOpen = false;
+                    run.hasNewPotion = false; // 클릭 = 인지, 토글 방향 무관하게 즉시 OFF
+                    evP.Use();
+                }
             }
         }
         // 유물 슬롯 — 호버 시 아이콘 확대 + 클릭 시 유물 row 패널 토글
@@ -6760,6 +6803,7 @@ public class BattleUI : MonoBehaviour
             float totalRelicW = (_iconRelic != null ? iconSize + iconLabelGap : 0f) + relicLabelSz.x;
             var relicHitRect = new Rect(cursorX - 4f, barY, totalRelicW + 12f, barH);
             _relicDropdownAnchorX = relicHitRect.x;
+            _topBarRelicRect = relicHitRect;
             bool relicHov = relicHitRect.Contains(evR.mousePosition);
 
             if (_iconRelic != null)
@@ -6789,14 +6833,23 @@ public class BattleUI : MonoBehaviour
 
             if (relicHov && evR.type == EventType.MouseDown && evR.button == 0)
             {
-                _relicViewerOpen = !_relicViewerOpen;
-                if (_relicViewerOpen)
+                var _tutR = DianoCard.Tutorial.TutorialManager.Instance;
+                if (_tutR != null && _tutR.IsActive && !_tutR.IsRelicViewerAllowed())
                 {
-                    _potionViewerOpen = false;
-                    _selectedPotionIndex = -1;
+                    evR.Use();
+                    _tutR.NotifyBlocked();
                 }
-                run.hasNewRelic = false; // 클릭 = 인지, 토글 방향 무관하게 즉시 OFF
-                evR.Use();
+                else
+                {
+                    _relicViewerOpen = !_relicViewerOpen;
+                    if (_relicViewerOpen)
+                    {
+                        _potionViewerOpen = false;
+                        _selectedPotionIndex = -1;
+                    }
+                    run.hasNewRelic = false; // 클릭 = 인지, 토글 방향 무관하게 즉시 OFF
+                    evR.Use();
+                }
             }
         }
 
@@ -7101,8 +7154,8 @@ public class BattleUI : MonoBehaviour
         float anglePerCard = effCount > 1 ? totalAngle / (effCount - 1) : handAnglePerCard;
         float startAngle = -totalAngle * 0.5f;
 
-        // GUI.matrix와 같은 uniform scale 적용. Reference 1280×720 → 실제 화면 픽셀.
-        float scale = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
+        // GUI.matrix와 같은 uniform scale 적용. 디자인 캔버스 → 실제 화면 픽셀.
+        float scale = DianoCard.UI.AspectScaler.Scale;
 
         // 호버 중이면 raised hover rect 사용 — 카드가 위로 올라오고 확대되며 회전 0.
         if (handIndex == _handStickyHoverIdx)
@@ -7427,7 +7480,15 @@ public class BattleUI : MonoBehaviour
             if (canPlay && _reinforcePickerCardIndex < 0)
             {
                 var ev = Event.current;
-                if (ev.type == EventType.MouseDown && ev.button == 0 && hoverRect.Contains(ev.mousePosition))
+                // 튜토리얼: 안내되지 않은 카드 차단. 클릭은 소비해 fallback으로 흘러가지 않게.
+                var _tut = DianoCard.Tutorial.TutorialManager.Instance;
+                bool _tutBlocked = _tut != null && _tut.IsActive && !_tut.IsHandCardAllowed(c.id);
+                if (_tutBlocked && ev.type == EventType.MouseDown && ev.button == 0 && hoverRect.Contains(ev.mousePosition))
+                {
+                    ev.Use();
+                    _tut.NotifyBlocked();
+                }
+                else if (!_tutBlocked && ev.type == EventType.MouseDown && ev.button == 0 && hoverRect.Contains(ev.mousePosition))
                 {
                     ev.Use();
                     int captured = i;
@@ -7460,9 +7521,10 @@ public class BattleUI : MonoBehaviour
                         _targetingCardIndex = -1;
                         _swapFromCardIndex = -1;
                         bool isAttack = IsAttackSpell(c);
-                        if (isAttack)
+                        // SFX는 클릭 즉시 — PlayCard가 화염구 임팩트까지 지연되므로 ResolveCard에서 재생하면 늦음.
+                        // ATTACK은 card_attack, DEBUFF는 피해 유무 무관 card_debuff (피해 없는 광역 DEBUFF도 무음 X).
+                        if (isAttack || (c.cardType == CardType.MAGIC && c.subType == CardSubType.DEBUFF))
                         {
-                            // SFX는 클릭 즉시 — PlayCard가 화염구 임팩트까지 지연되므로 ResolveCard에서 재생하면 늦음.
                             string sfxKey = (c.subType == CardSubType.DEBUFF) ? "card_debuff" : "card_attack";
                             DianoCard.Audio.AudioManager.Instance?.PlaySFX(sfxKey);
                         }
@@ -7900,7 +7962,26 @@ public class BattleUI : MonoBehaviour
 
     private void DrawEndTurn(BattleState state)
     {
-        GUI.enabled = !state.IsOver && !_endTurnAnimating && !IsDrawFlyActive;
+        var _tutET = DianoCard.Tutorial.TutorialManager.Instance;
+        bool _tutETBlock = _tutET != null && _tutET.IsActive && !_tutET.IsEndTurnAllowed();
+        // 락업 안전망: HandCard 단계인데 그 카드가 손패에 없거나, PotionIcon 단계인데 포션이 없으면 END TURN 허용.
+        if (_tutETBlock && _tutET != null && _tutET.CurrentStep != null)
+        {
+            var _step = _tutET.CurrentStep;
+            if (_step.highlight == DianoCard.Tutorial.TutorialHighlight.HandCard
+                && !string.IsNullOrEmpty(_step.highlightCardId)
+                && !TryFindHandCardIndexById(_step.highlightCardId, out _))
+            {
+                _tutETBlock = false;
+            }
+            else if (_step.highlight == DianoCard.Tutorial.TutorialHighlight.PotionIcon)
+            {
+                var _run = DianoCard.Game.GameStateManager.Instance?.CurrentRun;
+                if (_run == null || _run.potions == null || _run.potions.Count == 0)
+                    _tutETBlock = false;
+            }
+        }
+        GUI.enabled = !state.IsOver && !_endTurnAnimating && !IsDrawFlyActive && !_tutETBlock;
 
         // 베이스 사이즈(살짝 작아짐) + 호버 시 확대
         var baseRect = new Rect(RefW - endTurnButtonRightOffset,
@@ -7937,6 +8018,7 @@ public class BattleUI : MonoBehaviour
         {
             _targetingCardIndex = -1;
             _swapFromCardIndex = -1;
+            DianoCard.Audio.AudioManager.Instance?.PlaySFX("ui_click");
             _pending.Add(() => StartCoroutine(EndTurnCoroutine()));
         }
 
@@ -8038,6 +8120,9 @@ public class BattleUI : MonoBehaviour
         // Phase 3: 손패 → (중앙 모임 → 머뭄 → 더미) 3단계 비행 애니메이션
         if (state.hand.Count > 0)
         {
+            // SFX는 모션 시작과 동기화 — EndTurnCleanup 시점이면 카드가 이미 다 사라진 뒤라
+            // 시각/청각 분리 + 직후 draw 버스트에 마스킹된다.
+            DianoCard.Audio.AudioManager.Instance?.PlaySFXBurst("card_discard", state.hand.Count);
             BeginDiscardFlyAnimation(state);
 
             // 마지막 카드가 착지할 때까지 대기
@@ -8068,6 +8153,8 @@ public class BattleUI : MonoBehaviour
         bool reshuffled = deckBeforeNextTurn == 0 && discardBeforeNextTurn > 0 && state.deck.Count > 0;
         if (reshuffled && !state.IsOver)
         {
+            // SFX는 reshuffle 비행 모션 시작과 동기 — 카드 N장이면 60ms 간격 burst (휙휙휙).
+            DianoCard.Audio.AudioManager.Instance?.PlaySFXBurst("card_shuffle", discardBeforeNextTurn, 0.06f);
             BeginReshuffleAnimation(discardBeforeNextTurn);
             float reshuffleWait = GetReshuffleTotalDuration() + 0.1f;
             yield return new WaitForSeconds(reshuffleWait);
@@ -8603,6 +8690,9 @@ public class BattleUI : MonoBehaviour
         _drawTotalHandCount = n;
 
         int drawn = n - fromIndex;
+        // SFX는 모션 시작과 동기화 — BattleManager.Draw 시점에 발동하면 데이터 갱신 시점이라
+        // 시각 비행 애니메이션보다 먼저 들려서 어긋남.
+        DianoCard.Audio.AudioManager.Instance?.PlaySFXBurst("card_draw", drawn);
         // 중앙 클러스터 위치 — 버림 애니와 동일한 기하. 중앙 기준 좌우 균등.
         float gatherCenterX = RefW * 0.5f;
         float gatherMid = (drawn - 1) * 0.5f;
@@ -9258,12 +9348,21 @@ public class BattleUI : MonoBehaviour
 
                 if (inBattle && btnHov && ev.type == EventType.MouseDown && ev.button == 0)
                 {
-                    ev.Use();
-                    int slotIdx = _selectedPotionIndex;
-                    _selectedPotionIndex = -1;
-                    _potionViewerOpen = false;
-                    if (needsTarget) _targetingPotionIndex = slotIdx;
-                    else _pending.Add(() => _battle.UsePotion(slotIdx, -1));
+                    var _tutP2 = DianoCard.Tutorial.TutorialManager.Instance;
+                    if (_tutP2 != null && _tutP2.IsActive && !_tutP2.IsPotionAllowed())
+                    {
+                        ev.Use();
+                        _tutP2.NotifyBlocked();
+                    }
+                    else
+                    {
+                        ev.Use();
+                        int slotIdx = _selectedPotionIndex;
+                        _selectedPotionIndex = -1;
+                        _potionViewerOpen = false;
+                        if (needsTarget) _targetingPotionIndex = slotIdx;
+                        else _pending.Add(() => _battle.UsePotion(slotIdx, -1));
+                    }
                 }
             }
         }

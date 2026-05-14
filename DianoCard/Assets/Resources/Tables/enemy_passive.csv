@@ -1,5 +1,5 @@
 id,name_kr,name_en,description_kr,description_en,icon
-P_TWIN_RAGE,쌍둥이의 분노,Twin's Wrath,파트너가 쓰러지면 즉시 공격력 +4를 영구 획득하며 격노한다.,When its partner falls it permanently gains +4 attack and enters a rage.,STRENGTH
+P_TWIN_RAGE,쌍둥이의 분노,Twin's Wrath,파트너가 쓰러지면 즉시 공격력 +9를 영구 획득하며 격노한다.,When its partner falls it permanently gains +9 attack and enters a rage.,STRENGTH
 P_ROOT_REBIRTH,뿌리 번식,Root Rebirth,자신이 소환한 쫄이 쓰러지면 다시 소환한다.,When its summoned minions fall they are immediately re-summoned.,SUMMON
 P_GROW_ATK,성장,Growth,매 턴 공격력 +2가 영구 누적된다.,Permanently gains +2 attack every turn.,STRENGTH
 P_MOSS_SHIELD,이끼 수호,Moss Shield,필드에 이끼가 한 체라도 남아있는 동안 본체는 모든 피해를 받지 않는다.,While any moss remains on the field this unit takes no damage.,WARD

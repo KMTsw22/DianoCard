@@ -14,11 +14,15 @@ namespace DianoCard.Tutorial
         public static event Action OnFusionResolved;      // 융합 발동 완료
         public static event Action OnTurnEnded;
         public static event Action OnBattleWon;
+        public static event Action OnPotionUsed;          // 어떤 포션이든 사용 성공 시
+        public static event Action OnTutorialActionBlocked;  // 게이트가 액션을 차단했을 때 (BattleUI에서 시각/소리 피드백 유발)
 
         public static void NotifyCardPlayed(int handIndex) => OnCardPlayed?.Invoke(handIndex);
         public static void NotifySummonPlaced() => OnSummonPlaced?.Invoke();
         public static void NotifyFusionResolved() => OnFusionResolved?.Invoke();
         public static void NotifyTurnEnded() => OnTurnEnded?.Invoke();
         public static void NotifyBattleWon() => OnBattleWon?.Invoke();
+        public static void NotifyPotionUsed() => OnPotionUsed?.Invoke();
+        public static void NotifyActionBlocked() => OnTutorialActionBlocked?.Invoke();
     }
 }

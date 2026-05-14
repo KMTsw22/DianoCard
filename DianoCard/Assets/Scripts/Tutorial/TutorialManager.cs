@@ -15,8 +15,12 @@ namespace DianoCard.Tutorial
 
         private List<TutorialStep> _steps;
         private int _stepIndex = -1;
+        private float _stepEnterTime;
         public bool IsActive => _stepIndex >= 0 && _steps != null && _stepIndex < _steps.Count;
         public TutorialStep CurrentStep => IsActive ? _steps[_stepIndex] : null;
+        public int StepIndex => _stepIndex;
+        // Timer 단계는 자유 플레이 — 모든 게이트 해제. 마지막 "전투 마무리하기" 안내용.
+        public bool IsFreePlay => IsActive && CurrentStep.trigger == TutorialAdvanceTrigger.Timer;
 
         // 스킵 확인 모달 표시 플래그. TutorialOverlay가 읽어 모달 그림.
         public bool SkipPromptOpen { get; private set; }
@@ -34,6 +38,7 @@ namespace DianoCard.Tutorial
             TutorialEvents.OnFusionResolved += HandleFusionResolved;
             TutorialEvents.OnTurnEnded += HandleTurnEnded;
             TutorialEvents.OnBattleWon += HandleBattleWon;
+            TutorialEvents.OnPotionUsed += HandlePotionUsed;
         }
 
         void OnDisable()
@@ -43,6 +48,7 @@ namespace DianoCard.Tutorial
             TutorialEvents.OnFusionResolved -= HandleFusionResolved;
             TutorialEvents.OnTurnEnded -= HandleTurnEnded;
             TutorialEvents.OnBattleWon -= HandleBattleWon;
+            TutorialEvents.OnPotionUsed -= HandlePotionUsed;
         }
 
         /// <summary>GSM.EnterTutorial이 호출. 첫 단계는 즉시 표시(인트로),
@@ -51,8 +57,21 @@ namespace DianoCard.Tutorial
         {
             _steps = TutorialSteps.BuildCH01();
             _stepIndex = 0;
+            _stepEnterTime = Time.unscaledTime;
             SkipPromptOpen = false;
             Debug.Log($"[Tutorial] Begin — {_steps.Count} steps");
+        }
+
+        void Update()
+        {
+            if (!IsActive) return;
+            var step = CurrentStep;
+            if (step.trigger == TutorialAdvanceTrigger.Timer
+                && step.autoAdvanceSeconds > 0f
+                && Time.unscaledTime - _stepEnterTime >= step.autoAdvanceSeconds)
+            {
+                AdvanceInternal();
+            }
         }
 
         public void NextByUserClick()
@@ -64,8 +83,65 @@ namespace DianoCard.Tutorial
         public void OpenSkipPrompt() => SkipPromptOpen = true;
         public void CloseSkipPrompt() => SkipPromptOpen = false;
 
+        // 안내되지 않은 손패 카드 클릭은 무시. HandCard 강조 단계는 그 카드 ID만 허용,
+        // 그 외 단계(UserClick / EndTurnButton / PotionIcon / RelicIcon / None)는 모든 카드 차단.
+        // Timer(farewell) 단계는 자유 플레이라 모두 허용.
+        public bool IsHandCardAllowed(string cardId)
+        {
+            if (!IsActive) return true;
+            if (IsFreePlay) return true;
+            var step = CurrentStep;
+            if (step.highlight == TutorialHighlight.HandCard && !string.IsNullOrEmpty(step.highlightCardId))
+                return cardId == step.highlightCardId;
+            return false;
+        }
+
+        // 포션 아이콘/뷰어/마시기 — PotionUsed 트리거 단계, PotionIcon 강조, Timer 자유 플레이에서 허용.
+        public bool IsPotionAllowed()
+        {
+            if (!IsActive) return true;
+            if (IsFreePlay) return true;
+            var step = CurrentStep;
+            return step.trigger == TutorialAdvanceTrigger.PotionUsed
+                || step.highlight == TutorialHighlight.PotionIcon;
+        }
+
+        // 유물 아이콘 토글 — RelicIcon 강조 단계나 비활성 / Timer 자유 플레이.
+        public bool IsRelicViewerAllowed()
+        {
+            if (!IsActive) return true;
+            if (IsFreePlay) return true;
+            return CurrentStep.highlight == TutorialHighlight.RelicIcon;
+        }
+
+        // 공룡 수동 공격 / 시그니처 스킬 — Timer 자유 플레이에서만 활성 중에도 허용.
+        public bool IsManualSummonAllowed() => !IsActive || IsFreePlay;
+
+        // END TURN은 TurnEnded / BattleWon / Timer 자유 플레이에서 허용.
+        // 락업 안전망은 BattleUI 쪽에서 "강조된 카드가 손패에 없으면" 별도 허용 처리.
+        public bool IsEndTurnAllowed()
+        {
+            if (!IsActive) return true;
+            if (IsFreePlay) return true;
+            var trig = CurrentStep.trigger;
+            return trig == TutorialAdvanceTrigger.TurnEnded
+                || trig == TutorialAdvanceTrigger.BattleWon;
+        }
+
+        // 차단 시 BattleUI가 시각/소리 피드백을 띄울 수 있도록 신호. TutorialEvents 경유.
+        public void NotifyBlocked() => TutorialEvents.NotifyActionBlocked();
+
+        // GSM.EndTutorial 등 외부에서 강제 종료 — farewell Timer 중 전투가 빨리 끝나는 케이스 대비.
+        public void ForceEnd()
+        {
+            if (_stepIndex < 0 && _steps == null) return;
+            _stepIndex = -1;
+            _steps = null;
+            SkipPromptOpen = false;
+        }
+
         /// <summary>스킵 확정 — 진행도 무관하게 EndTutorial 호출, sandbox 폐기.
-        /// PlayerPrefs 완료 플래그는 EndTutorial이 세팅하므로 두 번 다시 안 뜸.</summary>
+        /// 완료 플래그는 EndTutorial이 SaveSystem에 세팅하므로 두 번 다시 안 뜸.</summary>
         public void ConfirmSkip()
         {
             Debug.Log("[Tutorial] Skip confirmed");
@@ -83,6 +159,7 @@ namespace DianoCard.Tutorial
         private void HandleFusionResolved() => Advance(TutorialAdvanceTrigger.FusionResolved);
         private void HandleTurnEnded() => Advance(TutorialAdvanceTrigger.TurnEnded);
         private void HandleBattleWon() => Advance(TutorialAdvanceTrigger.BattleWon);
+        private void HandlePotionUsed() => Advance(TutorialAdvanceTrigger.PotionUsed);
 
         private void Advance(TutorialAdvanceTrigger trigger)
         {
@@ -94,13 +171,14 @@ namespace DianoCard.Tutorial
         private void AdvanceInternal()
         {
             _stepIndex++;
+            _stepEnterTime = Time.unscaledTime;
             if (_stepIndex >= _steps.Count)
             {
                 Debug.Log("[Tutorial] All steps consumed");
                 _stepIndex = -1;
                 _steps = null;
-                // 마지막 단계가 BattleWon이라 GSM.EndBattle이 곧 EndTutorial을 호출.
-                // 여기선 별도 처리 안 함.
+                // 마지막 farewell(Timer) 단계 후 자연스럽게 종료. 전투 자체는 계속.
+                // 슬라임 처치 시 GSM.EndBattle → EndTutorial → RelicPick.
             }
             else
             {

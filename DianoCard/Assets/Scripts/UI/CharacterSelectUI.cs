@@ -31,8 +31,9 @@ using UnityEngine.InputSystem;
 /// </summary>
 public class CharacterSelectUI : MonoBehaviour
 {
-    private const float RefW = 1280f;
-    private const float RefH = 720f;
+    // 반응형 (AspectScaler) — 화면 비율에 맞춰 자동 확장.
+    private static float RefW => DianoCard.UI.AspectScaler.ScreenW;
+    private static float RefH => DianoCard.UI.AspectScaler.ScreenH;
 
     // 선택 가능한 캐릭터 ID 목록 — 슬롯 순서대로. 나머지 슬롯은 "Coming Soon" 잠김 상태.
     private static readonly string[] AvailableCharacterIds = new[] { "CH002" };
@@ -698,9 +699,9 @@ public class CharacterSelectUI : MonoBehaviour
             DrawAtmosphereFXForeground();
         }
 
-        // 2) 가상 좌표계로 전환
-        float scale = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
-        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1));
+        // 2) 반응형 가상 좌표계 (AspectScaler 사용 — 화면 비율에 맞춰 RefW/RefH 자동 확장)
+        float scale = DianoCard.UI.AspectScaler.Scale;
+        GUI.matrix = DianoCard.UI.AspectScaler.GuiMatrix;
 
         DrawInfoPanel();
         DrawCardRow();
@@ -1493,7 +1494,9 @@ public class CharacterSelectUI : MonoBehaviour
         if (ev.type == EventType.MouseDown && ev.button == 0 && ModeToggleRect.Contains(ev.mousePosition))
         {
             ev.Use();
-            SwitchSelection(ch.linkedForm);
+            // 1차 출시는 Arkane 단일 — 린네(linkedForm) 폼은 잠금.
+            // 잠긴 카드 슬롯과 동일하게 "ARCANA SEALED" 오버레이만 표시.
+            _comingSoonTimer = 1.5f;
         }
     }
 

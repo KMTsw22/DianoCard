@@ -1,3 +1,4 @@
+using DianoCard.Data;
 using UnityEngine;
 using static DianoCard.Data.LocaleSettings;
 
@@ -5,7 +6,7 @@ namespace DianoCard.Tutorial
 {
     /// <summary>
     /// STS 스타일 일회성 팁 모달. 화면 중앙 작은 패널 + "알겠어요" 버튼.
-    /// 한 번 본 키는 PlayerPrefs에 마크되어 다시 표시되지 않는다.
+    /// 한 번 본 키는 SaveSystem(save.json)에 마크되어 다시 표시되지 않는다.
     /// 게임 다른 곳에서 TutorialTipModal.Instance.Show(...)로 호출.
     ///
     /// 표시 중에도 게임 인풋은 OnGUI 위 레이어로 차단 (입력은 모달이 흡수).
@@ -62,7 +63,7 @@ namespace DianoCard.Tutorial
         public void Show(string title, string body, string prefsKey)
         {
             if (_open) return;
-            if (PlayerPrefs.GetInt(prefsKey, 0) == 1) return;
+            if (SaveSystem.GetInt(prefsKey, 0) == 1) return;
             _title = title;
             _body = body;
             _key = prefsKey;
@@ -73,8 +74,8 @@ namespace DianoCard.Tutorial
         {
             if (!string.IsNullOrEmpty(_key))
             {
-                PlayerPrefs.SetInt(_key, 1);
-                PlayerPrefs.Save();
+                SaveSystem.SetInt(_key, 1);
+                SaveSystem.Save();
             }
             _open = false;
             _key = null;
@@ -120,6 +121,7 @@ namespace DianoCard.Tutorial
         void OnGUI()
         {
             if (!_open) return;
+            if (PauseMenuUI.IsOpen) return;
             EnsureStyles();
 
             // 화면 dim

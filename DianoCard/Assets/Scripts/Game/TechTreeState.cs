@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using DianoCard.Data;
 using UnityEngine;
 
 namespace DianoCard.Game
@@ -44,7 +45,7 @@ namespace DianoCard.Game
 
     /// <summary>
     /// 영구 메타 진행 상태 — 단일 포인트 통화 + 노드별 현재 랭크.
-    /// PlayerPrefs("TechTreeState_v2")에 JSON 저장. v1(브랜치 분리형)과 호환되지 않음 — 자동 마이그레이션 없음(MVP).
+    /// SaveSystem("TechTreeState_v2")에 JSON 문자열로 저장. v1(브랜치 분리형)과 호환되지 않음 — 자동 마이그레이션 없음(MVP).
     /// </summary>
     [Serializable]
     public class TechTreeState
@@ -58,7 +59,7 @@ namespace DianoCard.Game
 
         public static TechTreeState Load()
         {
-            string json = PlayerPrefs.GetString(PrefsKey, "");
+            string json = SaveSystem.GetString(PrefsKey, "");
             if (string.IsNullOrEmpty(json)) return new TechTreeState();
             try
             {
@@ -76,8 +77,8 @@ namespace DianoCard.Game
 
         public void Save()
         {
-            PlayerPrefs.SetString(PrefsKey, JsonUtility.ToJson(this));
-            PlayerPrefs.Save();
+            SaveSystem.SetString(PrefsKey, JsonUtility.ToJson(this));
+            SaveSystem.Save();
         }
 
         public int GetRank(string nodeId)

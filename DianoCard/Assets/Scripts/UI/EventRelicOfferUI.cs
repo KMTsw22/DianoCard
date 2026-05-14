@@ -13,8 +13,9 @@ using static DianoCard.Data.LocaleSettings;
 [DefaultExecutionOrder(1060)]
 public class EventRelicOfferUI : MonoBehaviour
 {
-    private const float RefW = 1280f;
-    private const float RefH = 720f;
+    // 반응형 (AspectScaler) — 화면 비율에 맞춰 자동 확장.
+    private static float RefW => DianoCard.UI.AspectScaler.ScreenW;
+    private static float RefH => DianoCard.UI.AspectScaler.ScreenH;
 
     [Header("Backdrop Dim")]
     [SerializeField, Range(0f, 1f)] private float backdropAlpha = 0.55f;
@@ -77,12 +78,28 @@ public class EventRelicOfferUI : MonoBehaviour
     private float _btnR = -1f, _btnT = -1f;
 
     private readonly List<System.Action> _pending = new();
+    private bool _firstDrawLogged;
 
     void Start()
     {
         // relic_default.png는 실제로 없음 — 상단 HUD 슬롯과 동일한 Relic.png를 폴백으로 사용.
         _defaultRelicIcon = Resources.Load<Texture2D>("InGame/Icon/Relic");
         Debug.Log("[EventRelicOfferUI] attached & ready.");
+    }
+
+    // _pending를 OnGUI에서 비우면 Accept→Map 전이가 같은 Repaint 이벤트 안에서 일어나
+    // MapUI/EventUI 양쪽의 GUI 상태가 꼬일 수 있다. 프레임 경계로 밀어준다.
+    void Update()
+    {
+        if (_pending.Count == 0) return;
+        var gsm = GameStateManager.Instance;
+        if (gsm == null || gsm.State != GameState.EventRelicOffer)
+        {
+            _pending.Clear();
+            return;
+        }
+        for (int i = 0; i < _pending.Count; i++) _pending[i]?.Invoke();
+        _pending.Clear();
     }
 
     private void BuildStyles()
@@ -152,49 +169,10 @@ public class EventRelicOfferUI : MonoBehaviour
         s.onFocused.textColor = c; s.onFocused.background = bg;
     }
 
-    void OnGUI()
-    {
-        if (PauseMenuUI.IsOpen) return;
-        var gsm = GameStateManager.Instance;
-        if (gsm == null || gsm.State != GameState.EventRelicOffer) return;
-
-        // 다음 프레임에서 처리 — OnGUI 중 상태 변경 시 GUI 레이아웃 깨짐 방지.
-        foreach (var a in _pending) a?.Invoke();
-        _pending.Clear();
-
-        BuildStyles();
-        // 인스펙터 변경 즉시 반영 — color 바꾼 직후 LockHoverState로 hover state 동기화
-        _headerStyle.fontSize = headerFontSize;
-        _headerStyle.normal.textColor = headerColor;
-        LockHoverState(_headerStyle);
-        _nameStyle.fontSize = nameFontSize;
-        _nameStyle.normal.textColor = nameColor;
-        LockHoverState(_nameStyle);
-        _descStyle.fontSize = descFontSize;
-        _descStyle.normal.textColor = descColor;
-        LockHoverState(_descStyle);
-        _buttonStyle.fontSize = buttonFontSize;
-
-        // 1280x720 가상좌표로 작업 — dim/클릭차단도 같은 좌표에서 그려 상단 HUD 영역(0~dimTopY)은 보존.
-        float scale = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
-        var matrix = GUI.matrix;
-        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1f));
-
-        var dimRect = new Rect(0f, dimTopY, RefW, RefH - dimTopY);
-        var prev = GUI.color;
-        GUI.color = new Color(0f, 0f, 0f, backdropAlpha);
-        GUI.DrawTexture(dimRect, Texture2D.whiteTexture);
-        GUI.color = prev;
-
-        DrawPanel(gsm);
-
-        // 외부 클릭 차단 — HUD 영역(0~dimTopY) 클릭은 살려두고 그 외만 막는다.
-        // 반드시 DrawPanel 뒤에 둬야 함: IMGUI는 같은 좌표 위 첫 Button이 HotControl을 잡고
-        // Event.Use()로 이벤트를 소비하므로, 먼저 그리면 패널 버튼(받는다/리롤)이 클릭을 받지 못한다.
-        GUI.Button(dimRect, GUIContent.none, GUIStyle.none);
-
-        GUI.matrix = matrix;
-    }
+    // 모달 렌더링은 EventUI.DrawOfferModal로 이관됨 (별도 컴포넌트에서 그릴 때
+    // 에디터 hot-reload 등으로 OnGUI가 누락되는 케이스가 있었음).
+    // 이 컴포넌트는 호환용으로 남겨두되 OnGUI는 비워둔다.
+    void OnGUI() { }
 
     private void DrawPanel(GameStateManager gsm)
     {

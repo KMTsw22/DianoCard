@@ -9,8 +9,9 @@ using static DianoCard.Data.LocaleSettings;
 /// </summary>
 public class TechTreeUI : MonoBehaviour
 {
-    private const float RefW = 1280f;
-    private const float RefH = 720f;
+    // 반응형 (AspectScaler) — 화면 비율에 맞춰 자동 확장.
+    private static float RefW => DianoCard.UI.AspectScaler.ScreenW;
+    private static float RefH => DianoCard.UI.AspectScaler.ScreenH;
 
     // ── Inspector 조절 파라미터 ────────────────────────────
     [Header("노드 크기 — 일반")]
@@ -176,7 +177,7 @@ public class TechTreeUI : MonoBehaviour
 
         EnsureStyles();
 
-        float scale      = Mathf.Min(Screen.width / RefW, Screen.height / RefH);
+        float scale      = DianoCard.UI.AspectScaler.Scale;
         float totalScale = scale * _zoom;
 
         HandlePanInput(scale);
@@ -205,7 +206,7 @@ public class TechTreeUI : MonoBehaviour
         DrawNodes(gsm);
 
         // ── 고정 UI: scale 전용 (패닝 없음) ──────────────
-        GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, new Vector3(scale, scale, 1f));
+        GUI.matrix = DianoCard.UI.AspectScaler.GuiMatrix;
 
         DrawHeader(gsm);
         DrawBottomBar(gsm);

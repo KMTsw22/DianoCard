@@ -80,7 +80,18 @@ namespace DianoCard.Battle
     {
         public int maxHp = 70;
         public int hp = 70;
-        public int block;
+        // block 게인 시 shield_gain SFX 자동 발동. 감소(흡수/리셋)는 발동 X. 같은 프레임 중복은 PlaySFXThrottled가 막음.
+        private int _block;
+        public int block
+        {
+            get => _block;
+            set
+            {
+                if (value > _block)
+                    DianoCard.Audio.AudioManager.Instance?.PlaySFXThrottled("shield_gain");
+                _block = value;
+            }
+        }
         public int mana;
         public int maxMana = 3;
         // 이 전투의 기본 마나 상한 — StartBattle에서 1회 세팅. StartTurn마다 maxMana를 이 값으로 복구해 일시 보너스가 누적되지 않게 한다.
@@ -179,7 +190,18 @@ namespace DianoCard.Battle
         public int attack;
         public int tempAttackBonus; // 한 턴 버프 (턴 시작 시 0으로 리셋)
         // 방어도 — 피해를 먼저 흡수. StartTurn에 0으로 리셋 (수호 결계 스펠로 다시 부여).
-        public int block;
+        // block 게인 시 shield_gain SFX 자동 발동 (PlaySFXThrottled로 같은 프레임 중복 차단).
+        private int _block;
+        public int block
+        {
+            get => _block;
+            set
+            {
+                if (value > _block)
+                    DianoCard.Audio.AudioManager.Instance?.PlaySFXThrottled("shield_gain");
+                _block = value;
+            }
+        }
         // 누적 스택 — 같은 종 SUMMON 카드가 덮어쓰기/합성될 때마다 +1.
         // 초식: 스탯 영구 상승 (카드 변경 없음). 육식: 진화 임계 도달 시 다음 형태로 변형.
         public int stacks;
@@ -263,7 +285,18 @@ namespace DianoCard.Battle
         public int maxHp;
         // 이 적이 입히는 피해/디버프 수치에 곱해지는 배율. floor 스케일링용. 1.0이면 무영향.
         public float damageScale = 1f;
-        public int block;
+        // block 게인 시 shield_gain SFX 자동 발동 (PlaySFXThrottled로 같은 프레임 중복 차단).
+        private int _block;
+        public int block
+        {
+            get => _block;
+            set
+            {
+                if (value > _block)
+                    DianoCard.Audio.AudioManager.Instance?.PlaySFXThrottled("shield_gain");
+                _block = value;
+            }
+        }
         public int extraAttack; // BUFF_SELF로 누적된 공격력 보너스 (영구)
 
         // === 인텐트 (이번 턴에 할 행동, 턴 시작 시 미리 공개) ===

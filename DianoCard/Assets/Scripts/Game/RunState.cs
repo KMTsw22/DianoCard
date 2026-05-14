@@ -26,7 +26,7 @@ namespace DianoCard.Game
 
         public int currentFloor = 1;
         public string chapterId = "CH01";
-        public string characterId = "CH001";  // 선택된 캐릭터 id — 시작 덱/보상 풀 분기에 사용
+        public string characterId = "CH002";  // 선택된 캐릭터 id — 1차 출시는 Arkane(CH002) 단일
 
         // 미지(?) 노드 pity 카운터 — 마지막 해당 결과 이후 쌓인 이벤트 수(0~5 캡).
         // 규칙/표는 GameStateManager.RollUnknownOutcome 주석 참조.
