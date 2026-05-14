@@ -117,7 +117,7 @@ namespace DianoCard.UI
         // Mac Retina는 logical pixel 기준이라 64는 device 128px = 시각적으로 2배 큼.
         // → Mac은 32로 cap. Linux/Windows는 64 유지.
 #if UNITY_STANDALONE_OSX
-        private const int HardwareCursorMaxSize = 16;  // Mac Retina — logical pixel 기준이라 매우 작게
+        private const int HardwareCursorMaxSize = 24;  // Mac Retina용 — logical pixel 기준
 #else
         private const int HardwareCursorMaxSize = 64;
 #endif
