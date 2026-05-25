@@ -27,7 +27,9 @@ public class ShopUI : MonoBehaviour
     private GameState _prevState = GameState.Lobby;
 
     // ========== 텍스처 ==========
-    private Texture2D _introBg;          // Shop_first.png
+    private Texture2D _introBg;          // Shop_first.png — 폴백 (분리 레이어 없을 때 사용)
+    private Texture2D _introBgEmpty;     // Shop_first_bg.png — 빈 방 배경 레이어
+    private Texture2D _introDesk;        // Shop_first_desk.png — 테이블+상인 컷아웃 (호버 시 확대)
     private Texture2D _shopBg;           // Shop_background.png — SHOP 사인 + 섹션 라벨 베이크인
     private Texture2D _pricePlaqueTex;   // Right_UP.png — 카드 한 장당 가격 플라크
     private Texture2D _shopTitlePanel;   // Shop_Title_Panel.png — 상단 타이틀 패널 (드롭다운 애니)
@@ -52,9 +54,17 @@ public class ShopUI : MonoBehaviour
     [SerializeField, Range(20f, 1280f)] private float deskClickW = 560f;
     [SerializeField, Range(20f, 720f)]  private float deskClickH = 280f;
     private Rect deskClickRect => new(deskClickX, deskClickY, deskClickW, deskClickH);
-    [SerializeField] private bool drawDeskHoverHint = true;
-    [SerializeField] private Color deskHoverTint = new(1f, 0.85f, 0.5f, 0.12f);
-    [SerializeField] private string deskHoverLabel = "Click the desk";
+
+    [Header("Stage 1 — 책상 호버 확대 (분리 레이어 사용 시)")]
+    [Tooltip("호버 시 책상 컷아웃 확대 배율. 1.0 = 변화 없음.")]
+    [SerializeField, Range(1f, 1.2f)] private float deskHoverScale = 1.05f;
+    [Tooltip("스케일 보간 속도(초당). 클수록 빠르게 도달.")]
+    [SerializeField, Range(1f, 30f)] private float deskHoverScaleLerpSpeed = 12f;
+    [Tooltip("확대 피벗 X (1280 가상폭). 기본=책상 클릭 영역 중심.")]
+    [SerializeField, Range(0f, 1280f)] private float deskHoverPivotX = 640f;
+    [Tooltip("확대 피벗 Y (720 가상높이). 기본=책상 클릭 영역 하단 부근.")]
+    [SerializeField, Range(0f, 720f)] private float deskHoverPivotY = 540f;
+    private float _deskScaleCurrent = 1f;
 
     // ========== Stage 2: Gold (정적 '300' 위에 덮음) ==========
     [Header("Stage 2 — Gold overlay (BG의 정적 300 위)")]
@@ -346,7 +356,7 @@ public class ShopUI : MonoBehaviour
 
     // ========== runtime ==========
     private Font _displayFont;
-    private GUIStyle _goldStyle, _itemNameStyle, _itemPriceStyle, _plaqueStyle, _potionPriceStyle, _relicPriceStyle, _servicePriceStyle, _leaveStyle, _hintStyle, _tooltipTitleStyle, _tooltipBodyStyle, _soldStyle;
+    private GUIStyle _goldStyle, _itemNameStyle, _itemPriceStyle, _plaqueStyle, _potionPriceStyle, _relicPriceStyle, _servicePriceStyle, _leaveStyle, _tooltipTitleStyle, _tooltipBodyStyle, _soldStyle;
     private GUIStyle _slimTypeStyle, _slimNameStyle, _slimCostStyle;
     private bool _stylesReady;
     private bool _loaded;
@@ -411,18 +421,33 @@ public class ShopUI : MonoBehaviour
 
     private void DrawIntro()
     {
-        if (_introBg != null)
-            GUI.DrawTexture(new Rect(0, 0, RefW, RefH), _introBg, ScaleMode.ScaleAndCrop);
+        var fullRect = new Rect(0, 0, RefW, RefH);
+        bool useSplitLayers = (_introBgEmpty != null && _introDesk != null);
+
+        if (useSplitLayers)
+            GUI.DrawTexture(fullRect, _introBgEmpty, ScaleMode.ScaleAndCrop);
+        else if (_introBg != null)
+            GUI.DrawTexture(fullRect, _introBg, ScaleMode.ScaleAndCrop);
         else
-            DrawFilledRect(new Rect(0, 0, RefW, RefH), new Color(0.04f, 0.03f, 0.05f, 1f));
+            DrawFilledRect(fullRect, new Color(0.04f, 0.03f, 0.05f, 1f));
 
         var ev = Event.current;
         bool hover = deskClickRect.Contains(ev.mousePosition);
 
-        if (drawDeskHoverHint && hover)
+        // 책상 레이어 — 호버 시 부드럽게 확대. Repaint 때만 그림.
+        if (useSplitLayers)
         {
-            DrawFilledRect(deskClickRect, deskHoverTint);
-            GUI.Label(new Rect(0, RefH - 76f, RefW, 28f), deskHoverLabel, _hintStyle);
+            float target = hover ? deskHoverScale : 1f;
+            if (ev.type == EventType.Repaint)
+                _deskScaleCurrent = Mathf.Lerp(_deskScaleCurrent, target,
+                    1f - Mathf.Exp(-deskHoverScaleLerpSpeed * Time.unscaledDeltaTime));
+
+            var pivot = new Vector2(deskHoverPivotX, deskHoverPivotY);
+            var prevMatrix = GUI.matrix;
+            if (Mathf.Abs(_deskScaleCurrent - 1f) > 0.0005f)
+                GUIUtility.ScaleAroundPivot(new Vector2(_deskScaleCurrent, _deskScaleCurrent), pivot);
+            GUI.DrawTexture(fullRect, _introDesk, ScaleMode.ScaleAndCrop);
+            GUI.matrix = prevMatrix;
         }
 
         if (GUI.Button(deskClickRect, GUIContent.none, GUIStyle.none))
@@ -1228,6 +1253,8 @@ public class ShopUI : MonoBehaviour
         _loaded = true;
 
         _introBg         = Resources.Load<Texture2D>("ShopUI/Shop_first");
+        _introBgEmpty    = Resources.Load<Texture2D>("ShopUI/Shop_first_bg");
+        _introDesk       = Resources.Load<Texture2D>("ShopUI/Shop_first_desk");
         _shopBg          = Resources.Load<Texture2D>("ShopUI/Shop_background");
         _pricePlaqueTex  = Resources.Load<Texture2D>("ShopUI/Right_UP");
         _shopTitlePanel  = Resources.Load<Texture2D>("ShopUI/Shop_Title_Panel");
@@ -1285,10 +1312,6 @@ public class ShopUI : MonoBehaviour
             font = _displayFont, fontSize = 22, alignment = TextAnchor.MiddleCenter,
             fontStyle = FontStyle.Bold, normal = { textColor = cream },
         };
-        _hintStyle = new GUIStyle(GUI.skin.label) {
-            font = _displayFont, fontSize = 18, alignment = TextAnchor.MiddleCenter,
-            fontStyle = FontStyle.Bold, normal = { textColor = cream },
-        };
         _soldStyle = new GUIStyle(GUI.skin.label) {
             font = _displayFont, fontSize = 22, alignment = TextAnchor.MiddleCenter,
             fontStyle = FontStyle.Bold, normal = { textColor = new Color(1f, 0.55f, 0.55f) },
@@ -1323,7 +1346,6 @@ public class ShopUI : MonoBehaviour
         LockStateColors(_servicePriceStyle);
         LockStateColors(_relicPriceStyle);
         LockStateColors(_leaveStyle);
-        LockStateColors(_hintStyle);
         LockStateColors(_soldStyle);
         LockStateColors(_tooltipTitleStyle);
         LockStateColors(_tooltipBodyStyle);

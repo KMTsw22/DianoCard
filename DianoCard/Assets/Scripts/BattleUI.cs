@@ -1197,6 +1197,20 @@ public class BattleUI : MonoBehaviour
         return tex;
     }
 
+    // CANNIBAL 패시브(마준가) 동족포식 뱃지 아이콘 — Resources/InGame/HeadIcon/Skill/CANNIBAL.png.
+    // 시그니처 스킬은 아니지만 같은 폴더/스타일을 공유. 누락 시 null → 牙 폴백.
+    private Texture2D _cannibalIconTex;
+    private bool _cannibalIconLoaded;
+    private Texture2D GetCannibalIcon()
+    {
+        if (!_cannibalIconLoaded)
+        {
+            _cannibalIconTex = Resources.Load<Texture2D>("InGame/HeadIcon/Skill/CANNIBAL");
+            _cannibalIconLoaded = true;
+        }
+        return _cannibalIconTex;
+    }
+
     // 현재 런의 캐릭터 ID에 맞춰 마나 오브 텍스처 선택. CH002=아케네 빨강, CH002B/CH001=린네 초록.
     private Texture2D GetCharacterManaOrb()
     {
@@ -1972,9 +1986,12 @@ public class BattleUI : MonoBehaviour
             case "E103":
                 LoadAndApplyAttackSequence(view, "E103", "Monsters/E103_WraithKnightTwins/attack_f", new Vector2(0.582f, 0.093f), 1.389f);
                 break;
-            // E102 폭풍 독수리(ELITE, intH=260) — 12프레임. 비행체 pivot.y=27%, 중앙 pivot.x≈0.50. idle 47.6% / peak f04 70.8% (공격 시 펴짐) → boost 0.672로 축소.
+            // E102 폭풍 독수리(ELITE) — 12프레임. 비행체 pivot.y=27%, 중앙 pivot.x≈0.50.
+            // idle(880×571) 독수리 alpha높이 512px=89.7% / 공격(1492×1388) 평균 574px=41.3% (날갯짓 346~798 변동).
+            // 공격 평균을 idle과 같은 시각크기로 맞추려면 boost = 0.897/0.413 ≈ 2.17.
+            // (전체 크기 15% 축소는 enemy.csv field_scale=1.0625로 idle·공격 동시에)
             case "E102":
-                LoadAndApplyAttackSequence(view, "E102", "Monsters/E102_StormEagle/attack_f", new Vector2(0.497f, 0.270f), 0.672f);
+                LoadAndApplyAttackSequence(view, "E102", "Monsters/E102_StormEagle/attack_f", new Vector2(0.497f, 0.270f), 2.17f);
                 break;
         }
         // 동시 박자 방지 — 개체별 해시로 주기(freq)와 위상(phase)을 모두 분산.
@@ -3876,31 +3893,36 @@ public class BattleUI : MonoBehaviour
             padding = new RectOffset(8, 8, 8, 8),
             wordWrap = true,
         };
+        // 상단 HUD 슬롯(HP/Gold/Potion/Relic 등) 공통 라벨.
+        // FontStyle.Bold + IL2CPP 빌드 조합에서 Windows에서 글리프 하단(베이스라인 아래)이
+        // GUIStyle 자동 측정 박스를 넘어 클리핑되는 이슈 — Bold 제거 + Overflow로 해결.
         _labelStyle = new GUIStyle(GUI.skin.label)
         {
             fontSize = 19,
-            fontStyle = FontStyle.Bold,
             normal = { textColor = Color.white },
+            clipping = TextClipping.Overflow,
+            wordWrap = false,
         };
         _centerStyle = new GUIStyle(GUI.skin.label)
         {
             fontSize = 14,
             alignment = TextAnchor.MiddleCenter,
-            fontStyle = FontStyle.Bold,
             normal = { textColor = Color.white },
+            clipping = TextClipping.Overflow,
+            wordWrap = false,
         };
         _intentStyle = new GUIStyle(GUI.skin.label)
         {
             fontSize = 15,
             alignment = TextAnchor.MiddleCenter,
-            fontStyle = FontStyle.Bold,
             normal = { textColor = new Color(1f, 0.9f, 0.5f) },
+            clipping = TextClipping.Overflow,
+            wordWrap = false,
         };
         _intentNumberStyle = new GUIStyle(GUI.skin.label)
         {
             fontSize = 10,
             alignment = TextAnchor.MiddleCenter,
-            fontStyle = FontStyle.Bold,
             wordWrap = false,
             clipping = TextClipping.Overflow,
             normal = { textColor = Color.white },
@@ -5382,21 +5404,23 @@ public class BattleUI : MonoBehaviour
             }
             else if (_cannibalFeedFromIndex >= 0)
             {
-                // 동족포식 모드 — eater(마준가) 외 다른 살아있는 아군이 클릭 가능 타겟.
-                // eater 본인 클릭은 모드 취소로 처리.
+                // 동족포식 모드 — eater(마준가) 외 잡아먹을 수 있는 아군만 클릭 가능 타겟.
+                // 글로우(파란/주황 발치 마커) 대신 eater→타겟 StS식 화살표로 표시.
                 bool isEater = _cannibalFeedFromIndex == summonIndex;
                 if (isEater)
                 {
-                    DrawFusionSelectedMarker(rect);
+                    // eater = 화살표 출발점. 글로우 마커 없이 화살표만 쏜다.
+                    _arrowSourceRect = rect;
+                    _arrowSourceValid = true;
                     if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && hovered)
                     {
                         ev.Use();
                         _cannibalFeedFromIndex = -1;
                     }
                 }
-                else if (!s.IsDead)
+                else if (_battle.IsValidCannibalPrey(_cannibalFeedFromIndex, summonIndex))
                 {
-                    DrawTargetFootGlow(rect, hovered);
+                    // 잡아먹을 수 있는 아군만 화살표 스냅 대상으로 등록 — 발치 글로우 제거.
                     _arrowTargetRects.Add(rect);
                     if (ev != null && ev.type == EventType.MouseDown && ev.button == 0 && hovered)
                     {
@@ -5572,30 +5596,39 @@ public class BattleUI : MonoBehaviour
 
         var prevColor = GUI.color;
 
-        // READY 펄스 글로우 — 깊은 적색 톤(스킬은 청록).
-        if (ready)
+        var icon = GetCannibalIcon();
+        if (icon != null)
         {
-            float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 4f);
-            float glowSize = iconSize * 1.55f;
-            var glowRect = new Rect(iconCenter.x - glowSize / 2f, iconCenter.y - glowSize / 2f, glowSize, glowSize);
-            FillRect(glowRect, new Color(0.55f, 0.10f, 0.10f, 0.18f * pulse));
+            // READY일 때만 부드러운 적색 라디얼 글로우 — 클릭 가능 신호.
+            // (투명 PNG라 예전 사각 FillRect 글로우 대신 라디얼로 — 사각 테두리가 안 보이게.)
+            if (ready)
+            {
+                float pulse = 0.5f + 0.5f * Mathf.Sin(Time.time * 4f);
+                DrawIconGlow(iconRect, new Color(0.95f, 0.30f, 0.22f, pulse), 1.2f);
+            }
+            // not-ready(사용 완료)는 검 뱃지 dim과 동일하게 살짝 어둡게.
+            if (!ready) GUI.color = new Color(0.50f, 0.50f, 0.52f, 1f);
+            GUI.DrawTexture(iconRect, icon, ScaleMode.ScaleToFit, alphaBlend: true);
+            GUI.color = prevColor;
         }
+        else
+        {
+            // 폴백 — CANNIBAL.png 미배치 시 크림슨 사각 + 어두운 보더 + 단일 한자 "牙".
+            FillRect(iconRect, ready ? new Color(0.45f, 0.10f, 0.12f, 0.92f)
+                                     : new Color(0.18f, 0.10f, 0.10f, 0.85f));
+            DrawBorder(iconRect, ready ? 2 : 1,
+                       ready ? new Color(0.95f, 0.55f, 0.45f, 0.95f) : new Color(0.40f, 0.30f, 0.30f, 0.85f));
 
-        // 본체 — 크림슨 사각 + 어두운 보더 + 단일 한자 "牙"(이빨/송곳니).
-        FillRect(iconRect, ready ? new Color(0.45f, 0.10f, 0.12f, 0.92f)
-                                 : new Color(0.18f, 0.10f, 0.10f, 0.85f));
-        DrawBorder(iconRect, ready ? 2 : 1,
-                   ready ? new Color(0.95f, 0.55f, 0.45f, 0.95f) : new Color(0.40f, 0.30f, 0.30f, 0.85f));
+            var prevTextCol = _centerStyle.normal.textColor;
+            int prevFontSize = _centerStyle.fontSize;
+            _centerStyle.fontSize = 22;
+            _centerStyle.normal.textColor = ready ? new Color(1f, 0.92f, 0.85f) : new Color(0.65f, 0.55f, 0.55f);
+            GUI.Label(iconRect, "牙", _centerStyle);
+            _centerStyle.normal.textColor = prevTextCol;
+            _centerStyle.fontSize = prevFontSize;
 
-        var prevTextCol = _centerStyle.normal.textColor;
-        int prevFontSize = _centerStyle.fontSize;
-        _centerStyle.fontSize = 22;
-        _centerStyle.normal.textColor = ready ? new Color(1f, 0.92f, 0.85f) : new Color(0.65f, 0.55f, 0.55f);
-        GUI.Label(iconRect, "牙", _centerStyle);
-        _centerStyle.normal.textColor = prevTextCol;
-        _centerStyle.fontSize = prevFontSize;
-
-        GUI.color = prevColor;
+            GUI.color = prevColor;
+        }
 
         // 우하단 칩 — 사용 완료 ✓.
         if (used)
@@ -5959,8 +5992,14 @@ public class BattleUI : MonoBehaviour
             }
         }
 
-        // 출발 — 융합 모드면 항상 윗변에서, 그 외엔 타겟이 source 아래(HUD 포션)면 아랫변/위면 윗변.
-        bool targetBelow = !fusionMode && to.y > _arrowSourceRect.center.y;
+        // 공룡 공격/스킬은 융합과 마찬가지로 항상 위로 솟구치는 아치 — 마우스가 공룡 아래로 떨어지거나
+        // 적 중심이 공룡 중심보다 살짝 아래일 때 호가 아래로 휘어 어색해지는 걸 막는다.
+        bool dinoSource = _targetingSummonIndex >= 0 || _targetingSummonSkillIndex >= 0
+                          || _cannibalFeedFromIndex >= 0;
+        bool forceUp = fusionMode || dinoSource;
+
+        // 출발 — 위로 솟는 모드(융합/공룡)면 항상 윗변에서, 그 외엔 타겟이 source 아래(HUD 포션)면 아랫변/위면 윗변.
+        bool targetBelow = !forceUp && to.y > _arrowSourceRect.center.y;
         float fromY = targetBelow ? (_arrowSourceRect.yMax - 12f) : (_arrowSourceRect.y + 12f);
         Vector2 from = new Vector2(_arrowSourceRect.center.x, fromY);
 
@@ -5968,7 +6007,9 @@ public class BattleUI : MonoBehaviour
         if (!snapped && Vector2.Distance(from, to) < 36f) return;
 
         EnsureArrowDotTexture();
-        DrawBezierArrow(from, to, snapped, forceUpArc: fusionMode, thin: fusionStage2);
+        // 동족포식(아군 흡수)은 공격/융합과 구분되게 파란 계열 화살표로.
+        bool cannibalTone = _cannibalFeedFromIndex >= 0;
+        DrawBezierArrow(from, to, snapped, forceUpArc: forceUp, thin: fusionStage2, blueTone: cannibalTone);
 
         // 공룡 공격 타겟팅에서만 — 화살표 끝(V) 바로 위에 실효 데미지 숫자를 띄운다.
         // 아이콘 없이 진한 빨간 큰 숫자 + 두꺼운 검은 외곽선만 — 다른 ATK 뱃지/인텐트와 즉각 구분.
@@ -6064,7 +6105,7 @@ public class BattleUI : MonoBehaviour
         _arrowDotTex.Apply(false, false);
     }
 
-    private void DrawBezierArrow(Vector2 from, Vector2 to, bool snapped, bool forceUpArc = false, bool thin = false)
+    private void DrawBezierArrow(Vector2 from, Vector2 to, bool snapped, bool forceUpArc = false, bool thin = false, bool blueTone = false)
     {
         // 컨트롤 포인트: source에서 진행 방향으로 들어올린 뒤 target 너머에서 되돌아오도록 잡음.
         // 타겟이 source 위(카드 → 적)면 위로 솟구치는 호, 아래(HUD 포션 → 적/아군)면 아래로 부푸는 호.
@@ -6079,12 +6120,17 @@ public class BattleUI : MonoBehaviour
         // 헤일로가 검은 외곽선처럼 카드/배경 어디에서나 곡선을 분리시켜 가독성 확보.
         // 펄스는 살짝만 — 항상 또렷이 보이도록.
         float pulse = 0.88f + 0.12f * Mathf.Sin(Time.time * 5f);
-        Color halo = snapped
-            ? new Color(0.55f, 0.05f, 0.02f, 1f)   // 스냅: 짙은 진홍 외곽
-            : new Color(0.40f, 0.10f, 0.03f, 1f);  // 평소: 짙은 적갈 외곽
-        Color core = snapped
-            ? new Color(1.00f, 0.55f, 0.20f, 1f)   // 스냅: 강렬한 오렌지 — "박힌다"
-            : new Color(1.00f, 0.85f, 0.35f, 1f);  // 평소: 따뜻한 골든
+        // blueTone(동족포식): 한랭 청색 — 공격/융합의 적·금색과 즉시 구분.
+        Color halo = blueTone
+            ? (snapped ? new Color(0.04f, 0.14f, 0.45f, 1f)   // 스냅: 짙은 코발트 외곽
+                       : new Color(0.03f, 0.10f, 0.34f, 1f))  // 평소: 짙은 네이비 외곽
+            : (snapped ? new Color(0.55f, 0.05f, 0.02f, 1f)   // 스냅: 짙은 진홍 외곽
+                       : new Color(0.40f, 0.10f, 0.03f, 1f)); // 평소: 짙은 적갈 외곽
+        Color core = blueTone
+            ? (snapped ? new Color(0.35f, 0.72f, 1.00f, 1f)   // 스냅: 강렬한 시안블루 — "박힌다"
+                       : new Color(0.58f, 0.84f, 1.00f, 1f))  // 평소: 밝은 스카이블루
+            : (snapped ? new Color(1.00f, 0.55f, 0.20f, 1f)   // 스냅: 강렬한 오렌지 — "박힌다"
+                       : new Color(1.00f, 0.85f, 0.35f, 1f)); // 평소: 따뜻한 골든
 
         // 충분히 촘촘하게 찍어 점이 아닌 두꺼운 연속 리본으로 보이게 (간격 < 점 반지름).
         // thin(융합 2단계)에선 약 55% 두께 — 후보 슬롯/카드를 덜 가려 짝짓기 가독성을 확보.

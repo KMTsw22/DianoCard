@@ -13,7 +13,7 @@ E013,호박머리 허수아비,Pumpkin Scarecrow,NORMAL,1,72,13,3,PS_E013,,28,40
 E014,해골 촛대,Skull Candelabra,NORMAL,1,50,9,4,PS_E014,,22,30,해골 위로 보라 촛불 셋이 타오르는 살아있는 촛대. 보라 불꽃을 쏘아낸다.,A living candelabra with three purple candles burning atop a skull. Hurls violet flame.,E014_SkullCandelabra.png,,1.25
 E104,새끼 어둠용,Shadow Drakeling,ELITE,1,128,18,4,PS_E104,,30,42,폐허에 둥지를 튼 어둠 비늘 새끼 용. 발톱과 송곳니로 사납게 공격한다.,A young dragon with shadow scales nesting in the ruins. Strikes with claws and fangs.,E104_ShadowDrakeling.png,,1.25
 E016,망령 등불,Wraith Lantern,NORMAL,1,48,11,0,PS_E016,,22,30,녹슨 등불에 봉인된 푸른 망령. 갈고리 손톱으로 영혼을 할퀸다.,A green wraith sealed within a rusted lantern. Claws at souls with hooked talons.,E016_WraithLantern.png,,1.25
-E102,폭풍 독수리,Storm Eagle,ELITE,1,105,18,0,PS_E102,,30,40,번개를 두른 천공의 맹금. 빠르고 사나운 강타로 압박한다.,A sky raptor wreathed in lightning. Pressures with swift, vicious strikes.,E102_StormEagle.png,,1.25
+E102,폭풍 독수리,Storm Eagle,ELITE,1,105,18,0,PS_E102,,30,40,번개를 두른 천공의 맹금. 빠르고 사나운 강타로 압박한다.,"A sky raptor wreathed in lightning. Pressures with swift, vicious strikes.",E102_StormEagle.png,,1.0625
 E103,망령 기사 쌍둥이,Wraith Knight Twins,ELITE,1,78,10,0,PS_E103,,45,60,저주받은 망령 기사 쌍둥이. 2체 등장하며 1체 처치 시 다른 1체가 격노한다.,Cursed wraith knight twins. Two appear and killing one enrages the other.,E103_WraithKnightTwins.png,P_TWIN_RAGE,1.25
 E901,폐허의 군주,Ruin Lord,BOSS,1,320,17,8,PS_E901_P1,PH_E901,130,130,1챕터 보스. 폐허에 봉인된 어둠의 군주. 보랏빛 안개에 휘감긴 거대 기사.,Chapter 1 Boss. A dark lord sealed within the ruins. A giant knight shrouded in violet mist.,E901_RuinLord.png,P_MOSS_SHIELD|P_MOSS_REFILL|P_ABSORB_MOSS|P_TRIPLE_ACTION|P_STEAL_SUMMON,
 E201,사막 도적,Desert Bandit,NORMAL,2,35,12,0,PS_E201_TBD,,22,32,사막의 도적.,A desert bandit.,crow.png,,

@@ -1770,16 +1770,16 @@ public class CharacterSelectUI : MonoBehaviour
             fontStyle = FontStyle.Bold,
             normal = { textColor = new Color(1f, 0.85f, 0.45f) },
         };
+        // Variable Font(Cinzel) + FontStyle.Bold 조합은 Mac뿐 아니라 Windows IL2CPP 빌드에서도
+        // 글리프 하단(특히 '/', 디센더)이 측정 박스 밖으로 빠져 클리핑됨.
+        // Bold 자체를 끄고 + clipping=Overflow로 안전망.
         _statStyle = new GUIStyle(GUI.skin.label)
         {
             font = _displayFont,
             fontSize = 24,
-            // Mac에서만 Bold 끔 — Variable Font(Cinzel) + FontStyle.Bold 조합이 Mac Unity에서 글리프 깨짐.
-            // Windows는 정상 렌더링되므로 Bold 유지.
-#if !UNITY_STANDALONE_OSX
-            fontStyle = FontStyle.Bold,
-#endif
             normal = { textColor = Color.white },
+            clipping = TextClipping.Overflow,
+            wordWrap = false,
         };
         _hpStyleMid = new GUIStyle(_statStyle)
         {

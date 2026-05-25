@@ -21,8 +21,11 @@ namespace DianoCard.Audio
         private const string PrefBgm = "dianocard.audio.bgm";
         private const string PrefSfx = "dianocard.audio.sfx";
 
-        private float _bgmVolume = 1f;
-        private float _sfxVolume = 1f;
+        private const float DefaultBgmVolume = 0.3f;
+        private const float DefaultSfxVolume = 0.3f;
+
+        private float _bgmVolume = DefaultBgmVolume;
+        private float _sfxVolume = DefaultSfxVolume;
 
         public float BgmVolume
         {
@@ -102,8 +105,8 @@ namespace DianoCard.Audio
             _bgmSource.loop = true;
             _bgmSource.spatialBlend = 0f;
 
-            _bgmVolume = SaveSystem.GetFloat(PrefBgm, 1f);
-            _sfxVolume = SaveSystem.GetFloat(PrefSfx, 1f);
+            _bgmVolume = SaveSystem.GetFloat(PrefBgm, DefaultBgmVolume);
+            _sfxVolume = SaveSystem.GetFloat(PrefSfx, DefaultSfxVolume);
             _bgmSource.volume = _bgmVolume;
 
             if (!string.IsNullOrEmpty(DefaultBgmKey)) PlayBGM(DefaultBgmKey);

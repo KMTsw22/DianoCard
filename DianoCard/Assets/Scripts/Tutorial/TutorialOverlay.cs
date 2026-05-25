@@ -38,12 +38,16 @@ namespace DianoCard.Tutorial
 
         [Header("Text Backplate (가독성 보조)")]
         [SerializeField, Range(0f, 0.95f),
-         Tooltip("안내 텍스트 뒤 반투명 검정 — 배경 일러스트 위에서도 호박 글자가 또렷이 보이게 충분히 깐다.")]
-        private float backplateAlpha = 0.55f;
+         Tooltip("안내 텍스트 뒤 반투명 회색 — 배경 일러스트 위에서도 글자 가독성을 확보하되, 너무 까맣지 않게 뒷배경이 비치도록.")]
+        private float backplateAlpha = 0.38f;
 
         [SerializeField, Range(0f, 120f),
          Tooltip("백플레이트 가장자리 페이드 폭(px) — 폭이 클수록 박스 가장자리가 더 자연스럽게 사라진다.")]
         private float backplateFadePx = 64f;
+
+        // 백플레이트 색조 — 순흑 대신 다크 워뮤그레이(보랏빛 살짝)로 바꿔서 게임 톤과 어울리게.
+        // 알파는 위 backplateAlpha로 조절. 색을 검정에서 회색으로 옮기면 같은 알파에서도 덜 무겁게 보임.
+        private static readonly Color BackplateTint = new(0.18f, 0.16f, 0.22f);
 
         [Header("Highlight Pulse Outline")]
         [SerializeField, Range(1f, 8f), Tooltip("강조 외곽선 두께 (px)")]
@@ -258,7 +262,7 @@ namespace DianoCard.Tutorial
                 var plateRect = new Rect(boxRect.x - 12f, boxRect.y - 6f,
                                           boxRect.width + 24f,
                                           (hintRect.yMax - boxRect.y) + 12f);
-                DrawSoftBackplate(plateRect, new Color(0f, 0f, 0f, backplateAlpha), backplateFadePx);
+                DrawSoftBackplate(plateRect, new Color(BackplateTint.r, BackplateTint.g, BackplateTint.b, backplateAlpha), backplateFadePx);
             }
 
             // 2b) 텍스트 — 8방향 그림자 + 본체. 색은 고정(펄스 보간 없음).

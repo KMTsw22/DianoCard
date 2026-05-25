@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 626f4a2afebeb8843b11333f7f86bb66
+guid: 5fffa6470cc54f843a7e278e74b7d272
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: 6665596236579789778
-    second: E102_StormEagle_0
+      213: 5087128488710548314
+    second: Shop_first_bg_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -126,13 +126,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: E102_StormEagle_0
+      name: Shop_first_bg_0
       rect:
         serializedVersion: 2
         x: 0
         y: 0
-        width: 880
-        height: 571
+        width: 1376
+        height: 768
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -141,8 +141,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 2dbd4891674f08c50800000000000000
-      internalID: 6665596236579789778
+      spriteID: a5bac50686c199640800000000000000
+      internalID: 5087128488710548314
       vertices: []
       indices: 
       edges: []
@@ -161,7 +161,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      E102_StormEagle_0: 6665596236579789778
+      Shop_first_bg_0: 5087128488710548314
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
